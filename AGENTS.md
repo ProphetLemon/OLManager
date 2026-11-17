@@ -37,15 +37,17 @@ src/
 │   │   ├── components/        # 11 subdirectorios
 │   │   └── pages/
 │   ├── components/ui/         # shadcn primitives + On Air primitives (see section 4)
-│   ├── shell/                 # navModel.ts (rails, groups, strip tabs), RailItem, SectionStripV2, ClockPlate
+│   ├── shell/                 # navModel.ts (paradas, grupos, defaultOpen), railMode.ts (Tree/Split puro), treeRows.ts (teclado puro),
+│   │                          # RailTree, RailSplit, RailUtility, RailMore, RailRow, RailItem, useRailMode, useFadeMask, attention.ts, ClockPlate
+│   │                          # (estado en store/navMemoryStore: pestaña, última por grupo, grupos abiertos)
 │   ├── lib/utils.ts           # cn()
 │   ├── pages/                 # v2 pages (SettingsV2, TeamSelectionV2, PlayerProfileV2, TeamProfileV2, StaffProfileV2, ChampionPageV2; customTeam/, playerProfile/, settings/, teamProfile/)
 │   ├── match/                 # partido en directo (Arena): LiveMatchV2.tsx es la pantalla; MatchSimulation la monta
 │   │   └── live/              # mapa (ArenaMap + capas), barra, tarjetas, feed, controles, EndPanel, hooks de sesión
 │   └── dashboard/
 │       ├── DashboardV2.tsx    # state container + tab dispatcher
-│       ├── DashboardSidebarV2.tsx  # rail (4.75rem), built on navModel
-│       ├── DashboardHeaderV2.tsx   # bar + section strip
+│       ├── DashboardSidebarV2.tsx  # rail: Tree o Split, una sola `nav`, sobre navModel y treeRows
+│       ├── DashboardHeaderV2.tsx   # barra: miga (equipo · grupo) sobre el h1, reloj, Continuar
 │       └── tabs/              # tabs nativos v2 (home/, squad/ = On Air panels)
 └── store/, services/, hooks/, api/  # compartidos (hooks/useRovingFocus, useClubTheme)
 ```
@@ -84,7 +86,7 @@ Tocado en _legacy por On Air: `FloatingBugButton` (ya sólo en línea, sin varia
 - `cn()` (`src/ui-v2/lib/utils.ts`) usa `extendTailwindMerge` y registra los tamaños `text-2xs/caption/map/section/title/ovr/scoreboard`; un test lo compara con los `--text-*` de `default.css`. Un tamaño nuevo se añade en los dos sitios.
 - Los estados activos nunca dependen sólo del color (barra, peso, `aria-current`).
 
-**Shell: rail + bar + strip.** `DashboardSidebarV2` es un rail de 4.75rem (escudo, paradas, ajustes/salir/avatar abajo) con foco por flechas (`useRovingFocus`). `DashboardHeaderV2` es la barra (título, chip de decisiones, reloj, Continuar) y, debajo, `SectionStripV2` con las pestañas del grupo activo. `shell/navModel.ts` es la fuente única de paradas, grupos y pestañas. Con la pantalla de fin de temporada ambos pasan a `compact`.
+**Shell: rail + barra.** `DashboardSidebarV2` es el único `<nav>` ("Main navigation") y tiene dos modos que decide `railMode.ts` (puro) con `useRailMode` sobre el cuerpo bajo la barra de título: **Tree** (Club abierto con sus 10 pestañas, Market y World plegados; filas de disclosure con `aria-expanded`; `--rail-w-tree`) cuando caben altura y 880 px de contenido, y **Split** (rail de iconos con etiqueta de hasta 2 líneas más un panel `role="group"` con las pestañas del grupo activo; `--rail-w-split` + `--nav-panel-w`) en el resto. Android es siempre Split con 7 paradas a `--hit` (48 px) y un menú Más (`RailMore`, Base UI); sus etiquetas nunca pasan a iconos (R14). En Split de escritorio, si las paradas con etiqueta no caben en altura pasan a iconos con `IconTip` (R13, `splitLabelsFit`). Las utilidades (bug, ajustes, salir, manager) son celdas de iconos con `IconTip` y `aria-label`. Tamaños en tokens `--nav-row`, `--nav-row-child`, `--nav-cell`, `--nav-indent`, `--nav-icon` (todos `max(rem, px)`), `--rail-w-*`, `--nav-panel-w` y `--hit`; las filas llevan ids estables (`tab:Squad`, `group:club`, `util:settings`) y el foco los sigue al cambiar de modo. El teclado es `treeKeyAction` sobre `useRovingFocus` (`onKey`). Ya no hay franja de secciones: `DashboardHeaderV2` es la barra (miga `{equipo} · {grupo}`, título, chip de decisiones, reloj, Continuar). `shell/navModel.ts` es la fuente única de paradas, grupos y pestañas. Con la pantalla de fin de temporada el rail pasa a `compact` (iconos, sin panel).
 
 **Primitivas** (`src/ui-v2/components/ui/`): `ClubShield`, `LowerThird` (primitiva todavía sin montar: `NeedsYourCallPanel` usa `data-slot="lower-third"` propio), `Meter`, `ScoreNumeral`, `SegmentedControl`, `SplitButton`, `TagBlock`, además de las shadcn (`button` con variantes `club` y tamaños `touch`).
 
