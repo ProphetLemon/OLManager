@@ -90,7 +90,7 @@ export function RailItem({
         aria-hidden="true"
         className={cn(
           // Up to two balanced lines, hyphenated by the document language, never clipped (R12).
-          "w-full break-words font-heading text-nav leading-4 line-clamp-2 text-balance hyphens-auto",
+          "w-full wrap-break-word font-heading text-nav leading-4 line-clamp-2 text-balance hyphens-auto",
           active ? "font-bold" : "font-medium",
           compact && "sr-only",
         )}

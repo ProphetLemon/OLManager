@@ -135,7 +135,7 @@ describe("Split sizes and text (R12)", () => {
   it("sets stop labels to wrap in two balanced lines instead of clipping, and hyphenate", () => {
     setup();
     const label = navId("tab:Inbox").querySelector("span[aria-hidden]:not([data-slot])") as HTMLElement;
-    for (const cls of ["line-clamp-2", "text-balance", "hyphens-auto", "text-nav"]) {
+    for (const cls of ["line-clamp-2", "text-balance", "hyphens-auto", "wrap-break-word", "text-nav"]) {
       expect(label.className, cls).toContain(cls);
     }
     expect(label.className).not.toContain("truncate");

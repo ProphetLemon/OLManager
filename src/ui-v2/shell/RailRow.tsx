@@ -98,7 +98,7 @@ export function RailRow({
         aria-hidden="true"
         className={cn(
           "min-w-0 flex-1 font-heading text-nav leading-4",
-          kind === "panel" ? "line-clamp-2 break-words hyphens-auto" : "truncate",
+          kind === "panel" ? "line-clamp-2 wrap-break-word hyphens-auto" : "truncate",
         )}
       >
         {label}
