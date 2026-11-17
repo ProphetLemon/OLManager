@@ -13,7 +13,7 @@ use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
 use crate::person_identity::{could_be_same_person, folded_names, has_all_attributes_zero};
 use crate::player_age::parse_date_of_birth;
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use log::{info, warn};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -856,6 +856,11 @@ pub struct CollapseEvidence<'a> {
     pub pool_add_ids: &'a HashSet<String>,
 }
 
+/// The birth date the catalog writes when none is known.
+fn is_placeholder_birth_date(date: &NaiveDate) -> bool {
+    (date.year(), date.month(), date.day()) == (2002, 1, 1)
+}
+
 /// Minimal union-find over record indexes.
 fn find(parent: &mut [usize], mut i: usize) -> usize {
     while parent[i] != i {
@@ -874,9 +879,14 @@ fn find(parent: &mut [usize], mut i: usize) -> usize {
 ///   accents ignored, either way round). Nationality and birth date are not tested: a stub
 ///   carries a guessed nationality and no date, and the nick and the real name swap places;
 /// - or one is a pool add (a teamless overlay add) and the other is on a club, and they share
-///   two folded names, for example the nick and a real name of two or more words.
+///   two folded names, for example the nick and a real name of two or more words;
+/// - or a free agent and a contracted record share any folded name and the same birth date,
+///   which must be readable and not the 2002-01-01 placeholder. A free agent that fits
+///   records on two clubs is left alone, as are two clubs and two free agents: those need a
+///   survivor chosen from the source.
 ///
-/// The survivor of a group is the record, in this order of priority: that is not a pool add,
+/// The survivor of a group is the record, in this order of priority: that is on a club,
+/// that is not a pool add,
 /// that a stat-derived rating override names (the override lands only there), that an overlay
 /// op names, that has a readable birth date and a real full name, that has a readable birth
 /// date, that has a real full name, and finally the first in the list.
@@ -933,6 +943,34 @@ pub fn collapse_same_person_records(
         }
     }
 
+    // A free agent and a contracted record that share a name and a real birth date.
+    let real_birth_date = |player: &Player| {
+        parse_date_of_birth(&player.date_of_birth).filter(|date| !is_placeholder_birth_date(date))
+    };
+    for (index, player) in players.iter().enumerate() {
+        if player.team_id.is_some() {
+            continue;
+        }
+        let Some(born) = real_birth_date(player) else {
+            continue;
+        };
+        let mut roots: Vec<usize> = Vec::new();
+        for name in &names[index] {
+            for &other in rostered_by_name.get(name.as_str()).into_iter().flatten() {
+                if real_birth_date(&players[other]) == Some(born) {
+                    let root = find(&mut parent, other);
+                    if !roots.contains(&root) {
+                        roots.push(root);
+                    }
+                }
+            }
+        }
+        if let [root] = roots[..] {
+            let own = find(&mut parent, index);
+            parent[own] = root;
+        }
+    }
+
     let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
     for index in 0..players.len() {
         let root = find(&mut parent, index);
@@ -946,6 +984,7 @@ pub fn collapse_same_person_records(
             && crate::person_identity::fold_name(&player.full_name)
                 != crate::person_identity::fold_name(&player.match_name);
         (
+            player.team_id.is_some(),
             !evidence.pool_add_ids.contains(&player.id),
             (evidence.has_rating_override)(&player.id),
             evidence.overlay_op_ids.contains(&player.id),
@@ -1747,6 +1786,102 @@ mod tests {
         let ghost = born(player("ghost", "Lehends", None), "Son Si-woo", "");
         let mut players = vec![ghost, rostered];
         assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_free_agent_with_a_swapped_name_and_the_same_birth_date_collapses_into_the_contracted_record()
+     {
+        let contracted = born(
+            on_team(player("club", "Koldo", None), "es-t1"),
+            "Luis Perez Garcia",
+            "2000-11-07",
+        );
+        let free_agent = born(
+            player("fa", "Luis Perez Garcia", None),
+            "Koldo",
+            "2000-11-07",
+        );
+        let mut players = vec![free_agent, contracted];
+        let collapsed = collapse(&mut players, &[], &[], &[]);
+        assert_eq!(player_ids(&players), vec!["club"]);
+        assert_eq!(
+            collapsed,
+            vec![CollapsedDuplicate {
+                kept_id: "club".into(),
+                dropped_id: "fa".into()
+            }]
+        );
+    }
+
+    #[test]
+    fn the_contracted_record_survives_even_when_the_free_agent_has_the_rating_override() {
+        let contracted = born(
+            on_team(player("club", "Deadly", None), "t1"),
+            "Deadly",
+            "2006-08-19",
+        );
+        let free_agent = born(player("fa", "DeadlyMark", None), "Deadly", "2006-08-19");
+        let mut players = vec![free_agent, contracted];
+        collapse(&mut players, &["fa"], &[], &[]);
+        assert_eq!(player_ids(&players), vec!["club"]);
+    }
+
+    #[test]
+    fn a_free_agent_sharing_a_name_with_another_birth_date_stays() {
+        let contracted = born(
+            on_team(player("club", "Castle", None), "t1"),
+            "Cho Hyeon-seong",
+            "2002-10-08",
+        );
+        let free_agent = born(player("fa", "Castle", None), "Matthew Castle", "2002-08-20");
+        let mut players = vec![free_agent, contracted];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn the_placeholder_birth_date_never_collapses_a_free_agent() {
+        let contracted = born(
+            on_team(player("club", "Nick", None), "t1"),
+            "Real One",
+            "2002-01-01",
+        );
+        let free_agent = born(player("fa", "Nick", None), "Other Real", "2002-01-01");
+        let mut players = vec![free_agent, contracted];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn two_free_agents_with_one_birth_date_are_left_to_review() {
+        let a = born(
+            player("a", "Chapters", None),
+            "Leandro Paiano",
+            "2005-01-17",
+        );
+        let b = born(player("b", "KUMEW", None), "Leandro Paiano", "2005-01-17");
+        let mut players = vec![a, b];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_free_agent_that_fits_two_clubs_is_left_alone() {
+        let one = born(
+            on_team(player("one", "Legolas", None), "t1"),
+            "Sergio Vicente",
+            "2000-12-20",
+        );
+        let two = born(
+            on_team(player("two", "Legolas", None), "t2"),
+            "Sergio Vicente",
+            "2000-12-20",
+        );
+        let free_agent = born(
+            player("fa", "Legolas", None),
+            "Sergio Vicente",
+            "2000-12-20",
+        );
+        let mut players = vec![free_agent, one, two];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+        assert_eq!(players.len(), 3);
     }
 
     #[test]

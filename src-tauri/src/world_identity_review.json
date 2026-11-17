@@ -44,14 +44,6 @@
     },
     {
       "ids": [
-        "player-0c53c37a",
-        "player-7f89d2c9"
-      ],
-      "class": "S",
-      "reason": "swapped match and full names. WD2c same person (name-and-page): Sergio Vicente Gispert, ES, Bot; the page DOB 2000-12-20 equals 0c53c37a, so 7f89d2c9 (2000-11-16) is a month off. A different Legolas exist"
-    },
-    {
-      "ids": [
         "player-0e2bf9cf",
         "player-bcb2c72b"
       ],
@@ -180,14 +172,6 @@
     },
     {
       "ids": [
-        "player-75112581",
-        "player-7e91b310"
-      ],
-      "class": "U",
-      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
-    },
-    {
-      "ids": [
         "player-7e026f2b",
         "player-da3e51c1"
       ],
@@ -204,14 +188,6 @@
     },
     {
       "ids": [
-        "player-8130e9c4",
-        "player-8dd48146"
-      ],
-      "class": "S",
-      "reason": "swapped match and full names. WD2c same person (dob-and-name): Sergio Bouzende Rodrigues, Spain, Mid, 2003-07-30; both records have that DOB. The les record says nationality Portugal, the page says Spain"
-    },
-    {
-      "ids": [
         "player-81909fb4",
         "player-9ce42e7a"
       ],
@@ -225,14 +201,6 @@
       ],
       "class": "U",
       "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
-    },
-    {
-      "ids": [
-        "player-8f28a0b2",
-        "player-b7bba21b"
-      ],
-      "class": "S",
-      "reason": "swapped match and full names. WD2c same person (dob-and-name): Luis Pérez García, ES, Jungle, 2000-11-07 (UCAM Esports); both records carry that name and DOB (names swapped)."
     },
     {
       "ids": [

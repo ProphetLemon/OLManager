@@ -31,7 +31,7 @@ const REVIEW: &str = include_str!("world_identity_review.json");
 
 /// The most deferred pairs the review file may hold. Lower it when pairs are fixed; raising it
 /// needs a reviewed reason in the change that does so.
-const DEFERRED_CEILING: usize = 33;
+const DEFERRED_CEILING: usize = 29;
 
 /// Main clubs (the user's club apart) missing a lane at day 0, by the lane the club page shows.
 /// Re-measured after each change; a ratchet, so it only moves down.
@@ -268,6 +268,49 @@ fn no_free_agent_duplicates_a_contracted_player() {
         "{} free agent(s) duplicate a contracted player:{}",
         twins.len(),
         report(game, &twins)
+    );
+}
+
+/// The day the catalog uses when a birth date is unknown.
+const PLACEHOLDER_DOB: &str = "2002-01-01";
+
+#[test]
+fn no_free_agent_shares_a_name_and_a_real_birth_date_with_a_contracted_player() {
+    let game = world();
+    let placeholder = parse_dob(PLACEHOLDER_DOB);
+    let mut contracted: HashMap<(String, NaiveDate), Vec<&Player>> = HashMap::new();
+    for player in game.players.iter().filter(|p| p.team_id.is_some()) {
+        let Some(born) = parse_dob(&player.date_of_birth).filter(|d| Some(*d) != placeholder)
+        else {
+            continue;
+        };
+        for name in folded_names(player) {
+            contracted.entry((name, born)).or_default().push(player);
+        }
+    }
+    let twins: Vec<String> = game
+        .players
+        .iter()
+        .filter(|p| p.team_id.is_none())
+        .filter_map(|free_agent| {
+            let born = parse_dob(&free_agent.date_of_birth).filter(|d| Some(*d) != placeholder)?;
+            folded_names(free_agent)
+                .into_iter()
+                .find_map(|name| contracted.get(&(name, born)))
+                .map(|others| {
+                    format!(
+                        "{} ~ {}",
+                        describe(game, &free_agent.id),
+                        describe(game, &others[0].id)
+                    )
+                })
+        })
+        .collect();
+    assert!(
+        twins.is_empty(),
+        "{} free agent(s) share a name and a birth date with a contracted player:\n  {}",
+        twins.len(),
+        twins.join("\n  ")
     );
 }
 
