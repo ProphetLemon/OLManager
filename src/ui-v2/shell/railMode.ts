@@ -26,6 +26,8 @@ export const RAIL_STRUCTURAL_PARTS = {
   divider: 17,
   marketGap: 4,
   clusterChrome: 9,
+  /** Slack the spec's 50 px table keeps over the 42 px of real chrome. */
+  safetyMargin: 8,
 } as const;
 /** Content width the 960 px minimum window already leaves at root 16. */
 export const CONTENT_FLOOR_PX = 880;

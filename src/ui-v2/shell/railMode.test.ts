@@ -64,9 +64,10 @@ describe("the utility cluster", () => {
 });
 
 describe("the structural allowance", () => {
-  it("covers the px-fixed parts of the real layout, at every root", () => {
+  it("is exactly the itemised px-fixed parts, margin included, so a growing part is caught", () => {
     const parts = Object.values(RAIL_STRUCTURAL_PARTS).reduce((a, b) => a + b, 0);
-    expect(parts).toBeLessThanOrEqual(RAIL_STRUCTURAL_PX);
+    expect(parts).toBe(RAIL_STRUCTURAL_PX);
+    expect(RAIL_STRUCTURAL_PARTS.safetyMargin).toBe(8);
   });
 
   it("makes need at roots 18 and 20 the rows plus the constant allowance (the rows are the only rem part)", () => {
