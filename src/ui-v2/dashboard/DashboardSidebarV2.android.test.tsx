@@ -147,6 +147,17 @@ describe("Android More menu", () => {
     for (const item of items) expect(item.className).toContain("min-h-[var(--hit)]");
   });
 
+  it("shows the highlighted item with the rail's inset focus ring, not a wash alone", async () => {
+    setup();
+    const items = await openMore();
+    for (const item of items) {
+      for (const cls of ["data-[highlighted]:ring-[3px]", "data-[highlighted]:ring-inset", "data-[highlighted]:ring-ring"]) {
+        expect(item.className, cls).toContain(cls);
+      }
+      expect(item.className).toContain("data-[highlighted]:bg-muted"); // the wash stays as a second cue
+    }
+  });
+
   it("names the stop More and says it opens a menu", async () => {
     setup();
     expect(navId("util:more")).toHaveAccessibleName("More");

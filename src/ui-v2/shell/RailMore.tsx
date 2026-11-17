@@ -71,7 +71,7 @@ export function RailMore({ label, items, open, onOpenChange, active, tabIndex, b
                   key={id}
                   onClick={onSelect}
                   className={cn(
-                    "flex min-h-[var(--hit)] cursor-default items-center gap-3 rounded-md px-3 font-heading text-nav outline-none data-[highlighted]:bg-muted",
+                    "flex min-h-[var(--hit)] cursor-default items-center gap-3 rounded-md px-3 font-heading text-nav outline-none data-[highlighted]:bg-muted data-[highlighted]:ring-[3px] data-[highlighted]:ring-inset data-[highlighted]:ring-ring",
                     tone === "danger" ? "text-negative" : "text-popover-foreground data-[highlighted]:text-foreground",
                   )}
                 >
