@@ -75,12 +75,12 @@ export function RailItem({
         />
       )}
       <span className="relative inline-flex">
-        <Icon className="size-5 shrink-0" aria-hidden="true" />
+        <Icon className="size-[var(--nav-icon)] shrink-0" aria-hidden="true" />
         {count > 0 && (
           <span
             aria-hidden="true"
             data-slot="rail-item-badge"
-            className="absolute -top-1.5 -end-2.5 inline-flex min-w-4 items-center justify-center rounded-full bg-club px-1 font-heading text-xs leading-4 font-bold text-club-foreground tabular-nums"
+            className="absolute -top-1.5 -end-2.5 inline-flex min-w-4 items-center justify-center rounded-full bg-club px-1 font-heading text-nav leading-4 font-bold text-club-foreground tabular-nums"
           >
             {badgeText}
           </span>
@@ -89,7 +89,8 @@ export function RailItem({
       <span
         aria-hidden="true"
         className={cn(
-          "w-full truncate font-heading text-nav leading-4",
+          // Up to two balanced lines, hyphenated by the document language, never clipped (R12).
+          "w-full break-words font-heading text-nav leading-4 line-clamp-2 text-balance hyphens-auto",
           active ? "font-bold" : "font-medium",
           compact && "sr-only",
         )}

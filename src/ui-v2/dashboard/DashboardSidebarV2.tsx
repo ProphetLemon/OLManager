@@ -1,24 +1,22 @@
 import { useNavMemoryStore } from "@/store/navMemoryStore";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LogOut, Settings } from "lucide-react";
 
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
-import { RailItem } from "@/ui-v2/shell/RailItem";
+import { RailSplitPanel, RailSplitStops } from "@/ui-v2/shell/RailSplit";
 import { RailTree } from "@/ui-v2/shell/RailTree";
 import { RailCell, RailCluster } from "@/ui-v2/shell/RailUtility";
 import type { AttentionMap } from "@/ui-v2/shell/attention";
 import type { RailMode } from "@/ui-v2/shell/railMode";
-import { treeKeyAction, type TreeRow } from "@/ui-v2/shell/treeRows";
+import { equivalentRowId, treeKeyAction, type TreeRow } from "@/ui-v2/shell/treeRows";
 import {
   RAIL_DIRECT,
   RAIL_GROUPS,
   groupForTab,
   isGroupOpen,
-  railStopForTab,
   resolveGroupLanding,
-  type NavItem,
   type RailGroupId,
 } from "@/ui-v2/shell/navModel";
 import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
@@ -42,11 +40,11 @@ interface Props {
   staffCount?: number;
   /** Drops the visible labels; names stay available to assistive tech. */
   compact?: boolean;
-  /** Tree shows the Club tree in the rail; anything else is today's icon rail. */
+  /** Tree shows the Club tree in the rail; Split is the icon rail with a docked panel. */
   railMode?: RailMode;
   /** Measurements behind `railMode`, exposed as data attributes for QA. */
   railSlot?: { slotW: number; slotH: number; need: number };
-  /** What needs a call, per tab; drawn on the Tree rows. */
+  /** What needs a call, per tab; drawn on the Tree rows and the panel rows. */
   attention?: AttentionMap;
 }
 
@@ -107,86 +105,102 @@ export function DashboardSidebarV2({
     [isUnemployed],
   );
 
-  // Tree: the visible rows in DOM order, then the utility stops. Split: today's stops.
-  const treeRows: TreeRow[] = useMemo(() => {
-    if (!tree) return [];
-    const rows: TreeRow[] = RAIL_DIRECT.map((i) => ({
-      id: `tab:${i.tab}`,
-      kind: "leaf" as const,
-      level: 0 as const,
-      parentId: null,
-    }));
+  const panelGroup = useMemo(() => {
+    if (tree || compact) return null;
+    const id = groupForTab(activeTab);
+    return groups.find((g) => g.id === id) ?? null;
+  }, [tree, compact, activeTab, groups]);
+
+  // The visible rows in DOM order, with ids that mean the same in both modes
+  // (`tab:Squad`, `group:club`, `util:settings`) so focus can follow a flip.
+  const rows: TreeRow[] = useMemo(() => {
+    const out: TreeRow[] = [];
+    const rail = tree ? undefined : ("rail" as const);
+    for (const i of RAIL_DIRECT) {
+      out.push({ id: `tab:${i.tab}`, kind: "leaf", level: 0, parentId: null, column: rail });
+    }
     for (const g of groups) {
-      const open = isGroupOpen(openGroups, g.id);
-      rows.push({ id: `group:${g.id}`, kind: "header", level: 0, parentId: null, expanded: open });
-      if (open) {
-        for (const i of g.items) {
-          rows.push({ id: `tab:${i.tab}`, kind: "child", level: 1, parentId: `group:${g.id}` });
+      if (tree) {
+        const open = isGroupOpen(openGroups, g.id);
+        out.push({ id: `group:${g.id}`, kind: "header", level: 0, parentId: null, expanded: open });
+        if (open) {
+          for (const i of g.items) {
+            out.push({ id: `tab:${i.tab}`, kind: "child", level: 1, parentId: `group:${g.id}` });
+          }
         }
+      } else {
+        out.push({
+          id: `group:${g.id}`,
+          kind: "leaf",
+          level: 0,
+          parentId: null,
+          column: "rail",
+          hasPanel: panelGroup?.id === g.id,
+        });
       }
     }
     for (const u of ["bug", "settings", "exit", "manager"]) {
-      rows.push({ id: `util:${u}`, kind: "utility", level: 0, parentId: null });
+      out.push({ id: `util:${u}`, kind: "utility", level: 0, parentId: null, column: rail });
     }
-    return rows;
-  }, [tree, groups, openGroups]);
-
-  const splitStops: Stop[] = useMemo(
-    () => [
-      ...RAIL_DIRECT.map((item) => ({ id: item.tab, activate: () => onNavClick(item.tab) })),
-      ...groups.map((g) => ({
-        id: `group:${g.id}`,
-        activate: () => onNavClick(resolveGroupLanding(g.id, lastVisited)),
-      })),
-      { id: "settings", activate: onNavigateSettings },
-      { id: "exit", activate: onExitClick },
-      { id: "Manager", activate: () => onNavClick("Manager") },
-    ],
-    [groups, lastVisited, onNavClick, onNavigateSettings, onExitClick],
-  );
+    if (panelGroup) {
+      for (const i of panelGroup.items) {
+        out.push({
+          id: `tab:${i.tab}`,
+          kind: "child",
+          level: 1,
+          parentId: `group:${panelGroup.id}`,
+          column: "panel",
+          active: i.tab === activeTab,
+        });
+      }
+    }
+    return out;
+  }, [tree, groups, openGroups, panelGroup, activeTab]);
 
   const stops: Stop[] = useMemo(
     () =>
-      tree
-        ? treeRows.map((r) => {
-            const tab = r.id.startsWith("tab:") ? r.id.slice(4) : "";
-            if (r.id.startsWith("group:")) {
-              return { id: r.id, activate: () => toggleGroup(r.id.slice(6) as RailGroupId) };
-            }
-            if (r.id === "util:bug") return { id: r.id, activate: () => setBugOpen(true) };
-            if (r.id === "util:settings") return { id: r.id, activate: onNavigateSettings };
-            if (r.id === "util:exit") return { id: r.id, activate: onExitClick };
-            if (r.id === "util:manager") return { id: r.id, activate: () => onNavClick("Manager") };
-            return { id: r.id, activate: () => onNavClick(tab) };
-          })
-        : splitStops,
-    [tree, treeRows, splitStops, toggleGroup, onNavigateSettings, onExitClick, onNavClick],
+      rows.map((r) => {
+        if (r.id.startsWith("group:")) {
+          const id = r.id.slice("group:".length) as RailGroupId;
+          return {
+            id: r.id,
+            activate: tree ? () => toggleGroup(id) : () => onNavClick(resolveGroupLanding(id, lastVisited)),
+          };
+        }
+        if (r.id === "util:bug") return { id: r.id, activate: () => setBugOpen(true) };
+        if (r.id === "util:settings") return { id: r.id, activate: onNavigateSettings };
+        if (r.id === "util:exit") return { id: r.id, activate: onExitClick };
+        if (r.id === "util:manager") return { id: r.id, activate: () => onNavClick("Manager") };
+        return { id: r.id, activate: () => onNavClick(r.id.slice("tab:".length)) };
+      }),
+    [rows, tree, toggleGroup, lastVisited, onNavClick, onNavigateSettings, onExitClick],
   );
-  // Tree: the row the user last moved to wins until the active tab changes; else the
-  // active tab's row (its header while the group is collapsed).
+
+  // The row the user last moved to wins until the active tab changes; else the active tab's
+  // row: its header while a Tree group is collapsed, its launcher in Split.
   const [roving, setRoving] = useState<{ tab: string; id: string | null }>({ tab: activeTab, id: null });
   if (roving.tab !== activeTab) setRoving({ tab: activeTab, id: null });
-  const treeActiveId = (() => {
+  const activeRowId = (() => {
     if (activeTab === "Manager") return "util:manager";
     const g = groupForTab(activeTab);
-    if (g && !isGroupOpen(openGroups, g)) return `group:${g}`;
-    return `tab:${activeTab}`;
+    if (!g) return `tab:${activeTab}`;
+    if (!groups.some((x) => x.id === g)) return "";
+    return tree && isGroupOpen(openGroups, g) ? `tab:${activeTab}` : `group:${g}`;
   })();
-  const treeCurrentId =
-    roving.id && stops.some((s) => s.id === roving.id) ? roving.id : treeActiveId;
-
-  const currentStopId = tree
-    ? treeCurrentId
-    : activeTab === "Manager"
-      ? "Manager"
-      : railStopForTab(activeTab);
-  const controlledIndex = stops.findIndex((s) => s.id === currentStopId);
+  // A remembered row survives a flip when it still exists or has a group stop to stand in for it.
+  const remembered = (() => {
+    if (!roving.id) return null;
+    const eq = equivalentRowId(rows, roving.id);
+    return eq === roving.id || (roving.id.startsWith("tab:") && eq?.startsWith("group:")) ? eq : null;
+  })();
+  const currentRowId = remembered ?? activeRowId;
+  const controlledIndex = stops.findIndex((s) => s.id === currentRowId);
 
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const stopsRef = useRef(stops);
   stopsRef.current = stops;
-  // Tree keymap, kept in a ref because it needs `setActiveIndex` from the hook it feeds.
-  const treeKeyRef = useRef<(e: React.KeyboardEvent, i: number) => boolean>(() => false);
+  // The keymap needs `setActiveIndex` from the hook it feeds, so it lives in a ref.
+  const keymapRef = useRef<(e: React.KeyboardEvent, i: number) => boolean>(() => false);
   const { activeIndex, shouldFocus, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({
     itemCount: stops.length,
     columns: 1,
@@ -198,17 +212,16 @@ export function DashboardSidebarV2({
       const el = itemRefs.current[stops[i]?.id ?? ""];
       return el?.title || el?.getAttribute("aria-label") || "";
     },
-    onKey: (e, i) => treeKeyRef.current(e, i),
+    onKey: (e, i) => keymapRef.current(e, i),
   });
 
-  treeKeyRef.current = (e, roving) => {
-    if (!tree) return false;
+  keymapRef.current = (e, roving) => {
     // The row that has focus is the one that acts, whatever the roving state says yet.
     const focused = stopIndexOf(e.target);
     const i = focused >= 0 ? focused : roving;
     // Browser and OS shortcuts (Alt+Left = back) are not ours: skip the roving default too.
     if (e.altKey || e.ctrlKey || e.metaKey) return true;
-    const action = treeKeyAction(treeRows, i, e.key, "tree");
+    const action = treeKeyAction(rows, i, e.key, tree ? "tree" : "split");
     const arrow = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key);
     switch (action.type) {
       case "move":
@@ -239,8 +252,8 @@ export function DashboardSidebarV2({
     itemRefs.current[stopsRef.current[activeIndex]?.id ?? ""]?.focus();
   }, [shouldFocus, activeIndex]);
 
-  // Only keys pressed on a roving stop drive the widget. The bug button and its modal
-  // (a React descendant of the nav) keep their own Enter, Space and typing.
+  // Only keys pressed on a roving stop drive the widget. The modals a stop opens (a React
+  // descendant of the nav) keep their own Enter, Space and typing.
   const stopIndexOf = (target: EventTarget) =>
     stops.findIndex((s) => itemRefs.current[s.id] === target);
 
@@ -251,13 +264,40 @@ export function DashboardSidebarV2({
   // Focus can land on a stop without the roving index moving (a click, Tab after a
   // cancelled confirm). Enter and Space act on the roving index, so keep it on the
   // focused stop, and keep that stop visible inside the scrolling area.
+  const navRef = useRef<HTMLElement | null>(null);
+  const focusInside = useRef(false);
   const onNavFocus = (e: React.FocusEvent) => {
+    focusInside.current = true;
     const i = stopIndexOf(e.target);
     if (i < 0) return;
     if (i !== activeIndex) setActiveIndex(i);
-    if (tree) setRoving({ tab: activeTab, id: stops[i].id });
+    setRoving({ tab: activeTab, id: stops[i].id });
     (e.target as HTMLElement).scrollIntoView?.({ block: "nearest" });
   };
+  const onNavBlur = (e: React.FocusEvent) => {
+    const to = e.relatedTarget;
+    if (to instanceof Node && !navRef.current?.contains(to)) focusInside.current = false;
+  };
+  useEffect(() => {
+    // A press outside the rail ends "focus was in the rail"; removal of a focused row does not blur.
+    const onPress = (e: Event) => {
+      if (e.target instanceof Node && !navRef.current?.contains(e.target)) focusInside.current = false;
+    };
+    document.addEventListener("pointerdown", onPress, true);
+    return () => document.removeEventListener("pointerdown", onPress, true);
+  }, []);
+
+  // A flip between Tree and Split unmounts the focused row. When focus was in the rail, put
+  // it back on the row with the same id, or its nearest equivalent, instead of dropping to <body>.
+  const prevTree = useRef(tree);
+  useLayoutEffect(() => {
+    if (prevTree.current === tree) return;
+    prevTree.current = tree;
+    const active = document.activeElement;
+    const lost = !active || active === document.body || !navRef.current?.contains(active);
+    if (!focusInside.current || !lost) return;
+    itemRefs.current[currentRowId]?.focus();
+  }, [tree, currentRowId]);
 
   // Fade cues that only show while the stops area has more content past an edge.
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -279,7 +319,7 @@ export function DashboardSidebarV2({
       window.removeEventListener("resize", measure);
       observer?.disconnect();
     };
-  }, [measure, stops.length]);
+  }, [measure, stops.length, tree]);
   const fadeMask = `linear-gradient(to bottom, ${overflow.top ? "transparent 0, #000 1.5rem" : "#000 0"}, ${
     overflow.bottom ? "#000 calc(100% - 1.5rem), transparent 100%" : "#000 100%"
   })`;
@@ -294,13 +334,86 @@ export function DashboardSidebarV2({
 
   const labelOf = (item: { labelKey: string; defaultLabel: string }) =>
     t(item.labelKey, { defaultValue: item.defaultLabel });
-  const badgeOf = (item: NavItem) => (item.badge ? badges[item.badge] : undefined);
-
-  const hintOf = (g: { items: { labelKey: string; defaultLabel: string }[] }) =>
-    g.items.map(labelOf).join(", ");
-  const groupBadge = (id: RailGroupId) => (id === "market" ? badges.offers : undefined);
+  const listLabel = (group: string) => t("onAir.nav.strip", { group, defaultValue: "{{group}} sections" });
+  const attentionName = (label: string, count: number) =>
+    t("onAir.nav.needsCall", {
+      label,
+      count,
+      defaultValue_one: "{{label}}, needs your call",
+      defaultValue_other: "{{label}}, {{count}} need your call",
+    });
   const managerLabel = t("onAir.nav.manager", { defaultValue: "Manager profile" });
   const initials = Array.from((managerName ?? "").trim()).slice(0, 2).join("").toUpperCase();
+
+  const scroller = (children: React.ReactNode) => (
+    <div
+      ref={scrollerRef}
+      data-slot="rail-stops"
+      data-overflow-top={overflow.top ? "true" : undefined}
+      data-overflow-bottom={overflow.bottom ? "true" : undefined}
+      onScroll={measure}
+      style={{ maskImage: fadeMask, WebkitMaskImage: fadeMask }}
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {children}
+    </div>
+  );
+
+  const cluster = (
+    <RailCluster stacked={!tree}>
+      <FloatingBugButton
+        variant="cell"
+        open={bugOpen}
+        onOpenChange={setBugOpen}
+        data-nav-id="util:bug"
+        {...itemProps("util:bug")}
+      />
+      <RailCell
+        navId="util:settings"
+        icon={Settings}
+        label={t("dashboard.settings", { defaultValue: "Settings" })}
+        onClick={onNavigateSettings}
+        {...itemProps("util:settings")}
+      />
+      <RailCell
+        navId="util:exit"
+        icon={LogOut}
+        tone="danger"
+        label={t("dashboard.exitToMenu", { defaultValue: "Exit" })}
+        onClick={onExitClick}
+        {...itemProps("util:exit")}
+      />
+      <RailCell
+        navId="util:manager"
+        label={managerName ? `${managerLabel}, ${managerName}` : managerLabel}
+        tip={managerFullName ?? managerName ?? managerLabel}
+        current={activeTab === "Manager"}
+        onClick={() => onNavClick("Manager")}
+        {...itemProps("util:manager")}
+      >
+        {managerAvatar ? (
+          <img
+            src={managerAvatar}
+            alt=""
+            className={cn(
+              "size-7 rounded-full object-cover ring-2",
+              activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
+            )}
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "flex size-7 items-center justify-center rounded-full bg-muted font-heading text-nav font-bold text-foreground ring-2",
+              activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
+            )}
+          >
+            {initials}
+          </span>
+        )}
+      </RailCell>
+    </RailCluster>
+  );
 
   return (
     <aside
@@ -309,194 +422,74 @@ export function DashboardSidebarV2({
       data-rail-slot-h={railSlot?.slotH}
       data-rail-need={railSlot?.need}
       className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col border-e border-line bg-rail text-sidebar-foreground",
-        tree ? "w-[var(--rail-w-tree)]" : compact ? "w-14" : "w-[4.75rem]",
+        "flex h-full min-h-0 shrink-0 border-e border-line bg-rail text-sidebar-foreground",
+        tree && "w-[var(--rail-w-tree)]",
       )}
     >
       <nav
+        ref={navRef}
         aria-label={t("onAir.nav.rail", { defaultValue: "Main navigation" })}
-        className="flex min-h-0 flex-1 flex-col"
+        className={cn("flex min-h-0 flex-1", tree && "flex-col")}
         onKeyDown={onNavKeyDown}
         onFocus={onNavFocus}
+        onBlur={onNavBlur}
       >
-        <div
-          ref={scrollerRef}
-          data-slot="rail-stops"
-          data-overflow-top={overflow.top ? "true" : undefined}
-          data-overflow-bottom={overflow.bottom ? "true" : undefined}
-          onScroll={measure}
-          style={{ maskImage: fadeMask, WebkitMaskImage: fadeMask }}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {tree ? (
-            <RailTree
-              activeTab={activeTab}
-              groups={groups}
-              openGroups={openGroups}
-              badges={badges}
-              labelOf={labelOf}
-              listLabel={(group) =>
-                t("onAir.nav.strip", { group, defaultValue: "{{group}} sections" })
-              }
-              attention={attention}
-              attentionName={(label, count) =>
-                t("onAir.nav.needsCall", {
-                  label,
-                  count,
-                  defaultValue_one: "{{label}}, needs your call",
-                  defaultValue_other: "{{label}}, {{count}} need your call",
-                })
-              }
-              onNavClick={onNavClick}
-              onToggleGroup={toggleGroup}
-              handle={itemProps}
-            />
-          ) : (
-            <>
-          {RAIL_DIRECT.map((item) => (
-            <RailItem
-              key={item.tab}
-              icon={item.icon}
-              label={labelOf(item)}
-              active={activeTab === item.tab}
-              badge={badgeOf(item)}
-              compact={compact}
-              onClick={() => onNavClick(item.tab)}
-              {...itemProps(item.tab)}
-            />
-          ))}
-          <div role="separator" className="mx-3 my-1.5 border-t border-line" />
-          {groups.map((g) => (
-            <RailItem
-              key={g.id}
-              icon={g.icon}
-              label={labelOf(g)}
-              hint={hintOf(g)}
-              active={groupForTab(activeTab) === g.id}
-              badge={groupBadge(g.id)}
-              compact={compact}
-              onClick={() => onNavClick(resolveGroupLanding(g.id, lastVisited))}
-              {...itemProps(`group:${g.id}`)}
-            />
-          ))}
-            </>
-          )}
-        </div>
-
         {tree ? (
-          <RailCluster>
-            <FloatingBugButton
-              variant="cell"
-              open={bugOpen}
-              onOpenChange={setBugOpen}
-              data-nav-id="util:bug"
-              {...itemProps("util:bug")}
-            />
-            <RailCell
-              navId="util:settings"
-              icon={Settings}
-              label={t("dashboard.settings", { defaultValue: "Settings" })}
-              onClick={onNavigateSettings}
-              {...itemProps("util:settings")}
-            />
-            <RailCell
-              navId="util:exit"
-              icon={LogOut}
-              tone="danger"
-              label={t("dashboard.exitToMenu", { defaultValue: "Exit" })}
-              onClick={onExitClick}
-              {...itemProps("util:exit")}
-            />
-            <RailCell
-              navId="util:manager"
-              label={managerName ? `${managerLabel}, ${managerName}` : managerLabel}
-              tip={managerFullName ?? managerName ?? managerLabel}
-              current={activeTab === "Manager"}
-              onClick={() => onNavClick("Manager")}
-              {...itemProps("util:manager")}
-            >
-              {managerAvatar ? (
-                <img
-                  src={managerAvatar}
-                  alt=""
-                  className={cn(
-                    "size-7 rounded-full object-cover ring-2",
-                    activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
-                  )}
-                />
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex size-7 items-center justify-center rounded-full bg-muted font-heading text-nav font-bold text-foreground ring-2",
-                    activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
-                  )}
-                >
-                  {initials}
-                </span>
-              )}
-            </RailCell>
-          </RailCluster>
-        ) : (
-        <div
-          data-slot="rail-pinned"
-          className="flex shrink-0 flex-col items-stretch border-t border-line py-1"
-        >
-          <div className="flex justify-center">
-            <FloatingBugButton />
-          </div>
-          <RailItem
-            icon={Settings}
-            label={t("dashboard.settings", { defaultValue: "Settings" })}
-            compact={compact}
-            onClick={onNavigateSettings}
-            data-nav-id="util:settings"
-            {...itemProps(tree ? "util:settings" : "settings")}
-          />
-          <RailItem
-            icon={LogOut}
-            label={t("dashboard.exitToMenu", { defaultValue: "Exit" })}
-            tone="danger"
-            compact={compact}
-            onClick={onExitClick}
-            data-nav-id="util:exit"
-            {...itemProps(tree ? "util:exit" : "exit")}
-          />
-          <button
-            type="button"
-            onClick={() => onNavClick("Manager")}
-            aria-label={managerName ? `${managerLabel}, ${managerName}` : managerLabel}
-            aria-current={activeTab === "Manager" ? "page" : undefined}
-            title={managerFullName ?? managerName ?? managerLabel}
-            data-nav-id="util:manager"
-            {...{ tabIndex: getTabIndex(indexOf(tree ? "util:manager" : "Manager")) }}
-            ref={(el) => {
-              itemRefs.current[tree ? "util:manager" : "Manager"] = el;
-            }}
-            className="mx-auto my-1 flex size-[var(--hit)] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
-          >
-            {managerAvatar ? (
-              <img
-                src={managerAvatar}
-                alt=""
-                className={cn(
-                  "size-9 rounded-full object-cover ring-2",
-                  activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
-                )}
-              />
-            ) : (
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "flex size-9 items-center justify-center rounded-full bg-muted font-heading text-xs font-bold text-foreground ring-2",
-                  activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
-                )}
-              >
-                {initials}
-              </span>
+          <>
+            {scroller(
+              <RailTree
+                activeTab={activeTab}
+                groups={groups}
+                openGroups={openGroups}
+                badges={badges}
+                labelOf={labelOf}
+                listLabel={listLabel}
+                attention={attention}
+                attentionName={attentionName}
+                onNavClick={onNavClick}
+                onToggleGroup={toggleGroup}
+                handle={itemProps}
+              />,
             )}
-          </button>
-        </div>
+            {cluster}
+          </>
+        ) : (
+          <>
+            <div
+              data-slot="rail-column"
+              className={cn(
+                "flex min-h-0 shrink-0 flex-col",
+                compact ? "w-[var(--rail-w-compact)]" : "w-[var(--rail-w-split)]",
+              )}
+            >
+              {scroller(
+                <RailSplitStops
+                  activeTab={activeTab}
+                  groups={groups}
+                  badges={badges}
+                  labelOf={labelOf}
+                  compact={compact}
+                  lastVisited={lastVisited}
+                  onNavClick={onNavClick}
+                  handle={itemProps}
+                />,
+              )}
+              {cluster}
+            </div>
+            {panelGroup && (
+              <RailSplitPanel
+                group={panelGroup}
+                activeTab={activeTab}
+                badges={badges}
+                labelOf={labelOf}
+                listLabel={listLabel}
+                attention={attention}
+                attentionName={attentionName}
+                onNavClick={onNavClick}
+                handle={itemProps}
+              />
+            )}
+          </>
         )}
       </nav>
     </aside>

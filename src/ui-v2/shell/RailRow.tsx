@@ -3,7 +3,7 @@ import type { Ref } from "react";
 
 import { cn } from "@/ui-v2/lib/utils";
 
-export type RailRowKind = "leaf" | "header" | "child";
+export type RailRowKind = "leaf" | "header" | "child" | "panel";
 
 interface RailRowProps {
   kind: RailRowKind;
@@ -76,7 +76,9 @@ export function RailRow({
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring",
         kind === "child"
           ? "h-[var(--nav-row-child)] ps-[var(--nav-indent)]"
-          : "h-[var(--nav-row)] ps-3",
+          : kind === "panel"
+            ? "min-h-[var(--nav-row-child)] py-[2px] ps-3"
+            : "h-[var(--nav-row)] ps-3",
         active
           ? "bg-[color-mix(in_srgb,var(--club)_16%,transparent)] text-foreground [[data-contrast=high]_&]:data-[active=true]:outline-2 [[data-contrast=high]_&]:data-[active=true]:-outline-offset-2 [[data-contrast=high]_&]:data-[active=true]:outline-solid [[data-contrast=high]_&]:data-[active=true]:outline-club-text"
           : activeWithin
@@ -94,7 +96,10 @@ export function RailRow({
       {Icon && <Icon className="size-[var(--nav-icon)] shrink-0" aria-hidden="true" />}
       <span
         aria-hidden="true"
-        className="min-w-0 flex-1 truncate font-heading text-nav leading-4"
+        className={cn(
+          "min-w-0 flex-1 font-heading text-nav leading-4",
+          kind === "panel" ? "line-clamp-2 break-words hyphens-auto" : "truncate",
+        )}
       >
         {label}
       </span>

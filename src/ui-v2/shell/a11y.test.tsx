@@ -61,6 +61,7 @@ function renderShell() {
         badges={BADGES}
         callCount={2}
         onShowCalls={vi.fn()}
+        stripVisible={false}
       />
     </div>,
   );
@@ -95,23 +96,24 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
     expect(new Set(labels).size).toBe(labels.length);
   });
 
-  it("marks one current rail stop and one current strip tab, never by colour alone", () => {
+  it("marks the current launcher and its panel tab, one per list, never by colour alone", () => {
     renderShell();
     const rail = screen.getByRole("navigation", { name: "Main navigation" });
-    const current = rail.querySelectorAll('[aria-current="page"]');
-    expect(current).toHaveLength(1);
-    expect(current[0]).toHaveAccessibleName(/^Club/);
-    const strip = screen.getByRole("navigation", { name: /Club/i, hidden: false });
-    expect(strip).not.toBe(rail);
-    const active = within(strip).getAllByRole("button").filter((b) => b.hasAttribute("aria-current"));
-    expect(active).toHaveLength(1);
+    const panel = within(rail).getByRole("group", { name: /Club/i });
+    const inPanel = panel.querySelectorAll('[aria-current="page"]');
+    expect(inPanel).toHaveLength(1);
+    expect(inPanel[0]).toHaveAccessibleName("Squad");
+    const outside = [...rail.querySelectorAll('[aria-current="page"]')].filter((el) => !panel.contains(el));
+    expect(outside).toHaveLength(1);
+    expect(outside[0]).toHaveAccessibleName(/^Club/);
+    expect(inPanel[0].querySelector('[data-slot="rail-item-bar"]')).not.toBeNull();
   });
 
   it("uses no positive tabindex and one tab stop per roving widget", () => {
     const { container } = renderShell();
     expect(container.querySelector('[tabindex]:not([tabindex="0"]):not([tabindex="-1"])')).toBeNull();
     const rail = screen.getByRole("navigation", { name: "Main navigation" });
-    const stops = rail.querySelectorAll('[data-slot="rail-stops"] button[tabindex="0"], [data-slot="rail-pinned"] button[tabindex="0"]');
+    const stops = rail.querySelectorAll('button[tabindex="0"]');
     expect(stops).toHaveLength(1);
   });
 

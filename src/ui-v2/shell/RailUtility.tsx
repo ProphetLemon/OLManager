@@ -20,12 +20,15 @@ export function railCellClass(tone: "default" | "danger" = "default"): string {
   );
 }
 
-/** The pinned utility cluster: its cells share one grid row under the scrolling rows. */
-export function RailCluster({ children }: { children: ReactNode }) {
+/**
+ * The pinned utility cluster. In Tree its cells share one grid row; `stacked` (Split's narrow
+ * rail) puts them in one column.
+ */
+export function RailCluster({ children, stacked = false }: { children: ReactNode; stacked?: boolean }) {
   return (
     <div
       data-slot="rail-cluster"
-      style={{ gridTemplateColumns: `repeat(${RAIL_CLUSTER_COLUMNS}, minmax(0, 1fr))` }}
+      style={{ gridTemplateColumns: `repeat(${stacked ? 1 : RAIL_CLUSTER_COLUMNS}, minmax(0, 1fr))` }}
       className="grid shrink-0 gap-0 border-t border-line px-[6px] py-[4px]"
     >
       {children}
