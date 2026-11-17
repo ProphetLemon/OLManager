@@ -21,7 +21,7 @@ use olm_core::generator::definitions::CompetitionManifest;
 use olm_core::roster_stability;
 use olm_core::world_catalog;
 use olm_core::state::StateManager;
-use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
+use olm_core::world_overlay::{OverlayApplyReport, PlayerOp, WorldOverlay, apply_world_overlay};
 
 use crate::SaveManagerState;
 
@@ -217,7 +217,58 @@ fn assemble_base_world(
             game_setup::apply_default_market_values(&mut game.players);
         }
     }
+    collapse_same_person_records(game, inputs.overlay, rating_overrides);
     Ok(())
+}
+
+/// Leave one record of every person a new world holds twice (same club and a shared name, or
+/// the overlay's pool add of a person a club already holds). It runs once the overlay is
+/// applied and before the roster fill, so the fill sees one record per person. Every loser is
+/// tombstoned: the catalog rehydration appends each catalog id a save lacks, and would bring
+/// the twin back. A loser that was moved by the overlay hands its protection to the survivor.
+fn collapse_same_person_records(
+    game: &mut Game,
+    overlay: Option<&WorldOverlay>,
+    rating_overrides: &PlayerRatingOverrides,
+) {
+    let overlay_op_ids: HashSet<String> = overlay
+        .map(|overlay| {
+            overlay
+                .players
+                .iter()
+                .filter_map(|op| match op {
+                    PlayerOp::Move { id, .. } => Some(id.clone()),
+                    PlayerOp::Add { player, .. } => Some(player.id.clone()),
+                    PlayerOp::Retire { .. } => None,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let pool_add_ids = overlay
+        .map(WorldOverlay::teamless_added_player_ids)
+        .unwrap_or_default();
+    let has_rating_override = |id: &str| rating_overrides.entry(id).is_some();
+    let collapsed = world_catalog::collapse_same_person_records(
+        &mut game.players,
+        &world_catalog::CollapseEvidence {
+            has_rating_override: &has_rating_override,
+            overlay_op_ids: &overlay_op_ids,
+            pool_add_ids: &pool_add_ids,
+        },
+    );
+    for duplicate in &collapsed {
+        info!(
+            "[game] player {} is the same person as {}: dropped",
+            duplicate.dropped_id, duplicate.kept_id
+        );
+        if !game.retired_player_ids.contains(&duplicate.dropped_id) {
+            game.retired_player_ids.push(duplicate.dropped_id.clone());
+        }
+        if game.moved_player_ids.contains(&duplicate.dropped_id) {
+            game.moved_player_ids.insert(duplicate.kept_id.clone());
+        }
+    }
+    info!("[game] collapsed {} duplicate records of one person", collapsed.len());
 }
 
 /// Install the custom club and return the new club's id: it replaces

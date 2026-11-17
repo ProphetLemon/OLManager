@@ -27,14 +27,6 @@
   "deferred": [
     {
       "ids": [
-        "player-067b9a1f",
-        "player-a15fa653"
-      ],
-      "class": "B/F",
-      "reason": "same club twice. pending: the same-club collapse in the next change removes it"
-    },
-    {
-      "ids": [
         "player-06a2fd60",
         "player-5ebe8018"
       ],
@@ -75,22 +67,6 @@
     },
     {
       "ids": [
-        "player-18c8d682",
-        "player-e6070e34"
-      ],
-      "class": "S",
-      "reason": "swapped match and full names. WD2c same person (dob-and-name): Dario Betancourt, Mexico, 1997-06-05 on both records and the page (Leaguepedia role now Coach; both records say Support)."
-    },
-    {
-      "ids": [
-        "player-20d7dc63",
-        "player-41280e7d"
-      ],
-      "class": "B/F",
-      "reason": "same club twice. pending: the same-club collapse in the next change removes it"
-    },
-    {
-      "ids": [
         "player-2413186e",
         "player-7e6099ca"
       ],
@@ -115,27 +91,11 @@
     },
     {
       "ids": [
-        "player-2ba313af",
-        "player-cea7803b"
-      ],
-      "class": "B/F",
-      "reason": "same club twice. pending: the same-club collapse in the next change removes it"
-    },
-    {
-      "ids": [
         "player-2f6c69cc",
         "player-a4698d92"
       ],
       "class": "U",
       "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
-    },
-    {
-      "ids": [
-        "player-35e757a5",
-        "player-6f539319"
-      ],
-      "class": "S",
-      "reason": "swapped match and full names. WD2c same person (dob-and-name): Pau Vintró Nogué, Spain, Mid, 2004-09-22 on both records and the page."
     },
     {
       "ids": [
@@ -187,14 +147,6 @@
     },
     {
       "ids": [
-        "player-6285401f",
-        "player-988c0230"
-      ],
-      "class": "S",
-      "reason": "swapped match and full names. WD2c same person (name): Joel Rodríguez Pérez, Spain, Support; names swapped. Leaguepedia has no birth date: 2003-05-14 (overlay add) and 2002-01-01 (les) cannot be "
-    },
-    {
-      "ids": [
         "player-63cb1341",
         "player-b5bcba20"
       ],
@@ -227,27 +179,11 @@
     },
     {
       "ids": [
-        "player-723229ff",
-        "player-a3298211"
-      ],
-      "class": "S",
-      "reason": "swapped match and full names. WD2c same person (name-and-page): Antero Trindade Baldaia, Portugal, Top, 2003-09-20 equals the overlay add; the les record 2000-01-01 is a placeholder. The overlay add keeps"
-    },
-    {
-      "ids": [
         "player-75112581",
         "player-7e91b310"
       ],
       "class": "U",
       "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
-    },
-    {
-      "ids": [
-        "player-776a86c8",
-        "player-ae7ddfdc"
-      ],
-      "class": "S",
-      "reason": "swapped match and full names. WD2c same person (name-and-page): Lukas Thoma, Germany, Jungle, 1999-06-07 equals the overlay add; the les record has no DOB."
     },
     {
       "ids": [
@@ -344,14 +280,6 @@
       ],
       "class": "U",
       "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
-    },
-    {
-      "ids": [
-        "player-d9d06923",
-        "player-e340e76a"
-      ],
-      "class": "B/F",
-      "reason": "same club twice. pending: the same-club collapse in the next change removes it"
     },
     {
       "ids": [

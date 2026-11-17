@@ -20,7 +20,7 @@ use olm_core::domain::player::Player;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::TeamKind;
 use olm_core::game::Game;
-use olm_core::person_identity::{folded_names, folded_real_names, has_all_attributes_zero};
+use olm_core::person_identity::{fold_name, folded_names, folded_real_names, has_all_attributes_zero};
 use olm_core::world_overlay::bundled_world_overlay;
 use serde::Deserialize;
 
@@ -31,7 +31,7 @@ const REVIEW: &str = include_str!("world_identity_review.json");
 
 /// The most deferred pairs the review file may hold. Lower it when pairs are fixed; raising it
 /// needs a reviewed reason in the change that does so.
-const DEFERRED_CEILING: usize = 42;
+const DEFERRED_CEILING: usize = 33;
 
 /// Main clubs (the user's club apart) missing a lane at day 0, by the lane the club page shows.
 /// Re-measured after each change; a ratchet, so it only moves down.
@@ -357,5 +357,51 @@ fn clubs_missing_a_lane_only_go_down() {
         ROLE_GAP_CLUBS,
         "fewer clubs miss a lane: lower ROLE_GAP_CLUBS to {} ({gaps:?})",
         gaps.len()
+    );
+}
+
+/// Ace is one person written three times (the Spanish stub and the merged catalog record on
+/// one club, and the overlay's pool add): exactly one record survives, the catalog record.
+#[test]
+fn ace_is_one_person_and_the_merged_catalog_record_survives() {
+    let game = world();
+    let aces: Vec<&str> = game
+        .players
+        .iter()
+        .filter(|p| fold_name(&p.full_name) == "ignaciodavidpiaggio")
+        .map(|p| p.id.as_str())
+        .collect();
+    assert_eq!(aces, vec!["player-cea7803b"]);
+    let stubs = game.players.iter().filter(|p| p.id == "player-2ba313af").count();
+    assert_eq!(stubs, 0, "the Spanish stub is gone");
+}
+
+/// A collapsed record that is not tombstoned comes back on the next load, when the catalog
+/// rehydration appends every id the save lacks.
+#[test]
+fn collapsed_same_club_records_are_tombstoned_and_the_moved_survivor_stays_protected() {
+    let game = world();
+    let retired: BTreeSet<&str> = game.retired_player_ids.iter().map(String::as_str).collect();
+    for loser in [
+        "player-2ba313af", // Ace, the stub
+        "player-5236c06a", // Ace, the pool add
+        "player-e340e76a", // Samkz, the cd stub
+        "player-067b9a1f", // Kaii, the les record
+        "player-20d7dc63", // Sankaizer, the stub
+        "player-e6070e34", // BetaTwinz, the pool add
+        "player-6f539319", // Pauporter, the pool add
+        "player-988c0230", // Kellie, the pool add
+        "player-723229ff", // Papiteero, the pool add
+        "player-776a86c8", // Lurox, the pool add
+    ] {
+        assert!(retired.contains(loser), "{loser} is not tombstoned");
+        assert!(
+            game.players.iter().all(|p| p.id != loser),
+            "{loser} is still in the world"
+        );
+    }
+    assert!(
+        game.moved_player_ids.contains("player-d9d06923"),
+        "the moved Samkz keeps its protection"
     );
 }
