@@ -2258,6 +2258,38 @@ fn ai_agent_purchase_signs_nobody_when_every_candidate_is_a_twin() {
 }
 
 #[test]
+fn ai_agent_purchase_moves_past_several_twins_on_top_to_the_first_valid_free_agent() {
+    let mut players = vec![make_free_agent("valid-adc", LolRole::Adc)];
+    for (n, nick) in ["Koldo", "Macaquinho", "Legolas"].into_iter().enumerate() {
+        let mut contracted = make_free_agent(&format!("contracted-{n}"), LolRole::Adc);
+        contracted.match_name = nick.to_string();
+        contracted.full_name = format!("Real Name {n}");
+        contracted.date_of_birth = format!("200{n}-05-05");
+        contracted.team_id = Some("team-other".to_string());
+        contracted.contract_end = Some("2027-11-30".to_string());
+        let mut twin = make_free_agent(&format!("twin-{n}"), LolRole::Adc);
+        twin.match_name = format!("Real Name {n}");
+        twin.full_name = nick.to_string();
+        twin.date_of_birth = format!("200{n}-05-05");
+        twin.market_value = 900_000 + n as u64 * 100_000;
+        players.push(contracted);
+        players.push(twin);
+    }
+    let mut game = make_game_with_free_agents(players);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+    assert!((0..3).all(|n| team_of(&format!("twin-{n}")).is_none()));
+}
+
+#[test]
 fn ai_agent_purchase_respects_daily_cap() {
     let free_agents = vec![
         make_free_agent("fa-cap-1", LolRole::Top),
