@@ -17,23 +17,23 @@ const ANCHOR: NaiveDate = match NaiveDate::from_ymd_opt(2027, 1, 1) {
 /// drawn from it. Only ages 15 to 40 count: one record ships a birth date in 2023, a data
 /// error, and nobody else is under 17 or over 35.
 const AGE_COUNTS: [(u32, u32); 19] = [
-    (17, 2),
+    (17, 3),
     (18, 17),
-    (19, 49),
+    (19, 48),
     (20, 72),
     (21, 115),
     (22, 143),
-    (23, 161),
+    (23, 163),
     (24, 154),
     (25, 122),
     (26, 128),
-    (27, 77),
+    (27, 76),
     (28, 59),
     (29, 25),
     (30, 11),
     (31, 9),
     (32, 4),
-    (33, 5),
+    (33, 4),
     (34, 1),
     (35, 1),
 ];
