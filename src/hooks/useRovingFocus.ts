@@ -18,6 +18,11 @@ interface RovingFocusOptions {
   focusOnMount?: boolean;
   /** "horizontal" maps Left/Right only; "vertical" (default) keeps Up/Down by `columns`. */
   orientation?: "vertical" | "horizontal";
+  /**
+   * Evaluated before the default key handling, with the current index. Return true to
+   * say the key was handled: the default move (and type-ahead) is then skipped.
+   */
+  onKey?: (e: React.KeyboardEvent, index: number) => boolean;
 }
 
 interface RovingFocusResult {
@@ -42,6 +47,7 @@ export function useRovingFocus({
   index,
   focusOnMount = true,
   orientation = "vertical",
+  onKey,
 }: RovingFocusOptions): RovingFocusResult {
   const [rawIndex, setActiveIndexState] = useState(index ?? initialIndex);
   // True only while the latest index change came from the user inside the widget.
@@ -103,6 +109,7 @@ export function useRovingFocus({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (itemCount === 0) return;
+      if (onKey?.(e, activeIndex)) return;
 
       switch (e.key) {
         case "ArrowDown":
@@ -161,7 +168,7 @@ export function useRovingFocus({
           break;
       }
     },
-    [itemCount, columns, activeIndex, onSelect, moveBy, getItemLabel, setActiveIndex, orientation],
+    [itemCount, columns, activeIndex, onSelect, moveBy, getItemLabel, setActiveIndex, orientation, onKey],
   );
 
   const getTabIndex = useCallback(
