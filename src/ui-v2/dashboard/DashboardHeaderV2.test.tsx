@@ -237,3 +237,103 @@ describe("DashboardHeaderV2", () => {
     expect(onContinue.mock.calls[1]).toEqual([]);
   });
 });
+
+describe("DashboardHeaderV2 adapts to its own width (R17)", () => {
+  const header = () => document.querySelector<HTMLElement>("header")!;
+  /** A class that hides or removes text, at any container breakpoint. */
+  const HIDING = /(^|\s)(@[^\s:]+:)*(hidden|sr-only|invisible)(\s|$)/;
+  const chain = (el: HTMLElement) => {
+    const out: HTMLElement[] = [];
+    for (let n: HTMLElement | null = el; n && n !== header(); n = n.parentElement) out.push(n);
+    return out;
+  };
+
+  it("is a container, so it follows its own width and not the window", () => {
+    setup();
+    expect(header().className).toContain("@container");
+  });
+
+  it("takes the short date under 80rem and keeps the full one above", () => {
+    setup({ currentDate: "Tuesday, November 17, 2026", currentDateShort: "Tue, Nov 17" });
+    const full = document.querySelector<HTMLElement>('[data-date="full"]')!;
+    const short = document.querySelector<HTMLElement>('[data-date="short"]')!;
+    expect(full).toHaveTextContent("Tuesday, November 17, 2026");
+    expect(short).toHaveTextContent("Tue, Nov 17");
+    expect(full.className).toContain("@max-[80rem]:hidden");
+    expect(short.className).toContain("hidden");
+    expect(short.className).toContain("@max-[80rem]:inline");
+  });
+
+  it("falls back to the full date when no short one is given", () => {
+    setup({ currentDate: "12 Jan" });
+    expect(document.querySelector('[data-date="short"]')).toBeNull();
+    expect(screen.getByRole("group", { name: "Game date and phase" })).toHaveTextContent("12 Jan");
+  });
+
+  it("turns the decisions chip icon-only under 64rem and keeps its name", () => {
+    setup({ callCount: 12 });
+    const chip = screen.getByRole("button", { name: "12 to resolve" });
+    expect(chip).toHaveAccessibleName("12 to resolve");
+    const word = chip.querySelector<HTMLElement>('[data-part="chip-text"]')!;
+    const count = chip.querySelector<HTMLElement>('[data-part="chip-count"]')!;
+    expect(word.className).toContain("@max-[64rem]:hidden");
+    expect(count).toHaveTextContent("12");
+    expect(count.className).toContain("hidden");
+    expect(count.className).toContain("@max-[64rem]:inline");
+    expect(count).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("keeps Save icon-only with its name, at every width", () => {
+    setup();
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAccessibleName("Save");
+  });
+
+  it("wraps into two rows under 58rem: the title group takes a row, the actions the next", () => {
+    setup();
+    const left = document.querySelector<HTMLElement>('[data-slot="bar-title"]')!;
+    const right = document.querySelector<HTMLElement>('[data-slot="bar-actions"]')!;
+    expect(left.className).toContain("basis-full");
+    expect(left.className).toContain("@min-[58rem]:basis-0");
+    expect(left.className).toContain("@min-[58rem]:flex-1");
+    expect(right.className).toContain("flex-wrap");
+    expect(left.parentElement!.className).toContain("flex-wrap");
+  });
+
+  it("lets the title and the crumb shrink to an ellipsis, with the full text in title", () => {
+    setup({ activeTabLabel: "A very long section name", activeTab: "Squad" });
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1.className).toContain("truncate");
+    expect(h1).toHaveAttribute("title", "A very long section name");
+    const crumb = document.querySelector<HTMLElement>('[data-slot="crumb"]')!;
+    expect(crumb.className).toContain("truncate");
+    expect(crumb).toHaveAttribute("title", "Night Owls, Club");
+    expect(chain(h1.parentElement!).some((el) => el.className.includes("min-w-0"))).toBe(true);
+  });
+
+  it("never hides the title or Continue, whatever the width", () => {
+    setup({ callCount: 2 });
+    const h1 = screen.getByRole("heading", { level: 1 });
+    const crumb = document.querySelector<HTMLElement>('[data-slot="crumb"]')!;
+    const cont = screen.getByRole("button", { name: "Continue" });
+    for (const target of [h1, crumb, cont]) {
+      for (const el of chain(target)) {
+        expect(el.className, `${target.textContent} in ${el.tagName}`).not.toMatch(HIDING);
+      }
+    }
+  });
+
+  it("keeps Continue whole: it does not shrink, and it tightens its padding in a very narrow bar", () => {
+    setup();
+    const split = document.querySelector<HTMLElement>('[data-slot="split-button"]')!;
+    expect(split.className).toContain("shrink-0");
+    expect(split.className).toContain("@max-[22rem]:[&>button:first-child]:px-3");
+  });
+
+  it("applies the same rules to the end-of-season compact bar", () => {
+    setup({ compact: true, seasonComplete: true, activeTab: "Home" });
+    expect(header().className).toContain("@container");
+    expect(document.querySelector('[data-slot="bar-title"]')!.className).toContain("basis-full");
+    expect(screen.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Complete/ })).toBeInTheDocument();
+  });
+});

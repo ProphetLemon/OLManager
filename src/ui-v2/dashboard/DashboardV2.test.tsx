@@ -85,6 +85,7 @@ vi.mock("@/lib/common/managerAvatars", () => ({
 
 vi.mock("@/lib/common/helpers", () => ({
   formatDateFull: () => "19 Jun 2026",
+  formatMatchDate: () => "Jun 19",
   isSeasonComplete: () => false,
 }));
 
@@ -407,6 +408,15 @@ describe("DashboardV2 shell wiring", () => {
 
     fireEvent.click(link);
     expect(document.activeElement).toBe(main);
+  });
+
+  it("hands the header a short date next to the full one", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+    const { currentDate, currentDateShort } = shell.header as { currentDate: string; currentDateShort: string };
+    expect(currentDateShort).toBeTruthy();
+    expect(currentDateShort).not.toContain("2026");
+    expect(currentDateShort.length).toBeLessThan(currentDate.length);
   });
 
   it("passes the shell props to the header and the rail", async () => {

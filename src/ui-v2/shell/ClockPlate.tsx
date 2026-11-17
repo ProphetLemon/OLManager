@@ -4,6 +4,8 @@ import { cn } from "@/ui-v2/lib/utils";
 
 export interface ClockPlateProps {
   dateLabel: string;
+  /** The abbreviated date, shown instead of `dateLabel` when the bar is narrower than 80rem. */
+  dateShortLabel?: string;
   phase?: { key: string; label: string };
   className?: string;
 }
@@ -12,7 +14,7 @@ export interface ClockPlateProps {
  * Game date on a panel plate, joined to a slanted club-colour tag with the day phase.
  * The phase is always spelled out in text; the dot is decoration.
  */
-export function ClockPlate({ dateLabel, phase, className }: ClockPlateProps) {
+export function ClockPlate({ dateLabel, dateShortLabel, phase, className }: ClockPlateProps) {
   const { t } = useTranslation();
 
   return (
@@ -29,7 +31,18 @@ export function ClockPlate({ dateLabel, phase, className }: ClockPlateProps) {
           phase ? "rounded-s-lg" : "rounded-lg",
         )}
       >
-        {dateLabel}
+        {dateShortLabel ? (
+          <>
+            <span data-date="full" className="@max-[80rem]:hidden">
+              {dateLabel}
+            </span>
+            <span data-date="short" className="hidden @max-[80rem]:inline">
+              {dateShortLabel}
+            </span>
+          </>
+        ) : (
+          dateLabel
+        )}
       </span>
       {phase && (
         <TagBlock

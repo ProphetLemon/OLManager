@@ -30,6 +30,7 @@ import { resolveNavTab } from "@/ui-v2/shell/navModel";
 
 import {
   formatDateFull,
+  formatMatchDate,
   isSeasonComplete as isLeagueSeasonComplete,
 } from "@/lib/common/helpers";
 import DashboardOverlays from "@/ui-v2/_legacy/components/dashboard/DashboardOverlays";
@@ -559,6 +560,9 @@ export default function DashboardV2() {
   const currentDate = gameState
     ? formatDateFull(gameState.clock.current_date, settings.language)
     : "";
+  const currentDateShort = gameState
+    ? formatMatchDate(gameState.clock.current_date, settings.language)
+    : "";
   const unreadMessagesCount = gameState ? getUnreadMessagesCount(gameState) : 0;
   const pendingOffersCount = gameState ? getPendingIncomingOffersCount(gameState) : 0;
   const myTeamName = gameState ? getManagerTeamName(gameState) : null;
@@ -714,6 +718,7 @@ export default function DashboardV2() {
         <DashboardHeaderV2
           activeTabLabel={activeTabLabel}
           currentDate={currentDate}
+          currentDateShort={currentDateShort}
           hasProfileHistory={hasProfileHistory}
           isAdvancing={isAdvancing}
           seasonComplete={showSeasonSummary}

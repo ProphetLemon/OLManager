@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/ui-v2/components/ui/button";
 import { ClubShield } from "@/ui-v2/components/ui/club-shield";
 import { Separator } from "@/ui-v2/components/ui/separator";
+import { cn } from "@/ui-v2/lib/utils";
 import { SplitButton } from "@/ui-v2/components/ui/split-button";
 import { ClockPlate } from "@/ui-v2/shell/ClockPlate";
 import { RAIL_GROUPS, groupForTab } from "@/ui-v2/shell/navModel";
@@ -11,6 +12,8 @@ import type { DashboardAlert } from "@/ui-v2/_legacy/components/dashboard/dashbo
 interface Props {
   activeTabLabel: string;
   currentDate: string;
+  /** The same date, abbreviated (weekday, month, day): taken when the bar is narrow. Falls back to `currentDate`. */
+  currentDateShort?: string;
   hasProfileHistory: boolean;
   isAdvancing: boolean;
   /** The split is over: the clock stays put until the next season starts. */
@@ -41,6 +44,7 @@ interface Props {
 export function DashboardHeaderV2({
   activeTabLabel,
   currentDate,
+  currentDateShort,
   hasProfileHistory,
   isAdvancing,
   seasonComplete = false,
@@ -85,24 +89,32 @@ export function DashboardHeaderV2({
       ? t("onAir.bar.matchDay", { defaultValue: "Match" })
       : t("onAir.bar.continue", { defaultValue: "Continue" });
 
-  return (
-    <header className="shrink-0 bg-card">
-      <div className={`flex h-[3.75rem] items-center ${compact ? "gap-2 px-3" : "gap-3 px-4"}`}>
-        {hasProfileHistory && (
-          <>
-            <Button variant="ghost" size="icon-touch" onClick={onBack} aria-label={t("common.back")}>
-              <ArrowLeft aria-hidden="true" className="size-4" />
-            </Button>
-            <Separator orientation="vertical" className="h-5" />
-          </>
-        )}
+  const crumbTitle = [crumbTeam, crumbGroup].filter(Boolean).join(", ");
+  const chipLabel = t("onAir.bar.toResolve", { count: callCount, defaultValue: "{{count}} to resolve" });
 
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+  return (
+    // A container: the bar gives way to its own width (R17), not the window's, because the
+    // rail and its panel take a different share of the window in each mode.
+    <header className="@container shrink-0 bg-card">
+      <div className={cn("flex min-h-[3.75rem] flex-wrap items-center gap-y-2 py-2", compact ? "gap-x-2 px-3" : "gap-x-3 px-4")}>
+        {/* Title group: a row of its own under 58rem, the rest of the row above. Never hidden. */}
+        <div
+          data-slot="bar-title"
+          className="flex min-w-0 basis-full items-center gap-3 @min-[58rem]:basis-0 @min-[58rem]:flex-1"
+        >
+          {hasProfileHistory && (
+            <>
+              <Button variant="ghost" size="icon-touch" onClick={onBack} aria-label={t("common.back")} className="shrink-0">
+                <ArrowLeft aria-hidden="true" className="size-4" />
+              </Button>
+              <Separator orientation="vertical" className="h-5 shrink-0" />
+            </>
+          )}
           {teamName && <ClubShield name={teamName} logoUrl={teamLogo} size="md" className="shrink-0" />}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             {(crumbTeam || crumbGroup) && (
               // text-nav, not text-caption: caption is 6.75 px at the Android root (R16).
-              <p data-slot="crumb" className="truncate text-nav leading-tight text-dim">
+              <p data-slot="crumb" title={crumbTitle} className="truncate text-nav leading-tight text-dim">
                 {crumbTeam && <span>{crumbTeam}</span>}
                 {crumbTeam && crumbGroup && (
                   <>
@@ -113,24 +125,37 @@ export function DashboardHeaderV2({
                 {crumbGroup && <span>{crumbGroup}</span>}
               </p>
             )}
-            <h1 className="truncate font-heading text-title font-bold leading-tight text-foreground">
+            <h1
+              title={activeTabLabel}
+              className="truncate font-heading text-title font-bold leading-tight text-foreground"
+            >
               {activeTabLabel}
             </h1>
           </div>
         </div>
 
-        <ClockPlate dateLabel={currentDate} phase={phase} className={compact ? "hidden" : undefined} />
+        {/* Actions: the clock gives way first (short date), then the chip goes icon-only; under
+            58rem this group drops to the second row and wraps again if it must. */}
+        <div data-slot="bar-actions" className={cn("flex min-w-0 max-w-full flex-wrap items-center @min-[58rem]:flex-nowrap", compact ? "gap-2" : "gap-3")}>
+        <ClockPlate dateLabel={currentDate} dateShortLabel={currentDateShort} phase={phase} className={compact ? "hidden" : undefined} />
 
         {callCount > 0 && onShowCalls && (
           <Button
             variant="outline"
             size="touch"
             onClick={onShowCalls}
+            aria-label={chipLabel}
             data-slot="resolve-chip"
             className="shrink-0 gap-2 rounded-full border-warning/40 bg-warning/10 px-3.5 text-warning hover:bg-warning/20 hover:text-warning"
           >
             <span aria-hidden="true" className="size-2 rounded-full bg-warning" />
-            {t("onAir.bar.toResolve", { count: callCount, defaultValue: "{{count}} to resolve" })}
+            {/* Under 64rem only the count stays; the name is the aria-label either way. */}
+            <span data-part="chip-text" className="@max-[64rem]:hidden">
+              {chipLabel}
+            </span>
+            <span data-part="chip-count" aria-hidden="true" className="hidden tabular-nums @max-[64rem]:inline">
+              {callCount}
+            </span>
           </Button>
         )}
 
@@ -154,7 +179,7 @@ export function DashboardHeaderV2({
         </span>
 
         <SplitButton
-          className="shrink-0"
+          className="shrink-0 @max-[22rem]:[&>button:first-child]:px-3 @max-[22rem]:[&>button:first-child]:text-base"
           label={continueLabel}
           icon={hasMatchToday ? <Swords aria-hidden="true" /> : <Play aria-hidden="true" />}
           onClick={onContinue}
@@ -182,6 +207,7 @@ export function DashboardHeaderV2({
             },
           ]}
         />
+        </div>
       </div>
       <div aria-hidden="true" data-slot="bar-rule" className="h-0.5 bg-club bg-[linear-gradient(90deg,var(--club)_0,var(--club)_60%,var(--club-secondary,var(--club))_60%,var(--club-secondary,var(--club))_100%)]" />
     </header>
