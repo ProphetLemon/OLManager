@@ -1,5 +1,6 @@
 use chrono::Utc;
 use log::{debug, info};
+use serde::Serialize;
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -11,6 +12,12 @@ use crate::db::save_index_manager::SaveIndexManager;
 
 /// Current save format version. Increment when breaking changes are made.
 const FORMAT_VERSION: u32 = 3;
+
+/// Prefix of the error a reader returns for a save written by another game version.
+/// The UI and the tests match on it, so it never changes.
+pub const INCOMPATIBLE_SAVE_CODE: &str = "save_incompatible";
+/// Prefix of the error a reader returns for a save whose header cannot be read.
+pub const UNREADABLE_SAVE_CODE: &str = "save_unreadable";
 
 /// Why a save file could not be imported. Nothing is written when one is returned.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,6 +92,36 @@ fn parse_file_hint(hint: &str) -> (Option<String>, Option<String>) {
     (Some(id), name)
 }
 
+/// How a listed save relates to this game version. Worked out from the file on
+/// every listing and never stored, so it cannot go stale.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SaveStatus {
+    /// The header names the format this version reads.
+    Ok,
+    /// The header names another format: a newer or an older game wrote it.
+    OtherVersion,
+    /// The header cannot be read: the file is missing, empty or shorter than it.
+    Unreadable,
+}
+
+/// A save entry as the saves list shows it: the stored entry plus its status.
+#[derive(Debug, Clone, Serialize)]
+pub struct SaveListing {
+    #[serde(flatten)]
+    pub entry: SaveEntry,
+    pub status: SaveStatus,
+    /// The format number read from the header, when the status is `OtherVersion`.
+    pub format_version: Option<u32>,
+}
+
+/// The result of reading a save file's header.
+enum Probe {
+    Current,
+    OtherVersion(u32),
+    Unreadable(String),
+}
+
 /// Manages save sessions: creating, loading, saving, deleting, and listing.
 pub struct SaveManager {
     saves_dir: PathBuf,
@@ -103,35 +140,45 @@ impl SaveManager {
             save_index,
         };
 
-        // Prune entries whose .olsave files have wrong format version
-        mgr.prune_incompatible_saves();
+        mgr.drop_entries_without_a_file();
 
         Ok(mgr)
     }
 
-    /// Remove save entries whose .olsave files have an incompatible format version.
-    fn prune_incompatible_saves(&mut self) {
-        let to_remove: Vec<String> = self
+    /// Forget index entries whose .olsave file is gone: nothing is on disk, so
+    /// nothing is lost. A file that is there is never touched here, whatever it
+    /// holds; the saves list shows what it is and the player decides.
+    fn drop_entries_without_a_file(&mut self) {
+        let missing: Vec<String> = self
             .save_index
             .list_saves()
             .iter()
-            .filter(|entry| {
-                let path = self.save_path(&entry.id);
-                if !path.exists() {
-                    return true;
-                }
-                match Self::read_olsave_version(&path) {
-                    Ok(v) => v != FORMAT_VERSION,
-                    Err(_) => true,
-                }
-            })
+            .filter(|entry| !self.save_path(&entry.id).exists())
             .map(|entry| entry.id.clone())
             .collect();
 
-        for id in &to_remove {
-            let path = self.save_path(id);
-            let _ = fs::remove_file(&path);
+        for id in &missing {
             let _ = self.save_index.remove_save(id);
+        }
+    }
+
+    /// What the header of the file at `path` says about it.
+    fn probe(path: &Path) -> Probe {
+        match Self::read_olsave_version(path) {
+            Ok(FORMAT_VERSION) => Probe::Current,
+            Ok(found) => Probe::OtherVersion(found),
+            Err(why) => Probe::Unreadable(why),
+        }
+    }
+
+    /// Refuse a save this version cannot read, before anything is parsed or written.
+    fn require_readable(&self, save_id: &str) -> Result<(), String> {
+        match Self::probe(&self.save_path(save_id)) {
+            Probe::Current => Ok(()),
+            Probe::OtherVersion(found) => Err(format!(
+                "{INCOMPATIBLE_SAVE_CODE}: the save was written with format {found}; this version reads {FORMAT_VERSION}"
+            )),
+            Probe::Unreadable(why) => Err(format!("{UNREADABLE_SAVE_CODE}: {why}")),
         }
     }
 
@@ -147,6 +194,25 @@ impl SaveManager {
     /// List all save entries.
     pub fn list_saves(&self) -> &[SaveEntry] {
         self.save_index.list_saves()
+    }
+
+    /// Every entry with its status, read from the files now.
+    pub fn list_saves_with_status(&self) -> Vec<SaveListing> {
+        self.list_saves()
+            .iter()
+            .map(|entry| {
+                let (status, format_version) = match Self::probe(&self.save_path(&entry.id)) {
+                    Probe::Current => (SaveStatus::Ok, None),
+                    Probe::OtherVersion(found) => (SaveStatus::OtherVersion, Some(found)),
+                    Probe::Unreadable(_) => (SaveStatus::Unreadable, None),
+                };
+                SaveListing {
+                    entry: entry.clone(),
+                    status,
+                    format_version,
+                }
+            })
+            .collect()
     }
 
     /// Path to the .olsave file for a given save_id.
@@ -302,6 +368,11 @@ impl SaveManager {
             .ok_or_else(|| format!("Save '{}' not found", save_id))?;
 
         let save_path = self.save_path(save_id);
+        // Writing would replace the bytes of a save this version cannot read, and
+        // nothing can bring them back. A file that is gone has nothing to lose.
+        if save_path.exists() {
+            self.require_readable(save_id)?;
+        }
         let save_name = entry.name.clone();
 
         Self::write_olsave(&save_path, game)?;
@@ -329,6 +400,8 @@ impl SaveManager {
             .find(save_id)
             .ok_or_else(|| format!("Save '{}' not found", save_id))?
             .clone();
+
+        self.require_readable(save_id)?;
 
         let save_path = self.save_path(save_id);
         info!("[save_manager] load_game: loading from {:?}", save_path);
@@ -581,6 +654,9 @@ impl SaveManager {
 }
 
 #[cfg(test)]
+mod keep_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::clock::GameClock;
@@ -591,7 +667,7 @@ mod tests {
     use crate::game::BoardObjective;
     use chrono::TimeZone;
 
-    fn sample_game() -> Game {
+    pub(super) fn sample_game() -> Game {
         let start = Utc.with_ymd_and_hms(2026, 7, 1, 0, 0, 0).unwrap();
         let mut clock = GameClock::new(start);
         clock.current_date = Utc.with_ymd_and_hms(2026, 8, 15, 0, 0, 0).unwrap();
