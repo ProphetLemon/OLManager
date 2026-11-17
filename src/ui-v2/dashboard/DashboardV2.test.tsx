@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
+import { useNavMemoryStore } from "@/store/navMemoryStore";
 import type { GameStateData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
 
@@ -211,6 +212,9 @@ function minimalGameState(): GameStateData {
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────
+
+// The remembered tab outlives a render on purpose, so each test starts a fresh game.
+beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
 
 describe("DashboardV2 tab sync", () => {
   beforeEach(() => {

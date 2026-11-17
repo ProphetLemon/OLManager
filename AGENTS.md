@@ -77,7 +77,7 @@ Tocado en _legacy por On Air: `FloatingBugButton` (ya sólo en línea, sin varia
 
 **P1 On Air.** Tokens en `src/themes/default.css`; sólo tokens, nunca colores crudos.
 
-- Tipografía: **Barlow Condensed** (`--font-heading`), mayúsculas, números tabulares. Tamaños con `--text-*` (2xs, caption, section, title, ovr, scoreboard); mínimo 0.75rem y todo en rem. Única excepción: `--text-map: max(0.75rem, 10px)`, sólo para las etiquetas sobre el mapa del partido en vivo (`src/ui-v2/match/`); Android usa una raíz de 9 px y 0.75rem quedaría en 6.75 px.
+- Tipografía: **Barlow Condensed** (`--font-heading`), mayúsculas, números tabulares. Tamaños con `--text-*` (2xs, caption, nav, section, title, ovr, scoreboard); mínimo 0.75rem y todo en rem. Únicas excepciones: `--text-map: max(0.75rem, 10px)`, sólo para las etiquetas sobre el mapa del partido en vivo (`src/ui-v2/match/`), y `--text-nav: max(0.75rem, 10px)`, sólo para las etiquetas de navegación (`src/ui-v2/shell/`); Android usa una raíz de 9 px y 0.75rem quedaría en 6.75 px.
 - Primary dirigido por el club: `--primary` = `--club` (`useClubTheme`). Texto sobre relleno de club: `--club-foreground`. Texto con el color del club: `--club-text` (`text-club-text`). `--club-wash` = tinte del club (desaparece en alto contraste).
 - Superficies: `--rail` (rail), `--line` (bordes), `--dim` (texto atenuado), `--surface-clamp` (superficie de referencia para el contraste del color del club).
 - Regla: `text-primary` desnudo está prohibido, usar `text-club-text`. Lo impone `src/ui-v2/tokens.guard.test.ts` (excluye `components/ui/`, `shell/` y `FloatingBugButton`).

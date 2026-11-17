@@ -30,7 +30,7 @@ vi.mock("@/hooks/useUpdater", () => ({
 }));
 
 vi.mock("@/ui-v2/components/TitleBarV2", () => ({
-  TitleBarV2: () => null,
+  TitleBarV2: () => <div data-testid="title-bar" />,
 }));
 
 vi.mock("@/ui-v2/dashboard/DashboardV2", () => ({
@@ -165,6 +165,48 @@ describe("AppV2 high contrast", () => {
     await waitFor(() =>
       expect(document.documentElement.dataset.contrast).toBeUndefined(),
     );
+  });
+});
+
+describe("AppV2 platform", () => {
+  const ANDROID_UA =
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36";
+  let userAgent: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    delete document.documentElement.dataset.platform;
+    useSettingsStore.setState({ loaded: true });
+    userAgent = vi.spyOn(window.navigator, "userAgent", "get");
+  });
+
+  afterEach(() => {
+    userAgent.mockRestore();
+    delete document.documentElement.dataset.platform;
+  });
+
+  it("flags the root as android and renders no title bar there", async () => {
+    userAgent.mockReturnValue(ANDROID_UA);
+    render(<AppV2 />);
+    await waitFor(() => expect(document.documentElement.dataset.platform).toBe("android"));
+    expect(screen.queryByTestId("title-bar")).toBeNull();
+  });
+
+  it("leaves the root unflagged and keeps the title bar on desktop", () => {
+    userAgent.mockReturnValue("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
+    render(<AppV2 />);
+    expect(document.documentElement.dataset.platform).toBeUndefined();
+    expect(screen.getByTestId("title-bar")).toBeInTheDocument();
+  });
+});
+
+describe("AppV2 safe areas", () => {
+  it("pads the app root with the four safe-area tokens", () => {
+    useSettingsStore.setState({ loaded: true });
+    render(<AppV2 />);
+    const root = screen.getByTestId("app-root");
+    for (const side of ["top", "right", "bottom", "left"]) {
+      expect(root.className).toContain(`var(--safe-${side})`);
+    }
   });
 });
 

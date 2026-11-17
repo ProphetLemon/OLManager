@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
@@ -105,6 +105,17 @@ export default function AppV2() {
   } = useUpdater(AUTO_CHECK_UPDATES);
 
   const [ready, setReady] = useState(false);
+  // Decided once in AppV2 so no Tauri window call runs for chrome Android does not show.
+  const isAndroid = useMemo(() => isAndroidUserAgent(window.navigator.userAgent), []);
+
+  // Hook for platform-specific CSS (touch hit size, safe areas): see themes/default.css.
+  useEffect(() => {
+    if (!isAndroid) return;
+    document.documentElement.dataset.platform = "android";
+    return () => {
+      delete document.documentElement.dataset.platform;
+    };
+  }, [isAndroid]);
 
   useEffect(() => {
     if (!loaded) loadSettings();
@@ -243,8 +254,11 @@ export default function AppV2() {
   }, []);
 
   return (
-    <div className="flex h-screen flex-col dark">
-      <TitleBarV2 />
+    <div
+      data-testid="app-root"
+      className="flex h-screen flex-col dark pt-[var(--safe-top)] pr-[var(--safe-right)] pb-[var(--safe-bottom)] pl-[var(--safe-left)]"
+    >
+      {!isAndroid && <TitleBarV2 />}
       <div className="flex min-h-0 flex-1 flex-col">
         <ErrorBoundary>
           <BrowserRouter>

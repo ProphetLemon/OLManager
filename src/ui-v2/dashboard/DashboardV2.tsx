@@ -55,6 +55,7 @@ import {
 } from "@/lib/dashboard/helpers";
 import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 
+import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
@@ -188,7 +189,9 @@ export default function DashboardV2() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
   const [profileNavigation, setProfileNavigation] = useState(() =>
-    createDashboardProfileNavigationState(PATH_TAB_MAP[location.pathname] ?? "Home"),
+    createDashboardProfileNavigationState(
+      PATH_TAB_MAP[location.pathname] ?? useNavMemoryStore.getState().activeTab ?? "Home",
+    ),
   );
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isExitingToMenu, setIsExitingToMenu] = useState(false);
@@ -221,6 +224,12 @@ export default function DashboardV2() {
       s.activeTab === tab ? s : navigateDashboardProfiles(s, tab),
     );
   }, [location.pathname]);
+
+  // Remember the tab, so returning from Settings or a match lands on it again.
+  const rememberTab = useNavMemoryStore((s) => s.rememberTab);
+  useEffect(() => {
+    rememberTab(profileNavigation.activeTab);
+  }, [profileNavigation.activeTab, rememberTab]);
 
   // Update Discord Rich Presence when switching dashboard tabs.
   useEffect(() => {

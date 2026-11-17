@@ -86,7 +86,7 @@ export function RailItem({
       <span
         aria-hidden="true"
         className={cn(
-          "w-full truncate font-heading text-[0.75rem] leading-4",
+          "w-full truncate font-heading text-nav leading-4",
           active ? "font-bold" : "font-medium",
           compact && "sr-only",
         )}
