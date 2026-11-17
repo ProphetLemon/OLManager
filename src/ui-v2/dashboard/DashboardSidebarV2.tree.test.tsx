@@ -64,7 +64,7 @@ describe("Tree rail structure", () => {
   it("renders one navigation landmark and exposes the mode on the aside", () => {
     setup();
     expect(screen.getAllByRole("navigation")).toHaveLength(1);
-    const aside = screen.getByRole("complementary");
+    const aside = document.querySelector<HTMLElement>('[data-slot="rail"]')!;
     expect(aside).toHaveAttribute("data-rail-mode", "tree");
     expect(aside).toHaveAttribute("data-rail-slot-w", "1280");
     expect(aside).toHaveAttribute("data-rail-slot-h", "764");
@@ -189,6 +189,7 @@ describe("Tree rail active state", () => {
     fireEvent.click(header("Club"));
     expect(header("Club")).toHaveAttribute("aria-expanded", "false");
     expect(header("Club")).toHaveAttribute("data-active-within", "true");
+    expect(header("Club")).toHaveAttribute("aria-current", "true"); // not "page": the child alone carries that
     expect(header("Club").className).toContain("font-bold");
     expect(screen.queryByRole("button", { name: "Squad" })).toBeNull();
     // A re-render with the same active tab never forces it open again.
@@ -405,6 +406,15 @@ describe("Tree utility cluster", () => {
 });
 
 describe("Tree attention marker", () => {
+  it("puts the badge before the attention clause so a count never reads as part of it", () => {
+    setup({
+      activeTab: "Players",
+      attention: { Players: { count: 2, headline: "Two pending" } },
+      playerCount: 22,
+    });
+    expect(navId("tab:Players")).toHaveAccessibleName("Players (22), 2 need your call");
+  });
+
   const attention = {
     Scrims: { count: 1, headline: "Scrims are not planned" },
     Squad: { count: 3, headline: "Lineup incomplete" },
@@ -452,7 +462,7 @@ describe("Tree attention marker", () => {
 
   it("keeps the badge count in the name next to the attention text", () => {
     setup({ attention, pendingOffersCount: 3, activeTab: "Transfers" });
-    expect(navId("tab:Transfers")).toHaveAccessibleName("Transfers, 2 need your call, 3");
+    expect(navId("tab:Transfers")).toHaveAccessibleName("Transfers (3), 2 need your call");
   });
 
   it("sets every badge in the nav text size, never under 10 px", () => {

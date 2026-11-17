@@ -65,7 +65,7 @@ beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
 describe("Android rail", () => {
   it("is always Split, whatever the size or the mode asked for", () => {
     setup({ railMode: "tree", railSlot: { slotW: 5000, slotH: 5000, need: 622, rootPx: 9 } });
-    expect(screen.getByRole("complementary")).toHaveAttribute("data-rail-mode", "split");
+    expect(document.querySelector('[data-slot="rail"]')).toHaveAttribute("data-rail-mode", "split");
     expect(screen.getAllByRole("navigation")).toHaveLength(1);
   });
 

@@ -67,7 +67,7 @@ describe("Split rail structure", () => {
   it("is one nav landmark, flagged as split, with the eight stops in order", () => {
     setup();
     expect(screen.getAllByRole("navigation")).toHaveLength(1);
-    expect(screen.getByRole("complementary")).toHaveAttribute("data-rail-mode", "split");
+    expect(document.querySelector('[data-slot="rail"]')).toHaveAttribute("data-rail-mode", "split");
     const stops = [...document.querySelectorAll<HTMLElement>('[data-slot="rail-item"]')].map((e) => e.dataset.navId);
     expect(stops).toEqual([
       "tab:Home", "tab:Inbox", "tab:News", "tab:Social", "tab:Schedule",

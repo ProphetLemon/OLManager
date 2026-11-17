@@ -3,6 +3,8 @@ import type { Ref } from "react";
 
 import { cn } from "@/ui-v2/lib/utils";
 
+import { badgeText as formatBadge } from "./railActive";
+
 export type RailRowKind = "leaf" | "header" | "child" | "panel";
 
 interface RailRowProps {
@@ -32,8 +34,6 @@ interface RailRowProps {
   onClick: () => void;
 }
 
-const BADGE_CAP = 99;
-
 /** One row of the rail tree: a direct stop, a group header (disclosure) or a child. */
 export function RailRow({
   kind,
@@ -53,7 +53,7 @@ export function RailRow({
   onClick,
 }: RailRowProps) {
   const count = badge !== undefined && badge > 0 ? badge : 0;
-  const badgeText = count > BADGE_CAP ? `${BADGE_CAP}+` : String(count);
+  const badgeText = formatBadge(count);
   const isHeader = kind === "header";
   const bold = active || activeWithin;
 
@@ -63,9 +63,11 @@ export function RailRow({
       type="button"
       tabIndex={tabIndex}
       onClick={onClick}
-      aria-label={count > 0 ? `${attentionName ?? label}, ${badgeText}` : (attentionName ?? label)}
+      // An attention name already carries the badge in front of its clause ("Players (22), 2 need your call").
+      aria-label={attentionName ?? (count > 0 ? `${label}, ${badgeText}` : label)}
       aria-description={attention?.headline}
-      aria-current={active ? "page" : undefined}
+      // A collapsed header that holds the current page says so ("true": only the row itself is "page").
+      aria-current={active ? "page" : activeWithin && expanded === false ? "true" : undefined}
       aria-expanded={isHeader ? expanded : undefined}
       aria-controls={isHeader ? controls : undefined}
       title={label}

@@ -139,9 +139,21 @@ describe("DashboardHeaderV2", () => {
   describe("crumb above the title", () => {
     const crumb = () => document.querySelector<HTMLElement>('[data-slot="crumb"]');
 
+    // What assistive tech reads: aria-hidden parts dropped.
+    const spoken = () => {
+      const copy = crumb()!.cloneNode(true) as HTMLElement;
+      copy.querySelectorAll('[aria-hidden="true"]').forEach((n) => n.remove());
+      return copy.textContent;
+    };
+
     it("shows the team and the group of a grouped tab", () => {
       setup({ activeTab: "Squad" });
-      expect(crumb()).toHaveTextContent(/^Night Owls\s*·\s*Club$/);
+      expect(crumb()).toHaveTextContent(/^Night Owls\s*·\s*,?\s*Club$/);
+    });
+
+    it("is spoken with a separator, not as one run-together word", () => {
+      setup({ activeTab: "Squad" });
+      expect(spoken()).toBe("Night Owls, Club");
     });
 
     it("shows only the team on a direct stop", () => {
@@ -152,7 +164,7 @@ describe("DashboardHeaderV2", () => {
     it("localises the group through the existing section keys", () => {
       setup({ activeTab: "Transfers" });
       expect(requestedKeys).toContain("dashboard.sectionMarket");
-      expect(crumb()).toHaveTextContent("Night Owls · Market");
+      expect(spoken()).toBe("Night Owls, Market");
     });
 
     it("omits the team while unemployed and keeps the group", () => {
@@ -168,7 +180,9 @@ describe("DashboardHeaderV2", () => {
 
     it("is small dim text, not a link or a landmark", () => {
       setup({ activeTab: "Squad" });
-      expect(crumb()!.className).toContain("text-caption");
+      // text-nav (R16): text-caption is 6.75 px at the Android root.
+      expect(crumb()!.className).toContain("text-nav");
+      expect(crumb()!.className).not.toContain("text-caption");
       expect(crumb()!.className).toContain("text-dim");
       expect(crumb()!.querySelector("a, button")).toBeNull();
       expect(screen.queryByRole("navigation")).toBeNull();
@@ -176,7 +190,7 @@ describe("DashboardHeaderV2", () => {
 
     it("also shows in compact mode, with no navigation", () => {
       setup({ activeTab: "Market", compact: true });
-      expect(crumb()).toHaveTextContent("Night Owls · Market");
+      expect(spoken()).toBe("Night Owls, Market");
       expect(screen.queryByRole("navigation")).toBeNull();
     });
   });

@@ -89,6 +89,8 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
     expect(navs[0]).toHaveAccessibleName("Main navigation");
     // The group's sections are a labelled group inside that nav, not a second landmark.
     expect(within(navs[0]).getByRole("group", { name: /Club/i })).toBeInTheDocument();
+    // And no complementary landmark wraps the navigation.
+    expect(screen.queryByRole("complementary")).toBeNull();
   });
 
   it("labels every navigation landmark uniquely", () => {

@@ -4,6 +4,7 @@ import type { RailGroup, RailGroupId } from "./navModel";
 import { RailRow } from "./RailRow";
 import { RAIL_DIRECT, groupForTab, isGroupOpen, type NavItem } from "./navModel";
 import { attentionForGroup, type AttentionMap } from "./attention";
+import { withBadge } from "./railActive";
 import type { ShellBadges } from "./shellTypes";
 
 interface RowHandle {
@@ -83,7 +84,7 @@ export function RailTree({
               icon={g.icon}
               label={label}
               badge={open ? undefined : groupBadgeOf(g.id, badges)}
-              {...markerProps(label, open ? null : attentionForGroup(attention, g.id))}
+              {...markerProps(withBadge(label, open ? undefined : groupBadgeOf(g.id, badges)), open ? null : attentionForGroup(attention, g.id))}
               activeWithin={owner === g.id}
               expanded={open}
               controls={listId}
@@ -98,7 +99,7 @@ export function RailTree({
                     navId={`tab:${item.tab}`}
                     label={labelOf(item)}
                     badge={badgeOf(item)}
-                    {...markerProps(labelOf(item), attention[item.tab])}
+                    {...markerProps(withBadge(labelOf(item), badgeOf(item)), attention[item.tab])}
                     active={activeTab === item.tab}
                     onClick={() => onNavClick(item.tab)}
                     {...handle(`tab:${item.tab}`)}

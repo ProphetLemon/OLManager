@@ -536,7 +536,8 @@ export function DashboardSidebarV2({
   );
 
   return (
-    <aside
+    <div
+      data-slot="rail"
       data-rail-mode={tree ? "tree" : "split"}
       data-rail-slot-w={railSlot?.slotW}
       data-rail-slot-h={railSlot?.slotH}
@@ -638,6 +639,6 @@ export function DashboardSidebarV2({
           </>
         )}
       </nav>
-    </aside>
+    </div>
   );
 }

@@ -101,9 +101,15 @@ export function DashboardHeaderV2({
           {teamName && <ClubShield name={teamName} logoUrl={teamLogo} size="md" className="shrink-0" />}
           <div className="min-w-0">
             {(crumbTeam || crumbGroup) && (
-              <p data-slot="crumb" className="truncate text-caption leading-tight text-dim">
+              // text-nav, not text-caption: caption is 6.75 px at the Android root (R16).
+              <p data-slot="crumb" className="truncate text-nav leading-tight text-dim">
                 {crumbTeam && <span>{crumbTeam}</span>}
-                {crumbTeam && crumbGroup && <span aria-hidden="true"> · </span>}
+                {crumbTeam && crumbGroup && (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    <span className="sr-only">, </span>
+                  </>
+                )}
                 {crumbGroup && <span>{crumbGroup}</span>}
               </p>
             )}

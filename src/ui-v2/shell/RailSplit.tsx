@@ -6,6 +6,7 @@ import { RailRow } from "./RailRow";
 import { RAIL_DIRECT, groupForTab, resolveGroupLanding, type NavItem, type RailGroup, type RailGroupId } from "./navModel";
 import type { ShellBadges } from "./shellTypes";
 import type { Attention, AttentionMap } from "./attention";
+import { withBadge } from "./railActive";
 import { useFadeMask } from "./useFadeMask";
 
 interface RowHandle {
@@ -111,7 +112,9 @@ export function RailSplitPanel({ group, activeTab, badges, labelOf, listLabel, a
   const fade = useFadeMask<HTMLUListElement>(group.id);
   const marker = (item: NavItem, itemLabel: string): { attention?: Attention; attentionName?: string } => {
     const a = attention[item.tab];
-    return a && attentionName ? { attention: a, attentionName: attentionName(itemLabel, a.count) } : {};
+    return a && attentionName
+      ? { attention: a, attentionName: attentionName(withBadge(itemLabel, item.badge ? badges[item.badge] : undefined), a.count) }
+      : {};
   };
   return (
     <div
