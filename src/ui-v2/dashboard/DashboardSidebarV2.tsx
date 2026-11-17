@@ -1,15 +1,17 @@
 import { useNavMemoryStore } from "@/store/navMemoryStore";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LogOut, Settings } from "lucide-react";
+import { Bug, LogOut, Newspaper, MessageCircle, Settings, UserRound } from "lucide-react";
 
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
-import { RailSplitPanel, RailSplitStops } from "@/ui-v2/shell/RailSplit";
+import { ANDROID_DIRECT, RailSplitPanel, RailSplitStops } from "@/ui-v2/shell/RailSplit";
+import { RailMore } from "@/ui-v2/shell/RailMore";
+import { useFadeMask } from "@/ui-v2/shell/useFadeMask";
 import { RailTree } from "@/ui-v2/shell/RailTree";
 import { RailCell, RailCluster } from "@/ui-v2/shell/RailUtility";
 import type { AttentionMap } from "@/ui-v2/shell/attention";
-import { splitLabelsFit, type RailMode } from "@/ui-v2/shell/railMode";
+import { splitLabelsFit, type RailMode, type RailPlatform } from "@/ui-v2/shell/railMode";
 import { equivalentRowId, treeKeyAction, type TreeRow } from "@/ui-v2/shell/treeRows";
 import {
   RAIL_DIRECT,
@@ -44,6 +46,8 @@ interface Props {
   railMode?: RailMode;
   /** Measurements behind `railMode`, exposed as data attributes for QA. */
   railSlot?: { slotW: number; slotH: number; need: number; rootPx?: number };
+  /** Android always gets Split: More menu, touch sizes, no Tree and no icon-only stops. */
+  platform?: RailPlatform;
   /** What needs a call, per tab; drawn on the Tree rows and the panel rows. */
   attention?: AttentionMap;
 }
@@ -70,11 +74,13 @@ export function DashboardSidebarV2({
   compact = false,
   railMode = "split",
   railSlot,
+  platform = "desktop",
   attention,
 }: Props) {
   const { t } = useTranslation();
   // The end-of-season screen keeps the icon rail whatever the size says.
-  const tree = railMode === "tree" && !compact;
+  const android = platform === "android";
+  const tree = railMode === "tree" && !compact && !android;
 
   const badges: ShellBadges = useMemo(
     () => ({
@@ -97,6 +103,7 @@ export function DashboardSidebarV2({
 
   // The bug report is opened from the roving widget (Enter on its cell), so its modal is controlled here.
   const [bugOpen, setBugOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const openGroups = useNavMemoryStore((s) => s.openGroups);
   const toggleGroup = useNavMemoryStore((s) => s.toggleGroup);
 
@@ -117,6 +124,7 @@ export function DashboardSidebarV2({
     const out: TreeRow[] = [];
     const rail = tree ? undefined : ("rail" as const);
     for (const i of RAIL_DIRECT) {
+      if (android && !ANDROID_DIRECT.includes(i.tab)) continue;
       out.push({ id: `tab:${i.tab}`, kind: "leaf", level: 0, parentId: null, column: rail });
     }
     for (const g of groups) {
@@ -139,7 +147,8 @@ export function DashboardSidebarV2({
         });
       }
     }
-    for (const u of ["bug", "settings", "exit", "manager"]) {
+    // Android keeps the utilities in the More menu: one stop instead of the four cells.
+    for (const u of android ? ["more"] : ["bug", "settings", "exit", "manager"]) {
       out.push({ id: `util:${u}`, kind: "utility", level: 0, parentId: null, column: rail });
     }
     if (panelGroup) {
@@ -155,7 +164,7 @@ export function DashboardSidebarV2({
       }
     }
     return out;
-  }, [tree, groups, openGroups, panelGroup, activeTab]);
+  }, [tree, android, groups, openGroups, panelGroup, activeTab]);
 
   const stops: Stop[] = useMemo(
     () =>
@@ -167,6 +176,7 @@ export function DashboardSidebarV2({
             activate: tree ? () => toggleGroup(id) : () => onNavClick(resolveGroupLanding(id, lastVisited)),
           };
         }
+        if (r.id === "util:more") return { id: r.id, activate: () => setMoreOpen(true) };
         if (r.id === "util:bug") return { id: r.id, activate: () => setBugOpen(true) };
         if (r.id === "util:settings") return { id: r.id, activate: onNavigateSettings };
         if (r.id === "util:exit") return { id: r.id, activate: onExitClick };
@@ -181,7 +191,8 @@ export function DashboardSidebarV2({
   const [roving, setRoving] = useState<{ tab: string; id: string | null }>({ tab: activeTab, id: null });
   if (roving.tab !== activeTab) setRoving({ tab: activeTab, id: null });
   const activeRowId = (() => {
-    if (activeTab === "Manager") return "util:manager";
+    if (activeTab === "Manager") return android ? "util:more" : "util:manager";
+    if (android && (activeTab === "News" || activeTab === "Social")) return "util:more";
     const g = groupForTab(activeTab);
     if (!g) return `tab:${activeTab}`;
     if (!groups.some((x) => x.id === g)) return "";
@@ -317,29 +328,7 @@ export function DashboardSidebarV2({
   }, [rowsKey, currentRowId, stops]);
 
   // Fade cues that only show while the stops area has more content past an edge.
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const [overflow, setOverflow] = useState({ top: false, bottom: false });
-  const measure = useCallback(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const top = el.scrollTop > 1;
-    const bottom = el.scrollHeight - el.clientHeight - el.scrollTop > 1;
-    setOverflow((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
-  }, []);
-  useEffect(() => {
-    measure();
-    const el = scrollerRef.current;
-    window.addEventListener("resize", measure);
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    if (el) observer?.observe(el);
-    return () => {
-      window.removeEventListener("resize", measure);
-      observer?.disconnect();
-    };
-  }, [measure, stops.length, tree]);
-  const fadeMask = `linear-gradient(to bottom, ${overflow.top ? "transparent 0, #000 1.5rem" : "#000 0"}, ${
-    overflow.bottom ? "#000 calc(100% - 1.5rem), transparent 100%" : "#000 100%"
-  })`;
+  const fade = useFadeMask<HTMLDivElement>(`${stops.length}-${tree}`);
 
   const indexOf = (id: string) => stops.findIndex((s) => s.id === id);
   const itemProps = (id: string): { tabIndex: 0 | -1; buttonRef: (el: HTMLButtonElement | null) => void } => ({
@@ -354,7 +343,7 @@ export function DashboardSidebarV2({
   const [labelMode, setLabelMode] = useState<"labels" | "icons">("labels");
   const [labelLines, setLabelLines] = useState(1);
   useLayoutEffect(() => {
-    if (tree || compact || !railSlot?.rootPx) return;
+    if (tree || compact || android || !railSlot?.rootPx) return;
     let lines = labelLines;
     if (labelMode === "labels") {
       let widest = 1;
@@ -374,7 +363,7 @@ export function DashboardSidebarV2({
     if (lines !== labelLines) setLabelLines(lines);
     if (next !== labelMode) setLabelMode(next);
   });
-  const iconOnlyStops = !tree && !compact && !!railSlot?.rootPx && labelMode === "icons";
+  const iconOnlyStops = !tree && !compact && !android && !!railSlot?.rootPx && labelMode === "icons";
 
   const labelOf = (item: { labelKey: string; defaultLabel: string }) =>
     t(item.labelKey, { defaultValue: item.defaultLabel });
@@ -391,16 +380,37 @@ export function DashboardSidebarV2({
 
   const scroller = (children: React.ReactNode) => (
     <div
-      ref={scrollerRef}
+      ref={fade.ref}
       data-slot="rail-stops"
-      data-overflow-top={overflow.top ? "true" : undefined}
-      data-overflow-bottom={overflow.bottom ? "true" : undefined}
-      onScroll={measure}
-      style={{ maskImage: fadeMask, WebkitMaskImage: fadeMask }}
+      data-overflow-top={fade["data-overflow-top"]}
+      data-overflow-bottom={fade["data-overflow-bottom"]}
+      onScroll={fade.onScroll}
+      style={fade.style}
       className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {children}
     </div>
+  );
+
+  const bugLabel = t("onAir.nav.bug", { defaultValue: "Report bug" });
+  const moreItems = [
+    { id: "news", label: labelOf({ labelKey: "dashboard.news", defaultLabel: "News" }), icon: Newspaper, onSelect: () => onNavClick("News") },
+    { id: "social", label: labelOf({ labelKey: "dashboard.social", defaultLabel: "Social" }), icon: MessageCircle, onSelect: () => onNavClick("Social") },
+    { id: "settings", label: t("dashboard.settings", { defaultValue: "Settings" }), icon: Settings, onSelect: onNavigateSettings },
+    { id: "bug", label: bugLabel, icon: Bug, onSelect: () => setBugOpen(true) },
+    { id: "exit", label: t("dashboard.exitToMenu", { defaultValue: "Exit" }), icon: LogOut, tone: "danger" as const, onSelect: onExitClick },
+    { id: "manager", label: managerLabel, icon: UserRound, onSelect: () => onNavClick("Manager") },
+  ];
+  const more = (
+    <RailMore
+      label={t("onAir.nav.more", { defaultValue: "More" })}
+      items={moreItems}
+      open={moreOpen}
+      onOpenChange={setMoreOpen}
+      active={activeTab === "Manager" || activeTab === "News" || activeTab === "Social"}
+      data-nav-id="util:more"
+      {...itemProps("util:more")}
+    />
   );
 
   const cluster = (
@@ -503,6 +513,7 @@ export function DashboardSidebarV2({
               data-slot="rail-column"
               className={cn(
                 "flex min-h-0 shrink-0 flex-col",
+                android && "py-[8px]",
                 compact ? "w-[var(--rail-w-compact)]" : "w-[var(--rail-w-split)]",
               )}
             >
@@ -514,12 +525,18 @@ export function DashboardSidebarV2({
                   labelOf={labelOf}
                   compact={compact}
                   iconOnly={iconOnlyStops}
+                  android={android}
+                  trailing={android ? more : undefined}
                   lastVisited={lastVisited}
                   onNavClick={onNavClick}
                   handle={itemProps}
                 />,
               )}
-              {cluster}
+              {android ? (
+                <FloatingBugButton variant="hidden" open={bugOpen} onOpenChange={setBugOpen} />
+              ) : (
+                cluster
+              )}
             </div>
             {panelGroup && (
               <RailSplitPanel
@@ -532,6 +549,7 @@ export function DashboardSidebarV2({
                 attentionName={attentionName}
                 onNavClick={onNavClick}
                 handle={itemProps}
+                touch={android}
               />
             )}
           </>

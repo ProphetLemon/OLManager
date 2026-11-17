@@ -12,8 +12,8 @@ import { APP_VERSION } from "@/lib/common/appInfo";
 import { getManagerTeamName } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 
 interface FloatingBugButtonProps {
-  /** "cell" is the rail tree's icon-only utility cell; the default is the inline button. */
-  variant?: "inline" | "cell";
+  /** "cell" is the rail tree's icon-only utility cell, "hidden" renders only the modal (opened from a menu); the default is the inline button. */
+  variant?: "inline" | "cell" | "hidden";
   buttonRef?: Ref<HTMLButtonElement>;
   tabIndex?: 0 | -1;
   /** Controlled modal state. Without it the button keeps its own. */
@@ -45,6 +45,7 @@ export default function FloatingBugButton({
 
   return (
     <>
+      {variant !== "hidden" && (
       <button
         ref={buttonRef}
         type="button"
@@ -63,6 +64,7 @@ export default function FloatingBugButton({
           <Bug className="size-5" aria-hidden="true" />
         )}
       </button>
+      )}
 
       {show && (
         <ReportBugModal

@@ -789,6 +789,17 @@ describe("DashboardV2 rail mode", () => {
     expect(shell.sidebar?.attention).toEqual({});
   });
 
+  it("always passes Split on Android, whatever the body size, with the platform", async () => {
+    document.documentElement.dataset.platform = "android";
+    try {
+      await renderDashboard();
+      measure(5000, 5000);
+      expect(shell.sidebar).toMatchObject({ railMode: "split", platform: "android" });
+    } finally {
+      delete document.documentElement.dataset.platform;
+    }
+  });
+
   it("passes Tree to the sidebar and hides the strip when the body fits the tree", async () => {
     await renderDashboard();
     measure(1280, 764);

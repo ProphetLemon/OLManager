@@ -24,6 +24,8 @@ interface RailItemProps {
   iconOnly?: boolean;
   tone?: "default" | "danger";
   buttonRef?: Ref<HTMLButtonElement>;
+  "aria-haspopup"?: "menu";
+  "aria-expanded"?: boolean;
   "data-rail-stop"?: string;
   /** Stable row id (`util:settings`) the tree rail keys focus and tests on. */
   "data-nav-id"?: string;
@@ -74,6 +76,8 @@ export function RailItem({
       aria-label={accessibleName}
       aria-current={active ? "page" : undefined}
       aria-description={hint}
+      aria-haspopup={rest["aria-haspopup"]}
+      aria-expanded={rest["aria-expanded"]}
       title={iconOnly ? undefined : hint ? `${label}: ${hint}` : label}
       data-slot="rail-item"
       data-active={active ? "true" : undefined}
@@ -81,7 +85,7 @@ export function RailItem({
       data-nav-id={rest["data-nav-id"]}
       className={cn(
         "relative mx-1.5 flex w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center text-center transition-colors",
-        iconOnly ? "h-[var(--nav-cell)]" : "min-h-[var(--hit)] gap-0.5 px-1 py-1.5",
+        iconOnly ? "h-[var(--nav-cell)] min-w-[var(--hit)]" : "min-h-[var(--hit)] min-w-[var(--hit)] gap-0.5 px-1 py-1.5",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring",
         tone === "danger"
           ? "text-negative hover:bg-negative/10"

@@ -694,6 +694,7 @@ export default function DashboardV2() {
         railMode={rail.mode}
         railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need, rootPx: rail.rootPx }}
         attention={buildAttentionMap(callResult?.items ?? [])}
+        platform={rail.platform}
       />
 
       <DashboardOverlays
