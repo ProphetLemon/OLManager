@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use tauri::State;
 
 use olm_core::clock::GameClock;
-use olm_core::db::save_index::SaveEntry;
+use olm_core::db::save_manager::SaveListing;
 use olm_core::domain::manager::Manager;
 use olm_core::domain::stats::StatsState;
 use olm_core::game::Game;
@@ -1631,14 +1631,16 @@ pub async fn select_team(
     Ok(crate::client_game::game_for_client(&game))
 }
 
+/// The saves list: every entry with the status its file has right now, so a
+/// save this version cannot read shows up with its reason instead of vanishing.
 #[tauri::command]
-pub async fn get_saves(sm_state: State<'_, SaveManagerState>) -> Result<Vec<SaveEntry>, String> {
+pub async fn get_saves(sm_state: State<'_, SaveManagerState>) -> Result<Vec<SaveListing>, String> {
     log::debug!("[cmd] get_saves");
     let sm = sm_state
         .0
         .lock()
         .map_err(|e| format!("Lock error: {}", e))?;
-    Ok(sm.list_saves().to_vec())
+    Ok(sm.list_saves_with_status())
 }
 
 #[tauri::command]

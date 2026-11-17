@@ -30,6 +30,13 @@
         "unknown": "Qualcosa è andato storto: {{error}}"
       }
     },
+    "loadFailed": "Non è stato possibile caricare il salvataggio: {{error}}",
+    "saveStatus": {
+      "otherVersion": "Di un’altra versione",
+      "unreadable": "Non leggibile",
+      "otherVersionReason": "Salvato con il formato {{found}}, che questa versione non legge. Resta sul tuo dispositivo: esportalo per conservarne una copia oppure aprilo con la versione che lo ha creato.",
+      "unreadableReason": "Il file è danneggiato o incompleto, quindi non può essere caricato. Resta sul tuo dispositivo: esportalo per conservare ciò che contiene oppure eliminalo."
+    },
     "noResults": "Nessun risultato",
     "failedStartGame": "Impossibile avviare il gioco: {{error}}",
     "community": "Community",

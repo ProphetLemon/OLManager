@@ -195,6 +195,13 @@
         "unknown": "Algo salió mal: {{error}}"
       }
     },
+    "loadFailed": "No se pudo cargar la partida: {{error}}",
+    "saveStatus": {
+      "otherVersion": "De otra versión",
+      "unreadable": "No se puede leer",
+      "otherVersionReason": "Guardada con el formato {{found}}, que esta versión no lee. Sigue en tu dispositivo: expórtala para conservar una copia o ábrela con la versión que la creó.",
+      "unreadableReason": "El archivo está dañado o incompleto, así que no se puede cargar. Sigue en tu dispositivo: expórtalo para conservar lo que contiene o elimínalo."
+    },
     "noResults": "Sin resultados",
     "failedStartGame": "Error al iniciar el juego: {{error}}"
   },

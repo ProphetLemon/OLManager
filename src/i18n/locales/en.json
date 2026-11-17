@@ -195,6 +195,13 @@
         "unknown": "Something went wrong: {{error}}"
       }
     },
+    "loadFailed": "The save could not be loaded: {{error}}",
+    "saveStatus": {
+      "otherVersion": "From another version",
+      "unreadable": "Can't be read",
+      "otherVersionReason": "Saved with format {{found}}, which this version does not read. It stays on your device: export it to keep a copy, or open it with the version that made it.",
+      "unreadableReason": "The file is damaged or incomplete, so it cannot be loaded. It stays on your device: export it to keep what is there, or delete it."
+    },
     "noResults": "No results",
     "failedStartGame": "Failed to start game: {{error}}"
   },

@@ -193,6 +193,13 @@
         "unknown": "Algo correu mal: {{error}}"
       }
     },
+    "loadFailed": "Não foi possível carregar o jogo: {{error}}",
+    "saveStatus": {
+      "otherVersion": "De outra versão",
+      "unreadable": "Não se consegue ler",
+      "otherVersionReason": "Guardado com o formato {{found}}, que esta versão não lê. Continua no teu dispositivo: exporta-o para guardar uma cópia ou abre-o com a versão que o criou.",
+      "unreadableReason": "O ficheiro está danificado ou incompleto, por isso não pode ser carregado. Continua no teu dispositivo: exporta-o para guardar o que lá está ou elimina-o."
+    },
     "noResults": "Sem resultados",
     "failedStartGame": "Falha ao iniciar o jogo: {{error}}",
     "community": "Comunidade",

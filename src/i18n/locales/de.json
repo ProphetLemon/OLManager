@@ -193,6 +193,13 @@
         "unknown": "Etwas ist schiefgelaufen: {{error}}"
       }
     },
+    "loadFailed": "Der Spielstand konnte nicht geladen werden: {{error}}",
+    "saveStatus": {
+      "otherVersion": "Aus anderer Version",
+      "unreadable": "Nicht lesbar",
+      "otherVersionReason": "Mit Format {{found}} gespeichert, das diese Version nicht liest. Der Spielstand bleibt auf deinem Gerät: Exportiere ihn, um eine Kopie zu behalten, oder öffne ihn mit der Version, die ihn erstellt hat.",
+      "unreadableReason": "Die Datei ist beschädigt oder unvollständig und lässt sich deshalb nicht laden. Sie bleibt auf deinem Gerät: Exportiere sie, um zu retten, was darin steht, oder lösche sie."
+    },
     "noResults": "Keine Ergebnisse",
     "failedStartGame": "Spiel konnte nicht gestartet werden: {{error}}",
     "community": "Community",
