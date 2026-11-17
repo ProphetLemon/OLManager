@@ -405,3 +405,37 @@ describe("Split labels that do not fit (R13)", () => {
     expect(navId("tab:Home").className).not.toContain("h-[var(--nav-cell)]");
   });
 });
+
+describe("Focus survives a rail change that is not a Tree/Split flip", () => {
+  it("lands on the new active group's launcher when the panel remounts under a route change", () => {
+    const { rerender } = setup({ activeTab: "Tactics" });
+    focus(navId("tab:Tactics")); // a panel row
+    rerender({ activeTab: "Transfers" }); // another group, reached outside the rail
+    expect(navId("tab:Tactics")).toBeNull();
+    expect(navId("group:market")).toHaveFocus();
+  });
+
+  it("falls back to the first stop when the active group is hidden for an unemployed manager", () => {
+    const { rerender } = setup({ activeTab: "Squad" });
+    focus(navId("group:club"));
+    rerender({ isUnemployed: true });
+    expect(navId("group:club")).toBeNull();
+    expect(document.activeElement).toBe(navId("tab:Home"));
+  });
+
+  it("does not steal focus back after the window lost focus", () => {
+    const { rerender } = setup({ activeTab: "Squad" });
+    focus(navId("tab:Squad"));
+    fireEvent.blur(window);
+    act(() => (document.activeElement as HTMLElement).blur());
+    rerender({ activeTab: "Transfers" });
+    expect(document.body).toHaveFocus();
+  });
+
+  it("does not move focus that is still on a row", () => {
+    const { rerender } = setup({ activeTab: "Squad" });
+    focus(navId("tab:Inbox"));
+    rerender({ activeTab: "Transfers" });
+    expect(navId("tab:Inbox")).toHaveFocus();
+  });
+});

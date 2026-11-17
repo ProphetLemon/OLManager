@@ -283,21 +283,32 @@ export function DashboardSidebarV2({
     const onPress = (e: Event) => {
       if (e.target instanceof Node && !navRef.current?.contains(e.target)) focusInside.current = false;
     };
+    // The window losing focus is not a way back into the rail either.
+    const onWindowBlur = () => {
+      focusInside.current = false;
+    };
     document.addEventListener("pointerdown", onPress, true);
-    return () => document.removeEventListener("pointerdown", onPress, true);
+    window.addEventListener("blur", onWindowBlur);
+    return () => {
+      document.removeEventListener("pointerdown", onPress, true);
+      window.removeEventListener("blur", onWindowBlur);
+    };
   }, []);
 
-  // A flip between Tree and Split unmounts the focused row. When focus was in the rail, put
-  // it back on the row with the same id, or its nearest equivalent, instead of dropping to <body>.
-  const prevTree = useRef(tree);
+  // Whatever removes the focused row (a Tree/Split flip, the panel of another group after a
+  // route change, a group hidden for an unemployed manager) leaves focus on <body>. When focus
+  // was in the rail, put it back on the row with the same id, or its nearest equivalent, or the
+  // first stop. Runs when the set of rows changes, never on an ordinary render.
+  const rowsKey = rows.map((r) => r.id).join("|");
+  const prevRowsKey = useRef(rowsKey);
   useLayoutEffect(() => {
-    if (prevTree.current === tree) return;
-    prevTree.current = tree;
+    if (prevRowsKey.current === rowsKey) return;
+    prevRowsKey.current = rowsKey;
     const active = document.activeElement;
     const lost = !active || active === document.body || !navRef.current?.contains(active);
     if (!focusInside.current || !lost) return;
-    itemRefs.current[currentRowId]?.focus();
-  }, [tree, currentRowId]);
+    (itemRefs.current[currentRowId] ?? itemRefs.current[stops[0]?.id ?? ""])?.focus();
+  }, [rowsKey, currentRowId, stops]);
 
   // Fade cues that only show while the stops area has more content past an edge.
   const scrollerRef = useRef<HTMLDivElement | null>(null);
