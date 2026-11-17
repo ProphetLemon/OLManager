@@ -20,8 +20,13 @@ vi.mock("@/ui-v2/_legacy/components/playoffs/PlayoffBracketBoard", () => ({
 
 import DashboardTabContent from "@/ui-v2/_legacy/components/dashboard/DashboardTabContent";
 
-function game(season: number): GameStateData {
+const THREE_SPLITS = {
+  les: { schedule: { splits: [{ name: "Winter" }, { name: "Spring" }, { name: "Summer" }] } },
+};
+
+function game(season: number, splitIndex?: number): GameStateData {
   return {
+    ...(splitIndex === undefined ? {} : { competition_configs: THREE_SPLITS }),
     manager: { team_id: "t-user" },
     user_competition_id: "les",
     teams: [
@@ -34,6 +39,7 @@ function game(season: number): GameStateData {
         competition_id: "les",
         name: "LES",
         season,
+        split_index: splitIndex ?? 0,
         fixtures: [],
         standings: [
           { team_id: "t-user", won: 10, lost: 2, points: 30 },
@@ -102,6 +108,44 @@ function Harness({ tab }: { tab: string }) {
   } as never;
   return <DashboardTabContent viewModel={viewModel} />;
 }
+
+describe("end screen names the period that just ended", () => {
+  beforeEach(() => {
+    gameLanguage.current = "en";
+    invokeMock.mockReset();
+    useGameStore.getState().clearGame();
+  });
+
+  function open(splitIndex: number) {
+    const state = game(1, splitIndex);
+    useGameStore.getState().setGameState(state);
+    return render(<Harness tab="Home" />);
+  }
+
+  it.each([
+    [0, "Winter"],
+    [1, "Spring"],
+  ])("says the %s split is complete, not the season", (splitIndex, name) => {
+    open(splitIndex);
+    expect(screen.getByRole("heading", { level: 1, name: `${name} Split Complete` })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start next split/i })).toBeInTheDocument();
+    expect(screen.queryByText(/season complete/i)).toBeNull();
+    expect(screen.queryByRole("button", { name: /start next season/i })).toBeNull();
+    expect(screen.queryByText(/player stats will be archived/i)).toBeNull();
+  });
+
+  it("keeps the season texts at the last split of the season", () => {
+    open(2);
+    expect(screen.getByRole("heading", { level: 1, name: "Season Complete" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start next season/i })).toBeInTheDocument();
+  });
+
+  it("keeps the season texts when the league has no split configuration", () => {
+    useGameStore.getState().setGameState(game(1));
+    render(<Harness tab="Home" />);
+    expect(screen.getByRole("heading", { level: 1, name: "Season Complete" })).toBeInTheDocument();
+  });
+});
 
 describe("end-of-season summary survives the season wrap", () => {
   beforeEach(() => {

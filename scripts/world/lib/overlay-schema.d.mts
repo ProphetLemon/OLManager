@@ -1,4 +1,6 @@
 export const OVERLAY_SCHEMA_VERSION: 1;
+export const POOL_OVERLAY_SCHEMA_VERSION: 2;
+export const SUPPORTED_SCHEMA_VERSIONS: readonly number[];
 export const POSITIONS: readonly string[];
 export const MOVABLE_STAFF_ROLES: readonly string[];
 export const ADDED_STAFF_ROLES: readonly string[];
@@ -43,5 +45,8 @@ export interface RosterOverlay {
   staff: StaffOp[];
 }
 
+export function hasTeamlessAdds(overlay: unknown): boolean;
+export function overlaySchemaVersion(ops: { players?: ReadonlyArray<unknown>; staff?: ReadonlyArray<unknown> }): number;
+export function checkSchemaCompat(overlay: unknown): OverlayValidationError[];
 export function validateOverlay(overlay: unknown, world?: OverlayWorldIds): OverlayValidationResult;
 export function formatErrors(errors: ReadonlyArray<OverlayValidationError>): string;

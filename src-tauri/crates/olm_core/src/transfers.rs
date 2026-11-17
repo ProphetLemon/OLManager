@@ -16,6 +16,8 @@ use crate::finances::{
     record_transaction_with_text,
 };
 use crate::game::Game;
+use crate::person_identity::PersonIndex;
+use crate::player_age::player_age;
 use crate::roster_stability::{RosterStabilityReason, repair_team};
 use chrono::{Datelike, NaiveDate};
 use rand_08::Rng;
@@ -62,6 +64,9 @@ const MAX_INCOMING_OFFERS_PER_DAY: usize = 2;
 const MAX_OFFERS_PER_TEAM_PER_WEEK: usize = 2;
 const MAX_AI_FREE_AGENT_SIGNINGS_PER_DAY: usize = 2;
 const MAX_AI_INTERCLUB_TRANSFERS_PER_DAY: usize = 1;
+/// An AI club signs no more players once its roster has this many, from free agency or
+/// from another club.
+const MAX_AI_ROSTER_SIZE: usize = 7;
 const LOL_CORE_ROLES: [&str; 5] = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -202,11 +207,11 @@ fn minimum_acceptable_fee(
     ((player.market_value as f64) * multiplier).round() as u64
 }
 
-fn calculate_player_offer_value(
+pub(crate) fn calculate_player_offer_value(
     current_date: NaiveDate,
     player: &crate::domain::player::Player,
 ) -> u64 {
-    let age = calc_player_age(current_date, &player.date_of_birth);
+    let age = player_age(player, current_date).years;
 
     let age_multiplier: f64 = if age <= 20 {
         1.30
@@ -236,15 +241,6 @@ fn calculate_player_offer_value(
     };
 
     ((player.market_value as f64) * age_multiplier * potential_multiplier).round() as u64
-}
-
-fn calc_player_age(current_date: NaiveDate, date_of_birth: &str) -> u32 {
-    let dob = NaiveDate::parse_from_str(date_of_birth, "%Y-%m-%d").unwrap_or(current_date);
-    let mut age = (current_date.year() - dob.year()) as u32;
-    if current_date < dob.with_year(current_date.year()).unwrap_or(dob) {
-        age = age.saturating_sub(1);
-    }
-    age
 }
 
 fn player_move_openness_score(
@@ -681,6 +677,11 @@ pub fn generate_incoming_transfer_offers(game: &mut Game) {
             managed_team_ids.insert(team.id.clone());
         }
     }
+    // A linked real club is part of the user's squad: offers for its players come to the user.
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
+    if let Some(club_id) = &linked_club_id {
+        managed_team_ids.insert(club_id.clone());
+    }
 
     if managed_squad_has_recent_incoming_offer(
         game,
@@ -697,6 +698,7 @@ pub fn generate_incoming_transfer_offers(game: &mut Game) {
         .teams
         .iter()
         .filter(|team| team.id != user_team_id && team.team_kind == TeamKind::Main)
+        .filter(|team| linked_club_id.as_deref() != Some(team.id.as_str()))
         .map(|team| team.id.clone())
         .collect();
 
@@ -768,7 +770,9 @@ pub fn generate_incoming_transfer_offers(game: &mut Game) {
 
             let player_team = game.teams.iter().find(|team| team.id == player_team_id);
             let is_academy_player = player_team
-                .map(|team| team.team_kind == TeamKind::Academy)
+                .map(|team| {
+                    team.team_kind == TeamKind::Academy || linked_club_id.as_deref() == Some(team.id.as_str())
+                })
                 .unwrap_or(false);
 
             if !allow_unsolicited_offer_for_player(current_date, player, player_team) {
@@ -885,11 +889,49 @@ fn parse_offer_date(date: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(date, "%Y-%m-%d").ok()
 }
 
+/// The contracted players of the world, as an index of who a teamless record could be.
+/// The catalog and old saves keep a teamless second record of some contracted players; an AI
+/// club that signed one would put one person on two clubs. Build it once per pass.
+pub(crate) fn contracted_person_index(game: &Game) -> PersonIndex {
+    PersonIndex::new(
+        game.players
+            .iter()
+            .filter(|player| player.team_id.is_some()),
+    )
+}
+
+/// A free-agent pick: player id, asking price, market value.
+type FreeAgentPick = (String, u64, u64);
+
+/// The best of `candidates`, by `rank`, that could not be the same person as a contracted
+/// player. Among equal ranks the last candidate wins, as `max_by_key` picks. The ranking is
+/// built once and only its first few entries are checked, so a twin on top costs one lookup,
+/// not another scan of the market.
+fn best_untwinned(
+    game: &Game,
+    twins: &PersonIndex,
+    candidates: impl Iterator<Item = FreeAgentPick>,
+    rank: impl Fn(&FreeAgentPick) -> u64,
+) -> Option<FreeAgentPick> {
+    let mut ranked: Vec<FreeAgentPick> = candidates.collect();
+    ranked.reverse();
+    ranked.sort_by_key(|candidate| std::cmp::Reverse(rank(candidate)));
+    ranked.into_iter().find(|candidate| {
+        !game
+            .players
+            .iter()
+            .find(|player| player.id == candidate.0)
+            .is_some_and(|player| twins.has_twin_of(player))
+    })
+}
+
 fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
     let mut candidate_team_ids: Vec<String> = game
         .teams
         .iter()
         .filter(|team| team.id != user_team_id && team.team_kind == TeamKind::Main)
+        .filter(|team| linked_club_id.as_deref() != Some(team.id.as_str()))
         .filter(|team| team.transfer_budget > 0 && team.finance > 0)
         .map(|team| team.id.clone())
         .collect();
@@ -911,6 +953,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
     });
 
     let mut completed = 0_usize;
+    let mut twins = contracted_person_index(game);
 
     for team_id in candidate_team_ids {
         if completed >= MAX_AI_FREE_AGENT_SIGNINGS_PER_DAY {
@@ -922,7 +965,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
             .iter()
             .filter(|player| player.team_id.as_deref() == Some(team_id.as_str()))
             .count();
-        if roster_size >= 7 {
+        if roster_size >= MAX_AI_ROSTER_SIZE {
             continue;
         }
 
@@ -936,36 +979,42 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
 
         let preferred_role = ai_team_priority_role(game, &team_id);
 
-        let role_candidate = game
-            .players
-            .iter()
-            .filter(|player| player.team_id.is_none())
-            .filter(|player| crate::residency::has_import_slot_for(game, team, player))
-            .filter(|player| lol_role_to_string(&player.natural_position) == preferred_role)
-            .filter_map(|player| {
-                let asking_price = (player.market_value as i64).max(25_000) / 5;
-                (asking_price > 0 && asking_price <= budget_cap).then_some((
-                    player.id.clone(),
-                    asking_price as u64,
-                    player.market_value,
-                ))
-            })
-            .max_by_key(|(_, _, market_value)| *market_value);
+        let role_candidate = best_untwinned(
+            game,
+            &twins,
+            game.players
+                .iter()
+                .filter(|player| player.team_id.is_none())
+                .filter(|player| crate::residency::has_import_slot_for(game, team, player))
+                .filter(|player| lol_role_to_string(&player.natural_position) == preferred_role)
+                .filter_map(|player| {
+                    let asking_price = (player.market_value as i64).max(25_000) / 5;
+                    (asking_price > 0 && asking_price <= budget_cap).then_some((
+                        player.id.clone(),
+                        asking_price as u64,
+                        player.market_value,
+                    ))
+                }),
+            |(_, _, market_value)| *market_value,
+        );
 
-        let candidate = game
-            .players
-            .iter()
-            .filter(|player| player.team_id.is_none())
-            .filter(|player| crate::residency::has_import_slot_for(game, team, player))
-            .filter_map(|player| {
-                let asking_price = (player.market_value as i64).max(25_000) / 5;
-                (asking_price > 0 && asking_price <= budget_cap).then_some((
-                    player.id.clone(),
-                    asking_price as u64,
-                    player.market_value,
-                ))
-            })
-            .max_by_key(|(_, _, market_value)| *market_value);
+        let candidate = best_untwinned(
+            game,
+            &twins,
+            game.players
+                .iter()
+                .filter(|player| player.team_id.is_none())
+                .filter(|player| crate::residency::has_import_slot_for(game, team, player))
+                .filter_map(|player| {
+                    let asking_price = (player.market_value as i64).max(25_000) / 5;
+                    (asking_price > 0 && asking_price <= budget_cap).then_some((
+                        player.id.clone(),
+                        asking_price as u64,
+                        player.market_value,
+                    ))
+                }),
+            |(_, _, market_value)| *market_value,
+        );
 
         let Some((player_id, fee, _)) = role_candidate.or(candidate) else {
             continue;
@@ -988,6 +1037,10 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
 
         if execute_free_agent_signing(game, &player_id, &team_id, fee).is_ok() {
             completed = completed.saturating_add(1);
+            // He is under contract now: his own teamless twin is off the table too.
+            if let Some(signed) = game.players.iter().find(|p| p.id == player_id) {
+                twins.add(signed);
+            }
         }
     }
 }
@@ -995,6 +1048,9 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
 /// Public wrapper for the Team Agent to purchase a free agent for a specific
 /// role. Returns `true` if a signing was executed.
 pub fn ai_agent_purchase(game: &mut Game, team_id: &str, role: &str) -> bool {
+    if crate::academy_link::user_linked_club_id(game).as_deref() == Some(team_id) {
+        return false;
+    }
     let Some(team) = game.teams.iter().find(|t| t.id == team_id).cloned() else {
         return false;
     };
@@ -1003,21 +1059,25 @@ pub fn ai_agent_purchase(game: &mut Game, team_id: &str, role: &str) -> bool {
         return false;
     }
 
-    let candidate = game
-        .players
-        .iter()
-        .filter(|player| player.team_id.is_none())
-        .filter(|player| crate::residency::has_import_slot_for(game, &team, player))
-        .filter(|player| lol_role_to_string(&player.natural_position) == role)
-        .filter_map(|player| {
-            let asking_price = (player.market_value as i64).max(25_000) / 5;
-            (asking_price > 0 && asking_price <= budget_cap).then_some((
-                player.id.clone(),
-                asking_price as u64,
-                player.market_value,
-            ))
-        })
-        .max_by_key(|(_, fee, _)| *fee);
+    let twins = contracted_person_index(game);
+    let candidate = best_untwinned(
+        game,
+        &twins,
+        game.players
+            .iter()
+            .filter(|player| player.team_id.is_none())
+            .filter(|player| crate::residency::has_import_slot_for(game, &team, player))
+            .filter(|player| lol_role_to_string(&player.natural_position) == role)
+            .filter_map(|player| {
+                let asking_price = (player.market_value as i64).max(25_000) / 5;
+                (asking_price > 0 && asking_price <= budget_cap).then_some((
+                    player.id.clone(),
+                    asking_price as u64,
+                    player.market_value,
+                ))
+            }),
+        |(_, fee, _)| *fee,
+    );
 
     if let Some((player_id, fee, _market_value)) = candidate {
         let Some(player) = game.players.iter().find(|p| p.id == player_id) else {
@@ -1042,10 +1102,12 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
     let current_date = game.clock.current_date.date_naive();
 
     let mut completed = 0_usize;
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
     let buyer_ids: Vec<String> = game
         .teams
         .iter()
         .filter(|team| team.id != user_team_id && team.team_kind == TeamKind::Main)
+        .filter(|team| linked_club_id.as_deref() != Some(team.id.as_str()))
         .filter(|team| team.transfer_budget > 0 && team.finance > 0)
         .map(|team| team.id.clone())
         .collect();
@@ -1058,6 +1120,14 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
         let Some(buyer_team) = game.teams.iter().find(|team| team.id == buyer_id).cloned() else {
             continue;
         };
+        let buyer_roster_size = game
+            .players
+            .iter()
+            .filter(|player| player.team_id.as_deref() == Some(buyer_id.as_str()))
+            .count();
+        if buyer_roster_size >= MAX_AI_ROSTER_SIZE {
+            continue;
+        }
         let budget_cap = buyer_team.transfer_budget.min(buyer_team.finance);
         if budget_cap <= 200_000 {
             continue;
@@ -1080,7 +1150,10 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
                         }
 
                 let seller_id = player.team_id.as_deref()?;
-                if seller_id == user_team_id || seller_id == buyer_id {
+                if seller_id == user_team_id
+                    || seller_id == buyer_id
+                    || linked_club_id.as_deref() == Some(seller_id)
+                {
                     return None;
                 }
 
@@ -1125,7 +1198,10 @@ fn simulate_ai_club_to_club_transfers(game: &mut Game, user_team_id: &str) {
                         }
 
                 let seller_id = player.team_id.as_deref()?;
-                if seller_id == user_team_id || seller_id == buyer_id {
+                if seller_id == user_team_id
+                    || seller_id == buyer_id
+                    || linked_club_id.as_deref() == Some(seller_id)
+                {
                     return None;
                 }
 
@@ -2051,7 +2127,7 @@ fn wage_floor(reference_wage: u32) -> u32 {
     (u64::from(reference_wage) * WAGE_FLOOR_PCT_OF_EXPECTED).div_ceil(100) as u32
 }
 
-fn calculate_wage_acceptance_score(
+pub(crate) fn calculate_wage_acceptance_score(
     current_date: NaiveDate,
     player: &crate::domain::player::Player,
     offered_wage: u32,
@@ -2160,7 +2236,7 @@ fn calculate_wage_acceptance_score(
         score += 10;
     }
 
-    let age = calc_player_age(current_date, &player.date_of_birth);
+    let age = player_age(player, current_date).years;
     if age <= 22 {
         score += 8;
     } else if age >= 32 {
@@ -2772,6 +2848,29 @@ fn complete_transfer_with_wage(
     Ok(())
 }
 
+/// What each listed player would ask the user's club for a new contract: the same
+/// `expected_signing_wage` reference [`negotiate_player_wage`] measures offers and counters
+/// against. Read-only, so the UI can show it before any offer is made (a free agent's own
+/// `wage` is 0 when the record carries none). Unknown ids are skipped.
+pub fn expected_signing_wages_for_user(
+    game: &Game,
+    player_ids: &[String],
+) -> Result<std::collections::HashMap<String, u32>, String> {
+    let user_team_id = game.manager.team_id.as_deref().ok_or("No user team")?;
+    let team = game
+        .teams
+        .iter()
+        .find(|t| t.id == user_team_id)
+        .ok_or("User team not found")?;
+    let today = game.clock.current_date.date_naive();
+    Ok(game
+        .players
+        .iter()
+        .filter(|p| player_ids.contains(&p.id))
+        .map(|p| (p.id.clone(), expected_signing_wage(p, team, today)))
+        .collect())
+}
+
 pub fn get_transfer_history(game: &Game) -> Vec<TransferHistoryEntry> {
     game.transfer_history.entries.clone()
 }
@@ -3190,13 +3289,18 @@ fn academy_role_count(game: &Game, academy_team_id: &str, role: &str) -> usize {
 }
 
 fn try_assign_free_agent_by_role(game: &mut Game, academy_team_id: &str, role: &str) -> bool {
-    let candidate_id = game
-        .players
-        .iter()
-        .filter(|player| player.team_id.is_none())
-        .filter(|player| lol_role_to_string(&player.natural_position) == role)
-        .max_by_key(|player| player.market_value)
-        .map(|player| player.id.clone());
+    let twins = contracted_person_index(game);
+    let candidate_id = best_untwinned(
+        game,
+        &twins,
+        game.players
+            .iter()
+            .filter(|player| player.team_id.is_none())
+            .filter(|player| lol_role_to_string(&player.natural_position) == role)
+            .map(|player| (player.id.clone(), 0, player.market_value)),
+        |(_, _, market_value)| *market_value,
+    )
+    .map(|(id, _, _)| id);
 
     let Some(candidate_id) = candidate_id else {
         return false;
@@ -3759,5 +3863,131 @@ mod renewal_session_tests {
 
         assert_eq!(game.players[0].team_id.as_deref(), Some("buyer"));
         assert!(game.players[0].morale_core.renewal_state.is_none());
+    }
+}
+
+#[cfg(test)]
+mod twin_guard_tests {
+    use super::*;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{Player, PlayerAttributes};
+    use crate::domain::stats::LolRole;
+    use crate::domain::team::Team;
+    use chrono::{TimeZone, Utc};
+
+    fn club(id: &str) -> Team {
+        let mut team = Team::new(
+            id.to_string(),
+            id.to_string(),
+            "TST".to_string(),
+            "England".to_string(),
+            "London".to_string(),
+            "Arena".to_string(),
+            10_000,
+        );
+        team.finance = 50_000_000;
+        team.transfer_budget = 50_000_000;
+        team.wage_budget = 50_000_000;
+        team.reputation = 50;
+        team
+    }
+
+    fn adc(id: &str, nick: &str, full: &str, dob: &str, team: Option<&str>) -> Player {
+        let skill = 60;
+        let mut player = Player::new(
+            id.to_string(),
+            nick.to_string(),
+            full.to_string(),
+            dob.to_string(),
+            "England".to_string(),
+            LolRole::Adc,
+            PlayerAttributes {
+                mechanics: skill,
+                laning: skill,
+                teamfighting: skill,
+                macro_play: skill,
+                consistency: skill,
+                shotcalling: skill,
+                champion_pool: skill,
+                discipline: skill,
+                mental_resilience: skill,
+            },
+        );
+        player.team_id = team.map(str::to_string);
+        player.contract_end = team.map(|_| "2027-11-30".to_string());
+        player.market_value = 500_000;
+        player.morale = 70;
+        player
+    }
+
+    /// An AI club, a contracted Koldo on another club, his teamless twin (the better, and so
+    /// the first choice) and one unrelated teamless ADC.
+    fn game_with_a_twin_and_a_valid_free_agent() -> Game {
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let mut twin = adc(
+            "twin",
+            "Luis Perez Garcia",
+            "Koldo",
+            "November 7, 2000",
+            None,
+        );
+        twin.market_value = 900_000;
+        let players = vec![
+            adc(
+                "contracted",
+                "Koldo",
+                "Luis Perez Garcia",
+                "2000-11-07",
+                Some("other"),
+            ),
+            twin,
+            adc("valid", "Valid", "Valid Person", "1999-03-03", None),
+        ];
+        let mut game = Game::new(
+            clock,
+            manager,
+            vec![club("ai"), club("other")],
+            players,
+            vec![],
+            vec![],
+        );
+        game.season_context.transfer_window.status =
+            crate::domain::season::TransferWindowStatus::Open;
+        game
+    }
+
+    fn team_of(game: &Game, id: &str) -> Option<String> {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    }
+
+    #[test]
+    fn the_daily_free_agent_pass_skips_a_twin_of_a_contracted_player() {
+        let mut game = game_with_a_twin_and_a_valid_free_agent();
+
+        simulate_ai_free_agent_signings(&mut game, "nobody");
+
+        assert_eq!(team_of(&game, "twin"), None, "the twin must stay teamless");
+        assert_eq!(team_of(&game, "valid").as_deref(), Some("ai"));
+    }
+
+    #[test]
+    fn the_academy_refill_skips_a_twin_of_a_contracted_player() {
+        let mut game = game_with_a_twin_and_a_valid_free_agent();
+
+        assert!(try_assign_free_agent_by_role(&mut game, "ai", "ADC"));
+
+        assert_eq!(team_of(&game, "twin"), None, "the twin must stay teamless");
+        assert_eq!(team_of(&game, "valid").as_deref(), Some("ai"));
     }
 }

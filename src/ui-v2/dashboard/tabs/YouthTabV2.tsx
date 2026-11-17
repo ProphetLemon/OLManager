@@ -22,7 +22,7 @@ import {
   promoteAcademyPlayer,
 } from "@/services/academyService";
 import { academyBlockedMessage, academyRegionKey } from "@/lib/academy/acquisitionMessage";
-import { calcAge } from "@/lib/common/helpers";
+import { calcAge, compareAgesUnknownLast, formatAge } from "@/lib/common/helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
@@ -40,7 +40,7 @@ import {
 } from "@/ui-v2/components/ui/table";
 import { cn } from "@/ui-v2/lib/utils";
 import { AcademySearchField } from "./youth/AcademySearchField";
-import { activeCurrencySymbol, formatNumber } from "@/lib/formatting/valueFormatting";
+import { activeCurrencySymbol, formatNumber, formatVal } from "@/lib/formatting/valueFormatting";
 
 interface YouthTabV2Props {
   gameState: GameStateData;
@@ -139,6 +139,11 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
   const regionLabel = regionKey ? t(regionKey) : null;
   const blockedMessage = academyBlockedMessage(acquisitionBlockedReason, regionLabel);
   const notTopLeague = blockedMessage?.key === "youthAcademy.blocked.notTopLeague";
+  // Real clubs keep their own name, short name and logo; only legacy copies can be rebranded.
+  const optionsAreRealClubs = acquisitionOptions.some((option) => option.real_club);
+  const introKey = optionsAreRealClubs
+    ? "youthAcademy.acquisitionIntroLinked"
+    : "youthAcademy.acquisitionIntroRegion";
 
   const youthPlayers = useMemo(
     () =>
@@ -159,6 +164,19 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
         }),
     [gameState.clock.current_date, gameState.players, gameState.teams, myTeam],
   );
+
+  // A linked real club plays with its own money; legacy copies carry none worth showing.
+  const linkedClubFinance = useMemo(() => {
+    if (!academyTeam || academyTeam.team_kind === "Academy") return null;
+    const annualWages = youthPlayers.reduce((sum, player) => sum + (Number(player.wage) || 0), 0);
+    return {
+      balance: Number(academyTeam.finance) || 0,
+      sponsorMonthly: academyTeam.sponsorship
+        ? Math.round((Number(academyTeam.sponsorship.base_value) || 0) / 12)
+        : null,
+      wagesMonthly: Math.round(annualWages / 12),
+    };
+  }, [academyTeam, youthPlayers]);
 
   const avgOvr = youthPlayers.length > 0
     ? Math.round(youthPlayers.reduce((sum, player) => sum + player.ovr, 0) / youthPlayers.length)
@@ -198,7 +216,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
         case "pos":
           return dir * ((ROLE_ORDER[a.role] ?? 99) - (ROLE_ORDER[b.role] ?? 99));
         case "age":
-          return dir * (a.age - b.age);
+          return compareAgesUnknownLast(a.age, b.age, dir);
         case "ovr":
           return dir * (a.ovr - b.ovr);
         case "potential": {
@@ -379,7 +397,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                   ? t("youthAcademy.acquisitionLoading")
                   : acquisitionOptions.length > 0
                     ? regionLabel
-                      ? t("youthAcademy.acquisitionIntroRegion", { region: regionLabel })
+                      ? t(introKey, { region: regionLabel })
                       : t("youthAcademy.acquisitionIntro")
                     : acquisitionBlockedReason === "youthAcademy.loadOptionsError"
                       ? t("youthAcademy.loadOptionsError")
@@ -388,7 +406,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                         : acquisitionBlockedReason ?? t("youthAcademy.acquisitionNoOptions")}
               </p>
 
-              {acquisitionOptions.length > 0 && (
+              {acquisitionOptions.length > 0 && !optionsAreRealClubs && (
                 <div className="grid shrink-0 gap-2 md:grid-cols-3">
                   <input
                     value={academyCustomName}
@@ -451,9 +469,13 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                               const updated = await acquireAcademyTeam({
                                 parent_team_id: myTeam.id,
                                 source_team_id: option.source_team_id,
-                                custom_name: academyCustomName.trim() || undefined,
-                                custom_short_name: academyCustomShortName.trim() || undefined,
-                                custom_logo_url: academyCustomLogoUrl.trim() || undefined,
+                                custom_name: option.real_club ? undefined : academyCustomName.trim() || undefined,
+                                custom_short_name: option.real_club
+                                  ? undefined
+                                  : academyCustomShortName.trim() || undefined,
+                                custom_logo_url: option.real_club
+                                  ? undefined
+                                  : academyCustomLogoUrl.trim() || undefined,
                               });
                               onGameUpdate?.(updated);
                             } finally {
@@ -486,6 +508,42 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                   {t("youthAcademy.fundAcademy")}
                 </button>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {linkedClubFinance && (
+        <Card data-testid="linked-club-finance" className="shrink-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="font-heading text-sm uppercase tracking-wide text-muted-foreground">
+              {t("youthAcademy.linkedFinance.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
+                {t("youthAcademy.linkedFinance.balance")}
+              </p>
+              <p className={cn("mt-1 font-heading text-lg font-bold tabular-nums", linkedClubFinance.balance >= 0 ? "text-positive" : "text-negative")}>
+                {formatVal(linkedClubFinance.balance)}
+              </p>
+            </div>
+            <div>
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
+                {t("youthAcademy.linkedFinance.sponsor")}
+              </p>
+              <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">
+                {linkedClubFinance.sponsorMonthly === null ? "-" : formatVal(linkedClubFinance.sponsorMonthly)}
+              </p>
+            </div>
+            <div>
+              <p className="font-heading text-2xs uppercase tracking-wide text-muted-foreground">
+                {t("youthAcademy.linkedFinance.wages")}
+              </p>
+              <p className="mt-1 font-heading text-lg font-bold tabular-nums text-foreground">
+                {formatVal(linkedClubFinance.wagesMonthly)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -588,7 +646,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
                               title={player.position}
                             />
                           </TableCell>
-                          <TableCell className="text-center tabular-nums text-foreground">{player.age}</TableCell>
+                          <TableCell className="text-center tabular-nums text-foreground">{formatAge(player.age)}</TableCell>
                           <TableCell className="text-center">
                             <span className="font-heading font-bold tabular-nums text-foreground">{player.ovr}</span>
                           </TableCell>

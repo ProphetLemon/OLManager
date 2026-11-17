@@ -250,41 +250,6 @@ fn lol_role_rank(role: &DomainLolRole) -> u8 {
     }
 }
 
-/// Auto-select team roles from a set of player IDs.
-/// Returns (captain_id, shotcaller_id).
-pub fn auto_select_team_roles(
-    game: &Game,
-    player_ids: &[String],
-) -> (Option<String>, Option<String>) {
-    let players: Vec<&crate::domain::player::Player> = player_ids
-        .iter()
-        .filter_map(|id| game.players.iter().find(|p| &p.id == id))
-        .collect();
-
-    if players.is_empty() {
-        return (None, None);
-    }
-
-    // Captain: highest leadership + teamwork
-    let captain = players
-        .iter()
-        .max_by_key(|p| (p.attributes.shotcalling as u16) + (p.attributes.teamfighting as u16))
-        .map(|p| p.id.clone());
-
-    // Shotcaller: highest laning + macro_play + coordination (exclude Support)
-    let shotcaller = players
-        .iter()
-        .filter(|p| p.position != DomainLolRole::Support)
-        .max_by_key(|p| {
-            (p.attributes.laning as u16)
-                + (p.attributes.macro_play as u16)
-                + (p.attributes.teamfighting as u16)
-        })
-        .map(|p| p.id.clone());
-
-    (captain, shotcaller)
-}
-
 #[cfg(test)]
 mod tests {
     use super::build_team_with_bench;

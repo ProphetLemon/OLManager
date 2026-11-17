@@ -17,6 +17,34 @@ describe("academyService", () => {
     mockedInvoke.mockReset();
   });
 
+  it("keeps a real club's own identity and forbids rebranding it", async () => {
+    const option = (real_club?: boolean) => ({
+      source_team_id: "les-alpha",
+      name: "Alpha Esports",
+      short_name: "ALP",
+      logo_url: "logos/alpha.svg",
+      erl_league_id: "les",
+      erl_league_name: "LES",
+      country_code: "ES",
+      assignment_rule: "Domestic",
+      fallback_reason: null,
+      reputation: 3,
+      development_level: 2,
+      acquisition_cost: 330000,
+      ...(real_club === undefined ? {} : { real_club }),
+    });
+    mockedInvoke.mockResolvedValueOnce({
+      parent_team_id: "team-1",
+      acquisition_allowed: true,
+      options: [option(true), option(false), option()],
+    });
+
+    const response = await getAcademyAcquisitionOptions("team-1");
+
+    expect(response.options.map((entry) => entry.real_club)).toEqual([true, false, false]);
+    expect(response.options.map((entry) => entry.rebrand_allowed)).toEqual([false, true, true]);
+  });
+
   it("loads academy acquisition options from the backend authority", async () => {
     const response = {
       parent_team_id: "team-1",

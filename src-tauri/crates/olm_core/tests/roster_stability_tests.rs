@@ -11,7 +11,7 @@ use olm_core::domain::team::{Team, TeamKind};
 use olm_core::game::Game;
 use olm_core::roster_stability::{
     NewGameRosterFill, RepairAction, RosterStabilityReason, evaluate_team, fill_new_game_rosters,
-    repair_league, repair_team,
+    fill_new_game_rosters_excluding, repair_league, repair_team,
 };
 use olm_core::transfers::get_transfer_history;
 
@@ -1712,6 +1712,29 @@ fn new_game_fill_assigns_free_agents_by_natural_position_in_id_order() {
 }
 
 #[test]
+fn new_game_fill_leaves_reserved_free_agents_alone_and_fills_with_the_rest() {
+    let mut players = short_roster("ai-team");
+    players.push(player("pool-jungle", None, LolRole::Jungle, None));
+    players.push(player("fa-jungle", None, LolRole::Jungle, None));
+    players.push(player("pool-support", None, LolRole::Support, None));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+    let reserved: std::collections::HashSet<String> =
+        ["pool-jungle".to_string(), "pool-support".to_string()].into();
+
+    let fills = fill_new_game_rosters_excluding(&mut game, &reserved);
+
+    let jungle = fills.iter().find(|f| f.role == LolRole::Jungle).unwrap();
+    assert_eq!(jungle.player_id, "fa-jungle");
+    let support = fills.iter().find(|f| f.role == LolRole::Support).unwrap();
+    assert!(support.generated);
+    for id in &reserved {
+        let kept = game.players.iter().find(|p| &p.id == id).unwrap();
+        assert_eq!(kept.team_id, None);
+    }
+}
+
+#[test]
 fn new_game_fill_makes_the_team_match_eligible_without_side_effects() {
     let mut players = short_roster("ai-team");
     players.push(player("fa-jungle", None, LolRole::Jungle, None));
@@ -2056,4 +2079,77 @@ fn new_game_fill_by_level_is_reproducible() {
 
     assert_eq!(first_fills, second_fills);
     assert_eq!(first_fills[0].player_id, "fa-a");
+}
+
+/// A teamless record of the contracted "adc" (same nick, swapped names, same birth date),
+/// rated higher than the honest free agent so it is the first choice.
+fn teamless_twin_of_adc(id: &str, role: LolRole) -> Player {
+    let mut twin = player(id, None, role, Some("2028-06-30"));
+    twin.match_name = "adc Test".to_string();
+    twin.full_name = "adc".to_string();
+    twin.attributes = PlayerAttributes {
+        mechanics: 90,
+        laning: 90,
+        teamfighting: 90,
+        macro_play: 90,
+        consistency: 90,
+        shotcalling: 90,
+        champion_pool: 90,
+        discipline: 90,
+        mental_resilience: 90,
+    };
+    twin
+}
+
+#[test]
+fn repair_skips_a_teamless_twin_of_a_contracted_player_and_signs_the_next_free_agent() {
+    let mut players = vec![
+        player("top", Some("ai-team"), LolRole::Top, Some("2028-06-30")),
+        player(
+            "jungle",
+            Some("ai-team"),
+            LolRole::Jungle,
+            Some("2028-06-30"),
+        ),
+        player("mid", Some("ai-team"), LolRole::Mid, Some("2028-06-30")),
+        player("adc", Some("ai-team"), LolRole::Adc, Some("2028-06-30")),
+        player("adc2", Some("ai-team"), LolRole::Adc, Some("2028-06-30")),
+        teamless_twin_of_adc("twin-support", LolRole::Support),
+        player("valid-support", None, LolRole::Support, Some("2028-06-30")),
+    ];
+    players[5].market_value = 100_000;
+    let mut game = game_with(players, vec!["top", "jungle", "mid", "adc", "adc2"]);
+    game.teams[0].wage_budget = 1_000_000;
+
+    repair_team(&mut game, "ai-team", RosterStabilityReason::PreMatch).expect("repair");
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|p| p.id == id)
+            .and_then(|p| p.team_id.clone())
+    };
+    assert_eq!(team_of("twin-support"), None, "the twin must stay teamless");
+    assert_eq!(team_of("valid-support").as_deref(), Some("ai-team"));
+}
+
+#[test]
+fn new_game_fill_skips_a_teamless_twin_of_a_contracted_player_and_fills_with_the_next() {
+    let mut players = short_roster("ai-team");
+    players.push(teamless_twin_of_adc("twin-jungle", LolRole::Jungle));
+    players.push(player("valid-jungle", None, LolRole::Jungle, None));
+    players.push(player("valid-support", None, LolRole::Support, None));
+    let mut game = game_with(players, vec![]);
+    game.teams[1].team_kind = TeamKind::Academy;
+
+    fill_new_game_rosters(&mut game);
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|p| p.id == id)
+            .and_then(|p| p.team_id.clone())
+    };
+    assert_eq!(team_of("twin-jungle"), None, "the twin must stay teamless");
+    assert_eq!(team_of("valid-jungle").as_deref(), Some("ai-team"));
 }

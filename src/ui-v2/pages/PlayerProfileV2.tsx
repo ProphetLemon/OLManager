@@ -17,9 +17,10 @@ import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { tierFromLp, type SoloQTier } from "@/lib/players/soloq";
 import { resolveSeasonContext } from "@/lib/season/seasonContext";
+import { effectiveWage, useExpectedSigningWages } from "@/hooks/useExpectedSigningWages";
 import { demoteMainPlayerToAcademy, promoteAcademyPlayer } from "@/services/academyService";
 import { startPotentialResearch } from "@/services/playerService";
-import { findAcademyTeamForParent } from "@/store/academySelectors";
+import { findAcademyTeamForParent, getManagedTeamIds } from "@/store/academySelectors";
 import type {
   GameStateData,
   PlayerData,
@@ -71,22 +72,6 @@ function getLatestScoutReportForPlayer(
   );
 }
 
-function collectManagedTeamIds(gameState: GameStateData): Set<string> {
-  const managerTeamId = gameState.manager.team_id;
-  const managed = new Set<string>();
-  if (!managerTeamId) return managed;
-
-  managed.add(managerTeamId);
-  const parentAcademyId = gameState.teams.find((team) => team.id === managerTeamId)?.academy_team_id;
-  gameState.teams.forEach((team) => {
-    if (team.team_kind !== "Academy") return;
-    if (team.parent_team_id === managerTeamId || (parentAcademyId && team.id === parentAcademyId)) {
-      managed.add(team.id);
-    }
-  });
-  return managed;
-}
-
 export default function PlayerProfileV2({
   gameState,
   playerId,
@@ -136,6 +121,7 @@ function PlayerProfileContent({
   const { t, i18n } = useTranslation();
   const annualSuffix = t("finances.perYearSuffix", "/yr");
   const primaryRole = resolvePlayerLolRole(player);
+  const expectedWages = useExpectedSigningWages([player]);
 
   const [scoutStatus, setScoutStatus] = useState<PlayerProfileScoutStatus>("idle");
   const [scoutError, setScoutError] = useState<string | null>(null);
@@ -156,7 +142,7 @@ function PlayerProfileContent({
   const managerTeamId = gameState.manager.team_id;
   const managerTeam = gameState.teams.find((team) => team.id === managerTeamId) ?? null;
   const managerAcademyTeam = findAcademyTeamForParent(gameState.teams, managerTeamId);
-  const managedTeamIds = collectManagedTeamIds(gameState);
+  const managedTeamIds = getManagedTeamIds(gameState.teams, managerTeamId);
 
   const isOwnMainPlayer = managerTeamId !== null && player.team_id === managerTeamId;
   const isOwnAcademyPlayer =
@@ -335,6 +321,7 @@ function PlayerProfileContent({
     <div className="mx-auto w-[92%] max-w-[2000px]">
       <PlayerProfileHeroCardV2
         player={player}
+        displayWage={effectiveWage(player, expectedWages)}
         ovr={ovr}
         primaryRole={primaryRole}
         age={age}
@@ -343,6 +330,7 @@ function PlayerProfileContent({
         annualSuffix={annualSuffix}
         language={i18n.language}
         isOwnClub={isOwnClub || !onGameUpdate}
+        isUserAcademy={isOwnAcademyPlayer}
         soloqTier={soloqTier}
         scoutAvailability={scoutAvailability}
         scoutStatus={scoutStatus}

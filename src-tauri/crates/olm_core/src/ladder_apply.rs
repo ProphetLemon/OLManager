@@ -278,6 +278,7 @@ fn apply_link(
         }
     }
     move_user_with_club(game, &promoted, &relegated, lower_id, upper_id);
+    crate::academy_link::dissolve_links_of_promoted_clubs(game, &promoted);
     crate::ladder_reprice::reprice_moved_clubs(game, &promoted, &relegated, lower_id, upper_id);
 
     crate::residency::refresh_import_flags(game);

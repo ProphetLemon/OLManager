@@ -5,7 +5,8 @@ use crate::domain::player::{Player, PlayerTrait};
 use crate::domain::season::TransferWindowStatus;
 use crate::domain::team::Team;
 use crate::game::Game;
-use chrono::{Datelike, NaiveDate};
+use crate::player_age::player_age;
+use chrono::NaiveDate;
 use std::collections::{HashMap, HashSet};
 
 // ---------------------------------------------------------------------------
@@ -117,18 +118,9 @@ pub fn trait_bonus(traits: &[PlayerTrait]) -> f64 {
     bonus.clamp(0.0, 1.0)
 }
 
-/// Compute player age from date_of_birth string.
-pub fn player_age(date_of_birth: &str, today: NaiveDate) -> u8 {
-    let birth = match NaiveDate::parse_from_str(date_of_birth, "%Y-%m-%d") {
-        Ok(d) => d,
-        Err(_) => return 25, // fallback
-    };
-    let mut age = today.year() - birth.year();
-    // Birthday check: use month*100+day to avoid leap-year ordinal skew
-    if today.format("%m%d").to_string() < birth.format("%m%d").to_string() {
-        age -= 1;
-    }
-    age.max(0) as u8
+/// The player's age on `today`, from the shared age helper.
+fn age_in_years(player: &Player, today: NaiveDate) -> u8 {
+    u8::try_from(player_age(player, today).years).unwrap_or(u8::MAX)
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +176,7 @@ fn weighted_score(
 ) -> f64 {
     let lol_ovr = f64::from(current_ovr(player)) / 99.0; // normalise 0..1
 
-    let age = player_age(&player.date_of_birth, today);
+    let age = age_in_years(player, today);
     let age_f = age_factor(age);
 
     // Expected wage from contracts module
@@ -480,7 +472,7 @@ pub fn evaluate_sales(team: &Team, players: &mut [Player], today: NaiveDate) {
         }
 
         // Spec TA-03 explicit criteria
-        let age = player_age(&player.date_of_birth, today);
+        let age = age_in_years(player, today);
         let contract_months_remaining = match player.contract_end.as_deref() {
             Some(end_str) => {
                 if let Ok(end) = NaiveDate::parse_from_str(end_str, "%Y-%m-%d") {
@@ -551,13 +543,19 @@ pub fn evaluate_purchases(team_id: &str, game: &mut Game, report: &RosterReport)
         .map(|p| i64::from(p.wage))
         .sum();
 
-    // Compute cheapest available free agent wage + estimate for headroom
-    let cheapest_fa_wage = game
+    // Compute cheapest available free agent wage + estimate for headroom. A teamless twin
+    // of a contracted player is not available: the club would not sign him.
+    let twins = crate::transfers::contracted_person_index(game);
+    let mut free_agents: Vec<&Player> = game
         .players
         .iter()
         .filter(|p| p.team_id.is_none())
+        .collect();
+    free_agents.sort_by_key(|p| p.wage);
+    let cheapest_fa_wage = free_agents
+        .into_iter()
+        .find(|p| !twins.has_twin_of(p))
         .map(|p| p.wage)
-        .min()
         .unwrap_or(0);
 
     let projected_bill = current_wage_bill + i64::from(cheapest_fa_wage);
@@ -616,6 +614,8 @@ pub fn process_ai_team_agents(game: &mut Game) {
     let today = game.clock.current_date.date_naive();
 
     let team_ids = select_ai_teams_for_today(game);
+    // The user's linked club keeps its renewals (the user's staff) but never joins the market.
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
 
     // --- Phase 1: Renewals + Sales (borrow team + players mutably) ---
     for team_id in &team_ids {
@@ -630,12 +630,17 @@ pub fn process_ai_team_agents(game: &mut Game) {
         evaluate_renewals(team, &mut game.players, &report, today);
 
         // Apply sale decisions (mutable borrow of game.players)
-        evaluate_sales(team, &mut game.players, today);
+        if linked_club_id.as_deref() != Some(team_id.as_str()) {
+            evaluate_sales(team, &mut game.players, today);
+        }
     }
 
     // --- Phase 2: Purchases (need &mut Game for transfers module) ---
     // Separate loop so the &Team borrow from game.teams ends before &mut Game.
-    for team_id in &team_ids {
+    for team_id in team_ids
+        .iter()
+        .filter(|id| linked_club_id.as_deref() != Some(id.as_str()))
+    {
         let report = {
             let team = match game.teams.iter().find(|t| t.id == *team_id) {
                 Some(t) => t,
@@ -672,6 +677,10 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
     if team.team_kind != crate::domain::team::TeamKind::Main || team.manager_id.is_some() {
         return;
     }
+    let linked_club_id = crate::academy_link::user_linked_club_id(game);
+    if linked_club_id.as_deref() == Some(team_id) {
+        return;
+    }
     if team.reputation < STRATEGIC_REPUTATION_THRESHOLD {
         return;
     }
@@ -698,7 +707,7 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
                     return None;
                 }
                 // Do not poach the user-managed team without a negotiated offer.
-                if user_team_id == Some(seller_id) {
+                if user_team_id == Some(seller_id) || linked_club_id.as_deref() == Some(seller_id) {
                     return None;
                 }
                 let seller_team = game.teams.iter().find(|t| t.id == seller_id)?;
@@ -753,6 +762,7 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
     // Free-agent fallback: sign a high-impact free agent for the weak role.
     let mut fa_candidate: Option<(String, u64, u64)> = None;
     let mut rejected_candidate: Option<(String, u64)> = None;
+    let twins = crate::transfers::contracted_person_index(game);
     for p in game
         .players
         .iter()
@@ -766,7 +776,8 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
         let decision = ai_signing_policy(game, &team, p, SigningIntent::Strategic);
         if decision.accepted {
             let current_best = fa_candidate.as_ref().map(|(_, _, mv)| *mv).unwrap_or(0);
-            if p.market_value > current_best {
+            // A teamless twin of a contracted player is checked only when it would lead.
+            if p.market_value > current_best && !twins.has_twin_of(p) {
                 fa_candidate = Some((p.id.clone(), fee as u64, p.market_value));
             }
         } else if matches!(
@@ -1752,14 +1763,6 @@ mod tests {
         if let Some(team) = game.teams.iter().find(|t| t.id == "ai_team") {
             assert!(team.transfer_budget >= 0, "budget should not go negative");
         }
-    }
-
-    #[test]
-    fn test_player_age_computation() {
-        let today = NaiveDate::from_ymd_opt(2026, 6, 15).unwrap();
-        assert_eq!(player_age("2000-01-01", today), 26);
-        assert_eq!(player_age("1995-06-15", today), 31);
-        assert_eq!(player_age("2020-06-15", today), 6);
     }
 
     #[test]
@@ -3063,5 +3066,78 @@ mod tests {
             result1, result2,
             "OR-06 violated: identical game state produced different decisions"
         );
+    }
+
+    /// An elite club with an empty roster, a contracted Koldo on another club, his teamless
+    /// twin (the higher value, so the first pick) and one unrelated teamless free agent.
+    fn strategic_game_with_a_twin() -> Game {
+        use crate::domain::season::TransferWindowStatus;
+
+        let mut contracted = make_player(
+            "contracted",
+            "Koldo",
+            "other",
+            LolRole::Support,
+            70,
+            6.0,
+            100_000,
+            Some("2028-06-15"),
+            "2000-11-07",
+            vec![],
+        );
+        contracted.full_name = "Luis Perez Garcia".to_string();
+        let free_agent = |id: &str, nick: &str, full: &str, dob: &str, value: u64| {
+            let mut player =
+                make_player(id, nick, "x", LolRole::Top, 70, 6.0, 0, None, dob, vec![]);
+            player.team_id = None;
+            player.full_name = full.to_string();
+            player.market_value = value;
+            player.attributes = PlayerAttributes {
+                mechanics: 95,
+                laning: 95,
+                teamfighting: 95,
+                macro_play: 95,
+                consistency: 95,
+                shotcalling: 95,
+                champion_pool: 95,
+                discipline: 95,
+                mental_resilience: 95,
+            };
+            player
+        };
+        let twin = free_agent(
+            "twin",
+            "Luis Perez Garcia",
+            "Koldo",
+            "November 7, 2000",
+            1_500_000,
+        );
+        let valid = free_agent("valid", "Valid", "Valid Person", "1999-03-03", 1_200_000);
+        let mut game =
+            make_full_game_for_conflict(vec![contracted, twin, valid], vec!["elite", "other"]);
+        let elite = game.teams.iter_mut().find(|t| t.id == "elite").unwrap();
+        elite.reputation = 1_500;
+        elite.transfer_budget = 50_000_000;
+        elite.finance = 50_000_000;
+        elite.wage_budget = 50_000_000;
+        game.season_context.transfer_window.status = TransferWindowStatus::Open;
+        game
+    }
+
+    fn team_of(game: &Game, id: &str) -> Option<String> {
+        game.players
+            .iter()
+            .find(|p| p.id == id)
+            .and_then(|p| p.team_id.clone())
+    }
+
+    #[test]
+    fn strategic_recruitment_does_not_sign_a_teamless_twin_of_a_contracted_player() {
+        let mut game = strategic_game_with_a_twin();
+
+        ai_strategic_recruitment(&mut game, "elite");
+
+        assert_eq!(team_of(&game, "twin"), None, "the twin must stay teamless");
+        assert_eq!(team_of(&game, "valid").as_deref(), Some("elite"));
     }
 }

@@ -525,6 +525,7 @@
         "birthHint": "{{age}} yaşında kalması için {{min}} ile {{max}} arasında doğmuş olmalı.",
         "nickHint": "{{min}} ile {{max}} karakter: harf, rakam, _ . ve -",
         "fullNameHint": "{{min}} ile {{max}} karakter: harf, boşluk, kesme işareti ve tire",
+        "nationalityHint": "Yalnızca bu ligin bölgesindeki ülkeler listelenir; böylece kurucular hiçbir zaman yabancı oyuncu sayılmaz.",
         "restore": "Oluşturulanı geri yükle",
         "cancel": "İptal",
         "save": "Kaydet"
@@ -562,6 +563,7 @@
     "acquisitionLoading": "Akademi satın alma seçenekleri yükleniyor...",
     "acquisitionIntro": "Henüz bağlı bir akademiniz yok. Bir akademi edinmek için bir ERL takımı seçin.",
     "acquisitionIntroRegion": "Akademi olarak finanse etmek için ikinci seviye bir takım seçin (bölge: {{region}}).",
+    "acquisitionIntroLinked": "Akademiniz olarak bağlamak için ikinci seviye bir kulüp seçin (bölge: {{region}}). Adını, ligini ve mali durumunu korur; hangi oyunculara sahip olacağına siz karar verirsiniz.",
     "blocked": {
       "notTopLeague": "Yalnızca birinci seviye bir ligdeki kulüpler akademi finanse edebilir.",
       "noRegionCandidates": "Akademi için boşta ikinci seviye takım yok (bölge: {{region}}).",
@@ -584,6 +586,12 @@
     "fundAcademy": "Akademiyi fonla",
     "fundingAcademy": "Fonlanıyor...",
     "academyRosterLinked": "Akademi kadrosu",
+    "linkedFinance": {
+      "title": "Bağlı kulübün finansı",
+      "balance": "Bakiye",
+      "sponsor": "Sponsor / ay",
+      "wages": "Maaşlar / ay"
+    },
     "academyNotLinked": "Akademi bağlı değil",
     "promoting": "As takıma çıkarılıyor...",
     "promote": "As Takıma Çıkar",
@@ -1442,6 +1450,7 @@
   },
   "teams": {
     "yourTeam": "Takımınız",
+    "yourAcademy": "Akademiniz",
     "hq": "Merkez:",
     "squad": "Kadro",
     "avgOvr": "Ort. OVR",
@@ -1776,7 +1785,7 @@
     "academyPending": "Akademi satın alımı beklemede",
     "academyRosterCount": "Satın alınan kadroda {{count}} oyuncu var",
     "viewAcquisitionOptions": "Satın alma seçeneklerini gör",
-    "academyDescription": "Genç yetenekleri geliştirmek ve ilk takımınızı altyapıdan çıkan oyuncularla beslemek için bir akademi takımı satın alın.",
+    "academyDescription": "Genç yetenekleri geliştirmek ve ilk takımınızı altyapıdan çıkan oyuncularla beslemek için ikinci seviye bir kulübü akademi olarak bağlayın.",
     "academyPendingTitle": "Akademi yok",
     "benefitCompare": "Karşılaştır",
     "benefitCompareDesc": "İstatistikleri karşılaştırın ve en iyi seçeneği bulun",
@@ -2075,6 +2084,10 @@
   },
   "endOfSeason": {
     "seasonComplete": "Sezon Tamamlandı",
+    "splitComplete": "Split Tamamlandı",
+    "splitCompleteNamed": "{{split}} Split Tamamlandı",
+    "startNextSplit": "Sonraki Split'i Başlat",
+    "nextSplitScheduleNote": "Sonraki split için yeni bir program oluşturulacak.",
     "leagueSeason": "{{league}} — Sezon {{n}}",
     "champions": "Şampiyonlar!",
     "finalPosition": "Final sıralaması",
@@ -2347,13 +2360,12 @@
         "body": "Yıllık maaş faturamız (€{{annualWages}}) şu anda ayrılan maaş bütçesini (€{{wageBudget}}) aşıyor.\n\nKısa vadede bunu sürdürebilsek de, yönetim maaş giderinin kontrol altına alınmasını tercih eder."
       },
       "finance": {
-        "sponsorAccepted": { "subject": "Sponsorluk anlaşması imzalandı", "body": "{{sponsorName}} sponsorluğu kabul edildi. Anlaşmanın yıllık değeri €{{amount}} ve aylık olarak ödenecek." },
+        "sponsorAccepted": { "subject": "Sponsorluk anlaşması imzalandı", "body": "{{sponsorName}} sponsorluğu kabul edildi. Anlaşmanın yıllık değeri €{{amount}} ve aylık olarak ödenecek.", "bodyTerm": "{{sponsorName}} sponsorluğu kabul edildi. {{months}} ay boyunca ayda €{{monthly}} alacaksınız (toplam €{{total}})." },
         "sponsorPayout": { "subject": "Sponsorluk ödemesi alındı", "body": "{{sponsorName}} bu ay kulüp hesabına €{{amount}} yatırdı." },
         "sponsorBonus": { "subject": "Sponsorluk bonusu tetiklendi", "body": "{{sponsorName}} bonus kriterleri karşılandı. Bu ayki €{{totalAmount}} sponsorluk ödemesine €{{bonusAmount}} dahil edildi." },
         "sponsorExpired": { "subject": "Sponsorluk anlaşması sona erdi", "body": "{{sponsorName}} sponsorluğu sona erdi. Yeni bir anlaşma için piyasayı kontrol edin." },
         "facilityUpkeepSummary": { "subject": "Tesis bakım ödemesi yapıldı", "body": "€{{amount}} tutarındaki aylık tesis bakımı kulüp hesabından ödendi." },
         "facilityUpkeepSpike": { "subject": "Tesis bakım maliyeti arttı", "body": "Tesis bakımı bu ay €{{amount}} seviyesine ulaştı. Son yükseltmeler işletme maliyetlerini artırıyor." },
-        "prizePayout": { "subject": "Ödül parası onaylandı", "body": "{{season}}. sezon için {{position}}. sıra karşılığında €{{amount}} ödül verildi." },
         "boardFinancialHealth": { "subject": "Yönetim finansal durum özeti", "body": "Mevcut bakiye: €{{balance}}. Aylık net eğilim: €{{monthlyNet}}. Tahmini dayanma süresi: {{monthsLeft}} ay.", "bodyStable": "Mevcut bakiye: €{{balance}}. Aylık net eğilim: €{{monthlyNet}}. Aylık eğilim negatif değil, bu yüzden nakit tükenme riski yok." }
       },
       "seasonPayout": {
@@ -2552,10 +2564,12 @@
       "sponsor": {
         "subject": "Sponsorluk Teklifi — {{sponsor}}",
         "body": "İyi haberler koç! {{sponsor}}, {{team}} takımına sponsor olmakla ilgilendiğini belirtti.\n\nkulübün afişlerindeki reklam alanı karşılığında gelecek split için tek seferlik €{{amount}} ödeme teklif ediyorlar.\n\nBu makul bir anlaşma gibi görünüyor, ancak karar sizin.",
+        "bodyTerm": "İyi haberler koç! {{sponsor}}, {{team}} takımına sponsor olmakla ilgilendiğini belirtti.\n\nAntrenman tesisindeki reklam alanı karşılığında {{months}} ay boyunca ayda €{{monthly}} (toplam €{{total}}) teklif ediyorlar.\n\nBu makul bir anlaşma gibi görünüyor, ancak karar sizin.",
         "options": {
           "accept": {
             "label": "Anlaşmayı kabul et",
-            "description": "Sponsorluk geliri olarak €{{amount}} alın."
+            "description": "Sponsorluk geliri olarak €{{amount}} alın.",
+            "descriptionTerm": "{{months}} ay boyunca ayda €{{monthly}} alın (toplam €{{total}})."
           },
           "decline": {
             "label": "Kibarca reddet",
@@ -2900,6 +2914,10 @@
       "academyAcquired": {
         "subject": "Akademi finanse edildi: {{academy}}",
         "body": "Operasyon başarıyla tamamlandı. {{team}} artık €{{cost}} maliyetle bağlı bir akademiye ({{academy}}) sahip."
+      },
+      "academyLinkDissolved": {
+        "subject": "Akademi bağlantısı sona erdi: {{academy}}",
+        "body": "{{academy}} en üst lige yükseldi ve artık akademiniz değil. Bağlantı geri ödeme olmadan sona erer."
       },
       "esportmaniacos": {
         "positive": {

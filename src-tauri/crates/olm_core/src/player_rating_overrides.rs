@@ -343,6 +343,26 @@ pub fn apply_player_rating_overrides(
     report
 }
 
+/// Give `player` the rating the override of `from_id` holds, when `player` has no entry of
+/// its own. Used when a record that carried an override is dropped as the same person: the
+/// entry was built from the person's stats, so it belongs to the record that survives. It
+/// is applied without the stale-OVR check, since `from_id` was already applied once.
+/// Returns whether the rating moved.
+pub fn move_rating_override(
+    player: &mut Player,
+    overrides: &PlayerRatingOverrides,
+    from_id: &str,
+) -> bool {
+    if overrides.entry(&player.id).is_some() {
+        return false;
+    }
+    let Some(entry) = overrides.entry(from_id) else {
+        return false;
+    };
+    apply_entry(player, entry);
+    true
+}
+
 /// True when the market value is one the seed would have computed from the old
 /// rating (or a placeholder), so the default pass may recompute it.
 fn market_value_is_derived(player: &Player, old_ovr: u8) -> bool {

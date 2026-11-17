@@ -429,6 +429,31 @@ describe("TeamProfileV2", () => {
     expect(screen.queryByText("London")).not.toBeInTheDocument();
   });
 
+  it("marks the user's linked real club as their academy", () => {
+    const parent = createTeam({ id: "team-1", academy_team_id: "les-alpha" });
+    const linked = createTeam({
+      id: "les-alpha",
+      name: "Alpha Esports",
+      team_kind: "Main",
+      parent_team_id: "team-1",
+    });
+    const gameState = { ...createGameState(parent), teams: [parent, linked] };
+
+    render(<TeamProfileV2 teamId="les-alpha" gameState={gameState} onClose={vi.fn()} />);
+
+    expect(screen.getByText("teams.yourAcademy")).toBeInTheDocument();
+  });
+
+  it("does not mark an ordinary club as the user's academy", () => {
+    const parent = createTeam({ id: "team-1" });
+    const other = createTeam({ id: "team-2", name: "Beta FC" });
+    const gameState = { ...createGameState(parent), teams: [parent, other] };
+
+    render(<TeamProfileV2 teamId="team-2" gameState={gameState} onClose={vi.fn()} />);
+
+    expect(screen.queryByText("teams.yourAcademy")).toBeNull();
+  });
+
   it("goes back and opens a player from the roster", () => {
     const team = createTeam();
     const onClose = vi.fn();

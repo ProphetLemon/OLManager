@@ -1,11 +1,11 @@
-import { resolveUserLeague } from "@/lib/userLeague";
+import { resolveTeamLeague } from "@/lib/userLeague";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Building2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Filter, Search, SortAsc, Swords, Trophy } from "lucide-react";
 
 import type { GameStateData } from "@/store/gameStore";
 import { compareStandingsByLolScore } from "@/store/gameStore";
-import { getMainTeams } from "@/store/academySelectors";
+import { getMainTeams, isUserAcademyClub } from "@/store/academySelectors";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { formatVal } from "@/lib/common/helpers";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -30,10 +30,9 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
   const [asc, setAsc] = useState(true);
   const [page, setPage] = useState(0);
 
-  const allStandings = useMemo(
-    () => [...(resolveUserLeague(gameState)?.standings ?? [])].sort(compareStandingsByLolScore),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- resolveUserLeague reads only these two fields
-    [gameState.leagues, gameState.user_competition_id],
+  const sortedByLeague = useMemo(
+    () => new Map(gameState.leagues.map((l) => [l, [...l.standings].sort(compareStandingsByLolScore)])),
+    [gameState.leagues],
   );
   const leagues = useMemo(() => gameState.leagues.map((l) => ({ id: l.competition_id ?? l.id, name: l.name })), [gameState.leagues]);
 
@@ -46,6 +45,8 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
       const roster = gameState.players.filter((p) => p.team_id === team.id);
       const avgOvr = roster.length > 0 ? Math.round(roster.reduce((s, p) => s + calculateLolOvr(p), 0) / roster.length) : 0;
       const totalValue = roster.reduce((s, p) => s + p.market_value, 0);
+      const league = resolveTeamLeague(gameState, team);
+      const allStandings = (league && sortedByLeague.get(league)) ?? [];
       const leaguePos = allStandings.findIndex((s) => s.team_id === team.id) + 1;
       const standing = allStandings.find((s) => s.team_id === team.id);
       const wr = standing && standing.played > 0 ? Math.round((standing.won / standing.played) * 100) : null;
@@ -63,7 +64,7 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
       return asc ? c : -c;
     });
     return mapped;
-  }, [gameState.teams, gameState.players, allStandings, filter, search, sort, asc]);
+  }, [gameState, sortedByLeague, filter, search, sort, asc]);
 
   const totalPages = Math.max(1, Math.ceil(teamsData.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
@@ -157,6 +158,9 @@ export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
                   <h3 className="flex items-center gap-2 truncate font-heading text-base font-bold uppercase tracking-wide">
                     {team.name}
                     {isUser && <Badge className="text-2xs">{t("teams.yourTeam")}</Badge>}
+                    {isUserAcademyClub(gameState.teams, userTeamId, team.id) && (
+                      <Badge className="text-2xs">{t("teams.yourAcademy")}</Badge>
+                    )}
                   </h3>
                   <p className={cn("mt-0.5 flex items-center gap-1 text-xs", hasColor ? "text-white/70" : "text-muted-foreground")}>
                     <span>{t(`countries.${team.country}`, team.country)}</span>

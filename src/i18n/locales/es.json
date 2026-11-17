@@ -697,6 +697,7 @@
         "birthHint": "Nacido entre {{min}} y {{max}} para mantener {{age}} años.",
         "nickHint": "De {{min}} a {{max}} caracteres: letras, dígitos, _ . y -",
         "fullNameHint": "De {{min}} a {{max}} caracteres: letras, espacios, apóstrofos y guiones",
+        "nationalityHint": "Solo se muestran países de la región de esta liga, para que los fundadores nunca cuenten como importados.",
         "restore": "Restaurar generado",
         "cancel": "Cancelar",
         "save": "Guardar"
@@ -734,6 +735,7 @@
     "acquisitionLoading": "Cargando opciones para adquirir academia...",
     "acquisitionIntro": "Todavía no tienes academia vinculada. Elige un equipo ERL para adquirirla.",
     "acquisitionIntroRegion": "Elige un equipo de segundo nivel (región: {{region}}) para financiarlo como tu academia.",
+    "acquisitionIntroLinked": "Elige un club de segundo nivel (región: {{region}}) para vincularlo como tu academia. Conserva su nombre, su liga y sus finanzas, y tú decides qué jugadores tiene.",
     "blocked": {
       "notTopLeague": "Solo los clubes de una liga de primer nivel pueden financiar una academia.",
       "noRegionCandidates": "No hay equipos libres de segundo nivel disponibles para una academia (región: {{region}}).",
@@ -756,6 +758,12 @@
     "fundAcademy": "Financiar academia",
     "fundingAcademy": "Financiando...",
     "academyRosterLinked": "Plantilla de academia",
+    "linkedFinance": {
+      "title": "Finanzas del club vinculado",
+      "balance": "Saldo",
+      "sponsor": "Patrocinador / mes",
+      "wages": "Salarios / mes"
+    },
     "academyNotLinked": "Academia no vinculada",
     "promoting": "Subiendo...",
     "promote": "Subir",
@@ -1614,6 +1622,7 @@
   },
   "teams": {
     "yourTeam": "Tu Equipo",
+    "yourAcademy": "Tu Academia",
     "hq": "Base:",
     "squad": "Plantilla",
     "avgOvr": "Media OVR",
@@ -1962,7 +1971,7 @@
     "academyPending": "Adquisición de academia pendiente",
     "academyRosterCount": "{{count}} jugadores en la plantilla adquirida",
     "viewAcquisitionOptions": "Ver opciones de adquisición",
-    "academyDescription": "Adquiere un equipo de academia para formar jóvenes talentos y nutrir a tu primer equipo con jugadores de la cantera.",
+    "academyDescription": "Vincula un club de segundo nivel como tu academia para formar jóvenes talentos y nutrir a tu primer equipo con jugadores de la cantera.",
     "academyPendingTitle": "Sin academia",
     "benefitCompare": "Comparar",
     "benefitCompareDesc": "Compara estadísticas y encuentra la mejor opción",
@@ -2261,6 +2270,10 @@
   },
   "endOfSeason": {
     "seasonComplete": "Temporada Completa",
+    "splitComplete": "Split Completo",
+    "splitCompleteNamed": "Split {{split}} Completo",
+    "startNextSplit": "Iniciar Siguiente Split",
+    "nextSplitScheduleNote": "Se generará un nuevo calendario para el siguiente split.",
     "leagueSeason": "{{league}} — Temporada {{n}}",
     "champions": "¡Campeones!",
     "finalPosition": "Posición final",
@@ -2533,13 +2546,12 @@
         "body": "Nuestra masa salarial anual (€{{annualWages}}) supera actualmente el presupuesto salarial asignado (€{{wageBudget}}).\n\nAunque podemos sostenerlo a corto plazo, la directiva preferiría ver la masa salarial bajo control."
       },
       "finance": {
-        "sponsorAccepted": { "subject": "Acuerdo de patrocinio firmado", "body": "Se aceptó el patrocinio de {{sponsorName}}. El acuerdo vale €{{amount}} al año y se pagará mensualmente." },
+        "sponsorAccepted": { "subject": "Acuerdo de patrocinio firmado", "body": "Se aceptó el patrocinio de {{sponsorName}}. El acuerdo vale €{{amount}} al año y se pagará mensualmente.", "bodyTerm": "Se aceptó el patrocinio de {{sponsorName}}. Recibirás €{{monthly}} al mes durante {{months}} meses (€{{total}} en total)." },
         "sponsorPayout": { "subject": "Pago de patrocinio recibido", "body": "{{sponsorName}} ingresó €{{amount}} en la cuenta del club este mes." },
         "sponsorBonus": { "subject": "Bonus de patrocinio activado", "body": "Se cumplieron los criterios de bonus de {{sponsorName}}. €{{bonusAmount}} se incluyeron en el pago mensual de patrocinio de €{{totalAmount}}." },
         "sponsorExpired": { "subject": "Patrocinio finalizado", "body": "El patrocinio de {{sponsorName}} ha terminado. Revisa el mercado para encontrar un reemplazo." },
         "facilityUpkeepSummary": { "subject": "Mantenimiento de instalaciones pagado", "body": "Se pagaron €{{amount}} de mantenimiento mensual de instalaciones desde la cuenta del club." },
         "facilityUpkeepSpike": { "subject": "Subida de mantenimiento de instalaciones", "body": "El mantenimiento de instalaciones llegó a €{{amount}} este mes. Las mejoras recientes están aumentando los costes operativos." },
-        "prizePayout": { "subject": "Premio económico confirmado", "body": "Se concedieron €{{amount}} de premio de la temporada {{season}} por terminar en la posición {{position}}." },
         "boardFinancialHealth": { "subject": "Resumen financiero de la directiva", "body": "Balance actual: €{{balance}}. Tendencia neta mensual: €{{monthlyNet}}. Autonomía estimada: {{monthsLeft}} meses.", "bodyStable": "Balance actual: €{{balance}}. Tendencia neta mensual: €{{monthlyNet}}. La tendencia mensual no es negativa, así que no hay riesgo de quedarse sin caja." }
       },
       "seasonPayout": {
@@ -2738,10 +2750,12 @@
       "sponsor": {
         "subject": "Oferta de patrocinio — {{sponsor}}",
         "body": "Buenas noticias, míster: {{sponsor}} ha mostrado interés en convertirse en patrocinador de {{team}}.\n\nOfrecen un pago único de €{{amount}} por el próximo split a cambio de espacio publicitario en los carteles del club.\n\nParece un acuerdo razonable, pero la decisión es tuya.",
+        "bodyTerm": "Buenas noticias, míster: {{sponsor}} ha mostrado interés en convertirse en patrocinador de {{team}}.\n\nOfrecen €{{monthly}} al mes durante {{months}} meses (€{{total}} en total) a cambio de espacio publicitario en la ciudad deportiva.\n\nParece un acuerdo razonable, pero la decisión es tuya.",
         "options": {
           "accept": {
             "label": "Aceptar el acuerdo",
-            "description": "Recibe €{{amount}} en ingresos de patrocinio."
+            "description": "Recibe €{{amount}} en ingresos de patrocinio.",
+            "descriptionTerm": "Recibe €{{monthly}} al mes durante {{months}} meses (€{{total}} en total)."
           },
           "decline": {
             "label": "Rechazar cortésmente",
@@ -3086,6 +3100,10 @@
       "academyAcquired": {
         "subject": "Academia financiada: {{academy}}",
         "body": "La operación se ha completado con éxito. {{team}} ahora tiene una academia vinculada ({{academy}}) por un costo de €{{cost}}."
+      },
+      "academyLinkDissolved": {
+        "subject": "Vínculo de academia terminado: {{academy}}",
+        "body": "{{academy}} ha ascendido a la máxima categoría y deja de ser tu academia. El vínculo termina sin reembolso."
       },
       "esportmaniacos": {
         "positive": {

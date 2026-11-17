@@ -385,14 +385,6 @@ fn scoped_finance_mail_helpers_use_localized_payloads_route_and_correlation_dedu
         "Acme Corp",
         "2025-06-01",
     ));
-    assert!(finances::push_prize_payout_mail(
-        &mut game,
-        "team1",
-        1,
-        2,
-        500_000,
-        "2025-06-01",
-    ));
     assert!(finances::push_board_financial_health_mail(
         &mut game,
         "team1",
@@ -407,7 +399,7 @@ fn scoped_finance_mail_helpers_use_localized_payloads_route_and_correlation_dedu
         .iter()
         .filter(|message| message.category == olm_core::domain::message::MessageCategory::Finance)
         .collect();
-    assert_eq!(finance_messages.len(), 4);
+    assert_eq!(finance_messages.len(), 3);
 
     let expected = [
         (
@@ -419,11 +411,6 @@ fn scoped_finance_mail_helpers_use_localized_payloads_route_and_correlation_dedu
             "finance:sponsor-expired:team1:Acme Corp:2025-06-01:sponsorExpired",
             "be.msg.finance.sponsorExpired.subject",
             "be.msg.finance.sponsorExpired.body",
-        ),
-        (
-            "finance:prize:team1:1:2:prizePayout",
-            "be.msg.finance.prizePayout.subject",
-            "be.msg.finance.prizePayout.body",
         ),
         (
             "finance:board-health:team1:2025-06-01:boardFinancialHealth",
@@ -1363,6 +1350,155 @@ fn home_match_generates_income() {
     assert_eq!(game.teams[0].season_income, matchday_entries[0].amount);
 }
 
+/// Every matchday revenue one home match can pay at the capacity of `make_team`
+/// (attendance 15-30%, ticket 4-8), the same arithmetic as `calc_matchday`.
+fn per_match_revenues(capacity: u32) -> Vec<i64> {
+    let mut out = Vec::new();
+    for attendance in 15..=30 {
+        for ticket in 4..=8 {
+            out.push((capacity as f64 * (attendance as f64 / 100.0) * ticket as f64) as i64);
+        }
+    }
+    out
+}
+
+fn matchday_entries(game: &Game, team_id: &str) -> Vec<FinancialTransaction> {
+    game.teams
+        .iter()
+        .find(|team| team.id == team_id)
+        .unwrap()
+        .financial_ledger
+        .iter()
+        .filter(|entry| entry.kind == FinancialTransactionKind::MatchdayRevenue)
+        .cloned()
+        .collect()
+}
+
+fn completed_home_fixture(id: &str, date: &str, home: &str, away: &str) -> Fixture {
+    Fixture {
+        id: id.to_string(),
+        matchday: 1,
+        date: date.to_string(),
+        home_team_id: home.to_string(),
+        away_team_id: away.to_string(),
+        match_type: MatchType::League,
+        best_of: 1,
+        status: FixtureStatus::Completed,
+        result: Some(MatchResult {
+            home_wins: 1,
+            away_wins: 0,
+            ended_by: Default::default(),
+            game_duration_seconds: 1800,
+            report: None,
+        }),
+    }
+}
+
+#[test]
+fn active_league_home_match_is_scaled_by_the_league_tier() {
+    let mut game = make_first_of_month_game();
+    game.leagues = vec![League {
+        id: "l1".to_string(),
+        name: "Tier two".to_string(),
+        season: 1,
+        tier: 2,
+        fixtures: vec![completed_home_fixture("f1", "2025-05-30", "team1", "team2")],
+        standings: vec![StandingEntry::new("team1".to_string())],
+        ..Default::default()
+    }];
+    game.teams[0].sponsorship = no_sponsor_income();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, "team1");
+    assert_eq!(entries.len(), 1);
+    let allowed: Vec<i64> = per_match_revenues(40_000)
+        .into_iter()
+        .map(|r| r * 60 / 100)
+        .collect();
+    assert!(
+        allowed.contains(&entries[0].amount),
+        "tier 2 pays 60% of a match, got {}",
+        entries[0].amount
+    );
+}
+
+fn game_with_background_club(pending_units: i64, tier: u8) -> Game {
+    let mut game = make_first_of_month_game();
+    game.teams.push(make_team("team3", "Third FC"));
+    game.teams[1].sponsorship = no_sponsor_income();
+    game.teams[0].sponsorship = no_sponsor_income();
+    game.teams[1].pending_home_matchday_units = pending_units;
+    game.leagues = vec![
+        League {
+            id: "active".to_string(),
+            name: "Active".to_string(),
+            season: 1,
+            tier: 1,
+            standings: vec![StandingEntry::new("team1".to_string())],
+            ..Default::default()
+        },
+        League {
+            id: "bg".to_string(),
+            name: "Background".to_string(),
+            season: 1,
+            tier,
+            standings: vec![StandingEntry::new("team3".to_string())],
+            ..Default::default()
+        },
+    ];
+    game
+}
+
+#[test]
+fn background_club_pending_home_matches_are_paid_at_the_next_monthly_step() {
+    // Two tier-2 home matches simulated: 2 x 60 units.
+    let mut game = game_with_background_club(120, 2);
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, "team3");
+    assert_eq!(entries.len(), 1, "one matchday line for the background club");
+    let allowed: Vec<i64> = per_match_revenues(40_000)
+        .into_iter()
+        .map(|r| r * 120 / 100)
+        .collect();
+    assert!(
+        allowed.contains(&entries[0].amount),
+        "two tier-2 matches pay 1.2 matches of revenue, got {}",
+        entries[0].amount
+    );
+    assert_eq!(game.teams[1].pending_home_matchday_units, 0, "consumed");
+    assert_eq!(game.teams[1].season_income, entries[0].amount);
+}
+
+#[test]
+fn background_club_matches_are_not_paid_twice() {
+    let mut game = game_with_background_club(100, 1);
+
+    finances::process_monthly_finances(&mut game);
+    finances::process_monthly_finances(&mut game);
+
+    assert_eq!(matchday_entries(&game, "team3").len(), 1);
+}
+
+#[test]
+fn pending_matches_survive_a_save_round_trip() {
+    let mut game = game_with_background_club(160, 1);
+    let json = serde_json::to_string(&game).unwrap();
+    let loaded: Game = serde_json::from_str(&json).unwrap();
+    assert_eq!(loaded.teams[1].pending_home_matchday_units, 160);
+
+    // An old save without the field loads with nothing pending.
+    let mut value: serde_json::Value = serde_json::to_value(&mut game).unwrap();
+    value["teams"][1]
+        .as_object_mut()
+        .unwrap()
+        .remove("pending_home_matchday_units");
+    let old: Game = serde_json::from_value(value).unwrap();
+    assert_eq!(old.teams[1].pending_home_matchday_units, 0);
+}
+
 #[test]
 fn away_match_no_income() {
     let mut game = make_first_of_month_game();
@@ -1432,4 +1568,225 @@ fn multiple_teams_processed_independently() {
     let t2_wages = 104_000 / 12; // 2000
     assert_eq!(game.teams[0].finance, initial_t1 - t1_wages);
     assert_eq!(game.teams[1].finance, initial_t2 - t2_wages);
+}
+
+// ---------------------------------------------------------------------------
+// Random sponsor offer: the headline is what the deal pays
+// ---------------------------------------------------------------------------
+
+fn shown_number(params: &std::collections::HashMap<String, String>, key: &str) -> i64 {
+    params
+        .get(key)
+        .unwrap_or_else(|| panic!("offer shows {key}: {params:?}"))
+        .replace(',', "")
+        .parse()
+        .unwrap_or_else(|_| panic!("{key} is a whole amount: {params:?}"))
+}
+
+#[test]
+fn sponsor_offer_shows_the_monthly_amount_and_term_the_deal_pays() {
+    let mut game = make_first_of_month_game();
+    let annual = 13 * 52_000; // 676,000 a year: 56,333 a month, not divisible by 1,000
+    let offer = olm_core::random_events::build_sponsor_offer(
+        &game.teams[0],
+        "Acme Corp",
+        annual,
+        "2025-05-20",
+    );
+    let shown_monthly = shown_number(&offer.i18n_params, "monthly");
+    let shown_months = shown_number(&offer.i18n_params, "months");
+    let shown_total = shown_number(&offer.i18n_params, "total");
+    assert!(
+        !offer.i18n_params.contains_key("amount"),
+        "the yearly figure is no longer the headline: {:?}",
+        offer.i18n_params
+    );
+    assert_eq!(shown_total, shown_monthly * shown_months);
+    assert_eq!(offer.body_key.as_deref(), Some("be.msg.sponsor.bodyTerm"));
+
+    game.teams[0].sponsorship = None;
+    game.messages.push(offer);
+    olm_core::random_events::apply_event_response(&mut game, "sponsor_2025-05-20", "respond", "accept")
+        .expect("the offer can be accepted");
+
+    let mut paid = Vec::new();
+    for (month, day) in [(6, 1), (7, 1), (8, 1)] {
+        game.clock = GameClock::new(Utc.with_ymd_and_hms(2025, month, day, 12, 0, 0).unwrap());
+        finances::process_monthly_finances(&mut game);
+        let payout = game.teams[0]
+            .financial_ledger
+            .iter()
+            .rev()
+            .find(|entry| {
+                entry.kind == FinancialTransactionKind::Sponsorship
+                    && entry.date == format!("2025-{month:02}-01")
+            })
+            .map(|entry| entry.amount)
+            .expect("the deal pays every month of its term");
+        paid.push(payout);
+    }
+
+    assert_eq!(paid, vec![shown_monthly; shown_months as usize]);
+    assert_eq!(paid.iter().sum::<i64>(), shown_total);
+    assert!(
+        game.teams[0].sponsorship.as_ref().is_none_or(|deal| deal.sponsor_name != "Acme Corp"),
+        "the deal ends after the term shown"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Facility upkeep: only levels above the starting ones cost anything
+// ---------------------------------------------------------------------------
+
+fn upkeep_entries(game: &Game) -> Vec<&FinancialTransaction> {
+    game.teams[0]
+        .financial_ledger
+        .iter()
+        .filter(|entry| entry.kind == FinancialTransactionKind::FacilityUpkeep)
+        .collect()
+}
+
+#[test]
+fn starting_facilities_post_no_upkeep_entry_in_a_whole_year_of_monthly_steps() {
+    let mut game = make_first_of_month_game();
+    for month in 1..=12 {
+        game.clock = GameClock::new(Utc.with_ymd_and_hms(2026, month, 1, 12, 0, 0).unwrap());
+        finances::process_monthly_finances(&mut game);
+    }
+
+    // Zero upkeep is rejected as a zero-amount transaction, so no line is booked:
+    // the data ships every club at level 1, which costs nothing by design.
+    assert_eq!(upkeep_entries(&game).len(), 0);
+}
+
+#[test]
+fn upgraded_facilities_post_one_upkeep_entry_every_month() {
+    let mut game = make_first_of_month_game();
+    game.teams[0].facilities = Facilities {
+        training: 2,
+        ..Facilities::default()
+    };
+    // Level 2 training lifts the hub (20K) and the two modules that follow it,
+    // Scrims Room (20K) and Analysis Room (15K).
+    let expected_monthly = 55_000;
+    for month in 1..=3 {
+        game.clock = GameClock::new(Utc.with_ymd_and_hms(2026, month, 1, 12, 0, 0).unwrap());
+        finances::process_monthly_finances(&mut game);
+    }
+
+    let entries = upkeep_entries(&game);
+    assert_eq!(
+        entries.iter().map(|entry| entry.amount).collect::<Vec<_>>(),
+        vec![-expected_monthly; 3]
+    );
+}
+
+/// Revenue of `units` matchday units (100 per full-rate match) at `capacity`: every value the
+/// monthly step can pay, from `calc_matchday` over the units divided by 100.
+fn revenues_for_units(capacity: u32, units: i64) -> Vec<i64> {
+    let mut out = Vec::new();
+    for attendance in 15..=30 {
+        for ticket in 4..=8 {
+            out.push(
+                finances::calc_matchday(capacity, units, attendance as f64 / 100.0, ticket as f64)
+                    / 100,
+            );
+        }
+    }
+    out
+}
+
+#[test]
+fn tier_two_club_with_no_stadium_capacity_still_earns_matchday_revenue() {
+    let mut game = game_with_background_club(120, 2);
+    game.teams[1].stadium_capacity = 0;
+    let team_id = game.teams[1].id.clone();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, &team_id);
+    assert_eq!(
+        entries.len(),
+        1,
+        "one matchday line for the background club"
+    );
+    assert!(
+        revenues_for_units(1_500, 120).contains(&entries[0].amount),
+        "a tier-2 club with no capacity in the data plays at 1,500 seats, got {}",
+        entries[0].amount
+    );
+    assert!(entries[0].amount > 0);
+}
+
+#[test]
+fn tier_one_club_with_no_stadium_capacity_plays_at_the_tier_one_default() {
+    let mut game = game_with_background_club(100, 1);
+    game.teams[1].stadium_capacity = 0;
+    let team_id = game.teams[1].id.clone();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, &team_id);
+    assert_eq!(entries.len(), 1);
+    assert!(
+        revenues_for_units(2_500, 100).contains(&entries[0].amount),
+        "a tier-1 club with no capacity in the data plays at 2,500 seats, got {}",
+        entries[0].amount
+    );
+}
+
+#[test]
+fn active_league_club_with_no_stadium_capacity_earns_at_its_tier_default() {
+    let mut game = make_first_of_month_game();
+    game.teams[0].stadium_capacity = 0;
+    game.leagues = vec![League {
+        id: "l1".to_string(),
+        name: "Tier two".to_string(),
+        season: 1,
+        tier: 2,
+        fixtures: vec![completed_home_fixture("f1", "2025-05-30", "team1", "team2")],
+        standings: vec![StandingEntry::new("team1".to_string())],
+        ..Default::default()
+    }];
+    game.teams[0].sponsorship = no_sponsor_income();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, "team1");
+    assert_eq!(entries.len(), 1);
+    assert!(
+        revenues_for_units(1_500, 60).contains(&entries[0].amount),
+        "one tier-2 match at the 1,500-seat default, got {}",
+        entries[0].amount
+    );
+}
+
+#[test]
+fn a_capacity_the_data_sets_is_never_replaced_by_the_tier_default() {
+    let mut game = game_with_background_club(100, 2);
+    game.teams[1].stadium_capacity = 40_000;
+    let team_id = game.teams[1].id.clone();
+
+    finances::process_monthly_finances(&mut game);
+
+    let entries = matchday_entries(&game, &team_id);
+    assert_eq!(entries.len(), 1);
+    assert!(revenues_for_units(40_000, 100).contains(&entries[0].amount));
+}
+
+#[test]
+fn default_stadium_capacity_follows_the_capacities_the_data_uses_per_tier() {
+    use olm_core::tier_sponsorship::{default_stadium_capacity, effective_stadium_capacity};
+
+    assert_eq!(default_stadium_capacity(1), 2_500);
+    assert_eq!(default_stadium_capacity(2), 1_500);
+    assert_eq!(default_stadium_capacity(3), 1_500);
+    assert_eq!(
+        default_stadium_capacity(0),
+        1_500,
+        "no tier sizes like tier 2"
+    );
+    assert_eq!(effective_stadium_capacity(0, 1), 2_500);
+    assert_eq!(effective_stadium_capacity(0, 2), 1_500);
+    assert_eq!(effective_stadium_capacity(7_000, 2), 7_000);
 }

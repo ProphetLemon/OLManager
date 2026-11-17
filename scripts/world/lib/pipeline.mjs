@@ -23,6 +23,7 @@ import { explainProbe } from "./pool-report.mjs";
 import { gameTeamKeys } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, selectPool } from "./pool.mjs";
 import { poolSkillFromRows } from "./pool-rating.mjs";
+import { poolOfLevels } from "../../stats/lib/levels.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
 
@@ -53,8 +54,10 @@ export async function fetchTeamRoster(client, title) {
  * @param {string} [options.asOf] defaults to the fetch date of the oldest cache entry used
  * @param {object} [options.gateOptions]
  * @param {import("./gates.mjs").GateExceptions} [options.gateExceptions] reviewed max-changed-share exceptions
- * @param {{since?: string, cap?: number, probe?: string, inputs?: object}} [options.pool] opt-in active-pros pool: teamless free
- *   agents from the league tournaments of the last years (see lib/pool.mjs). `inputs` replaces the Leaguepedia queries (tests).
+ * @param {{since?: string, cap?: number, probe?: string, inputs?: object, statsRows?: object[], skill?: Map<string, object>, anchors?: object}} [options.pool]
+ *   opt-in active-pros pool: teamless free agents from the league tournaments of the last years (see lib/pool.mjs). `inputs` replaces
+ *   the Leaguepedia queries (tests). `anchors` (lib/pool-anchors.mjs) anchors the ratings to the game's league levels; `statsRows` are
+ *   pooled by those levels the way the stats build pools them.
  * @param {(message: string) => void} [options.log]
  */
 export async function runRefresh(options) {
@@ -141,12 +144,17 @@ export async function runRefresh(options) {
       teamKeys: gameTeamKeys(teamMap),
     };
     const rosterIds = new Set([...ops.players, ...ops.staff].map((entry) => entry.id));
-    const selection = selectPool({ people: inputs.people, context, world, rosterIds });
+    // Titles too: the same person can be spelled differently on a team page and in the pool query, which hashes to another id.
+    const addedPages = (entries) => new Set(entries.filter((entry) => entry.op.op === "add" && entry.page).map((entry) => entry.page));
+    const rosterTitles = { player: addedPages(ops.players), staff: addedPages(ops.staff) };
+    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles });
     // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
-    const skill = options.pool.skill ?? (options.pool.statsRows ? poolSkillFromRows(options.pool.statsRows, positions) : null);
+    const anchors = options.pool.anchors ?? null;
+    const poolOf = anchors ? poolOfLevels(anchors.levels) : undefined;
+    const skill = options.pool.skill ?? (options.pool.statsRows ? poolSkillFromRows(options.pool.statsRows, positions, { poolOf }) : null);
     const poolOps = buildPoolOps({
-      selection, baselines, games: inputs.games, skill, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
+      selection, baselines, games: inputs.games, skill, anchors, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
     });
     ops = { players: [...ops.players, ...poolOps.players], staff: [...ops.staff, ...poolOps.staff], skipped: [...ops.skipped, ...poolOps.skipped] };
     poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff } };

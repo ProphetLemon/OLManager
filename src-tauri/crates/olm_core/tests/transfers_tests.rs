@@ -16,8 +16,8 @@ use olm_core::game::Game;
 use olm_core::transfers::{
     TransferDestination, TransferNegotiationDecision, ai_agent_purchase, counter_offer,
     generate_incoming_transfer_offers, get_transfer_history, make_transfer_bid,
-    negotiate_player_wage, project_transfer_bid_financial_impact, release_player_contract,
-    respond_to_offer,
+    expected_signing_wages_for_user, negotiate_player_wage, project_transfer_bid_financial_impact,
+    release_player_contract, respond_to_offer,
 };
 
 fn default_attrs() -> PlayerAttributes {
@@ -1509,6 +1509,100 @@ fn ai_free_agent_signing_prioritizes_missing_role() {
     );
 }
 
+/// A buyer with a missing ADC and `bench` extra players, and a seller listing an ADC the
+/// buyer can afford. The buyer's roster size is `4 + bench`.
+fn club_transfer_game(bench: usize) -> Game {
+    let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+    let mut manager = Manager::new(
+        "manager-1".to_string(),
+        "Jane".to_string(),
+        "Doe".to_string(),
+        "1980-01-01".to_string(),
+        "England".to_string(),
+    );
+    manager.hire("team-1".to_string());
+
+    let mut user_team = make_user_team(5_000_000, 2_000_000);
+    user_team.team_kind = TeamKind::Main;
+
+    let new_team = |id: &str, name: &str| {
+        let mut team = Team::new(
+            id.to_string(),
+            name.to_string(),
+            name.chars().take(3).collect::<String>().to_uppercase(),
+            "England".to_string(),
+            "Leeds".to_string(),
+            format!("{name} Ground"),
+            25_000,
+        );
+        team.team_kind = TeamKind::Main;
+        team.finance = 6_000_000;
+        team.transfer_budget = 3_500_000;
+        team.wage_budget = 2_000_000;
+        team
+    };
+    let buyer = new_team("team-2", "Buyer FC");
+    let mut seller = new_team("team-3", "Seller City");
+    // A lineup that lists nobody on the market, so the seller has no key player.
+    seller.active_lineup_ids = vec!["seller-lineup-placeholder".to_string()];
+
+    let mut seller_adc =
+        make_player_with_position("seller-adc", LolRole::Adc, Some("team-3"), 950_000);
+    seller_adc.transfer_listed = true;
+
+    let mut players = vec![
+        make_player_with_position("buyer-top", LolRole::Top, Some("team-2"), 900_000),
+        make_player_with_position("buyer-jungle", LolRole::Jungle, Some("team-2"), 880_000),
+        make_player_with_position("buyer-mid", LolRole::Mid, Some("team-2"), 920_000),
+        make_player_with_position("buyer-support", LolRole::Support, Some("team-2"), 870_000),
+        seller_adc,
+    ];
+    for i in 0..bench {
+        players.push(make_player_with_position(
+            &format!("buyer-bench-{i}"),
+            LolRole::Mid,
+            Some("team-2"),
+            300_000,
+        ));
+    }
+
+    let mut game = Game::new(
+        clock,
+        manager,
+        vec![user_team, buyer, seller],
+        players,
+        vec![],
+        vec![],
+    );
+    game.season_context.transfer_window.status = TransferWindowStatus::Open;
+    game
+}
+
+fn club_transfer_buyer_team(game: &Game) -> Option<&str> {
+    game.players
+        .iter()
+        .find(|player| player.id == "seller-adc")
+        .and_then(|player| player.team_id.as_deref())
+}
+
+#[test]
+fn ai_club_transfer_buys_into_a_roster_under_the_cap() {
+    let mut game = club_transfer_game(2);
+
+    generate_incoming_transfer_offers(&mut game);
+
+    assert_eq!(club_transfer_buyer_team(&game), Some("team-2"));
+}
+
+#[test]
+fn ai_club_transfer_never_buys_into_a_roster_at_the_cap() {
+    let mut game = club_transfer_game(3);
+
+    generate_incoming_transfer_offers(&mut game);
+
+    assert_eq!(club_transfer_buyer_team(&game), Some("team-3"));
+}
+
 #[test]
 fn ai_club_transfer_prioritizes_missing_role() {
     let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
@@ -2116,6 +2210,117 @@ fn ai_free_agent_signing_matches_player_state_to_history() {
     );
 }
 
+/// A contracted ADC and a teamless record of the same person (swapped nick and real name).
+fn contracted_player_and_his_teamless_twin() -> (Player, Player) {
+    let mut contracted = make_free_agent("contracted-koldo", LolRole::Adc);
+    contracted.match_name = "Koldo".to_string();
+    contracted.full_name = "Luis Perez Garcia".to_string();
+    contracted.date_of_birth = "2000-11-07".to_string();
+    contracted.team_id = Some("team-other".to_string());
+    contracted.contract_end = Some("2027-11-30".to_string());
+
+    let mut twin = make_free_agent("teamless-koldo", LolRole::Adc);
+    twin.match_name = "Luis Perez Garcia".to_string();
+    twin.full_name = "Koldo".to_string();
+    twin.date_of_birth = "November 7, 2000".to_string();
+    twin.market_value = 900_000;
+    (contracted, twin)
+}
+
+#[test]
+fn ai_agent_purchase_skips_a_teamless_twin_of_a_contracted_player_and_signs_the_next_free_agent() {
+    let (contracted, twin) = contracted_player_and_his_teamless_twin();
+    let valid = make_free_agent("valid-adc", LolRole::Adc);
+    let mut game = make_game_with_free_agents(vec![twin, valid, contracted]);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(
+        team_of("teamless-koldo"),
+        None,
+        "the twin must stay teamless"
+    );
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+}
+
+#[test]
+fn ai_agent_purchase_signs_nobody_when_every_candidate_is_a_twin() {
+    let (contracted, twin) = contracted_player_and_his_teamless_twin();
+    let mut game = make_game_with_free_agents(vec![twin, contracted]);
+
+    assert!(!ai_agent_purchase(&mut game, "team-ai", "ADC"));
+}
+
+#[test]
+fn ai_agent_purchase_moves_past_several_twins_on_top_to_the_first_valid_free_agent() {
+    let mut players = vec![make_free_agent("valid-adc", LolRole::Adc)];
+    for (n, nick) in ["Koldo", "Macaquinho", "Legolas"].into_iter().enumerate() {
+        let mut contracted = make_free_agent(&format!("contracted-{n}"), LolRole::Adc);
+        contracted.match_name = nick.to_string();
+        contracted.full_name = format!("Real Name {n}");
+        contracted.date_of_birth = format!("200{n}-05-05");
+        contracted.team_id = Some("team-other".to_string());
+        contracted.contract_end = Some("2027-11-30".to_string());
+        let mut twin = make_free_agent(&format!("twin-{n}"), LolRole::Adc);
+        twin.match_name = format!("Real Name {n}");
+        twin.full_name = nick.to_string();
+        twin.date_of_birth = format!("200{n}-05-05");
+        twin.market_value = 900_000 + n as u64 * 100_000;
+        players.push(contracted);
+        players.push(twin);
+    }
+    let mut game = make_game_with_free_agents(players);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+    assert!((0..3).all(|n| team_of(&format!("twin-{n}")).is_none()));
+}
+
+#[test]
+fn ai_agent_purchase_skips_a_dateless_nick_only_ghost_of_a_contracted_player() {
+    let mut contracted = make_free_agent("contracted-lehends", LolRole::Adc);
+    contracted.match_name = "Lehends".to_string();
+    contracted.full_name = "Son Si-woo".to_string();
+    contracted.date_of_birth = "1998-12-24".to_string();
+    contracted.team_id = Some("team-other".to_string());
+    contracted.contract_end = Some("2027-11-30".to_string());
+    let mut ghost = make_free_agent("ghost-lehends", LolRole::Adc);
+    ghost.match_name = "Lehends".to_string();
+    ghost.full_name = "Lehends".to_string();
+    ghost.date_of_birth = String::new();
+    ghost.market_value = 900_000;
+    let valid = make_free_agent("valid-adc", LolRole::Adc);
+    let mut game = make_game_with_free_agents(vec![ghost, valid, contracted]);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(
+        team_of("ghost-lehends"),
+        None,
+        "the ghost must stay teamless"
+    );
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+}
+
 #[test]
 fn ai_agent_purchase_respects_daily_cap() {
     let free_agents = vec![
@@ -2586,4 +2791,28 @@ fn wage_negotiation_accepts_the_shortest_and_longest_contract_lengths() {
 
         assert!(result.is_ok(), "years = {years}: {result:?}");
     }
+}
+
+#[test]
+fn expected_signing_wages_name_the_ask_a_wage_zero_free_agent_gets_in_talks() {
+    let (game, _) = no_wage_free_agent_with_accepted_offer();
+    let today = game.clock.current_date.date_naive();
+    let ask = olm_core::contracts::expected_signing_wage(&game.players[0], &game.teams[0], today);
+
+    let wages = expected_signing_wages_for_user(&game, &["fa-no-wage".to_string()])
+        .expect("a managed club");
+
+    assert!(ask > 0);
+    assert_eq!(wages.get("fa-no-wage"), Some(&ask));
+}
+
+#[test]
+fn expected_signing_wages_skip_unknown_players_and_need_a_club() {
+    let (mut game, _) = no_wage_free_agent_with_accepted_offer();
+
+    let wages = expected_signing_wages_for_user(&game, &["ghost".to_string()]).expect("club");
+    assert!(wages.is_empty());
+
+    game.manager.team_id = None;
+    assert!(expected_signing_wages_for_user(&game, &["fa-no-wage".to_string()]).is_err());
 }

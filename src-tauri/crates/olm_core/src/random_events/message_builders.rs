@@ -1,4 +1,5 @@
-use super::{action, format_money, params};
+use super::{SPONSOR_OFFER_MONTHS, action, params};
+use crate::finances::format_exact;
 use crate::domain::message::*;
 use crate::narrative::{NarrativeSelector, load_default_content_pack};
 use rand::RngExt;
@@ -7,21 +8,27 @@ use rand::RngExt;
 // Message builders
 // ---------------------------------------------------------------------------
 
+/// A short sponsor deal: `annual_value` is the yearly worth it is priced at,
+/// `monthly` the payment the club gets in each of the [`SPONSOR_OFFER_MONTHS`] months.
 pub(super) fn sponsor_offer_message(
     msg_id: &str,
     team_name: &str,
     sponsor: &str,
-    amount: u64,
+    annual_value: u64,
+    monthly: i64,
     date: &str,
 ) -> InboxMessage {
+    let months = SPONSOR_OFFER_MONTHS;
+    let total = monthly * i64::from(months);
+    let (monthly_text, total_text) = (format_exact(monthly), format_exact(total));
     InboxMessage::new(
         msg_id.to_string(),
         format!("Sponsorship Offer — {}", sponsor),
         format!(
             "Good news, boss! {} has expressed interest in becoming a sponsor of {}.\n\n\
-            They're offering an annual sponsorship of €{} paid monthly over the next 3 months in exchange for advertising space at the training ground.\n\n\
+            They're offering €{} per month for {} months (€{} in total) in exchange for advertising space at the training ground.\n\n\
             This seems like a reasonable deal, but it's your call.",
-            sponsor, team_name, format_money(amount)
+            sponsor, team_name, monthly_text, months, total_text
         ),
         "Commercial Director".to_string(),
         date.to_string(),
@@ -36,9 +43,12 @@ pub(super) fn sponsor_offer_message(
                 ActionOption {
                     id: "accept".to_string(),
                     label: "Accept the deal".to_string(),
-                    description: format!("Receive €{} in sponsorship income.", format_money(amount)),
+                    description: format!(
+                        "Receive €{} per month for {} months (€{} in total).",
+                        monthly_text, months, total_text
+                    ),
                     label_key: Some("be.msg.sponsor.options.accept.label".to_string()),
-                    description_key: Some("be.msg.sponsor.options.accept.description".to_string()),
+                    description_key: Some("be.msg.sponsor.options.accept.descriptionTerm".to_string()),
                 },
                 ActionOption {
                     id: "decline".to_string(),
@@ -52,8 +62,16 @@ pub(super) fn sponsor_offer_message(
     ))
     .with_i18n(
         "be.msg.sponsor.subject",
-        "be.msg.sponsor.body",
-        params(&[("sponsor", sponsor), ("team", team_name), ("amount", &format_money(amount))]),
+        "be.msg.sponsor.bodyTerm",
+        params(&[
+            ("sponsor", sponsor),
+            ("team", team_name),
+            ("monthly", &monthly_text),
+            ("months", &months.to_string()),
+            ("total", &total_text),
+            // Exact yearly value the deal is signed at; never shown.
+            ("annualValue", &annual_value.to_string()),
+        ]),
     )
     .with_sender_i18n("be.sender.commercialDirector", "be.role.commercialDirector")
 }

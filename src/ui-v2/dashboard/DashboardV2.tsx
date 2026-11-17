@@ -1,4 +1,6 @@
 import { resolveUserLeague } from "@/lib/userLeague";
+import { resolveEndPeriod } from "@/lib/season/endPeriod";
+import { resolveSummaryPeriod } from "@/lib/season/summaryPeriod";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
@@ -299,6 +301,12 @@ export default function DashboardV2() {
   // summary must stay on Home until the user dismisses it.
   const showSeasonSummary =
     isLeagueSeasonComplete(activeLeague) || pendingSeasonSummary !== null;
+
+  // After the rollover the league is already the next split, so the pending summary
+  // (which knows the season it closed) decides what the bar calls the closed period.
+  const endsSplit = pendingSeasonSummary
+    ? resolveSummaryPeriod(pendingSeasonSummary.season, activeLeague?.season).kind === "split"
+    : resolveEndPeriod(gameState).kind === "split";
 
   const {
     isAdvancing,
@@ -700,6 +708,7 @@ export default function DashboardV2() {
           hasProfileHistory={hasProfileHistory}
           isAdvancing={isAdvancing}
           seasonComplete={showSeasonSummary}
+          endsSplit={endsSplit}
           isSaving={isSaving}
           saveFlash={saveFlash}
           hasMatchToday={hasMatchToday}

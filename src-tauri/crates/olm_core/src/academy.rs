@@ -47,6 +47,10 @@ pub struct AcademyAcquisitionOption {
     pub reputation: u8,
     pub development_level: u8,
     pub acquisition_cost: i64,
+    /// True when the option is a real club to link (it keeps its own name, logo and
+    /// league); false for a legacy generated copy, which the user may rebrand.
+    #[serde(default)]
+    pub real_club: bool,
 }
 
 pub type AcademyCreationOption = AcademyAcquisitionOption;
@@ -89,6 +93,8 @@ pub enum AcademyError {
 /// Internal seed type for academy player data read from JSON.
 #[derive(Debug, Clone)]
 pub struct AcademyPlayerSeed {
+    /// Id of the record in the catalog's players file, which the reviewed corrections name.
+    pub id: String,
     pub role: String,
     pub nickname: String,
     pub full_name: String,
@@ -144,6 +150,7 @@ pub fn eligible_academy_acquisition_options(
                 reputation: candidate.reputation,
                 development_level: candidate.development_level,
                 acquisition_cost: acquisition_cost_for_candidate(candidate),
+                real_club: false,
             })
         })
         .collect();
@@ -383,10 +390,11 @@ fn acquisition_option_from_league(
         reputation: erl.reputation,
         development_level: erl.reputation,
         acquisition_cost: acquisition_cost_for_reputation(erl.reputation),
+        real_club: false,
     }
 }
 
-fn acquisition_cost_for_candidate(candidate: &ErlAcademyCandidate) -> i64 {
+pub(crate) fn acquisition_cost_for_candidate(candidate: &ErlAcademyCandidate) -> i64 {
     BASE_ACADEMY_ACQUISITION_COST
         + i64::from(candidate.reputation) * REPUTATION_COST_MULTIPLIER
         + i64::from(candidate.development_level) * 20_000
@@ -396,7 +404,7 @@ fn acquisition_cost_for_reputation(reputation: u8) -> i64 {
     BASE_ACADEMY_ACQUISITION_COST + i64::from(reputation) * REPUTATION_COST_MULTIPLIER
 }
 
-fn country_matches(left: &str, right: &str) -> bool {
+pub(crate) fn country_matches(left: &str, right: &str) -> bool {
     left.eq_ignore_ascii_case(right)
 }
 
@@ -445,6 +453,34 @@ pub fn role_to_canonical(role: &str) -> String {
         _ => "mid",
     }
     .to_string()
+}
+
+/// An academy player seed from a row of the catalog's players file, with the bundled
+/// reviewed corrections of that row's id applied: the academy copy keeps the same nick,
+/// full name and nationality fixes the main rosters get.
+fn academy_player_seed(
+    row: &serde_json::Value,
+    corrections: &[crate::world_catalog::CatalogCorrection],
+) -> AcademyPlayerSeed {
+    let mut seed = AcademyPlayerSeed {
+        id: row["id"].as_str().unwrap_or("").to_string(),
+        role: row["position"].as_str().unwrap_or("Mid").to_string(),
+        nickname: row["match_name"].as_str().unwrap_or("Unknown").to_string(),
+        full_name: row["full_name"].as_str().unwrap_or("Unknown").to_string(),
+        nationality: row["nationality"].as_str().unwrap_or("Unknown").to_string(),
+        dob: row["date_of_birth"].as_str().map(|s| s.to_string()),
+        image_url: row["profile_image_url"].as_str().unwrap_or("").to_string(),
+    };
+    for correction in corrections.iter().filter(|c| c.id == seed.id) {
+        // A correction that no longer applies is reported when the main rosters read it.
+        let _ = crate::world_catalog::apply_identity_correction(
+            correction,
+            &mut seed.nickname,
+            &mut seed.full_name,
+            &mut seed.nationality,
+        );
+    }
+    seed
 }
 
 /// Read tier 2+ competition manifests and build academy team seeds.
@@ -503,6 +539,7 @@ pub fn academy_seed_catalog() -> &'static Vec<AcademyTeamSeed> {
             Err(_) => return vec![],
         };
 
+        let corrections = crate::world_catalog::bundled_catalog_corrections();
         let mut teams = Vec::new();
         for entry in entries.flatten() {
             let dir_path = entry.path();
@@ -570,26 +607,7 @@ pub fn academy_seed_catalog() -> &'static Vec<AcademyTeamSeed> {
                     && let Some(all_players) = players_data["players"].as_array() {
                         for player in all_players {
                             if let Some(tid) = player["team_id"].as_str() {
-                                let seed = AcademyPlayerSeed {
-                                    role: player["position"].as_str().unwrap_or("Mid").to_string(),
-                                    nickname: player["match_name"]
-                                        .as_str()
-                                        .unwrap_or("Unknown")
-                                        .to_string(),
-                                    full_name: player["full_name"]
-                                        .as_str()
-                                        .unwrap_or("Unknown")
-                                        .to_string(),
-                                    nationality: player["nationality"]
-                                        .as_str()
-                                        .unwrap_or("Unknown")
-                                        .to_string(),
-                                    dob: player["date_of_birth"].as_str().map(|s| s.to_string()),
-                                    image_url: player["profile_image_url"]
-                                        .as_str()
-                                        .unwrap_or("")
-                                        .to_string(),
-                                };
+                                let seed = academy_player_seed(player, &corrections);
                                 players_by_team_id
                                     .entry(tid.to_string())
                                     .or_default()
@@ -886,7 +904,7 @@ pub fn acquisition_report(
 ///
 /// The tier comes from the loaded league of the team's competition; the region
 /// from the game's residency table, keyed by the same competition id.
-fn top_league_region(game: &Game, parent: &Team) -> Option<crate::residency::Region> {
+pub(crate) fn top_league_region(game: &Game, parent: &Team) -> Option<crate::residency::Region> {
     let competition_id = parent.competition_id.as_deref()?;
     let league = game.leagues.iter().find(|league| {
         league.competition_id.as_deref() == Some(competition_id)
@@ -974,4 +992,75 @@ pub fn acquire_academy(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod seed_correction_tests {
+    use super::*;
+    use crate::world_catalog::CatalogCorrection;
+
+    fn row(id: &str, nationality: &str) -> serde_json::Value {
+        serde_json::json!({
+            "id": id,
+            "position": "Jungle",
+            "match_name": "Dadou",
+            "full_name": "David Roudaut",
+            "nationality": nationality,
+            "date_of_birth": null,
+            "profile_image_url": "dadou.webp",
+        })
+    }
+
+    fn fix(id: &str, field: &str, from: &str, to: &str) -> CatalogCorrection {
+        CatalogCorrection {
+            id: id.to_string(),
+            field: field.to_string(),
+            from: from.to_string(),
+            to: to.to_string(),
+            evidence: "test".to_string(),
+        }
+    }
+
+    #[test]
+    fn a_seed_keeps_the_source_id_of_its_row() {
+        assert_eq!(
+            academy_player_seed(&row("player-1de7d051", ""), &[]).id,
+            "player-1de7d051"
+        );
+    }
+
+    #[test]
+    fn a_seed_takes_the_corrected_nationality_of_its_row() {
+        let seed = academy_player_seed(
+            &row("player-1de7d051", ""),
+            &[fix("player-1de7d051", "nationality", "", "FR")],
+        );
+        assert_eq!(seed.nationality, "FR");
+    }
+
+    #[test]
+    fn a_seed_takes_a_corrected_name_of_its_row() {
+        let seed = academy_player_seed(
+            &row("player-1de7d051", "FR"),
+            &[fix(
+                "player-1de7d051",
+                "full_name",
+                "David Roudaut",
+                "Dadou R.",
+            )],
+        );
+        assert_eq!(seed.full_name, "Dadou R.");
+    }
+
+    #[test]
+    fn a_correction_for_another_row_or_a_stale_from_leaves_the_seed_alone() {
+        let seed = academy_player_seed(
+            &row("player-1de7d051", ""),
+            &[
+                fix("player-other", "nationality", "", "FR"),
+                fix("player-1de7d051", "nationality", "Spain", "FR"),
+            ],
+        );
+        assert_eq!(seed.nationality, "");
+    }
 }

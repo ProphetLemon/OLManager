@@ -38,6 +38,8 @@ export interface RatingCounts {
 }
 export function summarizeRatings(ops: { players: Array<{ op: Record<string, any> }>; staff: Array<{ op: Record<string, any> }> }): {
   total: RatingCounts;
+  /** Adds by `pool.rating` value. */
+  byRating: Record<string, number>;
   playersByTier: Map<string, RatingCounts>;
   playersByRole: Map<string, RatingCounts>;
   staffByTier: Map<string, RatingCounts>;

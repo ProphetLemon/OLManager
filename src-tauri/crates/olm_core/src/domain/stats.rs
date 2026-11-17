@@ -186,6 +186,9 @@ pub struct PlayerMatchStatsRecord {
     pub wards_placed: u16,
     #[serde(default)]
     pub bans_json: String,
+    /// Games the line sums: one for a single game, the series' games for a best-of.
+    #[serde(default = "one_game")]
+    pub games: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
@@ -209,4 +212,55 @@ pub struct TeamMatchStatsRecord {
     pub gold_earned: u32,
     pub damage_dealt: u32,
     pub objectives: u16,
+    /// Games the line sums: one for a single game, the series' games for a best-of.
+    #[serde(default = "one_game")]
+    pub games: u8,
+}
+
+fn one_game() -> u8 {
+    1
+}
+
+impl PlayerMatchStatsRecord {
+    /// Games the row sums; a row built without a count (`Default`) is one game.
+    pub fn game_count(&self) -> u32 {
+        u32::from(self.games).max(1)
+    }
+}
+
+impl TeamMatchStatsRecord {
+    /// Games the row sums; a row built without a count (`Default`) is one game.
+    pub fn game_count(&self) -> u32 {
+        u32::from(self.games).max(1)
+    }
+}
+
+#[cfg(test)]
+mod games_count_tests {
+    use super::{PlayerMatchStatsRecord, TeamMatchStatsRecord};
+
+    #[test]
+    fn a_stored_player_row_without_games_should_load_as_one() {
+        let row: PlayerMatchStatsRecord =
+            serde_json::from_str(r#"{"fixture_id":"f1","kills":4}"#).unwrap();
+        assert_eq!(row.games, 1);
+    }
+
+    #[test]
+    fn a_stored_team_row_without_games_should_load_as_one() {
+        let row: TeamMatchStatsRecord =
+            serde_json::from_str(r#"{"fixture_id":"f1","kills":4}"#).unwrap();
+        assert_eq!(row.games, 1);
+    }
+
+    #[test]
+    fn a_stored_row_with_games_should_keep_them() {
+        let row: PlayerMatchStatsRecord = serde_json::from_str(r#"{"games":3}"#).unwrap();
+        assert_eq!(row.games, 3);
+    }
+
+    #[test]
+    fn a_row_built_by_default_should_still_count_one_game() {
+        assert_eq!(PlayerMatchStatsRecord::default().game_count(), 1);
+    }
 }

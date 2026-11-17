@@ -15,13 +15,15 @@ use olm_core::domain::stats::StatsState;
 use olm_core::game::Game;
 use olm_core::game_setup;
 use olm_core::messages::FoundingMode;
-use olm_core::player_rating_overrides::{ApplyReport, PlayerRatingOverrides, apply_player_rating_overrides};
+use olm_core::player_rating_overrides::{
+    ApplyReport, PlayerRatingOverrides, apply_player_rating_overrides, move_rating_override,
+};
 use olm_core::wage_scale;
 use olm_core::generator::definitions::CompetitionManifest;
 use olm_core::roster_stability;
 use olm_core::world_catalog;
 use olm_core::state::StateManager;
-use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
+use olm_core::world_overlay::{OverlayApplyReport, PlayerOp, WorldOverlay, apply_world_overlay};
 
 use crate::SaveManagerState;
 
@@ -138,8 +140,13 @@ pub(crate) fn build_world_naming_replaced_club(
         None => inputs.team_id.to_string(),
     };
 
-    // The overlay can leave a team short; make every Main team playable.
-    fill_short_rosters(game);
+    // The overlay can leave a team short; make every Main team playable. Its teamless
+    // adds (the active-pros pool) stay free agents rather than filling those slots.
+    let reserved = inputs
+        .overlay
+        .map(WorldOverlay::teamless_added_player_ids)
+        .unwrap_or_default();
+    fill_short_rosters(game, &reserved);
     if inputs.custom_team.is_some() {
         ensure_custom_club_roster(game, &user_team_id)?;
     }
@@ -193,6 +200,11 @@ fn assemble_base_world(
     game.players = assembled_players;
     game.staff = assembled_staff;
 
+    // A new world plays the lane the club page shows: repair `natural_position` before the
+    // overlay and the roster fill read it.
+    let realigned = world_catalog::align_natural_positions(&mut game.players);
+    info!("[game] {} players had a natural position that contradicted their lane", realigned);
+
     // Bring the bundled snapshot up to date before lineups are built from it.
     if let Some(overlay) = inputs.overlay {
         let report = apply_roster_overlay(game, overlay);
@@ -212,7 +224,71 @@ fn assemble_base_world(
             game_setup::apply_default_market_values(&mut game.players);
         }
     }
+    // An overlay add or move can bring a record with the two fields apart again.
+    world_catalog::align_natural_positions(&mut game.players);
+    collapse_same_person_records(game, inputs.overlay, rating_overrides);
     Ok(())
+}
+
+/// Leave one record of every person a new world holds twice (same club and a shared name, or
+/// the overlay's pool add of a person a club already holds). It runs once the overlay is
+/// applied and before the roster fill, so the fill sees one record per person. Every loser is
+/// tombstoned: the catalog rehydration appends each catalog id a save lacks, and would bring
+/// the twin back. A loser that was moved by the overlay hands its protection to the survivor.
+fn collapse_same_person_records(
+    game: &mut Game,
+    overlay: Option<&WorldOverlay>,
+    rating_overrides: &PlayerRatingOverrides,
+) {
+    let overlay_op_ids: HashSet<String> = overlay
+        .map(|overlay| {
+            overlay
+                .players
+                .iter()
+                .filter_map(|op| match op {
+                    PlayerOp::Move { id, .. } => Some(id.clone()),
+                    PlayerOp::Add { player, .. } => Some(player.id.clone()),
+                    PlayerOp::Retire { .. } => None,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let pool_add_ids = overlay
+        .map(WorldOverlay::teamless_added_player_ids)
+        .unwrap_or_default();
+    let has_rating_override = |id: &str| rating_overrides.entry(id).is_some();
+    let collapsed = world_catalog::collapse_same_person_records(
+        &mut game.players,
+        &world_catalog::CollapseEvidence {
+            has_rating_override: &has_rating_override,
+            overlay_op_ids: &overlay_op_ids,
+            pool_add_ids: &pool_add_ids,
+        },
+    );
+    for duplicate in &collapsed {
+        info!(
+            "[game] player {} is the same person as {}: dropped",
+            duplicate.dropped_id, duplicate.kept_id
+        );
+        if !game.retired_player_ids.contains(&duplicate.dropped_id) {
+            game.retired_player_ids.push(duplicate.dropped_id.clone());
+        }
+        if game.moved_player_ids.contains(&duplicate.dropped_id) {
+            game.moved_player_ids.insert(duplicate.kept_id.clone());
+        }
+        // The dropped record's stat-derived rating describes the same person: keep it on
+        // the survivor unless the survivor has its own.
+        let survivor = game.players.iter_mut().find(|p| p.id == duplicate.kept_id);
+        if survivor
+            .is_some_and(|p| move_rating_override(p, rating_overrides, &duplicate.dropped_id))
+        {
+            info!(
+                "[game] moved the rating override of {} to {}",
+                duplicate.dropped_id, duplicate.kept_id
+            );
+        }
+    }
+    info!("[game] collapsed {} duplicate records of one person", collapsed.len());
 }
 
 /// Install the custom club and return the new club's id: it replaces
@@ -769,7 +845,28 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
     let filled = olm_core::team_overrides::bundled().apply_all(&mut all_teams);
     info!("[game] team overrides filled {} teams", filled);
 
-    // Resolve ids shipped twice (stale duplicate competitions), then fix known field errors.
+    // A stale duplicate competition keeps no team, so its players would become free agents
+    // beside the live record of the same person: leave those out, then resolve ids shipped
+    // twice and fix known field errors.
+    let (tagged_players, stale_twins) =
+        world_catalog::drop_stale_twins_of_live_players(tagged_players);
+    for twin in &stale_twins {
+        if twin.live_twin_id.is_empty() {
+            info!(
+                "[game] stale player {} from '{}' has no rating data: dropped",
+                twin.player_id, twin.dropped_from
+            );
+        } else {
+            info!(
+                "[game] stale player {} from '{}' is the same person as live player {}: dropped",
+                twin.player_id, twin.dropped_from, twin.live_twin_id
+            );
+        }
+    }
+    info!(
+        "[game] dropped {} stale twins of live players",
+        stale_twins.len()
+    );
     let (mut all_players, dropped_duplicates) = world_catalog::dedupe_players(tagged_players);
     for dup in &dropped_duplicates {
         info!(
@@ -793,22 +890,8 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         .filter_map(|m| m.tier.map(|tier| (m.id.clone(), tier)))
         .collect();
 
-    // 2. Bootstrap academy seeds from ERL catalog (JSON or legacy .txt fallback)
-    let academy_bootstrap_date = start_date.format("%Y-%m-%d").to_string();
-    let pre_count = all_teams.len();
-    game_setup::bootstrap_example_academy_pool_from_example(
-        &mut all_teams,
-        &mut all_players,
-        &academy_bootstrap_date,
-    );
-    let academy_count = all_teams.len() - pre_count;
-    if academy_count > 0 {
-        info!(
-            "[game] bootstrapped {} academy teams from ERL catalog",
-            academy_count
-        );
-    }
-    game_setup::remove_free_agents_shadowed_by_academy(&mut all_players, &all_teams);
+    // 2. Academies: a new world carries no academy copies. Funding an academy links a
+    // real tier-2 club of the parent's region (see `olm_core::academy_link`).
 
     // 4. Inject free agent players from JSON
     game_setup::inject_json_free_agents(&mut all_players);
@@ -848,6 +931,12 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
         "[game] estimated ratings for {} rostered and {} free-agent placeholder players",
         estimated.rostered, estimated.free_agents
     );
+
+    // 6b. Players shipped without a potential (0) get one from real peers of their age,
+    // measured on their final OVR. Market values and wages below follow the potential.
+    let potentials_filled =
+        olm_core::potential_fill::fill_missing_potentials(&mut all_players, start_date);
+    info!("[game] filled the potential of {} players shipped without one", potentials_filled);
 
     // 7. Recalculate market_value for players who have 0 (data issue in regional leagues)
     game_setup::apply_default_market_values(&mut all_players);
@@ -968,8 +1057,13 @@ fn apply_roster_overlay(game: &mut Game, overlay: &WorldOverlay) -> OverlayApply
 
 /// Fill roles the assembled world left empty on every Main team and protect the
 /// filled players from catalog rehydration reverting them.
-fn fill_short_rosters(game: &mut Game) -> Vec<roster_stability::NewGameRosterFill> {
-    let fills = roster_stability::fill_new_game_rosters(game);
+fn fill_short_rosters(
+    game: &mut Game,
+    reserved: &HashSet<String>,
+) -> Vec<roster_stability::NewGameRosterFill> {
+    let fills = roster_stability::fill_new_game_rosters_excluding(game, reserved);
+    #[cfg(test)]
+    crate::world_dupes::record_fills(&fills);
     game.moved_player_ids
         .extend(fills.iter().map(|fill| fill.player_id.clone()));
     if !fills.is_empty() {
@@ -1560,6 +1654,23 @@ pub async fn delete_save(
     sm.delete_save(&save_id)
 }
 
+/// Brings the ratings of a loaded save up to date: `lol_ovr` is stored as 0 in the save
+/// DB, and players an older version saved without a potential (0) get one now that
+/// their OVR is known. Runs after the catalog rehydration, so the catalog players it
+/// merged are covered, and before the roster repair.
+fn refresh_ratings_on_load(game: &mut Game) {
+    for player in &mut game.players {
+        player.lol_ovr = olm_core::potential::calculate_lol_ovr(player);
+    }
+    let filled = olm_core::potential_fill::fill_missing_potentials(
+        &mut game.players,
+        game.clock.current_date.date_naive(),
+    );
+    if filled > 0 {
+        info!("[cmd] load_game: filled the potential of {} players saved without one", filled);
+    }
+}
+
 #[tauri::command]
 pub async fn load_game(
     state: State<'_, StateManager>,
@@ -1587,8 +1698,18 @@ pub async fn load_game(
     let rehydrated = crate::commands::import::rehydrate_game_from_catalog(&app_handle, &mut game);
     if rehydrated.total() > 0 {
         info!(
-            "[cmd] load_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog",
-            rehydrated.teams, rehydrated.players, rehydrated.players_reassigned, rehydrated.staff
+            "[cmd] load_game: rehydrated {} missing teams, {} players, {} reassigned players, {} staff from catalog, removed {} stale and {} canonical duplicate clubs, {} duplicate players dropped, {} released, removed {} duplicate academies, {} academy players dropped, {} released",
+            rehydrated.teams,
+            rehydrated.players,
+            rehydrated.players_reassigned,
+            rehydrated.staff,
+            rehydrated.stale_teams_removed,
+            rehydrated.canonical_duplicates_removed,
+            rehydrated.canonical_players_dropped,
+            rehydrated.canonical_players_released,
+            rehydrated.stale_academies_removed,
+            rehydrated.stale_academy_players_dropped,
+            rehydrated.stale_academy_players_released
         );
     }
     info!(
@@ -1632,10 +1753,7 @@ pub async fn load_game(
     // Bootstrap champion state so the Champions tab has data
     info!("[cmd] load_game: bootstrapping champion state...");
     olm_core::champions::bootstrap_champion_state(&mut game);
-    // Refresh lol_ovr for all players (it's stored as 0 in the save DB)
-    for player in &mut game.players {
-        player.lol_ovr = olm_core::potential::calculate_lol_ovr(player);
-    }
+    refresh_ratings_on_load(&mut game);
     info!(
         "[cmd] load_game: champion_patch.hidden_meta={}, champion_masteries={}",
         game.champion_patch.hidden_meta.len(),
@@ -1849,6 +1967,102 @@ mod tests {
         }
     }
 
+    /// A rating-override document with one entry per `(id, value)`.
+    fn overrides_for(entries: &[(&str, u8)]) -> PlayerRatingOverrides {
+        let entries: Vec<String> = entries
+            .iter()
+            .map(|(id, value)| {
+                format!(
+                    r#"{{"id":"{id}","authored_ovr":60,"games":40,"confidence":0.8,
+                    "attributes":{{"mechanics":{value},"laning":{value},"teamfighting":{value},
+                    "macro_play":{value},"consistency":{value},"shotcalling":{value},
+                    "champion_pool":{value},"discipline":{value},"mental_resilience":{value}}},
+                    "potential_floor":60}}"#
+                )
+            })
+            .collect();
+        let json = format!(
+            r#"{{"version":1,"method":"stat-blend-v1","source":"test",
+            "window":{{"since":"2025-01-01","until":"2026-01-01"}},
+            "league_levels":{{"cblol":{{"median":75.0,"sd":3.0}}}},
+            "entries":[{}]}}"#,
+            entries.join(",")
+        );
+        PlayerRatingOverrides::parse(&json).expect("overrides parse")
+    }
+
+    /// A contracted Deadly and his teamless twin DeadlyMark (same real name and birth date).
+    fn game_with_a_contracted_player_and_his_free_agent_twin() -> Game {
+        use olm_core::domain::player::LolRole;
+        let attributes = PlayerAttributes::from_array([60; 9]);
+        let mut contracted = Player::new(
+            "club".to_string(),
+            "Deadly".to_string(),
+            "Miguel Angel Cucho Rivera".to_string(),
+            "2006-08-19".to_string(),
+            "PE".to_string(),
+            LolRole::Mid,
+            attributes.clone(),
+        );
+        contracted.team_id = Some("team-1".to_string());
+        let mut free_agent = Player::new(
+            "fa".to_string(),
+            "DeadlyMark".to_string(),
+            "Miguel Angel Cucho Rivera".to_string(),
+            "2006-08-19".to_string(),
+            "PE".to_string(),
+            LolRole::Mid,
+            attributes,
+        );
+        free_agent.team_id = None;
+        let manager = olm_core::domain::manager::Manager::new(
+            "m".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "ES".to_string(),
+        );
+        let clock = olm_core::clock::GameClock::new(
+            chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2027, 1, 1, 12, 0, 0).unwrap(),
+        );
+        Game::new(
+            clock,
+            manager,
+            vec![],
+            vec![contracted, free_agent],
+            vec![],
+            vec![],
+        )
+    }
+
+    fn mechanics_of(game: &Game, id: &str) -> u8 {
+        game.players
+            .iter()
+            .find(|p| p.id == id)
+            .map(|p| p.attributes.mechanics)
+            .expect("player present")
+    }
+
+    #[test]
+    fn a_collapsed_free_agents_rating_override_moves_to_the_contracted_survivor() {
+        let mut game = game_with_a_contracted_player_and_his_free_agent_twin();
+
+        collapse_same_person_records(&mut game, None, &overrides_for(&[("fa", 88)]));
+
+        assert!(game.players.iter().all(|p| p.id != "fa"));
+        assert_eq!(mechanics_of(&game, "club"), 88);
+    }
+
+    #[test]
+    fn a_survivor_that_has_its_own_rating_override_keeps_it() {
+        let mut game = game_with_a_contracted_player_and_his_free_agent_twin();
+        game.players[0].attributes = PlayerAttributes::from_array([77; 9]);
+
+        collapse_same_person_records(&mut game, None, &overrides_for(&[("fa", 88), ("club", 77)]));
+
+        assert_eq!(mechanics_of(&game, "club"), 77);
+    }
+
     #[test]
     fn an_old_pick_with_only_a_team_id_still_resolves() {
         let spec = any_spec();
@@ -1973,7 +2187,7 @@ mod tests {
         free_agent.team_id = None;
         game.players.push(free_agent);
 
-        let fills = fill_short_rosters(&mut game);
+        let fills = fill_short_rosters(&mut game, &HashSet::new());
 
         assert!(!fills.is_empty());
         for fill in &fills {
@@ -1998,7 +2212,7 @@ mod tests {
     fn roster_overlay_keeps_teamless_pool_adds_as_free_agents_with_a_market_value() {
         let mut game = test_game();
         let overlay = WorldOverlay::parse(
-            r#"{"schemaVersion":1,"as_of":"2026-11-07",
+            r#"{"schemaVersion":2,"as_of":"2026-11-07",
                 "source":{"name":"Leaguepedia","license":"CC BY-SA 3.0","license_url":"https://www.fandom.com/licensing"},
                 "players":[{"op":"add","evidence":"https://lol.fandom.com/wiki/Send0o","dob_approx":true,
                   "player":{"id":"player-bea33543","team_id":null,"position":"Top","nationality":"ES",
@@ -2192,6 +2406,245 @@ mod tests {
             (manifests, known)
         }
 
+        /// The active-pros pool arrives as teamless overlay adds. They must start as free
+        /// agents (to be signed through the market and the AI's normal logic), never be
+        /// handed to short rosters by the new-game fill, which fills with generated players
+        /// or the world's ordinary free agents instead.
+        #[test]
+        fn a_new_game_keeps_teamless_overlay_adds_as_free_agents_and_still_fills_short_rosters() {
+            let mut overlay =
+                olm_core::world_overlay::bundled_world_overlay().expect("bundled overlay");
+            let strong = PlayerAttributes {
+                mental_resilience: 95,
+                champion_pool: 95,
+                laning: 95,
+                mechanics: 95,
+                macro_play: 95,
+                consistency: 95,
+                discipline: 95,
+                teamfighting: 95,
+                shotcalling: 95,
+            };
+            let pool_ids: Vec<String> =
+                (0..200).map(|i| format!("player-pooltest{i:04}")).collect();
+            for (i, id) in pool_ids.iter().enumerate() {
+                let mut player = Player::new(
+                    id.clone(),
+                    format!("PoolTest{i}"),
+                    format!("Pool Test {i}"),
+                    "2000-01-01".to_string(),
+                    "ES".to_string(),
+                    ROLES[i % ROLES.len()],
+                    strong.clone(),
+                );
+                player.team_id = None;
+                player.wage = 0;
+                player.market_value = 0;
+                player.contract_end = None;
+                overlay
+                    .players
+                    .push(olm_core::world_overlay::PlayerOp::Add {
+                        player: Box::new(player),
+                        evidence: String::new(),
+                        dob_approx: false,
+                    });
+            }
+            let mut game = empty_session();
+
+            build_world_into(&mut game, &overlay, "lec-g2-esports", None).expect("world");
+
+            let signed: Vec<&str> = game
+                .players
+                .iter()
+                .filter(|p| pool_ids.contains(&p.id) && p.team_id.is_some())
+                .map(|p| p.id.as_str())
+                .collect();
+            assert!(
+                signed.is_empty(),
+                "pool adds signed during setup: {signed:?}"
+            );
+            let pool_present = game
+                .players
+                .iter()
+                .filter(|p| pool_ids.contains(&p.id))
+                .count();
+            assert_eq!(pool_present, pool_ids.len());
+            for team in game.teams.iter().filter(|t| t.team_kind == TeamKind::Main) {
+                for role in ROLES {
+                    assert!(
+                        game.players
+                            .iter()
+                            .any(|p| p.team_id.as_deref() == Some(team.id.as_str())
+                                && p.natural_position == role),
+                        "{} has no {role:?}",
+                        team.id
+                    );
+                }
+            }
+        }
+
+        /// The same person a stale duplicate competition and a live one both ship is held once
+        /// by a new game: the stale record is left out, every live record stays, and a stale
+        /// player with no live twin stays as a free agent. Read from the real `data/`.
+        #[test]
+        fn a_new_game_holds_a_person_shipped_by_a_stale_and_a_live_competition_once() {
+            use olm_core::player_age::parse_date_of_birth;
+
+            let data = data_base();
+            let manifests = olm_core::competitions::scan_competitions(&data.join("competitions"));
+            let key = |name: &str| {
+                name.split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .to_lowercase()
+            };
+            let identities = |player: &Player| {
+                let born = parse_date_of_birth(&player.date_of_birth);
+                born.map(|born| {
+                    [key(&player.full_name), key(&player.match_name)]
+                        .into_iter()
+                        .filter(|name| !name.is_empty())
+                        .map(|name| (name, born))
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default()
+            };
+
+            let mut live_ids: HashSet<String> = HashSet::new();
+            let mut live_identities = HashSet::new();
+            let mut stale: Vec<(String, Player)> = Vec::new();
+            for manifest in manifests.iter().filter(|m| !m.legacy) {
+                let players =
+                    olm_core::competitions::load_players(&data, manifest).unwrap_or_default();
+                if world_catalog::is_stale_duplicate_competition(&manifest.id) {
+                    stale.extend(players.into_iter().map(|p| (manifest.id.clone(), p)));
+                } else {
+                    for player in players {
+                        live_identities.extend(identities(&player));
+                        live_ids.insert(player.id);
+                    }
+                }
+            }
+            let twins: Vec<&(String, Player)> = stale
+                .iter()
+                .filter(|(_, p)| !live_ids.contains(&p.id))
+                .filter(|(_, p)| {
+                    identities(p)
+                        .iter()
+                        .any(|identity| live_identities.contains(identity))
+                })
+                .collect();
+            let per_competition =
+                |competition: &str| twins.iter().filter(|(c, _)| c == competition).count();
+            eprintln!(
+                "stale twins of live players: prime_league {}, lck-cl {}",
+                per_competition("prime_league"),
+                per_competition("lck-cl")
+            );
+            assert!(
+                !twins.is_empty(),
+                "the real data ships stale twins of live players"
+            );
+
+            let ((_, built, _), _) = assemble_world_reporting_rating_overrides(
+                &data,
+                &manifests,
+                "",
+                "",
+                chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+                olm_core::player_rating_overrides::bundled(),
+            )
+            .expect("catalog");
+            let built_ids: HashSet<&str> = built.iter().map(|p| p.id.as_str()).collect();
+
+            for (competition, twin) in &twins {
+                assert!(
+                    !built_ids.contains(twin.id.as_str()),
+                    "{competition} twin {} was kept",
+                    twin.id
+                );
+            }
+            for id in &live_ids {
+                assert!(
+                    built_ids.contains(id.as_str()),
+                    "live player {id} was dropped"
+                );
+            }
+            // A stale record also goes when its successor league holds its name, or when it has
+            // no rating data; every other stale record stays as a free agent.
+            use olm_core::person_identity::{folded_names, has_all_attributes_zero};
+            let mut successor_names: HashSet<(String, String)> = HashSet::new();
+            for manifest in manifests.iter().filter(|m| !m.legacy) {
+                if world_catalog::STALE_DUPLICATE_COMPETITIONS
+                    .iter()
+                    .any(|(_, canonical)| *canonical == manifest.id)
+                {
+                    for player in
+                        olm_core::competitions::load_players(&data, manifest).unwrap_or_default()
+                    {
+                        for name in folded_names(&player) {
+                            successor_names.insert((manifest.id.clone(), name));
+                        }
+                    }
+                }
+            }
+            let twin_ids: HashSet<&str> = twins.iter().map(|(_, p)| p.id.as_str()).collect();
+            for (competition, player) in &stale {
+                let canonical = world_catalog::STALE_DUPLICATE_COMPETITIONS
+                    .iter()
+                    .find(|(stale_id, _)| stale_id == competition)
+                    .map(|(_, canonical)| canonical.to_string())
+                    .unwrap_or_default();
+                let by_name = folded_names(player)
+                    .into_iter()
+                    .any(|name| successor_names.contains(&(canonical.clone(), name)));
+                if !twin_ids.contains(player.id.as_str())
+                    && !by_name
+                    && !has_all_attributes_zero(player)
+                {
+                    assert!(
+                        built_ids.contains(player.id.as_str()),
+                        "{competition} player {} has no live twin but was dropped",
+                        player.id
+                    );
+                }
+            }
+        }
+
+        /// The ERL academies are seeded from the raw catalog rows, which the reviewed
+        /// corrections used to miss: their copy of a corrected player kept its empty
+        /// nationality. Read from the real `data/`.
+        #[test]
+        fn academy_seeds_carry_the_bundled_nationality_corrections() {
+            let seeds: Vec<&olm_core::academy::AcademyPlayerSeed> =
+                olm_core::academy::academy_seed_catalog()
+                    .iter()
+                    .flat_map(|team| team.players.iter())
+                    .collect();
+            assert!(!seeds.is_empty(), "the real data seeds academies");
+            let empty = seeds
+                .iter()
+                .filter(|seed| seed.nationality.trim().is_empty())
+                .count();
+            eprintln!(
+                "academy seeds: {} rows, {empty} with an empty nationality",
+                seeds.len()
+            );
+
+            let mut corrected = 0;
+            for correction in world_catalog::bundled_catalog_corrections()
+                .iter()
+                .filter(|correction| correction.field == "nationality")
+            {
+                for seed in seeds.iter().filter(|seed| seed.id == correction.id) {
+                    assert_eq!(seed.nationality, correction.to, "seed of {}", correction.id);
+                    corrected += 1;
+                }
+            }
+            eprintln!("academy seeds corrected: {corrected}");
+            assert!(corrected > 0, "some corrected players are academy-seeded");
+        }
+
         /// A new game schedules no league for the stale duplicates the catalog still
         /// ships (`lck-cl`, `prime_league`): they have no teams and would only be repaired
         /// and simulated every day for nothing.
@@ -2211,6 +2664,75 @@ mod tests {
                 .filter(|id| olm_core::world_catalog::is_stale_duplicate_competition(id))
                 .collect();
             assert!(stale.is_empty(), "stale leagues built: {stale:?}");
+        }
+
+        /// Every system that prices a player by age reads one age for each player of a new
+        /// world, also the ones whose date of birth is missing: contracts and the AI squad
+        /// logic answer the same for a player as for a twin with a real date of birth at
+        /// the age `player_age` gives.
+        #[test]
+        fn a_new_game_gives_every_player_the_same_age_in_every_system() {
+            use olm_core::ai_team_agent::retention_score;
+            use olm_core::contracts::{expected_signing_wage, expected_wage};
+            use olm_core::player_age::{parse_date_of_birth, player_age};
+
+            let (game, _catalog_players, _overlay, _user_team) = new_game();
+            let today = game.clock.current_date.date_naive();
+            let club = &game.teams[0];
+
+            let (mut unknown, mut month_name_recovered, mut checked) = (0_usize, 0_usize, 0_usize);
+            for player in &game.players {
+                let age = player_age(player, today);
+                let raw = player.date_of_birth.trim();
+                if !age.known {
+                    unknown += 1;
+                    assert!(
+                        parse_date_of_birth(raw).is_none(),
+                        "{} has a readable date of birth {raw:?} but reads as unknown",
+                        player.id
+                    );
+                } else if !raw.is_empty() && raw.as_bytes().get(4) != Some(&b'-') {
+                    month_name_recovered += 1;
+                }
+
+                let mut twin = player.clone();
+                twin.date_of_birth = today
+                    .checked_sub_months(chrono::Months::new(age.years * 12))
+                    .expect("a date in range")
+                    .format("%Y-%m-%d")
+                    .to_string();
+                assert_eq!(
+                    expected_wage(player, club, today),
+                    expected_wage(&twin, club, today),
+                    "{} expected wage",
+                    player.id
+                );
+                assert_eq!(
+                    expected_signing_wage(player, club, today),
+                    expected_signing_wage(&twin, club, today),
+                    "{} expected signing wage",
+                    player.id
+                );
+                assert_eq!(
+                    retention_score(player, club, today).to_bits(),
+                    retention_score(&twin, club, today).to_bits(),
+                    "{} retention score",
+                    player.id
+                );
+                checked += 1;
+            }
+            eprintln!(
+                "age agreement: {checked} players, {unknown} without a date of birth, \
+                 {month_name_recovered} read from a \"Month D, YYYY\" date"
+            );
+            assert!(unknown > 0, "a new world has players without a date of birth");
+            // The stale free agents that shipped "Month D, YYYY" dates are gone from a new
+            // world, so the format is checked on the parser itself.
+            assert!(
+                parse_date_of_birth("July 11, 2005").is_some(),
+                "the Month D, YYYY dates are read"
+            );
+            assert_eq!(checked, game.players.len());
         }
 
         /// Every main club a league schedules starts with a 12-month sponsor sized by its
@@ -2845,7 +3367,12 @@ mod tests {
             assert!(report.skipped_stale * 20 <= entries, "stale: {}", report.skipped_stale);
             // Entries the assembly pass could not find belong to players the roster
             // overlay adds; the second pass applies those.
-            assert_eq!(in_world, entries, "every entry has a player in the new world");
+            // A refreshed roster overlay can drop a person the ratings file still lists (a
+            // retired or ambiguous page) until the ratings are rebuilt; allow 1%.
+            assert!(
+                (entries - in_world) * 100 <= entries,
+                "{in_world} of {entries} entries have a player in the new world"
+            );
             assert!(landed * 10 >= entries * 9, "{landed} of {entries} entries landed");
         }
 
@@ -2910,9 +3437,19 @@ mod tests {
             // Wages that are not authored (0) are seeded per club from its players'
             // ratings and may move; authored ones never do.
             let (_, catalog, ..) = new_game_without_overrides();
+            // A player the overlay released or the new-game fill signed gets a fresh contract
+            // (the wage scale decides it), so only players still on their authored team count.
+            let team_of = |game: &Game| -> HashMap<String, Option<String>> {
+                game.players.iter().map(|p| (p.id.clone(), p.team_id.clone())).collect()
+            };
+            let (with_teams, without_teams) = (team_of(&with_game), team_of(&without_game));
             let wage_changes: Vec<_> = catalog
                 .iter()
                 .filter(|p| p.wage > 0)
+                .filter(|p| {
+                    with_teams.get(&p.id) == Some(&p.team_id)
+                        && without_teams.get(&p.id) == Some(&p.team_id)
+                })
                 .filter(|p| match (with.get(&p.id), without.get(&p.id)) {
                     (Some(w), Some(wo)) => w.4 != wo.4,
                     _ => false,
@@ -2942,8 +3479,17 @@ mod tests {
                 .map(|p| p.id.clone())
                 .collect();
             assert_eq!(rated_below, Vec::<String>::new());
-            // Data players shipped without a potential (0) sit below their rating with or
-            // without overrides; overrides must not add to them.
+            // Data players shipped with a small positive potential under their rating stay
+            // below it with or without overrides; overrides must not add to them.
+            // Players shipped without a potential (0) are filled at assembly, so none is
+            // left at 0 and none of them sits below its rating.
+            let unfilled: Vec<_> = world
+                .players
+                .iter()
+                .filter(|p| p.potential_base == 0)
+                .map(|p| p.id.clone())
+                .collect();
+            assert_eq!(unfilled, Vec::<String>::new());
             let already_below: HashSet<_> =
                 without.players.iter().filter(below).map(|p| p.id.as_str()).collect();
             let new_below: Vec<_> = world
@@ -2954,6 +3500,151 @@ mod tests {
                 .map(|p| p.id.clone())
                 .collect();
             assert_eq!(new_below, Vec::<String>::new());
+        }
+
+        #[test]
+        fn no_player_of_a_new_world_has_a_potential_of_zero() {
+            let (game, ..) = new_game();
+            let zero: Vec<_> = game
+                .players
+                .iter()
+                .filter(|p| p.potential_base == 0)
+                .map(|p| p.id.clone())
+                .collect();
+            assert_eq!(zero, Vec::<String>::new());
+        }
+
+        #[test]
+        fn a_data_player_shipped_without_a_potential_is_given_one_at_or_above_his_rating() {
+            // Elmillor ships `potential_base: 0`; the report used to read 0 to 3.
+            let (game, ..) = new_game();
+            let elmillor = game
+                .players
+                .iter()
+                .find(|p| p.id == "fa-c45e5ff7")
+                .expect("Elmillor is a bundled free agent");
+            assert!(
+                elmillor.potential_base >= elmillor.lol_ovr,
+                "potential {} under OVR {}",
+                elmillor.potential_base,
+                elmillor.lol_ovr
+            );
+            assert!(elmillor.potential_base > 3);
+        }
+
+        /// Ids of the data players shipped with `potential_base: 0`.
+        fn shipped_without_potential() -> HashSet<String> {
+            let mut ids = HashSet::new();
+            for entry in std::fs::read_dir(data_base().join("players")).expect("data/players") {
+                let path = entry.expect("entry").path();
+                if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                    continue;
+                }
+                let file: serde_json::Value =
+                    serde_json::from_str(&std::fs::read_to_string(&path).expect("read"))
+                        .expect("player file");
+                for p in file["players"].as_array().into_iter().flatten() {
+                    if p["potential_base"].as_u64() == Some(0) {
+                        ids.insert(p["id"].as_str().expect("id").to_string());
+                    }
+                }
+            }
+            ids
+        }
+
+        /// A save an older version wrote: the bundled world with Elmillor as the friend's
+        /// save has him (flat attributes, no potential, a spent research that read 2),
+        /// one more player with no potential, and one researched player with a real one.
+        /// Returns the loaded game and the ids (elmillor, young zero, researched).
+        fn old_save_with_players_without_a_potential() -> (Game, [String; 3]) {
+            let (mut game, ..) = new_game();
+            let elmillor = "fa-c45e5ff7".to_string();
+            let young_zero = game
+                .players
+                .iter()
+                .find(|p| p.id != elmillor && p.date_of_birth.as_str() > "2004" && p.potential_base > 0)
+                .map(|p| p.id.clone())
+                .expect("a young player");
+            let researched = game
+                .players
+                .iter()
+                .find(|p| p.id != elmillor && p.id != young_zero && p.potential_base > 60)
+                .map(|p| p.id.clone())
+                .expect("a player with a real potential");
+            for p in &mut game.players {
+                if p.id == elmillor {
+                    p.attributes = olm_core::domain::player::PlayerAttributes::from_array([50; 9]);
+                    p.potential_base = 0;
+                    p.potential_revealed = Some(2);
+                } else if p.id == young_zero {
+                    p.potential_base = 0;
+                } else if p.id == researched {
+                    p.potential_revealed = Some(p.potential_base + 2);
+                }
+            }
+            let dir = tempfile::tempdir().expect("tempdir");
+            let mut manager = SaveManager::init(dir.path()).expect("save manager");
+            let save_id = manager.create_save(&game, "old save").expect("create save");
+            let loaded = manager.load_game(&save_id).expect("load save");
+            (loaded, [elmillor, young_zero, researched])
+        }
+
+        fn potentials(game: &Game) -> HashMap<String, (u8, Option<u8>)> {
+            game.players
+                .iter()
+                .map(|p| (p.id.clone(), (p.potential_base, p.potential_revealed)))
+                .collect()
+        }
+
+        #[test]
+        fn loading_a_save_heals_a_player_with_no_potential_and_a_revealed_estimate_of_2() {
+            let (mut game, [elmillor, ..]) = old_save_with_players_without_a_potential();
+
+            refresh_ratings_on_load(&mut game);
+
+            let healed = game.players.iter().find(|p| p.id == elmillor).expect("Elmillor");
+            assert!(healed.potential_base >= healed.lol_ovr);
+            assert!(healed.potential_base > 3);
+            assert_eq!(healed.potential_revealed, Some(healed.potential_base + 2));
+            assert!(healed.potential_revealed.unwrap() > healed.lol_ovr);
+        }
+
+        #[test]
+        fn loading_a_save_fills_every_other_player_without_a_potential() {
+            let (mut game, [_, young_zero, _]) = old_save_with_players_without_a_potential();
+
+            refresh_ratings_on_load(&mut game);
+
+            let young = game.players.iter().find(|p| p.id == young_zero).expect("young player");
+            assert!(young.potential_base >= young.lol_ovr);
+            assert!(game.players.iter().all(|p| p.potential_base > 0));
+        }
+
+        #[test]
+        fn loading_a_save_leaves_players_with_a_potential_untouched() {
+            let (mut game, [elmillor, young_zero, _]) = old_save_with_players_without_a_potential();
+            let before = potentials(&game);
+
+            refresh_ratings_on_load(&mut game);
+
+            let after = potentials(&game);
+            let changed: Vec<_> = before
+                .iter()
+                .filter(|(id, value)| **id != elmillor && **id != young_zero && after[*id] != **value)
+                .map(|(id, _)| id.clone())
+                .collect();
+            assert_eq!(changed, Vec::<String>::new());
+        }
+
+        #[test]
+        fn a_second_load_changes_nothing() {
+            let (mut game, _) = old_save_with_players_without_a_potential();
+            refresh_ratings_on_load(&mut game);
+            let once = potentials(&game);
+
+            refresh_ratings_on_load(&mut game);
+
+            assert_eq!(potentials(&game), once);
         }
 
         #[test]
@@ -2984,9 +3675,32 @@ mod tests {
                 old.3
             };
             assert_eq!(new.3, expected_value);
+            // A player shipped without a potential is given one drawn from the gaps of its
+            // peers (`potential_fill`), and an override moves the OVR, and so the gap, of
+            // one of those peers: its potential, and the value and wage seeded from it,
+            // may drift a little. Its attributes may not. The wages a club's players share
+            // are scaled by that club's potentials, so a clubmate's wage may follow.
+            let filled = shipped_without_potential();
+            let team_of: HashMap<&str, Option<&str>> = world
+                .players
+                .iter()
+                .map(|p| (p.id.as_str(), p.team_id.as_deref()))
+                .collect();
+            let clubs_with_filled: HashSet<&str> = filled
+                .iter()
+                .filter_map(|f| team_of.get(f.as_str()).copied().flatten())
+                .collect();
             for (other, row) in &before {
-                if *other != id {
-                    assert_eq!(Some(row), after.get(other), "{other} must not change");
+                if *other == id {
+                    continue;
+                }
+                let after = &after[other];
+                if filled.contains(other) {
+                    assert_eq!((row.0, row.1), (after.0, after.1), "{other} ratings must not change");
+                } else if team_of[other.as_str()].is_some_and(|t| clubs_with_filled.contains(t)) {
+                    assert_eq!((row.0, row.1, row.2, row.3), (after.0, after.1, after.2, after.3), "{other} must not change");
+                } else {
+                    assert_eq!(row, after, "{other} must not change");
                 }
             }
         }
@@ -3285,7 +3999,8 @@ mod tests {
                 .filter(|t| t.wage_budget == 0 && t.finance == 0)
                 .map(|t| t.id.as_str())
                 .collect();
-            assert!(!shells.is_empty(), "the data ships shell teams");
+            // The shell teams this guarded were the academy copies, which a new world no
+            // longer builds; the check stays for any team the data ships without a budget.
             let seeded: Vec<&str> = game
                 .players
                 .iter()
@@ -3409,7 +4124,6 @@ mod tests {
 
             let drx = user_team.clone();
             let kt = team_id_by_name(&game, "KT Rolster");
-            let vitality = team_id_by_name(&game, "Team Vitality");
 
             assert_eq!(game.world_overlay_as_of.as_deref(), Some(overlay.as_of.as_str()));
 
@@ -3427,13 +4141,28 @@ mod tests {
             assert!(game.players.iter().all(|p| p.id != ICE_ID));
             assert!(game.retired_player_ids.iter().any(|id| id == ICE_ID));
 
-            let pad: Vec<_> = game
+            // Every staff member the overlay adds to a team that exists in the game is on it.
+            let team_ids: HashSet<&str> = game.teams.iter().map(|t| t.id.as_str()).collect();
+            let staff_adds: Vec<_> = overlay
                 .staff
                 .iter()
-                .filter(|s| s.nickname == "Pad" && s.team_id.as_deref() == Some(vitality.as_str()))
+                .filter_map(|op| match op {
+                    olm_core::world_overlay::StaffOp::Add { staff, .. } => Some(staff),
+                    _ => None,
+                })
+                .filter(|s| s.team_id.as_deref().is_some_and(|id| team_ids.contains(id)))
                 .collect();
-            assert_eq!(pad.len(), 1);
-            assert_eq!(pad[0].role, olm_core::domain::staff::StaffRole::Coach);
+            assert!(!staff_adds.is_empty());
+            for added in staff_adds {
+                assert!(
+                    game.staff
+                        .iter()
+                        .any(|s| s.id == added.id && s.team_id == added.team_id),
+                    "overlay staff add {} is not on {:?}",
+                    added.id,
+                    added.team_id
+                );
+            }
 
             let mut by_team: HashMap<&str, Vec<&Player>> = HashMap::new();
             for p in &game.players {
@@ -4023,7 +4752,7 @@ mod tests {
             let id = install_custom_club(&mut game, &inputs, &spec).expect("install");
 
             game.players.retain(|p| p.team_id.is_some());
-            fill_short_rosters(&mut game);
+            fill_short_rosters(&mut game, &HashSet::new());
 
             ensure_custom_club_roster(&game, &id).expect("full roster");
             let club = game.teams.iter().find(|t| t.id == id).expect("club");
@@ -6536,7 +7265,7 @@ mod tests {
 
             assert_eq!(game.players.len(), players_before);
             assert_eq!(game.teams.iter().find(|t| t.id == id).map(|t| t.wage_budget), budget_before);
-            fill_short_rosters(&mut game);
+            fill_short_rosters(&mut game, &HashSet::new());
             ensure_custom_club_roster(&game, &id).expect("the free-agent fill still staffs the club");
         }
 

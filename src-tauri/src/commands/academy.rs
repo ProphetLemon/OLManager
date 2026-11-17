@@ -48,10 +48,13 @@ pub fn get_academy_acquisition_options(
         .get_game(|game| game.clone())
         .ok_or("No active game session".to_string())?;
 
-    ensure_example_academy_pool(&mut game);
-    state.set_game(game.clone());
+    // Worlds that already hold copies stay on the copy pool; new worlds offer real clubs.
+    if olm_core::academy_link::world_has_academy_copies(&game) {
+        ensure_example_academy_pool(&mut game);
+        state.set_game(game.clone());
+    }
 
-    get_academy_acquisition_options_for_game(&game, &parent_team_id)
+    academy_options_for_world(&game, &parent_team_id)
 }
 
 #[tauri::command]
@@ -66,8 +69,10 @@ pub fn acquire_academy_team(
     let mut game = state
         .get_game(|game| game.clone())
         .ok_or("No active game session".to_string())?;
-    ensure_example_academy_pool(&mut game);
-    let updated = acquire_academy_team_in_game(&mut game, request)?;
+    if olm_core::academy_link::world_has_academy_copies(&game) {
+        ensure_example_academy_pool(&mut game);
+    }
+    let updated = acquire_academy_team_for_world(&mut game, request)?;
     state.set_game(updated.clone());
     Ok(updated)
 }
@@ -82,39 +87,7 @@ pub fn promote_academy_player(
         .get_game(|game| game.clone())
         .ok_or("No active game session".to_string())?;
 
-    let parent_team_id = game
-        .manager
-        .team_id
-        .clone()
-        .ok_or("No team assigned".to_string())?;
-
-    let academy_team_id =
-        olm_core::academy::resolve_manager_academy_team_id(&game, &parent_team_id)?;
-
-    let (moved_player_id, moved_player_name) = {
-        let player = game
-            .players
-            .iter_mut()
-            .find(|candidate| candidate.id == player_id)
-            .ok_or_else(|| format!("Player '{}' not found", player_id))?;
-
-        if player.team_id.as_deref() != Some(academy_team_id.as_str()) {
-            return Err("Player does not belong to your academy team".to_string());
-        }
-
-        player.team_id = Some(parent_team_id.clone());
-        (player.id.clone(), player.match_name.clone())
-    };
-
-    olm_core::academy::push_academy_player_moved_message(
-        &mut game,
-        "academy-promote",
-        &parent_team_id,
-        &moved_player_id,
-        &moved_player_name,
-        "Promocion desde la academia",
-        "Subiste al jugador {player} desde la academia al equipo principal.",
-    );
+    promote_academy_player_in_game(&mut game, &player_id)?;
 
     state.set_game(game.clone());
     Ok(crate::client_game::game_for_client(&game))
@@ -133,14 +106,66 @@ pub fn demote_main_player_to_academy(
         .get_game(|game| game.clone())
         .ok_or("No active game session".to_string())?;
 
+    demote_academy_player_in_game(&mut game, &player_id)?;
+
+    state.set_game(game.clone());
+    Ok(crate::client_game::game_for_client(&game))
+}
+
+/// Move a player from the user's academy club (a copy or a linked real club) to the
+/// main team. Contract and wage stay on the player.
+pub(crate) fn promote_academy_player_in_game(
+    game: &mut Game,
+    player_id: &str,
+) -> Result<(), String> {
     let parent_team_id = game
         .manager
         .team_id
         .clone()
         .ok_or("No team assigned".to_string())?;
-
     let academy_team_id =
-        olm_core::academy::resolve_manager_academy_team_id(&game, &parent_team_id)?;
+        olm_core::academy::resolve_manager_academy_team_id(game, &parent_team_id)?;
+
+    let (moved_player_id, moved_player_name) = {
+        let player = game
+            .players
+            .iter_mut()
+            .find(|candidate| candidate.id == player_id)
+            .ok_or_else(|| format!("Player '{}' not found", player_id))?;
+
+        if player.team_id.as_deref() != Some(academy_team_id.as_str()) {
+            return Err("Player does not belong to your academy team".to_string());
+        }
+
+        player.team_id = Some(parent_team_id.clone());
+        (player.id.clone(), player.match_name.clone())
+    };
+
+    olm_core::academy::push_academy_player_moved_message(
+        game,
+        "academy-promote",
+        &parent_team_id,
+        &moved_player_id,
+        &moved_player_name,
+        "Promocion desde la academia",
+        "Subiste al jugador {player} desde la academia al equipo principal.",
+    );
+    Ok(())
+}
+
+/// Move a player from the user's main team to the academy club (a copy or a linked
+/// real club). Contract and wage stay on the player.
+pub(crate) fn demote_academy_player_in_game(
+    game: &mut Game,
+    player_id: &str,
+) -> Result<(), String> {
+    let parent_team_id = game
+        .manager
+        .team_id
+        .clone()
+        .ok_or("No team assigned".to_string())?;
+    let academy_team_id =
+        olm_core::academy::resolve_manager_academy_team_id(game, &parent_team_id)?;
 
     let (moved_player_id, moved_player_name) = {
         let player = game
@@ -158,7 +183,7 @@ pub fn demote_main_player_to_academy(
     };
 
     olm_core::academy::push_academy_player_moved_message(
-        &mut game,
+        game,
         "academy-demote",
         &parent_team_id,
         &moved_player_id,
@@ -166,9 +191,44 @@ pub fn demote_main_player_to_academy(
         "Jugador enviado a la academia",
         "Bajaste al jugador {player} del equipo principal a la academia.",
     );
+    Ok(())
+}
 
-    state.set_game(game.clone());
-    Ok(crate::client_game::game_for_client(&game))
+/// Options for the world's academy model: real clubs in a world without copies, the
+/// copy catalog otherwise.
+pub(crate) fn academy_options_for_world(
+    game: &Game,
+    parent_team_id: &str,
+) -> Result<AcademyAcquisitionOptionsResponse, String> {
+    if olm_core::academy_link::world_has_academy_copies(game) {
+        return get_academy_acquisition_options_for_game(game, parent_team_id);
+    }
+    let parent = olm_core::academy::find_team(game, parent_team_id)?;
+    let report = olm_core::academy_link::linked_club_report(game, parent_team_id);
+    Ok(AcademyAcquisitionOptionsResponse {
+        parent_team_id: parent.id.clone(),
+        acquisition_allowed: report.blocked_reason.is_none(),
+        blocked_reason: report.blocked_reason,
+        region: report.region,
+        options: report.options,
+    })
+}
+
+/// Fund an academy in the world's academy model. A real club is linked as it is:
+/// the request's custom name and logo apply to copies only.
+pub(crate) fn acquire_academy_team_for_world(
+    game: &mut Game,
+    request: AcquireAcademyTeamRequest,
+) -> Result<Game, String> {
+    if olm_core::academy_link::world_has_academy_copies(game) {
+        return acquire_academy_team_in_game(game, request);
+    }
+    olm_core::academy_link::acquire_linked_club(
+        game,
+        &request.parent_team_id,
+        &request.source_team_id,
+    )?;
+    Ok(game.clone())
 }
 
 pub(crate) fn get_academy_acquisition_options_for_game(
@@ -776,5 +836,169 @@ mod tests {
                 .and_then(|team| team.academy_team_id.as_deref()),
             parent.academy_team_id.as_deref()
         );
+    }
+}
+
+#[cfg(test)]
+mod linked_world_tests {
+    use super::{
+        academy_options_for_world, acquire_academy_team_for_world, demote_academy_player_in_game,
+        promote_academy_player_in_game, AcquireAcademyTeamRequest,
+    };
+    use chrono::{TimeZone, Utc};
+    use olm_core::clock::GameClock;
+    use olm_core::domain::league::League;
+    use olm_core::domain::manager::Manager;
+    use olm_core::domain::player::{LolRole, Player, PlayerAttributes};
+    use olm_core::domain::team::{Team, TeamKind};
+    use olm_core::game::Game;
+
+    fn team(id: &str, competition: &str, finance: i64) -> Team {
+        let mut team = Team::new(
+            id.to_string(),
+            format!("{id} Esports"),
+            id.to_uppercase(),
+            "ES".to_string(),
+            "City".to_string(),
+            "Arena".to_string(),
+            10_000,
+        );
+        team.finance = finance;
+        team.competition_id = Some(competition.to_string());
+        team
+    }
+
+    fn player(id: &str, team_id: &str, wage: u32) -> Player {
+        let mut player = Player::new(
+            id.to_string(),
+            id.to_string(),
+            id.to_string(),
+            "2002-01-01".to_string(),
+            "ES".to_string(),
+            LolRole::Mid,
+            PlayerAttributes {
+                mechanics: 60,
+                laning: 60,
+                teamfighting: 60,
+                macro_play: 60,
+                consistency: 60,
+                shotcalling: 60,
+                champion_pool: 60,
+                discipline: 60,
+                mental_resilience: 60,
+            },
+        );
+        player.team_id = Some(team_id.to_string());
+        player.wage = wage;
+        player.contract_end = Some("2027-06-30".to_string());
+        player
+    }
+
+    fn league(competition: &str, tier: u8, members: &[&str]) -> League {
+        let ids: Vec<String> = members.iter().map(|id| id.to_string()).collect();
+        let mut league = League::new(
+            format!("league-{competition}"),
+            competition.to_uppercase(),
+            2026,
+            &ids,
+            Some(competition.to_string()),
+        );
+        league.tier = tier;
+        league
+    }
+
+    fn new_world() -> Game {
+        let mut manager = Manager::new(
+            "manager-1".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1985-01-01".to_string(),
+            "ES".to_string(),
+        );
+        manager.hire("koi".to_string());
+        let mut game = Game::new(
+            GameClock::new(Utc.with_ymd_and_hms(2026, 3, 15, 12, 0, 0).unwrap()),
+            manager,
+            vec![
+                team("koi", "lec", 5_000_000),
+                team("les-alpha", "les", 300_000),
+            ],
+            vec![
+                player("koi-p1", "koi", 15_000),
+                player("alpha-p1", "les-alpha", 7_000),
+            ],
+            vec![],
+            vec![],
+        );
+        game.leagues = vec![
+            league("lec", 1, &["koi"]),
+            league("les", 2, &["les-alpha"]),
+        ];
+        game
+    }
+
+    fn request(parent: &str, source: &str) -> AcquireAcademyTeamRequest {
+        AcquireAcademyTeamRequest {
+            parent_team_id: parent.to_string(),
+            source_team_id: source.to_string(),
+            custom_name: Some("Renamed".to_string()),
+            custom_short_name: None,
+            custom_logo_url: None,
+        }
+    }
+
+    #[test]
+    fn a_new_world_lists_real_clubs_and_builds_no_pool() {
+        let game = new_world();
+
+        let response = academy_options_for_world(&game, "koi").expect("options");
+
+        let ids: Vec<&str> = response
+            .options
+            .iter()
+            .map(|option| option.source_team_id.as_str())
+            .collect();
+        assert_eq!(ids, ["les-alpha"]);
+        assert!(!game.teams.iter().any(|team| team.is_academy()));
+    }
+
+    #[test]
+    fn acquiring_in_a_new_world_links_the_real_club_without_renaming_it() {
+        let mut game = new_world();
+
+        let updated = acquire_academy_team_for_world(&mut game, request("koi", "les-alpha"))
+            .expect("link");
+
+        let alpha = updated.teams.iter().find(|t| t.id == "les-alpha").unwrap();
+        assert_eq!(alpha.parent_team_id.as_deref(), Some("koi"));
+        assert_eq!(alpha.team_kind, TeamKind::Main);
+        assert_eq!(alpha.name, "les-alpha Esports");
+        assert_eq!(alpha.finance, 300_000);
+        assert_eq!(updated.teams.len(), 2);
+    }
+
+    #[test]
+    fn a_player_goes_down_and_up_with_contract_and_wage_intact() {
+        let mut game = new_world();
+        acquire_academy_team_for_world(&mut game, request("koi", "les-alpha")).expect("link");
+
+        demote_academy_player_in_game(&mut game, "koi-p1").expect("send down");
+        let down = game.players.iter().find(|p| p.id == "koi-p1").unwrap();
+        assert_eq!(down.team_id.as_deref(), Some("les-alpha"));
+        assert_eq!(down.wage, 15_000);
+        assert_eq!(down.contract_end.as_deref(), Some("2027-06-30"));
+
+        promote_academy_player_in_game(&mut game, "alpha-p1").expect("call up");
+        let up = game.players.iter().find(|p| p.id == "alpha-p1").unwrap();
+        assert_eq!(up.team_id.as_deref(), Some("koi"));
+        assert_eq!(up.wage, 7_000);
+    }
+
+    #[test]
+    fn a_player_of_another_club_cannot_be_promoted() {
+        let mut game = new_world();
+        acquire_academy_team_for_world(&mut game, request("koi", "les-alpha")).expect("link");
+
+        assert!(promote_academy_player_in_game(&mut game, "koi-p1").is_err());
     }
 }

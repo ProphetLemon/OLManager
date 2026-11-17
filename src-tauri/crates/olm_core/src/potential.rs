@@ -169,6 +169,11 @@ pub fn effective_potential_cap(player: &Player) -> u8 {
 /// Attribute points below the potential ceiling inside which growth tapers off.
 pub const GAIN_TAPER_WINDOW: i16 = 10;
 
+/// Smallest share, in tenths (`GAIN_TAPER_WINDOW`), of a post-match loss that lands
+/// within 1 to 9 points under the ceiling. At or above the ceiling, and 10 or more
+/// under it, a loss is full.
+pub const LOSS_TAPER_FLOOR: i16 = 2;
+
 /// Points of headroom an attribute has to `ceiling`, clamped to `0..=GAIN_TAPER_WINDOW`.
 ///
 /// This is the single taper rule for attribute growth: post-match progression scales

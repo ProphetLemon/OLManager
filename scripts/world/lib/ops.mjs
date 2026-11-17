@@ -95,7 +95,7 @@ export function buildOps({ world, analysis, statuses, infoboxes, baselines }) {
       takenPlayerIds.add(record.id);
       const op = { op: "add", player: record, evidence: pageUrl(title) };
       if (dobApprox) op.dob_approx = true;
-      players.push({ op, id: record.id, teamId, competition: compOfTeam(teamId), note: `${lp.ign} (${lp.realName}) new on ${title} as ${lp.position}${nationalityMissing ? "; nationality unresolved" : ""}` });
+      players.push({ op, id: record.id, page: lp.page, teamId, competition: compOfTeam(teamId), note: `${lp.ign} (${lp.realName}) new on ${title} as ${lp.position}${nationalityMissing ? "; nationality unresolved" : ""}` });
     } catch (error) {
       skipped.push({ kind: "add-failed", subject: lp.page, detail: error.message });
     }
@@ -114,7 +114,7 @@ export function buildOps({ world, analysis, statuses, infoboxes, baselines }) {
       takenStaffIds.add(record.id);
       const op = { op: "add", staff: record, evidence: pageUrl(title) };
       if (dobApprox) op.dob_approx = true;
-      staff.push({ op, id: record.id, teamId, competition: compOfTeam(teamId), note: `${lp.ign || lp.realName} new on ${title} as ${role} (${lp.roleLabel})` });
+      staff.push({ op, id: record.id, page: canonicalTitle, teamId, competition: compOfTeam(teamId), note: `${lp.ign || lp.realName} new on ${title} as ${role} (${lp.roleLabel})` });
     } catch (error) {
       skipped.push({ kind: "add-failed", subject: canonicalTitle, detail: error.message });
     }

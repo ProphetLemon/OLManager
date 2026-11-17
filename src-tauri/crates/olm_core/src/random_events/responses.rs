@@ -1,6 +1,5 @@
-use super::format_money;
-use crate::domain::team::{Sponsorship, SponsorshipBonusCriterion, SponsorshipOrigin};
-use crate::finances::push_sponsor_accepted_mail;
+use super::SPONSOR_OFFER_MONTHS;
+use crate::finances::{format_exact, push_sponsor_offer_signed_mail};
 use crate::game::Game;
 use rand::RngExt;
 
@@ -40,38 +39,34 @@ pub fn apply_event_response(
         let user_team_id = game.manager.team_id.clone()?;
         match option_id {
             "accept" => {
-                let amount = game
-                    .messages
-                    .iter()
-                    .find(|m| m.id == message_id)
-                    .and_then(|m| m.i18n_params.get("amount"))
-                    .and_then(|a| parse_sponsor_amount(a))
+                let offer = game.messages.iter().find(|m| m.id == message_id);
+                // New offers carry the exact yearly value; offers saved before the
+                // monthly headline only have the rounded `amount` text.
+                let amount = offer
+                    .and_then(|m| m.i18n_params.get("annualValue"))
+                    .and_then(|a| a.parse::<u64>().ok())
+                    .or_else(|| {
+                        offer
+                            .and_then(|m| m.i18n_params.get("amount"))
+                            .and_then(|a| parse_sponsor_amount(a))
+                    })
                     .unwrap_or(35_000);
-                let sponsor_name = game
-                    .messages
-                    .iter()
-                    .find(|m| m.id == message_id)
+                let sponsor_name = offer
                     .and_then(|m| m.i18n_params.get("sponsor"))
                     .cloned()
                     .unwrap_or_else(|| "Sponsor".to_string());
+                let mut monthly = amount as i64 / 12;
                 if let Some(team) = game.teams.iter_mut().find(|t| t.id == user_team_id) {
-                    team.sponsorship = Some(Sponsorship {
-                        sponsor_name: sponsor_name.clone(),
-                        base_value: amount as i64,
-                        remaining_months: 3,
-                        bonus_criteria: vec![SponsorshipBonusCriterion::UnbeatenRun {
-                            required_matches: 3,
-                            bonus_amount: amount as i64 / 4,
-                        }],
-                        origin: SponsorshipOrigin::Offer,
-                    });
+                    monthly = super::sponsor_offer_monthly_payment(team, &sponsor_name, amount as i64);
+                    team.sponsorship = Some(super::sponsor_offer_deal(&sponsor_name, amount as i64));
                 }
                 let today = game.clock.current_date.format("%Y-%m-%d").to_string();
-                push_sponsor_accepted_mail(
+                push_sponsor_offer_signed_mail(
                     game,
                     &user_team_id,
                     &sponsor_name,
-                    amount as i64,
+                    monthly,
+                    SPONSOR_OFFER_MONTHS,
                     &today,
                 );
                 // Mark resolved
@@ -81,8 +76,10 @@ pub fn apply_event_response(
                     }
                 }
                 Some(format!(
-                    "Sponsorship deal signed! You will receive a total of €{} over 3 months (paid monthly).",
-                    format_money(amount)
+                    "Sponsorship deal signed! You will receive €{} per month for {} months (€{} in total).",
+                    format_exact(monthly),
+                    SPONSOR_OFFER_MONTHS,
+                    format_exact(monthly * i64::from(SPONSOR_OFFER_MONTHS))
                 ))
             }
             "decline" => {

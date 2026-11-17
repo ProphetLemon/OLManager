@@ -1,7 +1,7 @@
 // The "Active-pros pool" section of the review report: what the pool adds, what it left out and why.
 import { evenSample } from "./pool-scope.mjs";
 import { compare } from "./pool.mjs";
-import { RATING_STATS, STATS_MIN_GAMES } from "./pool-rating.mjs";
+import { JUDGMENT_DEFAULT_TIER, RATING_GAME_TIER_DEFAULT, RATING_JUDGMENT_DEFAULT, RATING_LEAGUE_DEFAULT, RATING_STATS, RATING_TIER_DEFAULT, STATS_MIN_GAMES } from "./pool-rating.mjs";
 
 const md = (text) => String(text ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
 const bump = (map, key) => map.set(key, (map.get(key) ?? 0) + 1);
@@ -84,8 +84,11 @@ export function summarizeRatings(ops) {
   const all = [...ops.players, ...ops.staff];
   const total = { stats: all.filter((e) => e.op.pool.rating === RATING_STATS).length, tierDefault: 0 };
   total.tierDefault = all.length - total.stats;
+  const byRating = {};
+  for (const { op } of all) byRating[op.pool.rating] = (byRating[op.pool.rating] ?? 0) + 1;
   return {
     total,
+    byRating,
     playersByTier: tally(ops.players, (p) => `tier ${p.tier}`),
     playersByRole: tally(ops.players, (p) => p.role),
     staffByTier: tally(ops.staff, (p) => `tier ${p.tier}`),
@@ -111,7 +114,7 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
   const summary = summarizePool(selection);
   lines.push(`- Scope: \`recommended\` tournament filter, tournaments starting on or after ${settings.since}, people with a Leaguepedia Players page who are not retired, qualifier-flagged tournaments only up to ${settings.cap} roster entries.`);
   lines.push(`- Result: ${summary.players} players and ${summary.staff} staff added as teamless free agents (limits ${limits.players} and ${limits.staff}); overlay ${bytes} bytes (the app rejects more than ${limits.overlayBytes}).`);
-  lines.push(`- Ratings: a player with at least ${STATS_MIN_GAMES} usable games and a skill estimate is rated from stats (\`pool.rating: "stats"\`, the method of docs/STAT_RATINGS.md); everybody else, and all staff, get the game's median per position shifted by tier (\`"tier-default"\`; 1 top flight, 2 official circuit, 3 recurring seasonal league).`);
+  lines.push(`- Ratings: a player with at least ${STATS_MIN_GAMES} usable games and a skill estimate is rated from stats (\`pool.rating: "stats"\`, the method of docs/STAT_RATINGS.md); everybody else, and all staff, get the game's median per position shifted by tier (\`"tier-default"\`; 1 top flight, 2 official circuit, 3 recurring seasonal league). With the game's league ladder (\`--pool-stats\`) the anchor is the league level instead and the defaults are the league's (\`"league-default"\`, \`"game-tier-default"\`, \`"judgment-default"\`).`);
   lines.push(`- Wage, market value and contract are the roster refresh's empty values (0, 0, ""); the game decides them when it accepts teamless adds (A5).`);
   lines.push(`- Games per player: ${inputs.games ? "from scoreboard rows in the window" : "unavailable (null)"}. Tournament lists are summarised as counts, leagues and levels.`, "");
 
@@ -142,7 +145,13 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
   if (ops) {
     const ratings = summarizeRatings(ops);
     lines.push("### Ratings: stats or tier default", "");
-    lines.push(`${ratings.total.stats} of ${ratings.total.stats + ratings.total.tierDefault} adds were rated from stats; ${ratings.total.tierDefault} took the tier default.`, "");
+    const anchored = [RATING_LEAGUE_DEFAULT, RATING_GAME_TIER_DEFAULT, RATING_JUDGMENT_DEFAULT].some((key) => ratings.byRating[key]);
+    if (anchored) {
+      const n = (key) => ratings.byRating[key] ?? 0;
+      lines.push(`${ratings.total.stats} of ${ratings.total.stats + ratings.total.tierDefault} adds were rated from stats, anchored to the game's league levels; ${ratings.total.tierDefault} took a default: ${n(RATING_LEAGUE_DEFAULT)} the default of their league, ${n(RATING_GAME_TIER_DEFAULT)} the default of the game tier of their league (too few comparable players in it), ${n(RATING_JUDGMENT_DEFAULT)} the judgment default (tier 1 or 2, no league the game models: the default of the game's tier-${JUDGMENT_DEFAULT_TIER} population, not a measurement), ${n(RATING_TIER_DEFAULT)} the tier default (staff, and tier-3 people with no mapped league).`, "");
+    } else {
+      lines.push(`${ratings.total.stats} of ${ratings.total.stats + ratings.total.tierDefault} adds were rated from stats; ${ratings.total.tierDefault} took the tier default.`, "");
+    }
     lines.push("Players by tier", "", ...ratingTable(ratings.playersByTier, "tier"), "");
     lines.push("Players by position (Leaguepedia label)", "", ...ratingTable(ratings.playersByRole, "position"), "");
     lines.push("Staff by tier (staff have no per-game stats)", "", ...ratingTable(ratings.staffByTier, "tier"), "");

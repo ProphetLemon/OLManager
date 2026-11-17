@@ -311,6 +311,29 @@ describe("PlayerProfileV2 contract surfaces", () => {
     );
   });
 
+  it("shows the wage a wage-0 free agent would ask instead of 0", async () => {
+    const player = createPlayer({ team_id: null, contract_end: null, wage: 0 });
+    vi.mocked(invoke).mockImplementation(async (command: string) =>
+      command === "get_expected_signing_wages"
+        ? { [player.id]: 211_000 }
+        : defaultInvokeResponse(command),
+    );
+
+    render(
+      <PlayerProfile
+        player={player}
+        gameState={createGameState(player)}
+        isOwnClub={false}
+        onClose={vi.fn()}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(hasAnnualWage(document.body.textContent ?? "", 211_000)).toBe(true),
+    );
+    expect(hasAnnualWage(document.body.textContent ?? "", 0)).toBe(false);
+  });
+
   it("renders expiry date, years remaining, and contract risk for the selected player", () => {
     const player = createPlayer();
     const gameState = createGameState(player);
@@ -881,3 +904,38 @@ describe("PlayerProfileV2 contract surfaces", () => {
 });
 
 
+
+describe("PlayerProfileV2 academy badge", () => {
+  function stateWithTeams(player: PlayerData, extraTeams: TeamData[]): GameStateData {
+    const state = createGameState(player);
+    return { ...state, teams: [createTeam(), ...extraTeams] };
+  }
+
+  it("shows the academy badge for a player of the user's linked academy club", () => {
+    const player = createPlayer({ team_id: "club-academy" });
+    const gameState = stateWithTeams(player, [
+      createTeam({
+        id: "club-academy",
+        name: "Beta Academy",
+        parent_team_id: "team-1",
+        competition_id: "tier-2",
+      }),
+    ]);
+    gameState.teams[0] = { ...gameState.teams[0], academy_team_id: "club-academy" };
+
+    render(<PlayerProfile player={player} gameState={gameState} onClose={vi.fn()} />);
+
+    expect(screen.getByText("teams.yourAcademy")).toBeInTheDocument();
+  });
+
+  it("does not show the academy badge for a player of another club", () => {
+    const player = createPlayer({ team_id: "other-club" });
+    const gameState = stateWithTeams(player, [
+      createTeam({ id: "other-club", name: "Gamma FC" }),
+    ]);
+
+    render(<PlayerProfile player={player} gameState={gameState} onClose={vi.fn()} />);
+
+    expect(screen.queryByText("teams.yourAcademy")).not.toBeInTheDocument();
+  });
+});

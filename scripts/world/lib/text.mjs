@@ -78,6 +78,10 @@ const COUNTRY_ALIASES = {
   "cape verde": "CV",
   kosovo: "XK",
   "china": "CN",
+  // Leaguepedia spellings the country table does not know (the pool met them on free agents).
+  moldova: "MD",
+  "dr congo": "CD",
+  "republic of ireland": "IE",
 };
 
 /** Country name (any common spelling) or ISO-2 code -> upper-case ISO-2, or "" when unknown. */

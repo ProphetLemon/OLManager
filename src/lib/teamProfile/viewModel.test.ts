@@ -174,3 +174,28 @@ describe("TeamProfile.viewModel", () => {
     expect(viewModel.standings?.points).toBe(0);
   });
 });
+
+describe("TeamProfile.viewModel other leagues", () => {
+  it("reads the standings of the league the club plays in, not the user's", () => {
+    const base = createGameState();
+    const row = (team_id: string, won: number, lost: number) => ({
+      team_id, played: won + lost, won, lost, maps_won: won, maps_lost: lost, points: won * 3,
+    });
+    const gameState = {
+      ...base,
+      user_competition_id: "main",
+      leagues: [
+        { ...base.leagues[0], id: "main-league", competition_id: "main", standings: [row("team-1", 5, 0)] },
+        { ...base.leagues[0], id: "bg-league", competition_id: "bg", standings: [row("other-a", 1, 4), row("team-9", 4, 1)] },
+      ],
+    } as unknown as GameStateData;
+
+    const viewModel = buildTeamProfileViewModel(
+      { ...createTeam(), id: "team-9", competition_id: "bg" } as TeamData,
+      gameState,
+    );
+
+    expect(viewModel.leaguePos).toBe(1);
+    expect(viewModel.standings?.won).toBe(4);
+  });
+});

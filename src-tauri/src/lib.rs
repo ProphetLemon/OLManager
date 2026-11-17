@@ -7,6 +7,10 @@ pub mod error;
 mod l3_timing;
 #[cfg(test)]
 mod pool_bench;
+#[cfg(test)]
+mod world_dupes;
+#[cfg(test)]
+mod world_identity;
 #[cfg(target_os = "linux")]
 mod linux_render;
 use commands::*;
@@ -307,6 +311,7 @@ pub fn run() {
             counter_offer,
             negotiate_player_wage,
             get_transfer_history_cmd,
+            get_expected_signing_wages,
             release_player_contract,
             send_scout,
             advance_to_next_season,
@@ -321,6 +326,7 @@ pub fn run() {
             apply_match_command,
             get_match_snapshot,
             finish_live_match,
+            record_series_game,
             record_fixture_champion_picks,
             delete_save,
             skip_to_match_day,

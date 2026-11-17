@@ -377,8 +377,11 @@ pub fn generate_match_social_posts(
     };
 
     let score = format!("{}-{}", winner_wins, loser_wins);
-    let stomp = winner_wins.saturating_sub(loser_wins) >= 2
-        || kill_difference_for_winner(&fixture, report) >= 10;
+    let stomp = is_stomp(
+        winner_wins,
+        loser_wins,
+        kill_difference_for_winner(&fixture, report),
+    );
     let date = game.clock.current_date.format("%Y-%m-%d").to_string();
     let seed = format!("{}-{}-{}", fixture.id, winner.id, score);
     let winner_objectives = if report.home_wins > report.away_wins {
@@ -725,6 +728,18 @@ fn winner_loser<'a>(
     }
 }
 
+/// Kill lead, in a single game, that makes the winner's result a stomp.
+const STOMP_KILL_LEAD_PER_GAME: u32 = 10;
+
+/// Whether a result reads as a stomp: a margin of two games, or a kill lead of at least
+/// ten a game. `kill_diff` is the summed lead of the whole report, so the bar grows with
+/// the games it covers.
+fn is_stomp(winner_wins: u8, loser_wins: u8, kill_diff: u16) -> bool {
+    let games = u32::from(winner_wins) + u32::from(loser_wins);
+    winner_wins.saturating_sub(loser_wins) >= 2
+        || u32::from(kill_diff) >= STOMP_KILL_LEAD_PER_GAME * games.max(1)
+}
+
 fn kill_difference_for_winner(fixture: &Fixture, report: &MatchReport) -> u16 {
     let home_won = report.home_wins > report.away_wins;
     let winner_kills = if home_won {
@@ -882,7 +897,7 @@ pub fn relocalize_social_posts(game: &mut Game, locale: &str, data_base: Option<
                 }
             })
             .unwrap_or(0);
-        let stomp = winner_wins.saturating_sub(loser_wins) >= 2 || kill_diff >= 10;
+        let stomp = is_stomp(winner_wins, loser_wins, kill_diff);
         let winner_objectives = result
             .report
             .as_ref()
@@ -1075,4 +1090,40 @@ fn manager_language(nationality: &str) -> &str {
         return "de";
     }
     "en"
+}
+
+#[cfg(test)]
+mod stomp_tests {
+    use super::is_stomp;
+
+    #[test]
+    fn a_ten_kill_lead_in_one_game_should_be_a_stomp() {
+        assert!(is_stomp(1, 0, 10));
+    }
+
+    #[test]
+    fn a_nine_kill_lead_in_one_game_should_not_be_a_stomp() {
+        assert!(!is_stomp(1, 0, 9));
+    }
+
+    #[test]
+    fn a_two_one_series_with_a_twelve_kill_lead_should_not_be_a_stomp() {
+        assert!(!is_stomp(2, 1, 12));
+    }
+
+    #[test]
+    fn a_two_one_series_with_a_thirty_kill_lead_should_be_a_stomp() {
+        assert!(is_stomp(2, 1, 30));
+    }
+
+    #[test]
+    fn a_two_nil_sweep_should_be_a_stomp() {
+        assert!(is_stomp(2, 0, 0));
+    }
+
+    #[test]
+    fn a_three_two_series_should_need_fifty_kills_to_be_a_stomp() {
+        assert!(!is_stomp(3, 2, 49));
+        assert!(is_stomp(3, 2, 50));
+    }
 }

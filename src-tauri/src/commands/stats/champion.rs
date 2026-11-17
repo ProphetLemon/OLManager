@@ -2,9 +2,10 @@
 //!
 //! This is a port of the SQL of the former `olm_core::db::repositories::champion_stats_repo`
 //! (removed in 2026-11; recover it from git history), which the single-file save system left
-//! without a database to run on. A "game" is one
-//! `PlayerMatchStatsRecord`: one player in one fixture, so a best-of series counts once, with the
-//! series' summed stats. Pick and ban rates divide by every player record, as the SQL did.
+//! without a database to run on. The counts (games, wins, pick and ban rates) read one
+//! `PlayerMatchStatsRecord` per player and fixture, so a best-of series counts once and pick and
+//! ban rates divide by every player record, as the SQL did. The row holds the series' summed
+//! stats, so the averages divide by the games the rows sum (`game_count`).
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
@@ -141,12 +142,13 @@ pub(super) fn build_champion_stats(
 
     let total_games = records.len() as u32;
     let total_wins = records.iter().filter(|record| is_win(record)).count() as u32;
+    let games_played: u32 = records.iter().map(|record| record.game_count()).sum();
     let sum = |value: fn(&PlayerMatchStatsRecord) -> u64| -> u64 {
         records.iter().map(|record| value(record)).sum()
     };
-    let avg_kills = round_to(mean(sum(|r| u64::from(r.kills)), total_games), 1);
-    let avg_deaths = round_to(mean(sum(|r| u64::from(r.deaths)), total_games), 1);
-    let avg_assists = round_to(mean(sum(|r| u64::from(r.assists)), total_games), 1);
+    let avg_kills = round_to(mean(sum(|r| u64::from(r.kills)), games_played), 1);
+    let avg_deaths = round_to(mean(sum(|r| u64::from(r.deaths)), games_played), 1);
+    let avg_assists = round_to(mean(sum(|r| u64::from(r.assists)), games_played), 1);
     let total_records = stats.player_matches.len() as u32;
     let (best_against, worst_against) = matchups(stats, &key, &records);
 
@@ -162,11 +164,14 @@ pub(super) fn build_champion_stats(
         avg_deaths,
         avg_assists,
         avg_kda: round_to(kda(avg_kills + avg_assists, avg_deaths), 2),
-        avg_gold: round_to(mean(sum(|r| u64::from(r.gold_earned)), total_games), 0),
-        avg_damage: round_to(mean(sum(|r| u64::from(r.damage_dealt)), total_games), 0),
-        avg_cs: round_to(mean(sum(|r| u64::from(r.creep_score)), total_games), 0),
-        avg_vision: round_to(mean(sum(|r| u64::from(r.vision_score)), total_games), 1),
-        avg_duration: round_to(mean(sum(|r| u64::from(r.duration_seconds)), total_games), 0),
+        avg_gold: round_to(mean(sum(|r| u64::from(r.gold_earned)), games_played), 0),
+        avg_damage: round_to(mean(sum(|r| u64::from(r.damage_dealt)), games_played), 0),
+        avg_cs: round_to(mean(sum(|r| u64::from(r.creep_score)), games_played), 0),
+        avg_vision: round_to(mean(sum(|r| u64::from(r.vision_score)), games_played), 1),
+        avg_duration: round_to(
+            mean(sum(|r| u64::from(r.duration_seconds)), games_played),
+            0,
+        ),
         role_distribution: role_distribution(&records),
         best_against,
         worst_against,

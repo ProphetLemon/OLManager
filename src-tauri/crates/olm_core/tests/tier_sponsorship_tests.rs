@@ -10,7 +10,7 @@ use olm_core::game::Game;
 use olm_core::random_events::sponsor_offer_improves_on;
 use olm_core::tier_sponsorship::{
     TIER_1_SPONSORSHIP_VALUE, TIER_2_SPONSORSHIP_VALUE, TIER_SPONSORSHIP_MONTHS,
-    assign_missing_tier_sponsorships, scheduled_main_club_tiers, tier_sponsor_name,
+    assign_missing_tier_sponsorships, scale_by_tier, scheduled_main_club_tiers, tier_income_percent, tier_sponsor_name,
     tier_sponsorship, tier_sponsorship_value,
 };
 
@@ -412,4 +412,15 @@ fn a_sponsorship_saved_without_an_origin_loads_as_an_offer_deal() {
     let loaded: Sponsorship = serde_json::from_str(saved).expect("an old save loads");
 
     assert_eq!(loaded.origin, SponsorshipOrigin::Offer);
+}
+
+#[test]
+fn tier_income_percent_is_full_for_tier_one_and_unknown_and_sixty_below() {
+    assert_eq!(tier_income_percent(0), 100);
+    assert_eq!(tier_income_percent(1), 100);
+    assert_eq!(tier_income_percent(2), 60);
+    assert_eq!(tier_income_percent(3), 60);
+    assert_eq!(scale_by_tier(800_000, 2), 480_000);
+    assert_eq!(scale_by_tier(30_000, 2), 18_000);
+    assert_eq!(scale_by_tier(800_000, 0), 800_000);
 }

@@ -186,7 +186,7 @@ describe("league movers", () => {
   const TEAM_MAP = { schemaVersion: 1, teams: { "lec-team": { title: "Lec Team", name: "Lec Team", competition: "lec" }, "lck-team": { title: "Lck Team", name: "Lck Team", competition: "lck" } } };
   const WINDOW = { since: "2025-01-01", until: "2026-11-10" };
   /** A lec and an lck league plus one player whose games were played in lec while the game puts him in lck. */
-  function moverWorld(moverOvr: number, quality: number) {
+  function moverWorld(moverOvr: number, quality: number, options: { pins?: Record<string, string | null>; teamless?: boolean } = {}) {
     const players = [] as ReturnType<typeof gp>[];
     const links: Record<string, unknown> = {};
     const rows: unknown[] = [];
@@ -196,10 +196,10 @@ describe("league movers", () => {
       links[`lec${i}`] = { ...entry("Lec Team", "lec"), names: [`lec${i}`] };
       rows.push(...playerRows(`lec${i}`, i / 20, GAMES, "lec"));
     }
-    players.push(gp("mover", "lck", "lck-team", moverOvr));
+    players.push(options.teamless ? { ...gp("mover", "lck", "lck-team", moverOvr), team_id: null as never, competition: null as never } : gp("mover", "lck", "lck-team", moverOvr));
     links.mover = { ...entry("Lck Team", "lck"), names: ["mover"] };
     rows.push(...playerRows("mover", quality, GAMES, "lec"));
-    return buildOverrides({ rows: rows as never, window: WINDOW, index: links as never, players: players as never, teamMap: TEAM_MAP, pins: {} });
+    return buildOverrides({ rows: rows as never, window: WINDOW, index: links as never, players: players as never, teamMap: TEAM_MAP, pins: options.pins ?? {} });
   }
 
   it("keeps a non-suspect league mover authored and lists both hypothetical targets", () => {
@@ -211,6 +211,29 @@ describe("league movers", () => {
     const m = report.movers.find((x) => x.id === "mover");
     expect(m).toMatchObject({ statCompetition: "lec", gameCompetition: "lck", authoredOvr: 88, gameLevel: report.levels.lck.median, statLevel: report.levels.lec.median });
     expect(m!.gameTarget).toBeGreaterThan(m!.statTarget);
+  });
+
+  it("does not match a player the overlay released, unless a pin names him", () => {
+    expect(moverWorld(88, 0.1, { teamless: true }).asset.entries.some((e) => e.id === "mover")).toBe(false);
+    const { asset, report } = moverWorld(70, 1.1, { teamless: true, pins: { mover: "mover" } });
+    const written = asset.entries.find((e) => e.id === "mover");
+    expect(written).toBeDefined();
+    expect(written!.authored_ovr).toBe(70);
+    expect(report.totals.matchedBy.pin).toBe(1);
+  });
+
+  it("anchors a pinned player on the league of his stats instead of keeping him as a league mover", () => {
+    const unpinned = moverWorld(72, 1.1);
+    const pinned = moverWorld(72, 1.1, { pins: { mover: "mover" } });
+    // Unpinned, a non-suspect-or-suspect mover is anchored by the game league (kept, or both anchors for a suspect one).
+    const unpinnedRecord = [...unpinned.report.mismatches, ...unpinned.report.movers].find((x) => x.id === "mover")!;
+    expect(unpinnedRecord.gameCompetition).toBe("lck");
+    const rec = pinned.records.find((r) => r.id === "mover")!;
+    expect(rec).toMatchObject({ via: "pin", reason: null, levelUsed: "stat", statCompetition: "lec" });
+    expect(pinned.report.totals.keptMovers).toBe(0);
+    const keeper = moverWorld(88, 0.1, { pins: { mover: "mover" } });
+    expect(keeper.report.totals.keptMovers).toBe(0);
+    expect(keeper.records.find((r) => r.id === "mover")).toMatchObject({ via: "pin", reason: null, levelUsed: "stat" });
   });
 
   it("targets a suspect league mover at the mean of the stat-anchor and game-anchor targets", () => {

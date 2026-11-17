@@ -24,6 +24,8 @@ pub struct PlayerMatchHistoryEntryDto {
     pub damage_to_champions: u32,
     pub vision_score: u16,
     pub wards_placed: u16,
+    /// Games the row sums: one for a single game, the series' games for a best-of.
+    pub games: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

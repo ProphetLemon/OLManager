@@ -376,54 +376,65 @@ fn maybe_push_weekly_academy_report(game: &mut Game, today: &str) {
         .map(|metadata| metadata.erl_assignment.erl_league_id.clone())
         .unwrap_or_default();
 
-    let mut league_rows: Vec<(String, String, u32, i32, u32, u32, u32)> = game
-        .teams
-        .iter()
-        .filter(|team| {
-            team.team_kind == TeamKind::Academy
-                && team
-                    .academy
-                    .as_ref()
-                    .map(|metadata| metadata.erl_assignment.erl_league_id.as_str())
-                    == Some(academy_league_id.as_str())
-        })
-        .map(|team| {
-            let record = team
-                .history
+    // A linked real club reads its own league's standings; a copy reads the invented one.
+    let mut league_rows: Vec<(String, String, u32, i32, u32, u32, u32)> =
+        if academy_team.team_kind == TeamKind::Main {
+            crate::academy_link::linked_league_rows(game, &academy_team_id)
+        } else {
+            game
+                .teams
                 .iter()
-                .find(|record| record.season == season)
-                .cloned()
-                .unwrap_or(TeamSeasonRecord {
-                    season,
-                    league_position: 0,
-                    played: 0,
-                    won: 0,
-                    lost: 0,
-                    kills_for: 0,
-                    kills_against: 0,
-                    competition_id: None,
-                });
-            let points = record.won.saturating_mul(3);
-            let goal_diff = record.kills_for as i32 - record.kills_against as i32;
-            (
-                team.id.clone(),
-                team.name.clone(),
-                points,
-                goal_diff,
-                record.kills_for,
-                record.won,
-                record.lost,
-            )
-        })
-        .collect();
-    league_rows.sort_by(|left, right| {
-        right
-            .2
-            .cmp(&left.2)
-            .then_with(|| right.3.cmp(&left.3))
-            .then_with(|| right.4.cmp(&left.4))
-            .then_with(|| left.1.cmp(&right.1))
-    });
+                .filter(|team| {
+                    team.team_kind == TeamKind::Academy
+                        && team
+                            .academy
+                            .as_ref()
+                            .map(|metadata| metadata.erl_assignment.erl_league_id.as_str())
+                            == Some(academy_league_id.as_str())
+                })
+                .map(|team| {
+                    let record = team
+                        .history
+                        .iter()
+                        .find(|record| record.season == season)
+                        .cloned()
+                        .unwrap_or(TeamSeasonRecord {
+                            season,
+                            league_position: 0,
+                            played: 0,
+                            won: 0,
+                            lost: 0,
+                            kills_for: 0,
+                            kills_against: 0,
+                            competition_id: None,
+                        });
+                    let points = record.won.saturating_mul(3);
+                    let goal_diff = record.kills_for as i32 - record.kills_against as i32;
+                    (
+                        team.id.clone(),
+                        team.name.clone(),
+                        points,
+                        goal_diff,
+                        record.kills_for,
+                        record.won,
+                        record.lost,
+                    )
+                })
+                .collect()
+            };
+
+    // Linked rows already come in the league table's order (`sorted_standings`); only
+    // the invented copy league needs its own sort.
+    if academy_team.team_kind != TeamKind::Main {
+        league_rows.sort_by(|left, right| {
+            right
+                .2
+                .cmp(&left.2)
+                .then_with(|| right.3.cmp(&left.3))
+                .then_with(|| right.4.cmp(&left.4))
+                .then_with(|| left.1.cmp(&right.1))
+        });
+    }
     let academy_position = league_rows
         .iter()
         .position(|row| row.0 == academy_team_id)
@@ -763,6 +774,21 @@ fn simulate_background_league(
             .find(|entry| entry.team_id == *away_team_id)
         {
             away.record_result(*away_wins, *home_wins);
+        }
+    }
+
+    // Every home match is gate income, paid by the next monthly finance step: count it
+    // now, weighted by this league's income percent, because the fixture may be gone
+    // (the league rolled) before that step runs. Academy leagues pay no gate.
+    if league.league_kind == crate::domain::league::LeagueKind::Main {
+        let units = crate::tier_sponsorship::tier_income_percent(league.tier);
+        for (home_team_id, ..) in &completed_fixtures {
+            if let Some(home_team) = teams
+                .iter_mut()
+                .find(|team| team.id == *home_team_id && team.is_main())
+            {
+                home_team.pending_home_matchday_units += units;
+            }
         }
     }
 
@@ -1661,22 +1687,35 @@ fn resolve_auto_draft(game: &Game, home_team_id: &str, away_team_id: &str) -> Au
             })
         })
         .collect();
-    let mut ban_candidates: Vec<_> = profiles.iter().collect();
-    ban_candidates.sort_by(|left, right| {
-        let threat = |profile: &&ChampionProfile| {
-            let mastery = game
-                .champion_masteries
-                .iter()
-                .filter(|entry| entry.champion_id.eq_ignore_ascii_case(&profile.champion_id))
-                .map(|entry| entry.mastery)
-                .max()
+    // Highest mastery per champion over every holder, keyed by ASCII-lowercased id
+    // (the old per-comparison scan matched with `eq_ignore_ascii_case`).
+    let mut best_mastery: std::collections::HashMap<String, u8> = std::collections::HashMap::new();
+    for entry in &game.champion_masteries {
+        best_mastery
+            .entry(entry.champion_id.to_ascii_lowercase())
+            .and_modify(|best| *best = (*best).max(entry.mastery))
+            .or_insert(entry.mastery);
+    }
+    let mut scored: Vec<(u16, &ChampionProfile)> = profiles
+        .iter()
+        .map(|profile| {
+            let mastery = best_mastery
+                .get(&profile.champion_id.to_ascii_lowercase())
+                .copied()
                 .unwrap_or(25);
-            u16::from(profile.meta_power) * 2 + u16::from(mastery)
-        };
-        threat(right)
-            .cmp(&threat(left))
+            (
+                u16::from(profile.meta_power) * 2 + u16::from(mastery),
+                profile,
+            )
+        })
+        .collect();
+    // Stable sort: equal threat and champion id keep their profile order.
+    scored.sort_by(|(left_threat, left), (right_threat, right)| {
+        right_threat
+            .cmp(left_threat)
             .then_with(|| left.champion_id.cmp(&right.champion_id))
     });
+    let ban_candidates = scored.into_iter().map(|(_, profile)| profile);
     // Preserve two legal options per role for the two opposing starters before banning.
     let mut bans = Vec::new();
     for candidate in ban_candidates {
@@ -1823,10 +1862,25 @@ fn simulate_series(
         reports.push(report);
     }
 
-    let mut merged = match reports.last() {
-        Some(report) => report.clone(),
-        None => crate::engine::simulate_lol(home_data, away_data, config, &mut rng),
-    };
+    merge_series_reports(reports)
+        .unwrap_or_else(|| crate::engine::simulate_lol(home_data, away_data, config, &mut rng))
+}
+
+/// Merges the reports of the games of one series, in play order, into the series report.
+///
+/// The score counts the games each side won, team and player lines are summed, durations
+/// are summed, events are concatenated, possession is averaged over the games, and how the
+/// match ended comes from the last game. `None` when there are no games to merge.
+pub fn merge_series_reports(
+    reports: Vec<crate::engine::MatchReport>,
+) -> Option<crate::engine::MatchReport> {
+    let mut merged = reports.last()?.clone();
+    let mut home_wins = 0_u8;
+    let mut away_wins = 0_u8;
+    for report in &reports {
+        home_wins = home_wins.saturating_add(report.home_wins);
+        away_wins = away_wins.saturating_add(report.away_wins);
+    }
     merged.home_wins = home_wins;
     merged.away_wins = away_wins;
 
@@ -1919,7 +1973,7 @@ fn simulate_series(
         merged.home_possession = possession_sum / f64::from(home_wins + away_wins);
     }
 
-    merged
+    Some(merged)
 }
 
 #[cfg(test)]
@@ -2176,6 +2230,159 @@ mod tests {
         assert!(!captured_stats.contains("modifier"));
     }
 
+    /// World with mixed-case ids, case-variant masteries, duplicated masteries,
+    /// low masteries and ties, used to pin the ban order.
+    fn ban_order_game() -> Game {
+        let (mut game, _) = bg_test_game("2025-06-15");
+        let roles = ["top", "jungle", "mid", "adc", "support"];
+        let tiers = ["S", "A", "B", "C", "D", "X"];
+        game.champion_patch.hidden_meta = roles
+            .iter()
+            .flat_map(|role| {
+                (0..9).map(move |index| crate::champions::ChampionMetaEntry {
+                    champion_id: match index % 3 {
+                        0 => format!("Champ{role}{index}"),
+                        1 => format!("champ{role}{index}"),
+                        _ => format!("CHAMP{role}{index}"),
+                    },
+                    role: (*role).to_string(),
+                    tier: tiers[index % tiers.len()].to_string(),
+                })
+            })
+            .collect();
+        // Same id twice (different role): equal keys must keep their input order.
+        game.champion_patch
+            .hidden_meta
+            .push(crate::champions::ChampionMetaEntry {
+                champion_id: "Champtop0".to_string(),
+                role: "mid".to_string(),
+                tier: "S".to_string(),
+            });
+        let ids: Vec<String> = game
+            .champion_patch
+            .hidden_meta
+            .iter()
+            .map(|meta| meta.champion_id.clone())
+            .collect();
+        game.champion_masteries.clear();
+        for (index, id) in ids.iter().enumerate() {
+            // Every third champion has no mastery at all (default 25, many ties).
+            if index % 3 == 2 {
+                continue;
+            }
+            for owner in 0..4usize {
+                let case_variant = match (index + owner) % 3 {
+                    0 => id.to_ascii_lowercase(),
+                    1 => id.to_ascii_uppercase(),
+                    _ => id.clone(),
+                };
+                let mastery = u8::try_from((index * 7 + owner * 13) % 40).unwrap() * 2 + 5;
+                game.champion_masteries
+                    .push(crate::champions::ChampionMasteryEntry {
+                        player_id: format!("owner-{owner}"),
+                        champion_id: case_variant,
+                        mastery,
+                        last_active_on: "2025-06-01".to_string(),
+                    });
+            }
+        }
+        // A mastery below the 25 default: the max over entries wins, not max(25).
+        game.champion_masteries
+            .push(crate::champions::ChampionMasteryEntry {
+                player_id: "owner-low".to_string(),
+                champion_id: "CHAMPJUNGLE5".to_string(),
+                mastery: 3,
+                last_active_on: "2025-06-01".to_string(),
+            });
+        game
+    }
+
+    /// The pre-optimisation ban selection, kept verbatim as the reference.
+    fn reference_bans(game: &Game) -> Vec<String> {
+        struct Profile {
+            champion_id: String,
+            role: &'static str,
+            meta_power: u8,
+        }
+        let profiles: Vec<Profile> = game
+            .champion_patch
+            .hidden_meta
+            .iter()
+            .map(|meta| Profile {
+                champion_id: meta.champion_id.clone(),
+                role: match meta.role.as_str() {
+                    "top" => "top",
+                    "jungle" => "jungle",
+                    "mid" => "mid",
+                    "adc" => "adc",
+                    _ => "support",
+                },
+                meta_power: match meta.tier.to_ascii_uppercase().as_str() {
+                    "S" => 90,
+                    "A" => 75,
+                    "B" => 60,
+                    "C" => 45,
+                    "D" => 30,
+                    _ => 60,
+                },
+            })
+            .collect();
+        let mut ban_candidates: Vec<_> = profiles.iter().collect();
+        ban_candidates.sort_by(|left, right| {
+            let threat = |profile: &&Profile| {
+                let mastery = game
+                    .champion_masteries
+                    .iter()
+                    .filter(|entry| entry.champion_id.eq_ignore_ascii_case(&profile.champion_id))
+                    .map(|entry| entry.mastery)
+                    .max()
+                    .unwrap_or(25);
+                u16::from(profile.meta_power) * 2 + u16::from(mastery)
+            };
+            threat(right)
+                .cmp(&threat(left))
+                .then_with(|| left.champion_id.cmp(&right.champion_id))
+        });
+        let mut bans = Vec::new();
+        for candidate in ban_candidates {
+            if bans.len() == 10 {
+                break;
+            }
+            let remaining_for_role = profiles
+                .iter()
+                .filter(|profile| {
+                    profile.role == candidate.role && !bans.contains(&profile.champion_id)
+                })
+                .count();
+            if remaining_for_role > 2 {
+                bans.push(candidate.champion_id.clone());
+            }
+        }
+        bans
+    }
+
+    #[test]
+    fn auto_draft_ban_order_matches_reference_comparator() {
+        let game = ban_order_game();
+        let bans = resolve_auto_draft(&game, "team1", "team2").bans;
+        assert_eq!(bans, reference_bans(&game));
+        assert_eq!(
+            bans,
+            [
+                "Champtop0",
+                "Champtop0",
+                "Champjungle6",
+                "Champsupport0",
+                "Champjungle0",
+                "Champmid6",
+                "Champmid0",
+                "Champadc6",
+                "Champadc0",
+                "Champtop6",
+            ]
+        );
+    }
+
     #[test]
     fn auto_draft_relationships_change_modifiers_without_persisting_them() {
         fn game_with_auto_draft_profiles(profiles: &[(&str, &str)]) -> Game {
@@ -2333,6 +2540,25 @@ mod tests {
         assert!(records.iter().any(|r| r.assists > 0));
     }
 
+    #[test]
+    fn a_best_of_three_row_counts_every_game_it_sums() {
+        let (mut game, today) = bg_test_game("2025-06-15");
+        if let Some(league) = game.active_league_mut() {
+            league.fixtures[0].best_of = 3;
+        }
+        let mut capture = StatsState::default();
+        simulate_other_matches_with_capture(&mut game, &today, None, &mut |stats| capture = stats);
+
+        let fixture = game.active_league().unwrap().fixtures[0]
+            .result
+            .as_ref()
+            .unwrap();
+        let games = fixture.home_wins + fixture.away_wins;
+        assert!(games >= 2);
+        assert!(capture.player_matches.iter().all(|r| r.games == games));
+        assert!(capture.team_matches.iter().all(|r| r.games == games));
+    }
+
     // -----------------------------------------------------------------------
     // T9: simulate_background_league tests
     // -----------------------------------------------------------------------
@@ -2359,6 +2585,41 @@ mod tests {
         let result = fixture.result.as_ref().unwrap();
         // One team must have won (home_wins + away_wins >= 1 in a bo1)
         assert!(result.home_wins >= 1 || result.away_wins >= 1);
+    }
+
+    #[test]
+    fn test_bg_league_counts_the_home_match_at_the_league_tier() {
+        let (mut game, today_str) = bg_test_game("2025-06-15");
+        let league = game.leagues.first_mut().unwrap();
+        league.tier = 2;
+
+        simulate_background_league(&mut game.teams, &game.players, league, &today_str, 2025);
+
+        let home = game.teams.iter().find(|t| t.id == "team1").unwrap();
+        let away = game.teams.iter().find(|t| t.id == "team2").unwrap();
+        assert_eq!(home.pending_home_matchday_units, 60);
+        assert_eq!(away.pending_home_matchday_units, 0);
+    }
+
+    #[test]
+    fn test_bg_league_counts_nothing_without_a_due_home_match() {
+        let (mut game, _) = bg_test_game("2025-06-15");
+        let league = game.leagues.first_mut().unwrap();
+
+        simulate_background_league(&mut game.teams, &game.players, league, "2025-06-14", 2025);
+
+        assert!(game.teams.iter().all(|t| t.pending_home_matchday_units == 0));
+    }
+
+    #[test]
+    fn test_bg_academy_league_counts_no_home_matches() {
+        let (mut game, today_str) = bg_test_game("2025-06-15");
+        let league = game.leagues.first_mut().unwrap();
+        league.league_kind = crate::domain::league::LeagueKind::Academy;
+
+        simulate_background_league(&mut game.teams, &game.players, league, &today_str, 2025);
+
+        assert!(game.teams.iter().all(|t| t.pending_home_matchday_units == 0));
     }
 
     #[test]
@@ -2598,5 +2859,250 @@ mod tests {
 
         // BG league fixture should still be Scheduled (no due fixtures)
         assert_eq!(game.leagues[1].fixtures[0].status, FixtureStatus::Scheduled);
+    }
+
+    fn real_club_world() -> Game {
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 3, 16, 12, 0, 0).unwrap());
+        let mut manager = crate::domain::manager::Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "ES".to_string(),
+        );
+        manager.hire("koi".to_string());
+        let ids = ["koi", "les-a", "les-b", "les-c"];
+        let mut teams: Vec<Team> = ids.iter().map(|id| make_team(id)).collect();
+        teams[0].competition_id = Some("lec".to_string());
+        for team in &mut teams[1..] {
+            team.competition_id = Some("les".to_string());
+        }
+        teams[0].academy_team_id = Some("les-b".to_string());
+        teams[2].parent_team_id = Some("koi".to_string());
+        let players = vec![make_player("b-p1", "les-b", 70), make_player("koi-p1", "koi", 70)];
+        let mut game = Game::new(clock, manager, teams, players, vec![], vec![]);
+        let mut lec = League::new(
+            "league-lec".to_string(),
+            "LEC".to_string(),
+            2026,
+            &["koi".to_string()],
+            Some("lec".to_string()),
+        );
+        lec.tier = 1;
+        let mut les = League::new(
+            "league-les".to_string(),
+            "LES".to_string(),
+            2026,
+            &["les-a".to_string(), "les-b".to_string(), "les-c".to_string()],
+            Some("les".to_string()),
+        );
+        les.tier = 2;
+        for (entry, (won, lost, points)) in les.standings.iter_mut().zip([(5, 1, 15), (3, 3, 9), (1, 5, 3)])
+        {
+            entry.won = won;
+            entry.lost = lost;
+            entry.points = points;
+        }
+        game.leagues = vec![lec, les];
+        game
+    }
+
+    #[test]
+    fn the_weekly_report_of_a_linked_club_reads_its_real_league_table() {
+        let mut game = real_club_world();
+
+        maybe_push_weekly_academy_report(&mut game, "2026-03-16");
+
+        let report = game
+            .messages
+            .iter()
+            .find(|m| m.id == "academy-weekly-report-koi-2026-03-16")
+            .expect("weekly report");
+        assert_eq!(report.i18n_params.get("position").map(String::as_str), Some("2"));
+        assert_eq!(report.i18n_params.get("total").map(String::as_str), Some("3"));
+    }
+
+    #[test]
+    fn the_weekly_report_position_matches_the_league_table_on_a_full_tie() {
+        let mut game = real_club_world();
+        // les-b and les-a level on every key; the table keeps the standings order
+        // (les-b first), so the report must say #1, not re-break the tie by name.
+        let les = game.leagues.iter_mut().find(|l| l.id == "league-les").unwrap();
+        les.standings.sort_by(|a, b| b.team_id.cmp(&a.team_id));
+        for entry in les.standings.iter_mut().filter(|e| e.team_id != "les-c") {
+            entry.won = 5;
+            entry.lost = 1;
+            entry.points = 15;
+        }
+        let table_first = les.sorted_standings()[0].team_id.clone();
+        assert_eq!(table_first, "les-b");
+
+        maybe_push_weekly_academy_report(&mut game, "2026-03-16");
+
+        let report = game
+            .messages
+            .iter()
+            .find(|m| m.id == "academy-weekly-report-koi-2026-03-16")
+            .expect("weekly report");
+        assert_eq!(report.i18n_params.get("position").map(String::as_str), Some("1"));
+    }
+
+    #[test]
+    fn a_linked_club_builds_no_parallel_academy_league() {
+        let mut game = real_club_world();
+        let leagues_before = game.leagues.len();
+
+        maybe_simulate_parallel_academy_leagues(&mut game);
+
+        assert_eq!(game.leagues.len(), leagues_before);
+        assert!(!game
+            .leagues
+            .iter()
+            .any(|l| l.league_kind == crate::domain::league::LeagueKind::Academy));
+    }
+
+    fn series_game_report(
+        home_won: bool,
+        home_kills: u16,
+        away_kills: u16,
+        duration_seconds: u32,
+        home_possession: f64,
+        ended_by: crate::engine::MatchReportEndReason,
+    ) -> crate::engine::MatchReport {
+        let player = crate::engine::PlayerMatchStats {
+            role: Some(crate::engine::LolRole::Mid),
+            duration_seconds,
+            kills: home_kills,
+            deaths: away_kills,
+            assists: 2,
+            creep_score: 100,
+            gold_earned: 10_000,
+            damage_dealt: 20_000,
+            vision_score: 5,
+            wards_placed: 3,
+            ..Default::default()
+        };
+        crate::engine::MatchReport {
+            home_wins: u8::from(home_won),
+            away_wins: u8::from(!home_won),
+            home_stats: crate::engine::TeamStats {
+                kills: home_kills,
+                deaths: away_kills,
+                gold_earned: 50_000,
+                damage_dealt: 90_000,
+                objectives: 7,
+                possession_ticks: 10,
+                ..Default::default()
+            },
+            away_stats: crate::engine::TeamStats {
+                kills: away_kills,
+                deaths: home_kills,
+                gold_earned: 40_000,
+                damage_dealt: 70_000,
+                objectives: 3,
+                possession_ticks: 20,
+                ..Default::default()
+            },
+            events: vec![crate::engine::MatchEvent {
+                minute: 10,
+                event_type: crate::engine::EventType::Kill,
+                side: crate::engine::Side::Home,
+                zone: crate::engine::Zone::Midfield,
+                player_id: Some("p1".to_string()),
+                secondary_player_id: None,
+            }],
+            kill_feed: vec![],
+            player_stats: HashMap::from([("p1".to_string(), player)]),
+            home_possession,
+            total_minutes: (duration_seconds / 60) as u8,
+            game_duration_seconds: duration_seconds,
+            ended_by,
+        }
+    }
+
+    fn two_to_one_series() -> Vec<crate::engine::MatchReport> {
+        use crate::engine::MatchReportEndReason::{NexusDestroyed, TimeLimit};
+        vec![
+            series_game_report(true, 10, 4, 1_800, 60.0, NexusDestroyed),
+            series_game_report(false, 3, 9, 2_100, 40.0, NexusDestroyed),
+            series_game_report(true, 12, 6, 1_500, 50.0, TimeLimit),
+        ]
+    }
+
+    #[test]
+    fn merge_series_reports_counts_the_games_each_side_won() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert_eq!((merged.home_wins, merged.away_wins), (2, 1));
+    }
+
+    #[test]
+    fn merge_series_reports_sums_team_stats_across_games() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert_eq!(
+            (
+                merged.home_stats.kills,
+                merged.home_stats.deaths,
+                merged.home_stats.gold_earned,
+                merged.home_stats.damage_dealt,
+                merged.home_stats.objectives,
+                merged.home_stats.possession_ticks,
+            ),
+            (25, 19, 150_000, 270_000, 21, 30)
+        );
+        assert_eq!(
+            (merged.away_stats.kills, merged.away_stats.possession_ticks),
+            (19, 60)
+        );
+    }
+
+    #[test]
+    fn merge_series_reports_sums_each_players_line_across_games() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        let line = &merged.player_stats["p1"];
+        assert_eq!(
+            (
+                line.kills,
+                line.deaths,
+                line.assists,
+                line.creep_score,
+                line.gold_earned,
+                line.damage_dealt,
+                line.duration_seconds,
+            ),
+            (25, 19, 6, 300, 30_000, 60_000, 5_400)
+        );
+    }
+
+    #[test]
+    fn merge_series_reports_sums_durations_and_joins_events() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert_eq!(merged.game_duration_seconds, 5_400);
+        assert_eq!(merged.events.len(), 3);
+    }
+
+    #[test]
+    fn merge_series_reports_averages_possession_over_the_games_played() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert!((merged.home_possession - 50.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn merge_series_reports_takes_how_it_ended_from_the_last_game() {
+        let merged = merge_series_reports(two_to_one_series()).expect("merged series");
+
+        assert_eq!(
+            merged.ended_by,
+            crate::engine::MatchReportEndReason::TimeLimit
+        );
+    }
+
+    #[test]
+    fn merge_series_reports_has_nothing_to_merge_without_games() {
+        assert!(merge_series_reports(Vec::new()).is_none());
     }
 }

@@ -3,12 +3,14 @@ import type { ReactNode } from "react";
 import { EyeOff, Pencil, Shield, User } from "lucide-react";
 import type { PlayerData } from "@/store/gameStore";
 import { formatPlayerMarketValue, formatPlayerWage } from "@/lib/playerProfile/helpers";
+import { formatAge } from "@/lib/formatting/valueFormatting";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import type { PlayerProfileScoutStatus, ScoutAvailability } from "@/lib/playerProfile/scouting";
 import PlayerProfileScoutActionV2 from "@/ui-v2/pages/playerProfile/PlayerProfileScoutActionV2";
 import { countryName } from "@/lib/common/countries";
 import { CountryFlag } from "@/ui-v2/components/ui/country-flag";
+import { Badge } from "@/ui-v2/components/ui/badge";
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { cn } from "@/ui-v2/lib/utils";
 import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
@@ -18,13 +20,18 @@ type UiRole = "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT";
 
 interface PlayerProfileHeroCardV2Props {
   player: PlayerData;
+  /** Wage to show when it differs from `player.wage` (a free agent's expected ask). */
+  displayWage?: number;
   ovr: number;
   primaryRole?: UiRole;
-  age: number;
+  /** `null` when the date of birth is unknown. */
+  age: number | null;
   teamName: string;
   annualSuffix: string;
   language: string;
   isOwnClub: boolean;
+  /** The player plays for the academy (linked club or legacy copy) of the user's club. */
+  isUserAcademy?: boolean;
   scoutAvailability: ScoutAvailability;
   scoutStatus: PlayerProfileScoutStatus;
   scoutError: string | null;
@@ -61,7 +68,9 @@ export default function PlayerProfileHeroCardV2({
   age,
   teamName,
   annualSuffix,
+  displayWage,
   isOwnClub,
+  isUserAcademy = false,
   scoutAvailability,
   scoutStatus,
   scoutError,
@@ -194,7 +203,7 @@ export default function PlayerProfileHeroCardV2({
                   <Pencil className="size-3.5" />
                 </button>
               )}
-              <span className="text-muted-foreground/70">{t("common.age")} {age}</span>
+              <span className="text-muted-foreground/70">{t("common.age")} {formatAge(age)}</span>
             </div>
 
             {isOwnClub && editingRole && (
@@ -231,6 +240,7 @@ export default function PlayerProfileHeroCardV2({
                 ) : (
                   <span>{teamName}</span>
                 )}
+                {isUserAcademy && <Badge className="text-2xs">{t("teams.yourAcademy")}</Badge>}
               </span>
               {isOwnClub && (
                 <>
@@ -286,7 +296,7 @@ export default function PlayerProfileHeroCardV2({
                 <QuickStatV2 label={t("common.morale")} value={`${player.morale}%`} color={player.morale >= 70 ? "text-club-text" : "text-negative"} />
                 <QuickStatV2 label={t("common.potential")} value={potentialValueLabel} color="text-foreground/90" icon={potentialRevealed === null ? <EyeOff className="size-4" /> : undefined} />
                 <QuickStatV2 label={t("common.value")} value={formatPlayerMarketValue(player.market_value)} color="text-foreground" />
-                <QuickStatV2 label={t("common.wage")} value={formatPlayerWage(player.wage, annualSuffix)} color="text-foreground" />
+                <QuickStatV2 label={t("common.wage")} value={formatPlayerWage(displayWage ?? player.wage, annualSuffix)} color="text-foreground" />
               </div>
             </div>
           </div>

@@ -72,7 +72,7 @@ export function buildOverrides(input: {
   teamMap: { teams?: Record<string, { title: string | null; name: string }> } | null | undefined;
   pins?: Record<string, string | null>;
   includePlaceholders?: boolean;
-}): { asset: OverridesAsset; report: BuildReport };
+}): { asset: OverridesAsset; report: BuildReport; records: Array<Record<string, any>>; levels: Record<string, { median: number; sd: number }> };
 export function renderReport(report: BuildReport): string;
 export function parseArgs(argv: string[]): BuildArgs;
 export function runBuild(args: BuildArgs, log?: (message: string) => void): { asset: OverridesAsset; report: BuildReport };
