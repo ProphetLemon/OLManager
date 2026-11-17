@@ -33,7 +33,7 @@ function setRoot(px: number | null) {
 
 function setup() {
   const el = document.createElement("div");
-  return renderHook(() => useRailMode({ current: el }));
+  return renderHook(() => useRailMode(el));
 }
 
 beforeEach(() => {
@@ -59,6 +59,11 @@ describe("useRailMode", () => {
     expect(result.current).toEqual({ mode: "tree", slotW: 1280, slotH: 764, need: 622 });
   });
 
+  it("is Split, today's rail, until the observer first fires", () => {
+    const { result } = setup();
+    expect(result.current).toMatchObject({ mode: "split", slotW: 0, slotH: 0 });
+  });
+
   it("flips to split when the slot shrinks and back when it grows", () => {
     const { result } = setup();
     resize(1280, 764);
@@ -66,6 +71,25 @@ describe("useRailMode", () => {
     resize(960, 595);
     expect(result.current.mode).toBe("split");
     resize(1920, 1044);
+    expect(result.current.mode).toBe("tree");
+  });
+
+  it("keeps the mode when the slot reports 0 x 0 after a real measurement (hidden or detached)", () => {
+    const { result } = setup();
+    resize(960, 595);
+    expect(result.current.mode).toBe("split");
+    resize(0, 0);
+    expect(result.current.mode).toBe("split");
+    resize(1104, 622); // the next real size still pays the re-entry margin
+    expect(result.current.mode).toBe("split");
+  });
+
+  it("does not drop out of the tree on a 0 x 0 slot either", () => {
+    const { result } = setup();
+    resize(1280, 764);
+    resize(0, 0);
+    expect(result.current.mode).toBe("tree");
+    resize(1104, 622); // no margin was imposed
     expect(result.current.mode).toBe("tree");
   });
 
@@ -121,7 +145,7 @@ describe("useRailMode", () => {
 
   it("subtracts reservedTop from the height budget", () => {
     const el = document.createElement("div");
-    const { result } = renderHook(() => useRailMode({ current: el }, { reservedTop: 50 }));
+    const { result } = renderHook(() => useRailMode(el, { reservedTop: 50 }));
     resize(1280, 660);
     expect(result.current).toMatchObject({ mode: "split", need: 672 });
   });

@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
 import { decideRailMode, railNeed, type RailMode, type RailPlatform } from "./railMode";
 
@@ -18,6 +18,8 @@ interface Measured {
   platform: RailPlatform;
   reservedTop: number;
   mode: RailMode;
+  /** False until the observer first reports a size. */
+  measured: boolean;
 }
 
 const FALLBACK_ROOT_PX = 16;
@@ -35,32 +37,35 @@ function readPlatform(): RailPlatform {
 /** Pure step: change some inputs and re-decide the mode, with the old mode as `current`. */
 function next(prev: Measured, patch: Partial<Omit<Measured, "mode">>): Measured {
   const merged = { ...prev, ...patch };
-  const unmeasured = merged.slotW === 0 && merged.slotH === 0;
-  const mode = unmeasured
-    ? merged.platform === "android"
-      ? "split"
-      : "tree"
-    : decideRailMode({
-        platform: merged.platform,
-        slotW: merged.slotW,
-        slotH: merged.slotH,
-        rootPx: merged.rootPx,
-        current: prev.mode,
-        reservedTop: merged.reservedTop,
-      });
-  return mode === prev.mode && Object.keys(patch).every((k) => prev[k as keyof Measured] === merged[k as keyof Measured])
-    ? prev
-    : { ...merged, mode };
+  if (!merged.measured) {
+    return merged.platform === prev.platform && merged.rootPx === prev.rootPx && merged.reservedTop === prev.reservedTop
+      ? prev
+      : { ...merged, mode: "split" };
+  }
+  // A hidden or detached slot reports 0 x 0: that is no information, so keep the mode.
+  if (merged.slotW === 0 && merged.slotH === 0 && merged.platform !== "android") {
+    return { ...merged, mode: prev.mode };
+  }
+  const mode = decideRailMode({
+    platform: merged.platform,
+    slotW: merged.slotW,
+    slotH: merged.slotH,
+    rootPx: merged.rootPx,
+    // The first real measurement is decided without hysteresis.
+    current: prev.measured ? prev.mode : "tree",
+    reservedTop: merged.reservedTop,
+  });
+  return { ...merged, mode };
 }
 
 /**
  * Tree or Split for the rail, from the size of `slot` (the dashboard body, under the
- * title bar). Until the observer first fires the slot is 0 x 0 and the mode is the
- * desktop default, Tree (Split on Android), so the first real measurement is decided
- * without hysteresis.
+ * title bar). The slot is an element held in state (it can mount late), not a ref.
+ * Until the observer first fires the mode is Split, today's rail, and the first real
+ * measurement is decided without hysteresis.
  */
 export function useRailMode(
-  slot: RefObject<HTMLElement | null>,
+  slot: HTMLElement | null,
   { reservedTop = 0 }: { reservedTop?: number } = {},
 ): RailModeState {
   const uiScale = useSettingsStore((s) => s.settings.ui_scale);
@@ -72,16 +77,17 @@ export function useRailMode(
       rootPx: readRootPx(),
       platform,
       reservedTop,
-      mode: platform === "android" ? "split" : "tree",
+      mode: "split",
+      measured: false,
     };
   });
 
   useEffect(() => {
-    const el = slot.current;
+    const el = slot;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
       const box = entries[entries.length - 1]?.contentRect;
-      if (box) setM((prev) => next(prev, { slotW: box.width, slotH: box.height }));
+      if (box) setM((prev) => next(prev, { slotW: box.width, slotH: box.height, measured: true }));
     });
     ro.observe(el);
     return () => ro.disconnect();
