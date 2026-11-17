@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardHeaderV2 } from "@/ui-v2/dashboard/DashboardHeaderV2";
 import { DashboardSidebarV2 } from "@/ui-v2/dashboard/DashboardSidebarV2";
-import { SectionStripV2 } from "@/ui-v2/shell/SectionStripV2";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
@@ -21,8 +20,6 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
     </button>
   ),
 }));
-
-const BADGES = { unread: 2, offers: 1, players: 20, teams: 12, staff: 5 };
 
 function renderShell() {
   return render(
@@ -54,14 +51,10 @@ function renderShell() {
         onContinue={vi.fn()}
         onSkipToMatchDay={vi.fn()}
         onSkipToNextDay={vi.fn()}
-        onNavigate={vi.fn()}
         teamName="Night Owls"
         activeTab="Squad"
-        onNavClick={vi.fn()}
-        badges={BADGES}
         callCount={2}
         onShowCalls={vi.fn()}
-        stripVisible={false}
       />
     </div>,
   );
@@ -87,6 +80,15 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
       const name = el.getAttribute("aria-label") ?? el.textContent?.trim() ?? "";
       expect(name, el.outerHTML).not.toBe("");
     }
+  });
+
+  it("has exactly one navigation landmark in the whole dashboard: the rail", () => {
+    renderShell();
+    const navs = screen.getAllByRole("navigation");
+    expect(navs).toHaveLength(1);
+    expect(navs[0]).toHaveAccessibleName("Main navigation");
+    // The group's sections are a labelled group inside that nav, not a second landmark.
+    expect(within(navs[0]).getByRole("group", { name: /Club/i })).toBeInTheDocument();
   });
 
   it("labels every navigation landmark uniquely", () => {
@@ -125,19 +127,26 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
   });
 });
 
-describe("section strip keyboard", () => {
-  it("moves with arrows without wrapping and opens with Enter", () => {
+describe("compact (the end-of-season screen)", () => {
+  it("renders one landmark, no panel and a rail that still navigates", () => {
     const onNavClick = vi.fn();
-    render(<SectionStripV2 group="club" activeTab="Squad" onNavClick={onNavClick} badges={BADGES} label="Club" />);
-    const tabs = screen.getAllByRole("button");
-    tabs[0].focus();
-    fireEvent.keyDown(tabs[0], { key: "ArrowLeft" });
-    expect(tabs.filter((t) => t.getAttribute("tabindex") === "0")).toHaveLength(1);
-    fireEvent.keyDown(document.activeElement as Element, { key: "End" });
-    const last = document.activeElement as HTMLElement;
-    fireEvent.keyDown(last, { key: "ArrowRight" });
-    expect(document.activeElement).toBe(last);
-    fireEvent.keyDown(last, { key: "Enter" });
-    expect(onNavClick).toHaveBeenCalledTimes(1);
+    render(
+      <DashboardSidebarV2
+        activeTab="Squad"
+        onNavClick={onNavClick}
+        unreadMessagesCount={0}
+        managerName="Boss"
+        teamName="Night Owls"
+        teamLogo={null}
+        isUnemployed={false}
+        onNavigateSettings={vi.fn()}
+        onExitClick={vi.fn()}
+        compact
+      />,
+    );
+    expect(screen.getAllByRole("navigation")).toHaveLength(1);
+    expect(screen.queryByRole("group", { name: /sections/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Inbox" }));
+    expect(onNavClick).toHaveBeenCalledWith("Inbox");
   });
 });

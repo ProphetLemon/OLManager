@@ -23,8 +23,6 @@ function setup(extra: Partial<React.ComponentProps<typeof DashboardHeaderV2>> = 
     onContinue: vi.fn(),
     onSkipToMatchDay: vi.fn(),
     onSkipToNextDay: vi.fn(),
-    onNavigate: vi.fn(),
-    onNavClick: vi.fn(),
     onShowCalls: vi.fn(),
   };
   render(
@@ -40,7 +38,6 @@ function setup(extra: Partial<React.ComponentProps<typeof DashboardHeaderV2>> = 
       alerts={[]}
       teamName="Night Owls"
       activeTab="Squad"
-      badges={{ unread: 0, offers: 0, players: 0, teams: 0, staff: 0 }}
       isUnemployed={false}
       callCount={0}
       {...fns}
@@ -139,30 +136,49 @@ describe("DashboardHeaderV2", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the section strip for grouped tabs and navigates through it", () => {
-    const { onNavClick } = setup({ activeTab: "Market" });
-    fireEvent.click(screen.getByRole("button", { name: /Transfers/ }));
-    expect(onNavClick).toHaveBeenCalledWith("Transfers");
-  });
+  describe("crumb above the title", () => {
+    const crumb = () => document.querySelector<HTMLElement>('[data-slot="crumb"]');
 
-  it("hides the strip when the rail already shows the tree", () => {
-    setup({ activeTab: "Market", stripVisible: false });
-    expect(screen.queryByRole("navigation")).toBeNull();
-  });
+    it("shows the team and the group of a grouped tab", () => {
+      setup({ activeTab: "Squad" });
+      expect(crumb()).toHaveTextContent(/^Night Owls\s*·\s*Club$/);
+    });
 
-  it("renders no strip for direct stops", () => {
-    setup({ activeTab: "Home" });
-    expect(screen.queryByRole("navigation")).toBeNull();
-  });
+    it("shows only the team on a direct stop", () => {
+      setup({ activeTab: "Inbox", activeTabLabel: "Inbox" });
+      expect(crumb()).toHaveTextContent(/^Night Owls$/);
+    });
 
-  it("renders no strip in compact mode", () => {
-    setup({ activeTab: "Market", compact: true });
-    expect(screen.queryByRole("navigation")).toBeNull();
-  });
+    it("localises the group through the existing section keys", () => {
+      setup({ activeTab: "Transfers" });
+      expect(requestedKeys).toContain("dashboard.sectionMarket");
+      expect(crumb()).toHaveTextContent("Night Owls · Market");
+    });
 
-  it("hides the Club strip while unemployed", () => {
-    setup({ activeTab: "Squad", isUnemployed: true });
-    expect(screen.queryByRole("navigation")).toBeNull();
+    it("omits the team while unemployed and keeps the group", () => {
+      setup({ activeTab: "Market", isUnemployed: true });
+      expect(crumb()).toHaveTextContent(/^Market$/);
+      expect(screen.queryByText("Night Owls")).toBeNull();
+    });
+
+    it("renders no crumb when there is neither a team nor a group", () => {
+      setup({ activeTab: "Inbox", isUnemployed: true });
+      expect(crumb()).toBeNull();
+    });
+
+    it("is small dim text, not a link or a landmark", () => {
+      setup({ activeTab: "Squad" });
+      expect(crumb()!.className).toContain("text-caption");
+      expect(crumb()!.className).toContain("text-dim");
+      expect(crumb()!.querySelector("a, button")).toBeNull();
+      expect(screen.queryByRole("navigation")).toBeNull();
+    });
+
+    it("also shows in compact mode, with no navigation", () => {
+      setup({ activeTab: "Market", compact: true });
+      expect(crumb()).toHaveTextContent("Night Owls · Market");
+      expect(screen.queryByRole("navigation")).toBeNull();
+    });
   });
 
   it("routes each day phase through onAir.bar.phase keys with English defaults", () => {

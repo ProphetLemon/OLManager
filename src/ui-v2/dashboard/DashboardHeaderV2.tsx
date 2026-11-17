@@ -5,9 +5,7 @@ import { ClubShield } from "@/ui-v2/components/ui/club-shield";
 import { Separator } from "@/ui-v2/components/ui/separator";
 import { SplitButton } from "@/ui-v2/components/ui/split-button";
 import { ClockPlate } from "@/ui-v2/shell/ClockPlate";
-import { SectionStripV2 } from "@/ui-v2/shell/SectionStripV2";
 import { RAIL_GROUPS, groupForTab } from "@/ui-v2/shell/navModel";
-import type { ShellBadges } from "@/ui-v2/shell/shellTypes";
 import type { DashboardAlert } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 
 interface Props {
@@ -30,22 +28,14 @@ interface Props {
   onContinue: () => void;
   onSkipToMatchDay: () => void;
   onSkipToNextDay: () => void;
-  /** Kept for API compatibility; navigation now goes through `onNavClick`. */
-  onNavigate: (tab: string) => void;
   teamName?: string;
   teamLogo?: string | null;
   activeTab?: string;
-  onNavClick?: (tab: string) => void;
-  badges?: ShellBadges;
   isUnemployed?: boolean;
   callCount?: number;
   onShowCalls?: () => void;
   compact?: boolean;
-  /** False when the rail already shows the group's sections (the tree). Defaults to true. */
-  stripVisible?: boolean;
 }
-
-const NO_BADGES: ShellBadges = { unread: 0, offers: 0, players: 0, teams: 0, staff: 0 };
 
 /** Broadcast bar (title, clock, calls, save, advance) with the section strip below it. */
 export function DashboardHeaderV2({
@@ -64,17 +54,13 @@ export function DashboardHeaderV2({
   onContinue,
   onSkipToMatchDay,
   onSkipToNextDay,
-  onNavigate,
   teamName = "",
   teamLogo = null,
   activeTab = "",
-  onNavClick,
-  badges = NO_BADGES,
   isUnemployed = false,
   callCount = 0,
   onShowCalls,
   compact = false,
-  stripVisible = true,
 }: Props) {
   const { t } = useTranslation();
 
@@ -86,8 +72,9 @@ export function DashboardHeaderV2({
 
   const group = groupForTab(activeTab);
   const groupDef = RAIL_GROUPS.find((g) => g.id === group);
-  const showStrip = stripVisible && !compact && groupDef !== undefined && !(isUnemployed && groupDef.hiddenWhenUnemployed);
-  const navigate = onNavClick ?? onNavigate;
+  // The crumb: the team (not while unemployed) and the group of the tab, when it has one.
+  const crumbTeam = !isUnemployed && teamName ? teamName : "";
+  const crumbGroup = groupDef ? t(groupDef.labelKey, { defaultValue: groupDef.defaultLabel }) : "";
 
   const saveLabel = t("onAir.bar.save", { defaultValue: "Save" });
   const continueLabel = seasonComplete
@@ -113,7 +100,13 @@ export function DashboardHeaderV2({
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {teamName && <ClubShield name={teamName} logoUrl={teamLogo} size="md" className="shrink-0" />}
           <div className="min-w-0">
-            {teamName && <p className="truncate text-caption leading-tight text-muted-foreground">{teamName}</p>}
+            {(crumbTeam || crumbGroup) && (
+              <p data-slot="crumb" className="truncate text-caption leading-tight text-dim">
+                {crumbTeam && <span>{crumbTeam}</span>}
+                {crumbTeam && crumbGroup && <span aria-hidden="true"> · </span>}
+                {crumbGroup && <span>{crumbGroup}</span>}
+              </p>
+            )}
             <h1 className="truncate font-heading text-title font-bold leading-tight text-foreground">
               {activeTabLabel}
             </h1>
@@ -185,16 +178,6 @@ export function DashboardHeaderV2({
         />
       </div>
       <div aria-hidden="true" data-slot="bar-rule" className="h-0.5 bg-club bg-[linear-gradient(90deg,var(--club)_0,var(--club)_60%,var(--club-secondary,var(--club))_60%,var(--club-secondary,var(--club))_100%)]" />
-
-      {showStrip && group && groupDef && (
-        <SectionStripV2
-          group={group}
-          activeTab={activeTab}
-          onNavClick={navigate}
-          badges={badges}
-          label={t(groupDef.labelKey, { defaultValue: groupDef.defaultLabel })}
-        />
-      )}
     </header>
   );
 }

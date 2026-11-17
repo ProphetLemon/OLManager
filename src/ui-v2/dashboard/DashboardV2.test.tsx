@@ -419,9 +419,11 @@ describe("DashboardV2 shell wiring", () => {
       isUnemployed: false,
       callCount: 0,
       compact: false,
-      badges: { unread: 0, offers: 0, players: 0, teams: 1, staff: 0 },
     });
-    expect(typeof shell.header?.onNavClick).toBe("function");
+    // The header no longer takes navigation or badges: the rail is the only navigation.
+    expect(shell.header).not.toHaveProperty("onNavClick");
+    expect(shell.header).not.toHaveProperty("badges");
+    expect(shell.header).not.toHaveProperty("stripVisible");
     expect(typeof shell.header?.onShowCalls).toBe("function");
     expect(shell.sidebar).toMatchObject({ compact: false, activeTab: "Home" });
   });
@@ -764,10 +766,9 @@ describe("DashboardV2 rail mode", () => {
   const measure = (w: number, h: number) =>
     act(() => MockResizeObserver.all.forEach((o) => o.emit(w, h)));
 
-  it("is Split, with no strip (the panel replaces it), while the body has no size", async () => {
+  it("is Split while the body has no size", async () => {
     await renderDashboard();
     expect(shell.sidebar).toMatchObject({ railMode: "split" });
-    expect(shell.header).toMatchObject({ stripVisible: false });
   });
 
   it("is already in Tree on the first committed render when the body has a size", async () => {
@@ -777,8 +778,7 @@ describe("DashboardV2 rail mode", () => {
     try {
       await renderDashboard();
       expect(shell.sidebar).toMatchObject({ railMode: "tree" });
-      expect(shell.header).toMatchObject({ stripVisible: false });
-    } finally {
+      } finally {
       rect.mockRestore();
     }
   });
@@ -800,21 +800,19 @@ describe("DashboardV2 rail mode", () => {
     }
   });
 
-  it("passes Tree to the sidebar and hides the strip when the body fits the tree", async () => {
+  it("passes Tree to the sidebar when the body fits the tree", async () => {
     await renderDashboard();
     measure(1280, 764);
     expect(shell.sidebar).toMatchObject({
       railMode: "tree",
       railSlot: { slotW: 1280, slotH: 764, need: 622 },
     });
-    expect(shell.header).toMatchObject({ stripVisible: false });
   });
 
-  it("falls back to Split at 960x640 and still shows no strip: the panel replaces it", async () => {
+  it("falls back to Split at 960x640", async () => {
     await renderDashboard();
     measure(1280, 764);
     measure(960, 595);
     expect(shell.sidebar).toMatchObject({ railMode: "split" });
-    expect(shell.header).toMatchObject({ stripVisible: false });
   });
 });
