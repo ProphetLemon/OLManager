@@ -3683,7 +3683,7 @@
   "onAir": {
     "nav": {
       "rail": "Ana gezinme",
-      "strip": "{{group}} bölümleri",
+      "sections": "{{group}} bölümleri",
       "skip": "Ana içeriğe geç",
       "bug": "Hata bildir",
       "manager": "Menajer profili",

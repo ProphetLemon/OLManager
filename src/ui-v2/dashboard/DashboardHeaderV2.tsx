@@ -37,7 +37,7 @@ interface Props {
   compact?: boolean;
 }
 
-/** Broadcast bar (title, clock, calls, save, advance) with the section strip below it. */
+/** Broadcast bar: crumb (team, group) over the title, clock, decisions chip, save and advance. */
 export function DashboardHeaderV2({
   activeTabLabel,
   currentDate,

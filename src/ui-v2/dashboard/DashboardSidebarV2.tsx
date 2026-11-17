@@ -448,7 +448,7 @@ export function DashboardSidebarV2({
 
   const labelOf = (item: { labelKey: string; defaultLabel: string }) =>
     t(item.labelKey, { defaultValue: item.defaultLabel });
-  const listLabel = (group: string) => t("onAir.nav.strip", { group, defaultValue: "{{group}} sections" });
+  const listLabel = (group: string) => t("onAir.nav.sections", { group, defaultValue: "{{group}} sections" });
   const attentionName = (label: string, count: number) =>
     t("onAir.nav.needsCall", {
       label,

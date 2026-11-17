@@ -63,6 +63,7 @@ describe("onAir i18n keys", () => {
       "onAir.nav.needsCall_one",
       "onAir.nav.needsCall_other",
       "onAir.nav.more",
+      "onAir.nav.sections",
       "onAir.bar.toResolve_one",
       "onAir.bar.toResolve_other",
       "onAir.home.daysToGo_other",
@@ -86,6 +87,11 @@ describe("onAir i18n keys", () => {
     ]) {
       expect(REQUIRED.has(key), key).toBe(true);
     }
+  });
+
+  it("names the group list key for what it labels now, not for the removed strip", () => {
+    expect(REQUIRED.has("onAir.nav.sections")).toBe(true);
+    expect(REQUIRED.has("onAir.nav.strip")).toBe(false);
   });
 
   it.each(Object.entries(LOCALES))("%s has the same key set as en", (_name, locale) => {

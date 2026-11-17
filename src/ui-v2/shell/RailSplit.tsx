@@ -105,7 +105,7 @@ interface PanelProps {
 
 /**
  * The docked panel of the active group (Split): a labelled group inside the one nav, with the
- * group's name and size as its header and its tabs below. It replaces the section strip.
+ * group's name and size as its header and its tabs below. It is the rail's second level in Split.
  */
 export function RailSplitPanel({ group, activeTab, badges, labelOf, listLabel, attention = {}, attentionName, onNavClick, handle, touch = false }: PanelProps) {
   const label = labelOf(group);

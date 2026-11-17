@@ -3717,7 +3717,7 @@
   "onAir": {
     "nav": {
       "rail": "Main navigation",
-      "strip": "{{group}} sections",
+      "sections": "{{group}} sections",
       "skip": "Skip to main content",
       "bug": "Report bug",
       "manager": "Manager profile",

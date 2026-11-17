@@ -3683,7 +3683,7 @@
   "onAir": {
     "nav": {
       "rail": "Navegação principal",
-      "strip": "Seções de {{group}}",
+      "sections": "Seções de {{group}}",
       "skip": "Pular para o conteúdo principal",
       "bug": "Reportar bug",
       "manager": "Perfil do técnico",
