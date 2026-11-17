@@ -153,7 +153,9 @@ impl SaveManager {
             .save_index
             .list_saves()
             .iter()
-            .filter(|entry| !self.save_path(&entry.id).exists())
+            // Only a definite "not there" drops an entry: a file that cannot be examined
+            // may still be on disk, and then it stays listed as unreadable.
+            .filter(|entry| matches!(self.save_path(&entry.id).try_exists(), Ok(false)))
             .map(|entry| entry.id.clone())
             .collect();
 
@@ -370,8 +372,10 @@ impl SaveManager {
         let save_path = self.save_path(save_id);
         // Writing would replace the bytes of a save this version cannot read, and
         // nothing can bring them back. A file that is gone has nothing to lose.
-        if save_path.exists() {
-            self.require_readable(save_id)?;
+        match save_path.try_exists() {
+            Ok(true) => self.require_readable(save_id)?,
+            Ok(false) => {}
+            Err(e) => return Err(format!("{UNREADABLE_SAVE_CODE}: cannot examine the file: {e}")),
         }
         let save_name = entry.name.clone();
 

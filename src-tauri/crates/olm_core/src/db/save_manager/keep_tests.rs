@@ -348,3 +348,58 @@ fn good_copy(dir: &Path) -> Vec<u8> {
     let id = source.create_save(&sample_game(), "Main career").unwrap();
     fs::read(source.save_path(&id)).unwrap()
 }
+
+/// An entry whose path cannot be examined (a parent that is a file gives ENOTDIR, not
+/// "not found"): the file may well be there, so nothing is dropped or written.
+#[cfg(unix)]
+mod unexaminable_path {
+    use super::*;
+
+    const ID: &str = "blocker/entry";
+
+    fn folder_with_unexaminable_entry() -> (TempDir, PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let saves_dir = dir.path().join("saves");
+        let mut sm = SaveManager::init(&saves_dir).unwrap();
+        sm.save_index
+            .record_new_save(SaveEntry {
+                id: ID.to_string(),
+                name: "Unexaminable".to_string(),
+                manager_name: "Old Manager".to_string(),
+                created_at: "2026-01-01T00:00:00+00:00".to_string(),
+                last_played_at: "2026-01-02T00:00:00+00:00".to_string(),
+            })
+            .unwrap();
+        fs::write(saves_dir.join("blocker"), b"a file where a folder would be").unwrap();
+        (dir, saves_dir)
+    }
+
+    #[test]
+    fn starting_keeps_an_entry_whose_file_cannot_be_examined() {
+        let (_dir, saves_dir) = folder_with_unexaminable_entry();
+
+        let sm = SaveManager::init(&saves_dir).unwrap();
+
+        assert_eq!(sm.list_saves().len(), 1);
+    }
+
+    #[test]
+    fn an_entry_whose_file_cannot_be_examined_is_listed_as_unreadable() {
+        let (_dir, saves_dir) = folder_with_unexaminable_entry();
+        let sm = SaveManager::init(&saves_dir).unwrap();
+
+        assert_eq!(listing_of(&sm, ID).status, SaveStatus::Unreadable);
+    }
+
+    #[test]
+    fn saving_over_an_entry_whose_file_cannot_be_examined_is_refused_before_any_write() {
+        let (_dir, saves_dir) = folder_with_unexaminable_entry();
+        let mut sm = SaveManager::init(&saves_dir).unwrap();
+        let before = snapshot(&saves_dir);
+
+        let err = sm.save_game(&sample_game(), ID).unwrap_err();
+
+        assert!(err.starts_with("save_unreadable:"), "{err}");
+        assert_eq!(snapshot(&saves_dir), before);
+    }
+}
