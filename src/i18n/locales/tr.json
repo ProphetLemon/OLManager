@@ -525,6 +525,7 @@
         "birthHint": "{{age}} yaşında kalması için {{min}} ile {{max}} arasında doğmuş olmalı.",
         "nickHint": "{{min}} ile {{max}} karakter: harf, rakam, _ . ve -",
         "fullNameHint": "{{min}} ile {{max}} karakter: harf, boşluk, kesme işareti ve tire",
+        "nationalityHint": "Yalnızca bu ligin bölgesindeki ülkeler listelenir; böylece kurucular hiçbir zaman yabancı oyuncu sayılmaz.",
         "restore": "Oluşturulanı geri yükle",
         "cancel": "İptal",
         "save": "Kaydet"

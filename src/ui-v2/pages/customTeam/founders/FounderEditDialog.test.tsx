@@ -57,6 +57,16 @@ describe("FounderEditDialog", () => {
     expect(fromUk.value).toBe("UK");
   });
 
+  it("explains why the nationality list is limited and links it to the select", () => {
+    setup();
+    const select = screen.getByLabelText("Nationality");
+    const hint = screen.getByText(
+      "Only countries in this league's region are listed, so founders never count as imports.",
+    );
+    expect(hint.id).not.toBe("");
+    expect(select.getAttribute("aria-describedby")?.split(" ")).toContain(hint.id);
+  });
+
   it("states the nick, full name and birth date constraints before any submit", () => {
     const { dialog } = setup();
 

@@ -525,6 +525,7 @@
         "birthHint": "Né entre le {{min}} et le {{max}} pour garder {{age}} ans.",
         "nickHint": "{{min}} à {{max}} caractères : lettres, chiffres, _ . et -",
         "fullNameHint": "{{min}} à {{max}} caractères : lettres, espaces, apostrophes et traits d'union",
+        "nationalityHint": "Seuls les pays de la région de cette ligue sont proposés, afin que les fondateurs ne comptent jamais comme des joueurs importés.",
         "restore": "Rétablir la version générée",
         "cancel": "Annuler",
         "save": "Enregistrer"

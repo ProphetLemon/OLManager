@@ -362,6 +362,7 @@
         "birthHint": "Nato tra il {{min}} e il {{max}} per restare a {{age}} anni.",
         "nickHint": "Da {{min}} a {{max}} caratteri: lettere, cifre, _ . e -",
         "fullNameHint": "Da {{min}} a {{max}} caratteri: lettere, spazi, apostrofi e trattini",
+        "nationalityHint": "Sono elencati solo i paesi della regione di questa lega, così i fondatori non contano mai come stranieri.",
         "restore": "Ripristina il generato",
         "cancel": "Annulla",
         "save": "Salva"

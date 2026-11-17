@@ -525,6 +525,7 @@
         "birthHint": "Nascido entre {{min}} e {{max}} para continuar com {{age}} anos.",
         "nickHint": "De {{min}} a {{max}} caracteres: letras, dígitos, _ . e -",
         "fullNameHint": "De {{min}} a {{max}} caracteres: letras, espaços, apóstrofos e hífens",
+        "nationalityHint": "Só são exibidos países da região desta liga, para que os fundadores nunca contem como importados.",
         "restore": "Restaurar o gerado",
         "cancel": "Cancelar",
         "save": "Salvar"
