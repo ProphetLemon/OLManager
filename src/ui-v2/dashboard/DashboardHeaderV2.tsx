@@ -41,6 +41,8 @@ interface Props {
   callCount?: number;
   onShowCalls?: () => void;
   compact?: boolean;
+  /** False when the rail already shows the group's sections (the tree). Defaults to true. */
+  stripVisible?: boolean;
 }
 
 const NO_BADGES: ShellBadges = { unread: 0, offers: 0, players: 0, teams: 0, staff: 0 };
@@ -72,6 +74,7 @@ export function DashboardHeaderV2({
   callCount = 0,
   onShowCalls,
   compact = false,
+  stripVisible = true,
 }: Props) {
   const { t } = useTranslation();
 
@@ -83,7 +86,7 @@ export function DashboardHeaderV2({
 
   const group = groupForTab(activeTab);
   const groupDef = RAIL_GROUPS.find((g) => g.id === group);
-  const showStrip = !compact && groupDef !== undefined && !(isUnemployed && groupDef.hiddenWhenUnemployed);
+  const showStrip = stripVisible && !compact && groupDef !== undefined && !(isUnemployed && groupDef.hiddenWhenUnemployed);
   const navigate = onNavClick ?? onNavigate;
 
   const saveLabel = t("onAir.bar.save", { defaultValue: "Save" });

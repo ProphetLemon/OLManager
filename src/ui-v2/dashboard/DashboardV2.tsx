@@ -58,6 +58,7 @@ import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboar
 import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { useRailMode } from "@/ui-v2/shell/useRailMode";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 
 
@@ -200,6 +201,9 @@ export default function DashboardV2() {
   // What blocks the advance, for "Needs your call". Fed by the Continue modal and
   // by the backend pre-check, which re-runs after every game state update.
   const [lastBlockers, setLastBlockers] = useState<RetainedBlockers | null>(null);
+  // The dashboard body (everything under the title bar) decides Tree or Split for the rail.
+  const [railBody, setRailBody] = useState<HTMLDivElement | null>(null);
+  const rail = useRailMode(railBody);
   const focusCallsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -661,7 +665,7 @@ export default function DashboardV2() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden bg-background text-foreground">
+    <div ref={setRailBody} className="flex min-h-0 flex-1 overflow-hidden bg-background text-foreground">
       <a
         href={`#${MAIN_CONTENT_ID}`}
         onClick={handleSkipToMain}
@@ -686,6 +690,8 @@ export default function DashboardV2() {
         onNavigateSettings={() => navigate("/settings", { state: { from: "/dashboard" } })}
         onExitClick={() => !isExitingToMenu && setShowExitConfirm(true)}
         compact={showSeasonSummary}
+        railMode={rail.mode}
+        railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need }}
       />
 
       <DashboardOverlays
@@ -738,6 +744,7 @@ export default function DashboardV2() {
           callCount={callCount}
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
+          stripVisible={rail.mode !== "tree"}
         />
 
         <ScrimResultNoticeV2

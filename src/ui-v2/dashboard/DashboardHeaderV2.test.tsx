@@ -145,6 +145,11 @@ describe("DashboardHeaderV2", () => {
     expect(onNavClick).toHaveBeenCalledWith("Transfers");
   });
 
+  it("hides the strip when the rail already shows the tree", () => {
+    setup({ activeTab: "Market", stripVisible: false });
+    expect(screen.queryByRole("navigation")).toBeNull();
+  });
+
   it("renders no strip for direct stops", () => {
     setup({ activeTab: "Home" });
     expect(screen.queryByRole("navigation")).toBeNull();

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import { useGameStore } from "@/store/gameStore";
@@ -717,5 +717,74 @@ describe("DashboardV2 shell wiring", () => {
 
     await waitFor(() => expect(shell.header?.activeTab).toBe("Home"));
     await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
+  });
+});
+
+describe("DashboardV2 rail mode", () => {
+  class MockResizeObserver {
+    static all: MockResizeObserver[] = [];
+    constructor(private cb: (entries: Array<{ contentRect: { width: number; height: number } }>) => void) {
+      MockResizeObserver.all.push(this);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    emit(width: number, height: number) {
+      this.cb([{ contentRect: { width, height } }]);
+    }
+  }
+
+  beforeEach(() => {
+    MockResizeObserver.all = [];
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    document.documentElement.style.fontSize = "16px";
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: minimalGameState(),
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.documentElement.style.fontSize = "";
+  });
+
+  async function renderDashboard() {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+  }
+  const measure = (w: number, h: number) =>
+    act(() => MockResizeObserver.all.forEach((o) => o.emit(w, h)));
+
+  it("keeps today's rail and strip until the body has been measured", async () => {
+    await renderDashboard();
+    expect(shell.sidebar).toMatchObject({ railMode: "split" });
+    expect(shell.header).toMatchObject({ stripVisible: true });
+  });
+
+  it("passes Tree to the sidebar and hides the strip when the body fits the tree", async () => {
+    await renderDashboard();
+    measure(1280, 764);
+    expect(shell.sidebar).toMatchObject({
+      railMode: "tree",
+      railSlot: { slotW: 1280, slotH: 764, need: 622 },
+    });
+    expect(shell.header).toMatchObject({ stripVisible: false });
+  });
+
+  it("falls back to Split, with the strip, in a narrow window", async () => {
+    await renderDashboard();
+    measure(1280, 764);
+    measure(960, 595);
+    expect(shell.sidebar).toMatchObject({ railMode: "split" });
+    expect(shell.header).toMatchObject({ stripVisible: true });
   });
 });
