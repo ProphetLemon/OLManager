@@ -77,7 +77,7 @@ export function DashboardSidebarV2({
   platform = "desktop",
   attention,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // The end-of-season screen keeps the icon rail whatever the size says.
   const android = platform === "android";
   const tree = railMode === "tree" && !compact && !android;
@@ -277,17 +277,28 @@ export function DashboardSidebarV2({
   // focused stop, and keep that stop visible inside the scrolling area.
   const navRef = useRef<HTMLElement | null>(null);
   const focusInside = useRef(false);
+  // The last rail row that had focus, and whether the rail had it when the window lost focus.
+  const lastRailId = useRef<string | null>(null);
+  const insideAtWindowBlur = useRef(false);
   const onNavFocus = (e: React.FocusEvent) => {
     focusInside.current = true;
     const i = stopIndexOf(e.target);
     if (i < 0) return;
+    lastRailId.current = stops[i].id;
     if (i !== activeIndex) setActiveIndex(i);
     setRoving({ tab: activeTab, id: stops[i].id });
     (e.target as HTMLElement).scrollIntoView?.({ block: "nearest" });
   };
   const onNavBlur = (e: React.FocusEvent) => {
     const to = e.relatedTarget;
-    if (to instanceof Node && !navRef.current?.contains(to)) focusInside.current = false;
+    if (to instanceof Node) {
+      if (!navRef.current?.contains(to)) focusInside.current = false;
+      return;
+    }
+    // No relatedTarget: either the row was removed or hidden (focus is still ours to restore) or
+    // focus really left the page content (the browser chrome). A row that is still shown means it left.
+    const from = e.target as Element;
+    if (from.isConnected && from.closest("[hidden]") === null) focusInside.current = false;
   };
   useEffect(() => {
     // A press outside the rail ends "focus was in the rail"; removal of a focused row does not blur.
@@ -296,13 +307,31 @@ export function DashboardSidebarV2({
     };
     // The window losing focus is not a way back into the rail either.
     const onWindowBlur = () => {
+      insideAtWindowBlur.current = focusInside.current;
       focusInside.current = false;
+    };
+    // Back from another window: if the rail had focus when it left and its row was removed
+    // meanwhile, focus is on <body>; put it on the nearest row. Focus that is anywhere else
+    // (or was outside the rail to begin with) is never taken.
+    const onWindowFocus = () => {
+      if (!insideAtWindowBlur.current) return;
+      insideAtWindowBlur.current = false;
+      const active = document.activeElement;
+      if (active && active !== document.body) {
+        focusInside.current = !!navRef.current?.contains(active);
+        return;
+      }
+      const wanted = lastRailId.current && equivalentRowId(rowsRef.current, lastRailId.current);
+      const el = (wanted && itemRefs.current[wanted]) || itemRefs.current[rowsRef.current[0]?.id ?? ""];
+      el?.focus();
     };
     document.addEventListener("pointerdown", onPress, true);
     window.addEventListener("blur", onWindowBlur);
+    window.addEventListener("focus", onWindowFocus);
     return () => {
       document.removeEventListener("pointerdown", onPress, true);
       window.removeEventListener("blur", onWindowBlur);
+      window.removeEventListener("focus", onWindowFocus);
     };
   }, []);
 
@@ -310,6 +339,8 @@ export function DashboardSidebarV2({
   // route change, a group hidden for an unemployed manager) leaves focus on <body>. When focus
   // was in the rail, put it back on the row with the same id, or its nearest equivalent, or the
   // first stop. Runs when the set of rows changes, never on an ordinary render.
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
   const rowsKey = rows.map((r) => r.id).join("|");
   const prevRowsKey = useRef(rowsKey);
   useLayoutEffect(() => {
@@ -339,30 +370,44 @@ export function DashboardSidebarV2({
   });
 
   // R13: icon-only stops when the labelled ones would not fit the height, so the rail never
-  // scrolls its stops. The widest label (1 or 2 lines) is measured while labels are shown.
+  // scrolls its stops. The widest label (1 or 2 lines) is measured on a hidden measurer, not on
+  // the stops, so it also works while the stops are icon-only and a language or font change
+  // cannot leave a stale line count. It runs only when what it reads changes.
   const [labelMode, setLabelMode] = useState<"labels" | "icons">("labels");
-  const [labelLines, setLabelLines] = useState(1);
+  const [fontsTick, setFontsTick] = useState(0);
+  useEffect(() => {
+    let live = true;
+    void document.fonts?.ready?.then(() => live && setFontsTick((n) => n + 1));
+    return () => {
+      live = false;
+    };
+  }, []);
+  const measurerRef = useRef<HTMLDivElement | null>(null);
+  const measureLabels = !tree && !compact && !android && !!railSlot?.rootPx;
+  const stopCount = RAIL_DIRECT.length + groups.length;
+  const stopLabels = [...RAIL_DIRECT, ...groups].map((item) =>
+    t(item.labelKey, { defaultValue: item.defaultLabel }),
+  );
+  const labelsKey = stopLabels.join("|");
+  const language = i18n?.language;
+  const slotH = railSlot?.slotH ?? 0;
+  const rootPx = railSlot?.rootPx ?? 0;
   useLayoutEffect(() => {
-    if (tree || compact || android || !railSlot?.rootPx) return;
-    let lines = labelLines;
-    if (labelMode === "labels") {
-      let widest = 1;
-      for (const el of navRef.current?.querySelectorAll<HTMLElement>('[data-slot="rail-item-label"]') ?? []) {
-        const line = parseFloat(getComputedStyle(el).lineHeight) || railSlot.rootPx;
-        widest = Math.max(widest, Math.round(el.getBoundingClientRect().height / line) || 1);
-      }
-      lines = Math.min(widest, 2);
+    if (!measureLabels) return;
+    let widest = 1;
+    for (const el of measurerRef.current?.querySelectorAll<HTMLElement>("span") ?? []) {
+      const line = parseFloat(getComputedStyle(el).lineHeight) || rootPx;
+      widest = Math.max(widest, Math.round(el.getBoundingClientRect().height / line) || 1);
     }
     const next = splitLabelsFit({
-      slotH: railSlot.slotH,
-      rootPx: railSlot.rootPx,
-      labelLines: lines,
-      stops: RAIL_DIRECT.length + groups.length,
+      slotH,
+      rootPx,
+      labelLines: Math.min(widest, 2),
+      stops: stopCount,
       current: labelMode,
     });
-    if (lines !== labelLines) setLabelLines(lines);
     if (next !== labelMode) setLabelMode(next);
-  });
+  }, [measureLabels, slotH, rootPx, labelsKey, language, fontsTick, labelMode, stopCount]);
   const iconOnlyStops = !tree && !compact && !android && !!railSlot?.rootPx && labelMode === "icons";
 
   const labelOf = (item: { labelKey: string; defaultLabel: string }) =>
@@ -476,10 +521,27 @@ export function DashboardSidebarV2({
       data-rail-slot-h={railSlot?.slotH}
       data-rail-need={railSlot?.need}
       className={cn(
-        "flex h-full min-h-0 shrink-0 border-e border-line bg-rail text-sidebar-foreground",
+        "relative flex h-full min-h-0 shrink-0 border-e border-line bg-rail text-sidebar-foreground",
         tree && "w-[var(--rail-w-tree)]",
       )}
     >
+      {measureLabels && (
+        <div
+          ref={measurerRef}
+          data-slot="rail-measurer"
+          aria-hidden="true"
+          className="pointer-events-none invisible absolute -z-10 w-[calc(var(--rail-w-split)-1.25rem)]"
+        >
+          {stopLabels.map((label, i) => (
+            <span
+              key={i}
+              className="block w-full wrap-break-word font-heading text-nav leading-4 font-bold line-clamp-2 text-balance hyphens-auto"
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
       <nav
         ref={navRef}
         aria-label={t("onAir.nav.rail", { defaultValue: "Main navigation" })}

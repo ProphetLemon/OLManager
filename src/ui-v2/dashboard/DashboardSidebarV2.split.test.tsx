@@ -15,10 +15,12 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/ReportBugModal", () => ({
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { RAIL_CLUSTER_CELLS, splitNeed } from "@/ui-v2/shell/railMode";
 
+const lang = vi.hoisted(() => ({ value: "en" }));
+
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
   useTranslation: () => ({
-    i18n: { language: "en" },
+    i18n: { language: lang.value },
     t: (key: string, opts?: Record<string, unknown>) => {
       const count = opts?.count as number | undefined;
       const text =
@@ -56,7 +58,10 @@ const panel = () => screen.queryByRole("group", { name: /sections$/ });
 const focus = (el: HTMLElement) => act(() => el.focus());
 const press = (el: HTMLElement, key: string, init: KeyboardEventInit = {}) => fireEvent.keyDown(el, { key, ...init });
 
-beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
+beforeEach(() => {
+  lang.value = "en";
+  useNavMemoryStore.getState().resetNavMemory();
+});
 
 describe("Split rail structure", () => {
   it("is one nav landmark, flagged as split, with the eight stops in order", () => {
@@ -334,6 +339,14 @@ describe("Tree and Split flip keeps focus by id", () => {
   });
 });
 
+/** Heights the hidden label measurer reports, per call (jsdom has no layout). */
+function measurerHeights(height: () => number) {
+  return vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+    const h = this.closest('[data-slot="rail-measurer"]') && this.tagName === "SPAN" ? height() : 0;
+    return { width: 0, height: h, top: 0, left: 0, right: 0, bottom: h, x: 0, y: 0, toJSON() {} } as DOMRect;
+  });
+}
+
 describe("Split labels that do not fit (R13)", () => {
   const slot = (slotH: number, rootPx: number) => ({ slotW: 960, slotH, need: 622, rootPx });
   const label = (id: string) => navId(id).querySelector('[data-slot="rail-item-label"]');
@@ -385,12 +398,9 @@ describe("Split labels that do not fit (R13)", () => {
     expect(label("tab:Home")).not.toBeNull();
   });
 
-  it("measures how many lines the labels wrap to and goes icon-only when two lines would not fit", () => {
-    // jsdom has no layout: report a two-line label (height 2 x the 16 px line).
-    const spy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
-      const h = this.matches('[data-slot="rail-item-label"]') ? 32 : 0;
-      return { width: 0, height: h, top: 0, left: 0, right: 0, bottom: h, x: 0, y: 0, toJSON() {} } as DOMRect;
-    });
+  it("measures how many lines the labels wrap to, off-screen, and goes icon-only when two lines would not fit", () => {
+    // jsdom has no layout: the hidden measurer reports a two-line label (height 2 x the 16 px line).
+    const spy = measurerHeights(() => 32);
     const fitsOneLine = splitNeed(16, "labels", 1);
     expect(fitsOneLine).toBeLessThan(splitNeed(16, "labels", 2));
     setup({ railSlot: slot(fitsOneLine, 16) });
@@ -421,8 +431,9 @@ describe("Collapsing the group of the focused Tree child", () => {
     setup({ railMode: "tree", activeTab: "Tactics" });
     focus(navId("tab:Tactics"));
     const child = navId("tab:Tactics");
+    act(() => navId("group:club").click());
+    // The browser reports the hidden row's loss after the DOM changed.
     act(() => {
-      navId("group:club").click();
       child.dispatchEvent(new FocusEvent("focusout", { bubbles: true, relatedTarget: null }));
       child.blur();
     });
@@ -467,6 +478,95 @@ describe("Focus survives a rail change that is not a Tree/Split flip", () => {
     const { rerender } = setup({ activeTab: "Squad" });
     focus(navId("tab:Inbox"));
     rerender({ activeTab: "Transfers" });
+    expect(navId("tab:Inbox")).toHaveFocus();
+  });
+});
+
+describe("The label measurement (R13)", () => {
+  const slot = (slotH: number) => ({ slotW: 960, slotH, need: 622, rootPx: 16 });
+  const one = splitNeed(16, "labels", 1);
+  const atLabels = one + 20; // fits one line (with the re-entry margin), not two
+  const hasLabels = () => document.querySelector('[data-slot="rail-column"] [data-slot="rail-item-label"]') !== null;
+
+  it("re-measures a language change while the rail is icon-only, so a stale line count cannot stick", () => {
+    let lines = 2;
+    measurerHeights(() => 16 * lines);
+    const { rerender } = setup({ railSlot: slot(atLabels) });
+    expect(hasLabels()).toBe(false); // two lines do not fit: icon-only
+    lines = 1; // a shorter language
+    lang.value = "es";
+    rerender({});
+    expect(hasLabels()).toBe(true);
+  });
+
+  it("re-measures when the web fonts finish loading", async () => {
+    let resolveFonts!: () => void;
+    const ready = new Promise<void>((r) => (resolveFonts = r));
+    Object.defineProperty(document, "fonts", { value: { ready }, configurable: true });
+    let lines = 1;
+    const spy = measurerHeights(() => 16 * lines);
+    setup({ railSlot: slot(atLabels) });
+    expect(hasLabels()).toBe(true);
+    const before = spy.mock.calls.length;
+    lines = 2; // the real font is wider than the fallback
+    await act(async () => {
+      resolveFonts();
+      await ready;
+    });
+    expect(spy.mock.calls.length).toBeGreaterThan(before);
+    expect(hasLabels()).toBe(false);
+    delete (document as { fonts?: unknown }).fonts;
+  });
+
+  it("does not measure again on a re-render that changes nothing it depends on", () => {
+    const spy = measurerHeights(() => 16);
+    const { rerender } = setup({ railSlot: slot(atLabels) });
+    const before = spy.mock.calls.length;
+    expect(before).toBeGreaterThan(0);
+    rerender({ unreadMessagesCount: 3 });
+    rerender({ unreadMessagesCount: 4, activeTab: "Squad" });
+    expect(spy.mock.calls.length).toBe(before);
+  });
+});
+
+describe("Focus restore edge cases", () => {
+  it("(a) does not pull focus back after it really left, a blur with no relatedTarget included", () => {
+    const { rerender } = setup({ activeTab: "Squad" });
+    focus(navId("tab:Inbox"));
+    act(() => navId("tab:Inbox").blur()); // focus went to the browser chrome: still connected, relatedTarget null
+    rerender({ activeTab: "Transfers" });
+    expect(document.body).toHaveFocus();
+  });
+
+  it("(b) restores to the group launcher when the window regains focus after its row was removed", () => {
+    const { rerender } = setup({ activeTab: "Tactics" });
+    focus(navId("tab:Tactics"));
+    fireEvent.blur(window); // the window loses focus with the panel row still focused
+    rerender({ activeTab: "Transfers" }); // the row goes away meanwhile
+    expect(navId("tab:Tactics")).toBeNull();
+    expect(document.body).toHaveFocus();
+    act(() => void fireEvent.focus(window));
+    expect(navId("group:club")).toHaveFocus();
+  });
+
+  it("(b) never steals focus that was outside the rail when the window left", () => {
+    const outside = document.createElement("button");
+    document.body.append(outside);
+    const { rerender } = setup({ activeTab: "Tactics" });
+    focus(navId("tab:Tactics"));
+    focus(outside);
+    fireEvent.blur(window);
+    rerender({ activeTab: "Transfers" });
+    act(() => void fireEvent.focus(window));
+    expect(outside).toHaveFocus();
+    outside.remove();
+  });
+
+  it("(b) leaves focus alone when the browser already put it back", () => {
+    setup({ activeTab: "Squad" });
+    focus(navId("tab:Inbox"));
+    fireEvent.blur(window);
+    act(() => void fireEvent.focus(window));
     expect(navId("tab:Inbox")).toHaveFocus();
   });
 });
