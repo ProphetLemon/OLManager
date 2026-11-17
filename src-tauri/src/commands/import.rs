@@ -2814,19 +2814,29 @@ mod tests {
             .expect("gunzip the save copy");
         let mut game: Game = serde_json::from_str(&json).expect("parse the save copy");
 
-        let teamless_twins = |game: &Game| -> Vec<String> {
+        // The strict key is what the repair could drop; the loose key is what the AI guard hides.
+        let teamless_twins = |game: &Game, strict: bool| -> Vec<String> {
             let contracted = PersonIndex::new(game.players.iter().filter(|p| p.team_id.is_some()));
             game.players
                 .iter()
-                .filter(|p| p.team_id.is_none() && contracted.has_twin_of(p))
+                .filter(|p| p.team_id.is_none())
+                .filter(|p| {
+                    if strict {
+                        contracted.has_strict_twin_of(p)
+                    } else {
+                        contracted.has_twin_of(p)
+                    }
+                })
                 .map(|p| p.id.clone())
                 .collect()
         };
-        let before = teamless_twins(&game);
+        let before = teamless_twins(&game, true);
+        let before_loose = teamless_twins(&game, false);
         let protected = olm_core::world_catalog::transfer_protected_player_ids(&game);
         let (teams_before, players_before) = (game.teams.len(), game.players.len());
         let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
-        let after = teamless_twins(&game);
+        let after = teamless_twins(&game, true);
+        let after_loose = teamless_twins(&game, false);
         let guarded = after.iter().filter(|id| protected.contains(*id)).count();
         let already_teamless: HashSet<&String> = before.iter().collect();
         println!("teams {teams_before} -> {}", game.teams.len());
@@ -2844,6 +2854,11 @@ mod tests {
                 .iter()
                 .filter(|id| already_teamless.contains(id))
                 .count()
+        );
+        println!(
+            "LOOSE key (AI guard hides): before {}, after {}",
+            before_loose.len(),
+            after_loose.len()
         );
         for id in &after {
             let player = game.players.iter().find(|p| &p.id == id).expect("player");

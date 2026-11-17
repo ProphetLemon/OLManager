@@ -255,12 +255,16 @@ impl PersonKey {
     /// - the birth dates, when both are readable, are at most 62 days apart;
     /// - the nationalities, when both are known, are the same;
     /// - when a birth date is missing on either side, or is the 2002-01-01 placeholder, the
-    ///   records must share a real name (two or more words): a nick alone is how namesakes
-    ///   look.
+    ///   answer depends on `rule`:
+    ///   - [`MatchRule::Strict`] (a record is dropped on it): the records must share a real
+    ///     name (two or more words), since a nick alone is how namesakes look;
+    ///   - [`MatchRule::Loose`] (a record is only hidden from the AI): with one date missing
+    ///     the real names, when both records have one, must share a name, so a nick-only
+    ///     record matches a dated namesake; with both dates missing they must share one.
     ///
     /// This is the Rust form of `couldBeSamePerson` in `src/lib/transfers/model.ts`, extended
     /// to the swapped names the catalog ships.
-    pub fn could_be(&self, other: &Self) -> bool {
+    pub fn could_be(&self, other: &Self, rule: MatchRule) -> bool {
         if !self.names.iter().any(|name| other.names.contains(name)) {
             return false;
         }
@@ -270,21 +274,38 @@ impl PersonKey {
         {
             return false;
         }
+        let shares_real_name = || {
+            self.real_names
+                .iter()
+                .any(|name| other.real_names.contains(name))
+        };
         match (self.born, other.born) {
             (Some(x), Some(y)) => (x - y).num_days().abs() <= SAME_PERSON_DOB_TOLERANCE_DAYS,
-            // A date is missing on a side (or is the placeholder): a nick alone is how
-            // namesakes look, so the records must share a real name.
-            _ => self
-                .real_names
-                .iter()
-                .any(|name| other.real_names.contains(name)),
+            (None, None) => shares_real_name(),
+            _ => match rule {
+                MatchRule::Strict => shares_real_name(),
+                MatchRule::Loose => {
+                    self.real_names.is_empty() || other.real_names.is_empty() || shares_real_name()
+                }
+            },
         }
     }
 }
 
-/// Whether two records could be one person; see [`PersonKey::could_be`].
+/// How much evidence [`PersonKey::could_be`] asks for when a birth date is missing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatchRule {
+    /// For a destructive use (drop and tombstone a record): a shared real name is required.
+    Strict,
+    /// For a use that only hides a record (the AI signing guard): a false positive costs a
+    /// free agent the AI will not sign, a miss puts one person on two clubs.
+    Loose,
+}
+
+/// Whether two records could be one person under the strict rule, the one the old-save
+/// repair drops records on; see [`PersonKey::could_be`].
 pub fn could_be_same_person(a: &Player, b: &Player) -> bool {
-    PersonKey::of(a).could_be(&PersonKey::of(b))
+    PersonKey::of(a).could_be(&PersonKey::of(b), MatchRule::Strict)
 }
 
 /// Records indexed by folded name, so "could this record be the same person as one of
@@ -313,21 +334,31 @@ impl PersonIndex {
         self.keys.push(key);
     }
 
-    /// The id of an indexed record other than `player` that could be the same person.
-    pub fn twin_of(&self, player: &Player) -> Option<&str> {
+    fn find_twin(&self, player: &Player, rule: MatchRule) -> Option<&str> {
         let key = PersonKey::of(player);
         key.names
             .iter()
             .filter_map(|name| self.by_name.get(name))
             .flatten()
             .map(|&position| &self.keys[position])
-            .find(|other| other.id != key.id && key.could_be(other))
+            .find(|other| other.id != key.id && key.could_be(other, rule))
             .map(|other| other.id.as_str())
     }
 
-    /// Whether an indexed record other than `player` could be the same person.
+    /// The id of an indexed record other than `player` that could be the same person under
+    /// the loose rule: what the AI signing guard hides.
+    pub fn twin_of(&self, player: &Player) -> Option<&str> {
+        self.find_twin(player, MatchRule::Loose)
+    }
+
+    /// Whether the loose rule finds a twin of `player` in the index.
     pub fn has_twin_of(&self, player: &Player) -> bool {
         self.twin_of(player).is_some()
+    }
+
+    /// Whether the strict rule finds a twin of `player`: what the old-save repair could drop.
+    pub fn has_strict_twin_of(&self, player: &Player) -> bool {
+        self.find_twin(player, MatchRule::Strict).is_some()
     }
 }
 
@@ -417,6 +448,28 @@ mod tests {
         assert!(!could_be_same_person(&stub, &dated));
         let other_stub = person("Raider", "Raider", "", "HR");
         assert!(!could_be_same_person(&stub, &other_stub));
+    }
+
+    #[test]
+    fn the_loose_rule_hides_a_dateless_nick_only_ghost_but_not_a_different_real_name() {
+        let mut ghost = person("Lehends", "Lehends", "", "KR");
+        ghost.id = "ghost".into();
+        let real = person("Lehends", "Son Si-woo", "1998-12-24", "KR");
+        let index = PersonIndex::new([&real]);
+        assert!(index.has_twin_of(&ghost), "the AI must not sign the ghost");
+        assert!(
+            !index.has_strict_twin_of(&ghost),
+            "the repair must not drop it"
+        );
+        let mut namesake = person("Lehends", "Other Person", "", "KR");
+        namesake.id = "namesake".into();
+        assert!(
+            !index.has_twin_of(&namesake),
+            "a different real name is another person"
+        );
+        let mut other_country = person("Lehends", "Lehends", "", "BR");
+        other_country.id = "other-country".into();
+        assert!(!index.has_twin_of(&other_country));
     }
 
     #[test]

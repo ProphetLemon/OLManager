@@ -2290,6 +2290,38 @@ fn ai_agent_purchase_moves_past_several_twins_on_top_to_the_first_valid_free_age
 }
 
 #[test]
+fn ai_agent_purchase_skips_a_dateless_nick_only_ghost_of_a_contracted_player() {
+    let mut contracted = make_free_agent("contracted-lehends", LolRole::Adc);
+    contracted.match_name = "Lehends".to_string();
+    contracted.full_name = "Son Si-woo".to_string();
+    contracted.date_of_birth = "1998-12-24".to_string();
+    contracted.team_id = Some("team-other".to_string());
+    contracted.contract_end = Some("2027-11-30".to_string());
+    let mut ghost = make_free_agent("ghost-lehends", LolRole::Adc);
+    ghost.match_name = "Lehends".to_string();
+    ghost.full_name = "Lehends".to_string();
+    ghost.date_of_birth = String::new();
+    ghost.market_value = 900_000;
+    let valid = make_free_agent("valid-adc", LolRole::Adc);
+    let mut game = make_game_with_free_agents(vec![ghost, valid, contracted]);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(
+        team_of("ghost-lehends"),
+        None,
+        "the ghost must stay teamless"
+    );
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+}
+
+#[test]
 fn ai_agent_purchase_respects_daily_cap() {
     let free_agents = vec![
         make_free_agent("fa-cap-1", LolRole::Top),
