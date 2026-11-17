@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { SaveFile } from "@/api/types";
 import SavesList from "./SavesList";
@@ -265,5 +265,55 @@ describe("SavesList saves this version cannot read", () => {
       }
       unmount();
     }
+  });
+
+  describe("Enter follows the focused row, not the stored index", () => {
+    const rowA = { ...save, id: "a", name: "Alpha career" };
+    const rowB = { ...save, id: "b", name: "Bravo career" };
+    const taggedB = { ...rowB, status: "other_version" as const, format_version: 4 };
+
+    it("loads nothing when focus moved to a tagged save's Load and the index stayed on another row", () => {
+      const props = renderList({ saves: [rowA, taggedB] });
+
+      act(() => loadButton(/Bravo career/).focus());
+      fireEvent.keyDown(loadButton(/Bravo career/), { key: "Enter" });
+
+      expect(props.onLoad).not.toHaveBeenCalled();
+    });
+
+    it("loads the focused row, not the row the index was on", () => {
+      const props = renderList({ saves: [rowA, rowB] });
+
+      act(() => loadButton(/Bravo career/).focus());
+      fireEvent.keyDown(loadButton(/Bravo career/), { key: "Enter" });
+
+      expect(vi.mocked(props.onLoad).mock.calls).toEqual([["b"]]);
+    });
+
+    it("moves the index to the row whose button was clicked", () => {
+      renderList({ saves: [rowA, rowB] });
+
+      fireEvent.click(screen.getAllByRole("button", { name: "menu.transfer.export" })[1]);
+
+      expect(loadButton(/Bravo career/)).toHaveAttribute("tabindex", "0");
+      expect(loadButton(/Alpha career/)).toHaveAttribute("tabindex", "-1");
+    });
+
+    it("moves the index to the row that takes focus", () => {
+      renderList({ saves: [rowA, rowB] });
+
+      act(() => loadButton(/Bravo career/).focus());
+
+      expect(loadButton(/Bravo career/)).toHaveAttribute("tabindex", "0");
+    });
+
+    it("leaves focus on the export button that was focused instead of pulling it back to Load", () => {
+      renderList({ saves: [rowA, rowB] });
+      const exportB = screen.getAllByRole("button", { name: "menu.transfer.export" })[1];
+
+      act(() => exportB.focus());
+
+      expect(exportB).toHaveFocus();
+    });
   });
 });

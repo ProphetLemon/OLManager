@@ -62,7 +62,7 @@ export default function SavesList({
   const { t, i18n } = useTranslation();
 
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const { activeIndex, handleKeyDown, getTabIndex } = useRovingFocus({
+  const { activeIndex, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({
     itemCount: saves.length,
     columns: 1,
     loop: false,
@@ -75,20 +75,35 @@ export default function SavesList({
 
   useEffect(() => {
     if (!isLoading && saves.length > 0) {
-      itemRefs.current[activeIndex]?.focus();
+      // Do not pull focus off another button of the same row (Export, Delete).
+      const load = itemRefs.current[activeIndex];
+      if (!load?.closest("[data-save-row]")?.contains(document.activeElement)) load?.focus();
     }
   }, [activeIndex, isLoading, saves.length]);
 
-  // Enter and Space act on the focused button. Only a row's Load button is a roving item,
-  // so every other button keeps its own key handling instead of loading the active row.
+  // Enter and Space act on the row that holds the focused Load button, never on the stored
+  // index: a click or a `.focus()` moves focus without moving the index. Every other button
+  // keeps its own key handling.
   const onKeyDown = (e: React.KeyboardEvent) => {
-    const actsOnButton = e.key === "Enter" || e.key === " ";
-    if (actsOnButton && !(e.target as HTMLElement).closest("[data-save-load]")) return;
+    if (e.key === "Enter" || e.key === " ") {
+      const row = (e.target as HTMLElement).closest<HTMLElement>("[data-save-load]");
+      if (!row) return;
+      e.preventDefault();
+      const save = saves[Number(row.dataset.saveIndex)];
+      if (save && canLoad(save)) onLoad(save.id);
+      return;
+    }
     handleKeyDown(e);
   };
 
+  // Keep the roving index on the row that has focus or was clicked, so the two never diverge.
+  const syncIndex = (e: React.SyntheticEvent) => {
+    const row = (e.target as HTMLElement).closest<HTMLElement>("[data-save-row]");
+    if (row) setActiveIndex(Number(row.dataset.saveRow));
+  };
+
   return (
-    <div className="flex flex-col" onKeyDown={onKeyDown}>
+    <div className="flex flex-col" onKeyDown={onKeyDown} onFocus={syncIndex} onClickCapture={syncIndex}>
       <div className="flex justify-between items-center pb-5">
         <h2 className="text-2xl font-heading font-bold uppercase tracking-wider text-white drop-shadow">
           {t("menu.loadGame")}
@@ -166,6 +181,7 @@ export default function SavesList({
             return (
             <div
               key={save.id}
+              data-save-row={i}
               className="group relative flex flex-col gap-2 w-full py-4 text-left transition-colors border-b border-white/10 hover:bg-white/5"
             >
               {confirmDeleteId === save.id ? (
@@ -196,6 +212,7 @@ export default function SavesList({
                   <button
                     ref={(el) => { itemRefs.current[i] = el; }}
                     data-save-load
+                    data-save-index={i}
                     tabIndex={getTabIndex(i)}
                     // Not `disabled`: a disabled button leaves the tab order, and the keyboard
                     // user would never reach the reason this save cannot be loaded.
