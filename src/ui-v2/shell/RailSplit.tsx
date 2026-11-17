@@ -91,7 +91,7 @@ interface PanelProps {
   attentionName?: (label: string, count: number) => string;
   onNavClick: (tab: string) => void;
   handle: (navId: string) => RowHandle;
-  /** Touch (Android): `--nav-cell` rows and a header sized from the same token. */
+  /** Touch (Android): `--hit` rows (ruling R1) and a header sized from `--nav-cell`. */
   touch?: boolean;
 }
 

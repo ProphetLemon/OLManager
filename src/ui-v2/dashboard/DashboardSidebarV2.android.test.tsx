@@ -93,12 +93,15 @@ describe("Android rail", () => {
     }
   });
 
-  it("sizes the panel rows to --nav-cell, scrolls it with the fade cues, and pads it by the safe area", () => {
+  it("sizes the panel rows to --hit (ruling R1), scrolls it with the fade cues, and pads it by the safe area", () => {
     setup({ activeTab: "Squad" });
     const panel = document.querySelector<HTMLElement>('[data-slot="rail-panel"]')!;
     const rows = within(panel).getAllByRole("button");
     expect(rows).toHaveLength(10);
-    for (const row of rows) expect(row.className).toContain("min-h-[var(--nav-cell)]");
+    for (const row of rows) {
+      expect(row.className).toContain("min-h-[var(--hit)]");
+      expect(row.className).not.toContain("min-h-[var(--nav-cell)]");
+    }
     const scroller = panel.querySelector<HTMLElement>('[data-slot="rail-panel-scroll"]')!;
     expect(scroller.className).toContain("overflow-y-auto");
     expect(scroller.style.maskImage).toContain("linear-gradient");
@@ -111,10 +114,26 @@ describe("Android rail", () => {
     expect(document.querySelector('[data-slot="rail-column"]')!.className).toContain("py-[8px]");
   });
 
-  it("keeps the desktop panel rows at --nav-row-child", () => {
+  it("keeps the desktop panel rows at --nav-row-child, not --hit", () => {
     setup({ platform: "desktop", activeTab: "Squad" });
     expect(navId("tab:Squad").className).toContain("min-h-[var(--nav-row-child)]");
-    expect(navId("tab:Squad").className).not.toContain("min-h-[var(--nav-cell)]");
+    expect(navId("tab:Squad").className).not.toContain("min-h-[var(--hit)]");
+  });
+
+  it("shows the panel's fade cue at 915x412: Club's ten 48 px rows need 520 px of 412", () => {
+    const needed = 28 + 10 * 48 + 12; // header, ten --hit rows, padding
+    expect(needed).toBe(520);
+    const size = (name: "scrollHeight" | "clientHeight", value: number) =>
+      vi.spyOn(HTMLElement.prototype, name, "get").mockImplementation(function (this: HTMLElement) {
+        return this.dataset.slot === "rail-panel-scroll" ? value : 0;
+      });
+    const heights = [size("scrollHeight", needed - 28), size("clientHeight", 412 - 28)];
+    setup({ activeTab: "Squad" });
+    const scroller = document.querySelector<HTMLElement>('[data-slot="rail-panel-scroll"]')!;
+    expect(scroller).toHaveAttribute("data-overflow-bottom", "true");
+    expect(scroller).not.toHaveAttribute("data-overflow-top");
+    // The mask itself comes from the same state; jsdom drops the calc() gradient, so the attribute is the check.
+    for (const h of heights) h.mockRestore();
   });
 });
 

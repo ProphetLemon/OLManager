@@ -18,7 +18,7 @@ interface RailRowProps {
   active?: boolean;
   /** Headers: the group holds the active tab. Bold and marked, never aria-current. */
   activeWithin?: boolean;
-  /** Panel rows on touch: `--nav-cell` high (ruling R1) instead of `--nav-row-child`. */
+  /** Panel rows on touch: `--hit` high (ruling R1: 48 px on Android) instead of `--nav-row-child`. */
   tall?: boolean;
   /** Headers only. */
   expanded?: boolean;
@@ -80,7 +80,7 @@ export function RailRow({
         kind === "child"
           ? "h-[var(--nav-row-child)] ps-[var(--nav-indent)]"
           : kind === "panel"
-            ? cn(tall ? "min-h-[var(--nav-cell)]" : "min-h-[var(--nav-row-child)]", "py-[2px] ps-3")
+            ? cn(tall ? "min-h-[var(--hit)]" : "min-h-[var(--nav-row-child)]", "py-[2px] ps-3")
             : "h-[var(--nav-row)] ps-3",
         active
           ? "bg-[color-mix(in_srgb,var(--club)_16%,transparent)] text-foreground [[data-contrast=high]_&]:data-[active=true]:outline-2 [[data-contrast=high]_&]:data-[active=true]:-outline-offset-2 [[data-contrast=high]_&]:data-[active=true]:outline-solid [[data-contrast=high]_&]:data-[active=true]:outline-club-text"
