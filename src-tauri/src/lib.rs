@@ -7,6 +7,10 @@ pub mod error;
 mod l3_timing;
 #[cfg(test)]
 mod pool_bench;
+#[cfg(test)]
+mod world_dupes;
+#[cfg(test)]
+mod world_identity;
 #[cfg(target_os = "linux")]
 mod linux_render;
 use commands::*;

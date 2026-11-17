@@ -21,7 +21,7 @@ use olm_core::generator::definitions::CompetitionManifest;
 use olm_core::roster_stability;
 use olm_core::world_catalog;
 use olm_core::state::StateManager;
-use olm_core::world_overlay::{OverlayApplyReport, WorldOverlay, apply_world_overlay};
+use olm_core::world_overlay::{OverlayApplyReport, PlayerOp, WorldOverlay, apply_world_overlay};
 
 use crate::SaveManagerState;
 
@@ -198,6 +198,11 @@ fn assemble_base_world(
     game.players = assembled_players;
     game.staff = assembled_staff;
 
+    // A new world plays the lane the club page shows: repair `natural_position` before the
+    // overlay and the roster fill read it.
+    let realigned = world_catalog::align_natural_positions(&mut game.players);
+    info!("[game] {} players had a natural position that contradicted their lane", realigned);
+
     // Bring the bundled snapshot up to date before lineups are built from it.
     if let Some(overlay) = inputs.overlay {
         let report = apply_roster_overlay(game, overlay);
@@ -217,7 +222,60 @@ fn assemble_base_world(
             game_setup::apply_default_market_values(&mut game.players);
         }
     }
+    // An overlay add or move can bring a record with the two fields apart again.
+    world_catalog::align_natural_positions(&mut game.players);
+    collapse_same_person_records(game, inputs.overlay, rating_overrides);
     Ok(())
+}
+
+/// Leave one record of every person a new world holds twice (same club and a shared name, or
+/// the overlay's pool add of a person a club already holds). It runs once the overlay is
+/// applied and before the roster fill, so the fill sees one record per person. Every loser is
+/// tombstoned: the catalog rehydration appends each catalog id a save lacks, and would bring
+/// the twin back. A loser that was moved by the overlay hands its protection to the survivor.
+fn collapse_same_person_records(
+    game: &mut Game,
+    overlay: Option<&WorldOverlay>,
+    rating_overrides: &PlayerRatingOverrides,
+) {
+    let overlay_op_ids: HashSet<String> = overlay
+        .map(|overlay| {
+            overlay
+                .players
+                .iter()
+                .filter_map(|op| match op {
+                    PlayerOp::Move { id, .. } => Some(id.clone()),
+                    PlayerOp::Add { player, .. } => Some(player.id.clone()),
+                    PlayerOp::Retire { .. } => None,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    let pool_add_ids = overlay
+        .map(WorldOverlay::teamless_added_player_ids)
+        .unwrap_or_default();
+    let has_rating_override = |id: &str| rating_overrides.entry(id).is_some();
+    let collapsed = world_catalog::collapse_same_person_records(
+        &mut game.players,
+        &world_catalog::CollapseEvidence {
+            has_rating_override: &has_rating_override,
+            overlay_op_ids: &overlay_op_ids,
+            pool_add_ids: &pool_add_ids,
+        },
+    );
+    for duplicate in &collapsed {
+        info!(
+            "[game] player {} is the same person as {}: dropped",
+            duplicate.dropped_id, duplicate.kept_id
+        );
+        if !game.retired_player_ids.contains(&duplicate.dropped_id) {
+            game.retired_player_ids.push(duplicate.dropped_id.clone());
+        }
+        if game.moved_player_ids.contains(&duplicate.dropped_id) {
+            game.moved_player_ids.insert(duplicate.kept_id.clone());
+        }
+    }
+    info!("[game] collapsed {} duplicate records of one person", collapsed.len());
 }
 
 /// Install the custom club and return the new club's id: it replaces
@@ -780,10 +838,17 @@ pub(crate) fn assemble_world_reporting_rating_overrides(
     let (tagged_players, stale_twins) =
         world_catalog::drop_stale_twins_of_live_players(tagged_players);
     for twin in &stale_twins {
-        info!(
-            "[game] stale player {} from '{}' is the same person as live player {}: dropped",
-            twin.player_id, twin.dropped_from, twin.live_twin_id
-        );
+        if twin.live_twin_id.is_empty() {
+            info!(
+                "[game] stale player {} from '{}' has no rating data: dropped",
+                twin.player_id, twin.dropped_from
+            );
+        } else {
+            info!(
+                "[game] stale player {} from '{}' is the same person as live player {}: dropped",
+                twin.player_id, twin.dropped_from, twin.live_twin_id
+            );
+        }
     }
     info!(
         "[game] dropped {} stale twins of live players",
@@ -984,6 +1049,8 @@ fn fill_short_rosters(
     reserved: &HashSet<String>,
 ) -> Vec<roster_stability::NewGameRosterFill> {
     let fills = roster_stability::fill_new_game_rosters_excluding(game, reserved);
+    #[cfg(test)]
+    crate::world_dupes::record_fills(&fills);
     game.moved_player_ids
         .extend(fills.iter().map(|fill| fill.player_id.clone()));
     if !fills.is_empty() {
@@ -2394,9 +2461,38 @@ mod tests {
                     "live player {id} was dropped"
                 );
             }
+            // A stale record also goes when its successor league holds its name, or when it has
+            // no rating data; every other stale record stays as a free agent.
+            use olm_core::person_identity::{folded_names, has_all_attributes_zero};
+            let mut successor_names: HashSet<(String, String)> = HashSet::new();
+            for manifest in manifests.iter().filter(|m| !m.legacy) {
+                if world_catalog::STALE_DUPLICATE_COMPETITIONS
+                    .iter()
+                    .any(|(_, canonical)| *canonical == manifest.id)
+                {
+                    for player in
+                        olm_core::competitions::load_players(&data, manifest).unwrap_or_default()
+                    {
+                        for name in folded_names(&player) {
+                            successor_names.insert((manifest.id.clone(), name));
+                        }
+                    }
+                }
+            }
             let twin_ids: HashSet<&str> = twins.iter().map(|(_, p)| p.id.as_str()).collect();
             for (competition, player) in &stale {
-                if !twin_ids.contains(player.id.as_str()) {
+                let canonical = world_catalog::STALE_DUPLICATE_COMPETITIONS
+                    .iter()
+                    .find(|(stale_id, _)| stale_id == competition)
+                    .map(|(_, canonical)| canonical.to_string())
+                    .unwrap_or_default();
+                let by_name = folded_names(player)
+                    .into_iter()
+                    .any(|name| successor_names.contains(&(canonical.clone(), name)));
+                if !twin_ids.contains(player.id.as_str())
+                    && !by_name
+                    && !has_all_attributes_zero(player)
+                {
                     assert!(
                         built_ids.contains(player.id.as_str()),
                         "{competition} player {} has no live twin but was dropped",
@@ -2521,7 +2617,12 @@ mod tests {
                  {month_name_recovered} read from a \"Month D, YYYY\" date"
             );
             assert!(unknown > 0, "a new world has players without a date of birth");
-            assert!(month_name_recovered > 0, "the Month D, YYYY dates are read");
+            // The stale free agents that shipped "Month D, YYYY" dates are gone from a new
+            // world, so the format is checked on the parser itself.
+            assert!(
+                parse_date_of_birth("July 11, 2005").is_some(),
+                "the Month D, YYYY dates are read"
+            );
             assert_eq!(checked, game.players.len());
         }
 

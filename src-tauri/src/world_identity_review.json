@@ -1,0 +1,295 @@
+{
+  "namesakes": [
+    {
+      "ids": [
+        "player-eddde7b7",
+        "player-c46f4677"
+      ],
+      "class": "namesake",
+      "reason": "Winner: two real players with one nick; c46f4677 is retired by the overlay, so one Winner reaches a new world"
+    },
+    {
+      "ids": [
+        "player-aa67e0e2",
+        "player-59b6aedc"
+      ],
+      "class": "namesake",
+      "reason": "White: Aslan Panglose (FR, prm) and Lee Je-ann (KR, free agent) are different people"
+    },
+    {
+      "ids": [
+        "player-20647fba",
+        "player-723b52e9"
+      ],
+      "reason": "Luke: Luca Migliore (lit, Mid) and Luke1 (nlc, Support, La BOMBAS) are two people (WD2c, page+team-history)",
+      "class": "namesake"
+    }
+  ],
+  "deferred": [
+    {
+      "ids": [
+        "player-06a2fd60",
+        "player-5ebe8018"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (page+stub): Hibiki Yamane, JP; the ljl record and the free_agents stub both fit the only JP Chico page. Leaguepedia role is Support and has no birth dat"
+    },
+    {
+      "ids": [
+        "player-0aee4cee",
+        "player-4362e7be"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-0c53c37a",
+        "player-7f89d2c9"
+      ],
+      "class": "S",
+      "reason": "swapped match and full names. WD2c same person (name-and-page): Sergio Vicente Gispert, ES, Bot; the page DOB 2000-12-20 equals 0c53c37a, so 7f89d2c9 (2000-11-16) is a month off. A different Legolas exist"
+    },
+    {
+      "ids": [
+        "player-0e2bf9cf",
+        "player-bcb2c72b"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Joo Min-kyu, KR, Support, 2002-02-04 (Gen.G) matches the lck record; the stub fits the same single page."
+    },
+    {
+      "ids": [
+        "player-124b3ca7",
+        "player-cb07c2cc"
+      ],
+      "class": "D",
+      "reason": "same person in two live competition files. WD2c same person (page+team-history): Byeon Jeong-hyeon, KR, 2003-09-09. Match history (ScoreboardPlayers): Misa Esports 2026-01 to 2026-04, then Team Heretics 2026-07 onwards, w"
+    },
+    {
+      "ids": [
+        "player-2413186e",
+        "player-7e6099ca"
+      ],
+      "class": "D",
+      "reason": "same person in two live competition files. WD2c same person (dob-and-name): Matheus Ferreira Melo, BR, Support, 2005-04-21 (LOUD) matches the cblol record; cd stub (BR, Support) fits the only UZent page."
+    },
+    {
+      "ids": [
+        "player-286a84ac",
+        "player-c3da35b7"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-2970f50f",
+        "player-68113276"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-2f6c69cc",
+        "player-a4698d92"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-494161aa",
+        "player-ecfc91ea"
+      ],
+      "class": "D",
+      "reason": "same person in two live competition files. WD2c same person (page+stub): Marcos Santos de Oliveira Junior, BR, Jungle, 2000-01-31 matches the cblol record exactly; the cd stub (BR, Jungle) matches the only CarioK "
+    },
+    {
+      "ids": [
+        "player-4bc8debd",
+        "player-e8115334"
+      ],
+      "class": "D",
+      "reason": "same person in two live competition files. WD1 certain (same birth date); WD2c did not label it"
+    },
+    {
+      "ids": [
+        "player-4ff57da1",
+        "player-e9962c33"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Son Min-woo, KR, Support, 2003-03-28 matches; stub fits."
+    },
+    {
+      "ids": [
+        "player-511cc3a8",
+        "player-f28913fb"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Song Kyeong-jin, KR, Mid, 2004-10-13, Nongshim Esports Academy matches; stub names that club."
+    },
+    {
+      "ids": [
+        "player-53d6bc32",
+        "player-722557b3"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Park Gyu-yong, KR, Support, 2008-12-07 (Hanwha Life Challengers); the free_agents stub is the nick on the same single KR page."
+    },
+    {
+      "ids": [
+        "player-58e97388",
+        "player-ef68eb0e"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Son Si-woo, KR, Support, 1998-12-24 matches; the stub fits the same single page."
+    },
+    {
+      "ids": [
+        "player-63cb1341",
+        "player-b5bcba20"
+      ],
+      "class": "D",
+      "reason": "same person in two live competition files. WD2c same person (dob-and-name): Matheus Emanuel Silva, BR, Top, 2006-12-08 (RED Canids) matches the cblol record; cd stub (BR, Top) fits the only Zynts page."
+    },
+    {
+      "ids": [
+        "player-65ab088f",
+        "player-fd8efffc"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (page+stub): Eom Ye-jun, KR, Top, 2007-01-02, Nongshim Esports Academy; the stub (KR, Top, nongshim esports academy) fits it. The other Janus page is a T"
+    },
+    {
+      "ids": [
+        "player-663c95d8",
+        "player-fe7218c5"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Kang Min-woo, KR, Support, 2004-05-03 (Kiwoom DRX Challengers) matches; stub fits."
+    },
+    {
+      "ids": [
+        "player-705a39f4",
+        "player-846e9361"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Philipp Englert, DE, Support, 2001-01-20 equals prime_league \"January 20, 2001\"; the free_agents stub fits the same page."
+    },
+    {
+      "ids": [
+        "player-75112581",
+        "player-7e91b310"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-7e026f2b",
+        "player-da3e51c1"
+      ],
+      "class": "D",
+      "reason": "same person in two live competition files. WD2c same person (page+stub): Raí Yamada, BR, Jungle, 2005-05-18 matches the cblol record; the cd stub (BR, Jungle) fits the only BR Curse page (the other two Curse pages"
+    },
+    {
+      "ids": [
+        "player-8027166e",
+        "player-ddba39bb"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Oh Hyo-seong, KR, Support, 2000-10-03 matches; stub fits the single page."
+    },
+    {
+      "ids": [
+        "player-8130e9c4",
+        "player-8dd48146"
+      ],
+      "class": "S",
+      "reason": "swapped match and full names. WD2c same person (dob-and-name): Sergio Bouzende Rodrigues, Spain, Mid, 2003-07-30; both records have that DOB. The les record says nationality Portugal, the page says Spain"
+    },
+    {
+      "ids": [
+        "player-81909fb4",
+        "player-9ce42e7a"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-8e87b356",
+        "player-efc491ae"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-8f28a0b2",
+        "player-b7bba21b"
+      ],
+      "class": "S",
+      "reason": "swapped match and full names. WD2c same person (dob-and-name): Luis Pérez García, ES, Jungle, 2000-11-07 (UCAM Esports); both records carry that name and DOB (names swapped)."
+    },
+    {
+      "ids": [
+        "player-9a72c514",
+        "player-e7f2c02a"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (dob-and-name): Hyun Soo-hoon, KR, Bot, 2006-06-20 matches; stub (KR, ADC, Nongshim Academy) matches team and role."
+    },
+    {
+      "ids": [
+        "player-a336300d",
+        "player-dfd498f2"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-aefc7c09",
+        "player-c967059f"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-b78c5ed2",
+        "player-f5de6fb7"
+      ],
+      "class": "C",
+      "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (page+team): Kim Joo-hyeong (record spells it Joon), KR, Jungle, Nongshim Esports Academy, 127 pro games. The free_agents stub names the same club. DOB: "
+    },
+    {
+      "ids": [
+        "player-c3540ab4",
+        "player-c60dfae1"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-d62e9487",
+        "player-dea22e1c"
+      ],
+      "class": "U",
+      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
+    },
+    {
+      "ids": [
+        "player-dad38ae0",
+        "player-e7ebf5fa"
+      ],
+      "class": "D",
+      "reason": "same person in two live competition files. WD2c same person (dob-and-name): Victor Satoru Noguchi, BR, Jungle, 2005-01-21 matches the cblol record; cd stub (BR, Jungle) fits the only Sarolu page."
+    }
+  ],
+  "rated_one": []
+}

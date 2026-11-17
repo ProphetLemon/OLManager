@@ -7,9 +7,11 @@
 //! Everything is pure and never fails: bad input is skipped and reported.
 
 use crate::domain::player::{Player, TransferOfferStatus};
+use crate::domain::stats::LolRole;
 use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
+use crate::person_identity::{folded_names, has_all_attributes_zero};
 use crate::player_age::parse_date_of_birth;
 use chrono::NaiveDate;
 use log::{info, warn};
@@ -651,26 +653,52 @@ pub fn dedupe_players(entries: Vec<(String, Player)>) -> (Vec<Player>, Vec<Dropp
     (kept, dropped)
 }
 
-/// A stale-competition player left out of a new world because a live competition holds
-/// the same person.
+/// A stale-competition player left out of a new world.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DroppedStaleTwin {
     pub player_id: String,
     pub dropped_from: String,
+    /// The live record of the same person, or empty when the record went for having no
+    /// rating data at all (every attribute at 0).
     pub live_twin_id: String,
+}
+
+/// Stale-competition ids that are a different person from the live record sharing their
+/// name. The name rule never drops them. Reviewed one by one.
+const REVIEWED_STALE_NAMESAKES: [&str; 1] = [
+    // Winner: the stale lck-cl record is a real second player named Winner.
+    "player-c46f4677",
+];
+
+/// The live competition that replaces a stale duplicate one.
+fn successor_competition(stale: &str) -> Option<&'static str> {
+    STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .find(|(candidate, _)| *candidate == stale)
+        .map(|(_, canonical)| *canonical)
 }
 
 /// Drop the records of a stale duplicate competition for people a live competition also
 /// holds. A new world keeps no team of a stale competition, so its players would become free
 /// agents next to the live record of the same person, and the AI market could sign both.
 ///
-/// The person is matched like `same_person_survivor` does (a name and a readable birth date),
-/// except that either name of the stale record may equal either name of the live one: the
-/// stale files sometimes write the nick as the full name and the other way round. Only a
-/// stale record that is a free agent or sits on a team of its own competition goes; a record
-/// sharing its id with a live one is left to [`dedupe_players`]; a live record is never
-/// dropped. `entries` pairs each player with the competition it was loaded from; survivors
-/// keep their order.
+/// A stale record goes when any of these holds:
+/// - **its successor league holds the name**: any folded name of the record (match or full
+///   name, parenthesis and accents ignored, either way round) equals a folded name of a record
+///   of the live league that replaces its file (`lck-cl` by `lckcl`, `prime_league` by `prm`).
+///   The stale files ship the same people with birth dates a month off, a year-digit typo or
+///   none, so the date is not part of the key;
+/// - **it matches a live record by name and birth date** anywhere in the catalog (the
+///   original rule, kept because a stale record can also duplicate a player of another league);
+/// - **it carries no rating data**: all nine attributes are 0, a placeholder with nothing to
+///   play.
+///
+/// Only a stale record that is a free agent or sits on a team of its own competition goes; a
+/// record sharing its id with a live one is left to [`dedupe_players`]; a live record is never
+/// dropped; reviewed namesakes ([`REVIEWED_STALE_NAMESAKES`]) never go by name. The function
+/// only filters what a world is built from: it never touches a save, and on a rehydrate it
+/// only decides which catalog records may be appended. `entries` pairs each player with the
+/// competition it was loaded from; survivors keep their order.
 pub fn drop_stale_twins_of_live_players(
     entries: Vec<(String, Player)>,
 ) -> (Vec<(String, Player)>, Vec<DroppedStaleTwin>) {
@@ -686,6 +714,8 @@ pub fn drop_stale_twins_of_live_players(
 
     let mut live_ids: HashSet<&str> = HashSet::new();
     let mut live_by_identity: HashMap<(String, NaiveDate), &str> = HashMap::new();
+    // Folded name -> id, per live competition that replaces a stale one.
+    let mut successor_names: HashMap<(&str, String), &str> = HashMap::new();
     for (competition, player) in &entries {
         if is_stale_duplicate_competition(competition) {
             continue;
@@ -695,6 +725,16 @@ pub fn drop_stale_twins_of_live_players(
             for name in names(player) {
                 live_by_identity
                     .entry((name, born))
+                    .or_insert(player.id.as_str());
+            }
+        }
+        if STALE_DUPLICATE_COMPETITIONS
+            .iter()
+            .any(|(_, canonical)| canonical == competition)
+        {
+            for name in folded_names(player) {
+                successor_names
+                    .entry((competition.as_str(), name))
                     .or_insert(player.id.as_str());
             }
         }
@@ -708,19 +748,35 @@ pub fn drop_stale_twins_of_live_players(
             && player.team_id.as_deref().is_none_or(|team| {
                 matches!(team, "fa" | "freeagent") || team.starts_with(&format!("{competition}-"))
             });
+        let by_name = || {
+            let successor = successor_competition(competition)?;
+            if REVIEWED_STALE_NAMESAKES.contains(&player.id.as_str()) {
+                return None;
+            }
+            folded_names(player).into_iter().find_map(|name| {
+                successor_names
+                    .get(&(successor, name))
+                    .map(|id| id.to_string())
+            })
+        };
+        let by_birth_date = || {
+            let born = parse_date_of_birth(&player.date_of_birth)?;
+            names(player)
+                .into_iter()
+                .find_map(|name| live_by_identity.get(&(name, born)).map(|id| id.to_string()))
+        };
         let twin = removable
-            .then(|| parse_date_of_birth(&player.date_of_birth))
-            .flatten()
-            .and_then(|born| {
-                names(player)
-                    .into_iter()
-                    .find_map(|name| live_by_identity.get(&(name, born)).copied())
-            });
-        if let Some(live_twin_id) = twin {
+            .then(|| {
+                by_name().or_else(by_birth_date).or_else(|| {
+                    has_all_attributes_zero(player).then(String::new)
+                })
+            })
+            .flatten();
+        if let Some(live_twin_id) = &twin {
             dropped.push(DroppedStaleTwin {
                 player_id: player.id.clone(),
                 dropped_from: competition.clone(),
-                live_twin_id: live_twin_id.to_string(),
+                live_twin_id: live_twin_id.clone(),
             });
         }
         drop_flags.push(twin.is_some());
@@ -731,6 +787,166 @@ pub fn drop_stale_twins_of_live_players(
         .filter_map(|(entry, dropped)| (!dropped).then_some(entry))
         .collect();
     (kept, dropped)
+}
+
+/// A record removed because another record of the same person survives.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CollapsedDuplicate {
+    pub kept_id: String,
+    pub dropped_id: String,
+}
+
+/// What a collapse knows about the records it chooses between.
+pub struct CollapseEvidence<'a> {
+    /// Whether a stat-derived rating override names this id: the override lands only there.
+    pub has_rating_override: &'a dyn Fn(&str) -> bool,
+    /// Ids a roster overlay op (move or add) names.
+    pub overlay_op_ids: &'a HashSet<String>,
+    /// Ids the overlay added without a team (the active-pros pool).
+    pub pool_add_ids: &'a HashSet<String>,
+}
+
+/// Minimal union-find over record indexes.
+fn find(parent: &mut [usize], mut i: usize) -> usize {
+    while parent[i] != i {
+        parent[i] = parent[parent[i]];
+        i = parent[i];
+    }
+    i
+}
+
+/// Collapse the records of one person that a new world holds twice. It runs after the roster
+/// overlay and before the roster fill, and removes the losers from `players` (the caller
+/// tombstones them so a catalog rehydration does not bring them back).
+///
+/// Two records are one person when:
+/// - they sit on the same club and share a folded name (match or full name, parenthesis and
+///   accents ignored, either way round). Nationality and birth date are not tested: a stub
+///   carries a guessed nationality and no date, and the nick and the real name swap places;
+/// - or one is a pool add (a teamless overlay add) and the other is on a club, and they share
+///   two folded names, for example the nick and a real name of two or more words.
+///
+/// The survivor of a group is the record, in this order of priority: that is not a pool add,
+/// that a stat-derived rating override names (the override lands only there), that an overlay
+/// op names, that has a readable birth date and a real full name, that has a readable birth
+/// date, that has a real full name, and finally the first in the list.
+pub fn collapse_same_person_records(
+    players: &mut Vec<Player>,
+    evidence: &CollapseEvidence<'_>,
+) -> Vec<CollapsedDuplicate> {
+    let names: Vec<Vec<String>> = players.iter().map(folded_names).collect();
+    let mut parent: Vec<usize> = (0..players.len()).collect();
+
+    // Same club and a shared name.
+    let mut by_club_name: HashMap<(&str, &str), usize> = HashMap::new();
+    for (index, player) in players.iter().enumerate() {
+        let Some(team) = player.team_id.as_deref() else {
+            continue;
+        };
+        for name in &names[index] {
+            match by_club_name.get(&(team, name.as_str())) {
+                Some(&first) => {
+                    let (a, b) = (find(&mut parent, first), find(&mut parent, index));
+                    parent[b] = a;
+                }
+                None => {
+                    by_club_name.insert((team, name.as_str()), index);
+                }
+            }
+        }
+    }
+
+    // A pool add and a club record that share two names.
+    let mut rostered_by_name: HashMap<&str, Vec<usize>> = HashMap::new();
+    for (index, player) in players.iter().enumerate() {
+        if player.team_id.is_some() {
+            for name in &names[index] {
+                rostered_by_name.entry(name.as_str()).or_default().push(index);
+            }
+        }
+    }
+    for (index, player) in players.iter().enumerate() {
+        if player.team_id.is_some() || !evidence.pool_add_ids.contains(&player.id) {
+            continue;
+        }
+        let mut shared: HashMap<usize, usize> = HashMap::new();
+        for name in &names[index] {
+            for &other in rostered_by_name.get(name.as_str()).into_iter().flatten() {
+                *shared.entry(other).or_default() += 1;
+            }
+        }
+        for (other, count) in shared {
+            if count >= 2 {
+                let (a, b) = (find(&mut parent, other), find(&mut parent, index));
+                parent[b] = a;
+            }
+        }
+    }
+
+    let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
+    for index in 0..players.len() {
+        let root = find(&mut parent, index);
+        groups.entry(root).or_default().push(index);
+    }
+
+    let priority = |index: usize| {
+        let player = &players[index];
+        let dated = parse_date_of_birth(&player.date_of_birth).is_some();
+        let real_name = crate::person_identity::name_words(&player.full_name) >= 2
+            && crate::person_identity::fold_name(&player.full_name)
+                != crate::person_identity::fold_name(&player.match_name);
+        (
+            !evidence.pool_add_ids.contains(&player.id),
+            (evidence.has_rating_override)(&player.id),
+            evidence.overlay_op_ids.contains(&player.id),
+            dated && real_name,
+            dated,
+            real_name,
+        )
+    };
+
+    let mut collapsed = Vec::new();
+    let mut dropped_indexes = HashSet::new();
+    let mut ordered: Vec<Vec<usize>> = groups.into_values().filter(|g| g.len() > 1).collect();
+    ordered.sort_by_key(|group| group[0]);
+    for group in ordered {
+        // `max_by_key` keeps the last of equal keys; reverse so the first record wins a tie.
+        let Some(&kept) = group.iter().rev().max_by_key(|&&index| priority(index)) else {
+            continue;
+        };
+        for &index in group.iter().filter(|&&index| index != kept) {
+            dropped_indexes.insert(index);
+            collapsed.push(CollapsedDuplicate {
+                kept_id: players[kept].id.clone(),
+                dropped_id: players[index].id.clone(),
+            });
+        }
+    }
+    let mut index = 0;
+    players.retain(|_| {
+        let keep = !dropped_indexes.contains(&index);
+        index += 1;
+        keep
+    });
+    collapsed
+}
+
+/// Make the natural role of every player the lane he plays, for a new world. The catalog
+/// ships a few dozen rows whose `natural_position` contradicts `position` (a jungler marked
+/// Mid); the second record of the same person and the stats games say `position` is right,
+/// and the club page already shows it. The roster fill and the repair read
+/// `natural_position`, so with the bad field they signed a jungler into a Mid gap and counted
+/// the gap closed. A position that is not a lane changes nothing. Returns how many records
+/// changed. Never run on a save: a user edit of a natural role is his own.
+pub fn align_natural_positions(players: &mut [Player]) -> usize {
+    let mut changed = 0;
+    for player in players {
+        if player.position != LolRole::Unknown && player.natural_position != player.position {
+            player.natural_position = player.position;
+            changed += 1;
+        }
+    }
+    changed
 }
 
 /// Turn players whose team does not exist into free agents. Returns their ids.
@@ -860,10 +1076,25 @@ mod tests {
             "2000-01-01".to_string(),
             "KR".to_string(),
             crate::domain::stats::LolRole::Mid,
-            PlayerAttributes::default(),
+            rated(),
         );
         p.team_id = team.map(str::to_string);
         p
+    }
+
+    /// Attributes at 50: a rated record (the default is all zeros, a placeholder shell).
+    fn rated() -> PlayerAttributes {
+        PlayerAttributes {
+            mechanics: 50,
+            laning: 50,
+            teamfighting: 50,
+            macro_play: 50,
+            consistency: 50,
+            shotcalling: 50,
+            champion_pool: 50,
+            discipline: 50,
+            mental_resilience: 50,
+        }
     }
 
     fn team(id: &str) -> Team {
@@ -1104,30 +1335,128 @@ mod tests {
     }
 
     #[test]
-    fn a_stale_player_with_another_birth_date_or_no_readable_one_stays() {
+    fn a_stale_player_with_another_name_or_no_twin_stays() {
         let live = born(
             player("live", "Densi", Some("prm-t1")),
             "Denis Real",
             "2003-06-03",
         );
-        let other_day = born(player("other-day", "Densi", None), "Densi", "June 4, 2003");
-        let unreadable = born(
-            player("unreadable", "Densi", None),
-            "Densi",
-            "sometime in 2003",
-        );
-        let missing = born(player("missing", "Densi", None), "Densi", "");
+        let other_name = born(player("other", "Kaiser", None), "Kaiser", "June 3, 2003");
+        let no_date = born(player("no-date", "Pasu", None), "Pasu", "");
         let (kept, dropped) = drop_stale_twins_of_live_players(vec![
             ("prm".into(), live),
-            ("prime_league".into(), other_day),
-            ("prime_league".into(), unreadable),
-            ("prime_league".into(), missing),
+            ("prime_league".into(), other_name),
+            ("prime_league".into(), no_date),
         ]);
-        assert_eq!(
-            ids(&kept),
-            vec!["live", "other-day", "unreadable", "missing"]
-        );
+        assert_eq!(ids(&kept), vec!["live", "other", "no-date"]);
         assert!(dropped.is_empty());
+    }
+
+    /// The stale file and its successor league disagree on the birth date (a month, a
+    /// day-swap, a year digit, or a missing one): the name alone is the key.
+    #[test]
+    fn a_stale_twin_is_dropped_whatever_its_birth_date_says() {
+        let cases = [
+            ("kangin", "Kangin", "2003-01-14", "2003-03-14"),
+            ("zephyr", "Zephyr", "2007-01-08", "2007-12-08"),
+            ("ddoiv", "DDoiV", "2003-10-21", "2023-10-21"),
+            ("seaz", "Seaz", "December 17, 2000", "2000-11-17"),
+            ("cracker", "Cracker", "2008-01-20", ""),
+            ("pasu", "Pasu", "", ""),
+        ];
+        for (id, nick, stale_dob, live_dob) in cases {
+            let live = born(
+                player(&format!("live-{id}"), nick, Some("lckcl-t1")),
+                &format!("{nick} Real"),
+                live_dob,
+            );
+            let stale = born(player(id, nick, None), nick, stale_dob);
+            let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+                ("lckcl".into(), live),
+                ("lck-cl".into(), stale),
+            ]);
+            assert_eq!(ids(&kept), vec![format!("live-{id}").as_str()], "{nick}");
+            assert_eq!(dropped.len(), 1, "{nick}");
+        }
+    }
+
+    #[test]
+    fn a_stale_twin_with_its_nick_and_full_name_swapped_is_dropped() {
+        let live = born(
+            player("live", "Dinai", Some("lckcl-t1")),
+            "Hwang Chi-hyeon",
+            "2004-02-02",
+        );
+        let mut stale = born(player("stale", "Hwang Chi-hyeon", None), "Dinai", "");
+        stale.date_of_birth = "2001-05-05".into();
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("lckcl".into(), live),
+            ("lck-cl".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live"]);
+    }
+
+    #[test]
+    fn names_fold_accents_case_parentheses_and_html_entities() {
+        let live = born(
+            player("live", "Papiteero&nbsp;", Some("prm-t1")),
+            "Pápiteero (Real)",
+            "",
+        );
+        let stale = born(player("stale", "papiteero", None), "papiteero", "");
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("prm".into(), live),
+            ("prime_league".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live"]);
+    }
+
+    #[test]
+    fn a_stale_record_is_only_matched_against_its_own_successor_league() {
+        // A prime_league record whose name appears in lckcl, not in prm, stays.
+        let live = born(player("live", "Seaz", Some("lckcl-t1")), "Seaz Real", "2000-01-01");
+        let stale = born(player("stale", "Seaz", None), "Seaz", "1999-05-05");
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("lckcl".into(), live),
+            ("prime_league".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["live", "stale"]);
+    }
+
+    #[test]
+    fn a_stale_shell_with_every_attribute_at_zero_is_dropped_without_a_twin() {
+        let mut shell = born(player("shell", "Dome", None), "Dome", "2001-01-01");
+        shell.attributes = PlayerAttributes::default();
+        let rated = born(player("rated", "Rin", None), "Rin", "2001-01-01");
+        let (kept, dropped) = drop_stale_twins_of_live_players(vec![
+            ("prime_league".into(), shell),
+            ("prime_league".into(), rated),
+        ]);
+        assert_eq!(ids(&kept), vec!["rated"]);
+        assert_eq!(dropped[0].player_id, "shell");
+    }
+
+    #[test]
+    fn a_live_zero_attribute_record_is_never_dropped() {
+        let mut shell = born(player("live-shell", "Dome", Some("prm-t1")), "Dome", "");
+        shell.attributes = PlayerAttributes::default();
+        let (kept, _) = drop_stale_twins_of_live_players(vec![("prm".into(), shell)]);
+        assert_eq!(ids(&kept), vec!["live-shell"]);
+    }
+
+    #[test]
+    fn a_reviewed_namesake_survives_the_name_rule() {
+        let live = born(
+            player("player-eddde7b7", "Winner", Some("lckcl-t1")),
+            "Winner Real",
+            "2000-01-01",
+        );
+        let stale = born(player("player-c46f4677", "Winner", None), "Winner", "1999-09-09");
+        let (kept, _) = drop_stale_twins_of_live_players(vec![
+            ("lckcl".into(), live),
+            ("lck-cl".into(), stale),
+        ]);
+        assert_eq!(ids(&kept), vec!["player-eddde7b7", "player-c46f4677"]);
     }
 
     #[test]
@@ -1202,5 +1531,196 @@ mod tests {
         let bundled = bundled_catalog_corrections();
         assert!(!bundled.is_empty(), "bundled corrections must parse");
         assert!(bundled.iter().all(|c| !c.evidence.trim().is_empty()));
+    }
+
+    fn on_team(mut p: Player, team: &str) -> Player {
+        p.team_id = Some(team.to_string());
+        p
+    }
+
+    fn collapse(
+        players: &mut Vec<Player>,
+        overrides: &[&str],
+        ops: &[&str],
+        pool: &[&str],
+    ) -> Vec<CollapsedDuplicate> {
+        let overrides: HashSet<String> = overrides.iter().map(|id| id.to_string()).collect();
+        let has_override = |id: &str| overrides.contains(id);
+        let overlay_op_ids: HashSet<String> = ops.iter().map(|id| id.to_string()).collect();
+        let pool_add_ids: HashSet<String> = pool.iter().map(|id| id.to_string()).collect();
+        collapse_same_person_records(
+            players,
+            &CollapseEvidence {
+                has_rating_override: &has_override,
+                overlay_op_ids: &overlay_op_ids,
+                pool_add_ids: &pool_add_ids,
+            },
+        )
+    }
+
+    fn player_ids(players: &[Player]) -> Vec<&str> {
+        players.iter().map(|p| p.id.as_str()).collect()
+    }
+
+    #[test]
+    fn a_nick_only_stub_collapses_into_the_real_record_on_the_same_club() {
+        let stub = born(on_team(player("stub", "Samkz", None), "cd-t1"), "Samkz", "");
+        let real = born(
+            on_team(player("real", "Samkz", None), "cd-t1"),
+            "Samuel Pereira Rosa",
+            "2003-03-04",
+        );
+        let mut players = vec![stub, real];
+        let collapsed = collapse(&mut players, &[], &[], &[]);
+        assert_eq!(player_ids(&players), vec!["real"]);
+        assert_eq!(
+            collapsed,
+            vec![CollapsedDuplicate {
+                kept_id: "real".into(),
+                dropped_id: "stub".into()
+            }]
+        );
+    }
+
+    #[test]
+    fn the_record_with_a_rating_override_survives_over_one_with_a_date_of_birth() {
+        let dated = born(
+            on_team(player("dated", "Sankaizer", None), "lplol-t1"),
+            "Sankaizer Real",
+            "2003-05-07",
+        );
+        let overridden = born(on_team(player("overridden", "Sankaizer", None), "lplol-t1"), "Sankaizer", "");
+        let mut players = vec![dated, overridden];
+        collapse(&mut players, &["overridden"], &["dated"], &[]);
+        assert_eq!(player_ids(&players), vec!["overridden"]);
+    }
+
+    #[test]
+    fn the_record_an_overlay_op_names_survives_over_one_with_a_date_of_birth() {
+        let dated = born(
+            on_team(player("dated", "Kaii", None), "les-t1"),
+            "Jorge Saiz Hoyos",
+            "2005-01-01",
+        );
+        let named = born(on_team(player("named", "Kaii", None), "les-t1"), "Jorge Saiz Hoyos", "");
+        let mut players = vec![dated, named];
+        collapse(&mut players, &[], &["named"], &[]);
+        assert_eq!(player_ids(&players), vec!["named"]);
+    }
+
+    #[test]
+    fn swapped_match_and_full_names_are_one_person_on_a_club() {
+        let a = born(on_team(player("a", "Jorge Saiz Hoyos", None), "les-t1"), "Kaii", "2005-01-01");
+        let b = born(on_team(player("b", "Kaii", None), "les-t1"), "Jorge Saiz Hoyos", "2004-07-08");
+        let mut players = vec![a, b];
+        assert_eq!(collapse(&mut players, &[], &[], &[]).len(), 1);
+        assert_eq!(players.len(), 1);
+    }
+
+    #[test]
+    fn the_nationality_of_a_stub_does_not_keep_it_apart() {
+        let mut stub = born(on_team(player("stub", "Ace", None), "hll-t1"), "Ace", "");
+        stub.nationality = "ES".into();
+        let mut real = born(
+            on_team(player("real", "Ace (Ignacio David Piaggio)", None), "hll-t1"),
+            "Ignacio David Piaggio",
+            "2007-04-18",
+        );
+        real.nationality = "CU".into();
+        let mut players = vec![stub, real];
+        collapse(&mut players, &[], &[], &[]);
+        assert_eq!(player_ids(&players), vec!["real"]);
+    }
+
+    #[test]
+    fn the_same_name_on_two_clubs_or_in_the_market_is_left_alone() {
+        let a = born(on_team(player("a", "Daglas", None), "lec-t1"), "Kacper Dagiel", "2005-10-23");
+        let b = born(on_team(player("b", "Daglas", None), "les-t1"), "Kacper Dagiel", "2005-10-23");
+        let c = born(player("c", "Daglas", None), "Daglas", "");
+        let d = born(player("d", "Daglas", None), "Daglas", "");
+        let mut players = vec![a, b, c, d];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+        assert_eq!(players.len(), 4);
+    }
+
+    #[test]
+    fn three_records_on_a_club_leave_one() {
+        let a = born(on_team(player("a", "Cracker", None), "t1"), "Cracker", "");
+        let b = born(on_team(player("b", "Cracker", None), "t1"), "Lee Jeong-wook", "2008-01-20");
+        let c = born(on_team(player("c", "Lee Jeong-wook", None), "t1"), "Cracker", "");
+        let mut players = vec![a, b, c];
+        let collapsed = collapse(&mut players, &[], &[], &[]);
+        assert_eq!(player_ids(&players), vec!["b"]);
+        assert_eq!(collapsed.len(), 2);
+    }
+
+    #[test]
+    fn equal_evidence_keeps_the_first_record() {
+        let a = born(on_team(player("a", "Pasu", None), "t1"), "Pasu", "");
+        let b = born(on_team(player("b", "Pasu", None), "t1"), "Pasu", "");
+        let mut players = vec![a, b];
+        collapse(&mut players, &[], &[], &[]);
+        assert_eq!(player_ids(&players), vec!["a"]);
+    }
+
+    #[test]
+    fn a_pool_add_collapses_into_the_rostered_record_it_shares_two_names_with() {
+        let rostered = born(
+            on_team(player("rostered", "Ace (Ignacio David Piaggio)", None), "hll-t1"),
+            "Ignacio David Piaggio",
+            "2007-04-18",
+        );
+        let mut pool = born(player("pool", "Ace", None), "Ignacio David Piaggio", "2002-06-16");
+        pool.nationality = "UY".into();
+        let mut players = vec![pool, rostered];
+        let collapsed = collapse(&mut players, &[], &["pool"], &["pool"]);
+        assert_eq!(player_ids(&players), vec!["rostered"]);
+        assert_eq!(collapsed[0].dropped_id, "pool");
+    }
+
+    #[test]
+    fn a_pool_add_sharing_only_a_common_name_stays_a_free_agent() {
+        let rostered = born(on_team(player("rostered", "Vin", None), "vcs-t1"), "Tran Hoai Vinh", "2003-03-21");
+        let pool = born(player("pool", "Vin", None), "Elvin Berisha", "2003-02-06");
+        let mut players = vec![pool, rostered];
+        assert!(collapse(&mut players, &[], &["pool"], &["pool"]).is_empty());
+        assert_eq!(players.len(), 2);
+    }
+
+    #[test]
+    fn a_free_agent_that_is_not_a_pool_add_is_not_collapsed_into_a_club_record() {
+        let rostered = born(
+            on_team(player("rostered", "Lehends", None), "lck-t1"),
+            "Son Si-woo",
+            "1998-12-24",
+        );
+        let ghost = born(player("ghost", "Lehends", None), "Son Si-woo", "");
+        let mut players = vec![ghost, rostered];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_lane_position_becomes_the_natural_position() {
+        let mut jungler = player("jungler", "Cariok", None);
+        jungler.position = LolRole::Jungle;
+        jungler.natural_position = LolRole::Mid;
+        let mut agreeing = player("agreeing", "Faker", None);
+        agreeing.position = LolRole::Mid;
+        agreeing.natural_position = LolRole::Mid;
+        let mut players = vec![jungler, agreeing];
+        assert_eq!(align_natural_positions(&mut players), 1);
+        assert_eq!(players[0].natural_position, LolRole::Jungle);
+        assert_eq!(players[0].position, LolRole::Jungle);
+        assert_eq!(players[1].natural_position, LolRole::Mid);
+    }
+
+    #[test]
+    fn a_position_that_is_not_a_lane_leaves_the_natural_position_alone() {
+        let mut unknown = player("unknown", "Nobody", None);
+        unknown.position = LolRole::Unknown;
+        unknown.natural_position = LolRole::Support;
+        let mut players = vec![unknown];
+        assert_eq!(align_natural_positions(&mut players), 0);
+        assert_eq!(players[0].natural_position, LolRole::Support);
     }
 }
