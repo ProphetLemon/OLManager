@@ -35,7 +35,7 @@ const DEFERRED_CEILING: usize = 33;
 
 /// Main clubs (the user's club apart) missing a lane at day 0, by the lane the club page shows.
 /// Re-measured after each change; a ratchet, so it only moves down.
-const ROLE_GAP_CLUBS: usize = 10;
+const ROLE_GAP_CLUBS: usize = 0;
 
 const USER_CLUB: &str = "lec-g2-esports";
 
@@ -49,7 +49,6 @@ struct Review {
 #[derive(Debug, Deserialize)]
 struct PairEntry {
     ids: [String; 2],
-    #[serde(default)]
     class: String,
     reason: String,
 }
@@ -74,8 +73,8 @@ fn review() -> Review {
     let review: Review = serde_json::from_str(REVIEW).expect("world_identity_review.json parses");
     for entry in review.namesakes.iter().chain(&review.deferred) {
         assert!(
-            !entry.reason.trim().is_empty(),
-            "review entry {:?} needs a reason",
+            !entry.reason.trim().is_empty() && !entry.class.trim().is_empty(),
+            "review entry {:?} needs a class and a reason",
             entry.ids
         );
     }
@@ -347,15 +346,12 @@ fn clubs_missing_a_lane(game: &Game) -> Vec<String> {
 fn clubs_missing_a_lane_only_go_down() {
     let game = world();
     let gaps = clubs_missing_a_lane(game);
-    assert!(
-        gaps.len() <= ROLE_GAP_CLUBS,
-        "{} clubs miss a lane (ratchet {ROLE_GAP_CLUBS}): {gaps:?}",
-        gaps.len()
-    );
+    // The ratchet sits at its floor: any club missing a lane fails. When the ceiling is
+    // above 0, also fail on a lower count so the constant is lowered with the fix.
     assert_eq!(
         gaps.len(),
         ROLE_GAP_CLUBS,
-        "fewer clubs miss a lane: lower ROLE_GAP_CLUBS to {} ({gaps:?})",
+        "{} clubs miss a lane, ratchet {ROLE_GAP_CLUBS} (lower the constant when fewer): {gaps:?}",
         gaps.len()
     );
 }
@@ -404,4 +400,20 @@ fn collapsed_same_club_records_are_tombstoned_and_the_moved_survivor_stays_prote
         game.moved_player_ids.contains("player-d9d06923"),
         "the moved Samkz keeps its protection"
     );
+}
+
+/// A player's lane and natural role are one fact: where both name a lane they agree. The
+/// catalog ships 29 rows where `natural_position` says Mid for a jungler, so the roster fill
+/// signed them into Mid gaps and counted the gaps closed.
+#[test]
+fn position_and_natural_position_agree_wherever_both_name_a_lane() {
+    let game = world();
+    let split: Vec<String> = game
+        .players
+        .iter()
+        .filter(|p| is_lane(p.position) && is_lane(p.natural_position))
+        .filter(|p| p.position != p.natural_position)
+        .map(|p| format!("{} {:?} {:?}/{:?}", p.id, p.match_name, p.position, p.natural_position))
+        .collect();
+    assert!(split.is_empty(), "{} player(s) disagree:\n  {}", split.len(), split.join("\n  "));
 }

@@ -198,6 +198,11 @@ fn assemble_base_world(
     game.players = assembled_players;
     game.staff = assembled_staff;
 
+    // A new world plays the lane the club page shows: repair `natural_position` before the
+    // overlay and the roster fill read it.
+    let realigned = world_catalog::align_natural_positions(&mut game.players);
+    info!("[game] {} players had a natural position that contradicted their lane", realigned);
+
     // Bring the bundled snapshot up to date before lineups are built from it.
     if let Some(overlay) = inputs.overlay {
         let report = apply_roster_overlay(game, overlay);
@@ -217,6 +222,8 @@ fn assemble_base_world(
             game_setup::apply_default_market_values(&mut game.players);
         }
     }
+    // An overlay add or move can bring a record with the two fields apart again.
+    world_catalog::align_natural_positions(&mut game.players);
     collapse_same_person_records(game, inputs.overlay, rating_overrides);
     Ok(())
 }

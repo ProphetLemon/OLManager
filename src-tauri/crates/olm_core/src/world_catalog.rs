@@ -7,6 +7,7 @@
 //! Everything is pure and never fails: bad input is skipped and reported.
 
 use crate::domain::player::{Player, TransferOfferStatus};
+use crate::domain::stats::LolRole;
 use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
@@ -930,6 +931,24 @@ pub fn collapse_same_person_records(
     collapsed
 }
 
+/// Make the natural role of every player the lane he plays, for a new world. The catalog
+/// ships a few dozen rows whose `natural_position` contradicts `position` (a jungler marked
+/// Mid); the second record of the same person and the stats games say `position` is right,
+/// and the club page already shows it. The roster fill and the repair read
+/// `natural_position`, so with the bad field they signed a jungler into a Mid gap and counted
+/// the gap closed. A position that is not a lane changes nothing. Returns how many records
+/// changed. Never run on a save: a user edit of a natural role is his own.
+pub fn align_natural_positions(players: &mut [Player]) -> usize {
+    let mut changed = 0;
+    for player in players {
+        if player.position != LolRole::Unknown && player.natural_position != player.position {
+            player.natural_position = player.position;
+            changed += 1;
+        }
+    }
+    changed
+}
+
 /// Turn players whose team does not exist into free agents. Returns their ids.
 pub fn detach_orphaned_players(players: &mut [Player], teams: &[Team]) -> Vec<String> {
     let team_ids: HashSet<&str> = teams.iter().map(|t| t.id.as_str()).collect();
@@ -1678,5 +1697,30 @@ mod tests {
         let ghost = born(player("ghost", "Lehends", None), "Son Si-woo", "");
         let mut players = vec![ghost, rostered];
         assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_lane_position_becomes_the_natural_position() {
+        let mut jungler = player("jungler", "Cariok", None);
+        jungler.position = LolRole::Jungle;
+        jungler.natural_position = LolRole::Mid;
+        let mut agreeing = player("agreeing", "Faker", None);
+        agreeing.position = LolRole::Mid;
+        agreeing.natural_position = LolRole::Mid;
+        let mut players = vec![jungler, agreeing];
+        assert_eq!(align_natural_positions(&mut players), 1);
+        assert_eq!(players[0].natural_position, LolRole::Jungle);
+        assert_eq!(players[0].position, LolRole::Jungle);
+        assert_eq!(players[1].natural_position, LolRole::Mid);
+    }
+
+    #[test]
+    fn a_position_that_is_not_a_lane_leaves_the_natural_position_alone() {
+        let mut unknown = player("unknown", "Nobody", None);
+        unknown.position = LolRole::Unknown;
+        unknown.natural_position = LolRole::Support;
+        let mut players = vec![unknown];
+        assert_eq!(align_natural_positions(&mut players), 0);
+        assert_eq!(players[0].natural_position, LolRole::Support);
     }
 }
