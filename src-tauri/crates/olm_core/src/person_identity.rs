@@ -6,6 +6,8 @@
 //! [`fold_name`] so those spellings compare equal.
 
 use crate::domain::player::Player;
+use crate::player_age::parse_date_of_birth;
+use std::collections::HashMap;
 
 /// Decode the HTML entities the data is known to carry. Anything unknown is left as is.
 fn decode_entities(raw: &str) -> String {
@@ -146,6 +148,135 @@ pub fn folded_real_names(player: &Player) -> Vec<String> {
     names
 }
 
+/// How far apart two birth dates may be for two records to still be one person: the catalog
+/// writes the same date in two formats and a few records are a month off.
+const SAME_PERSON_DOB_TOLERANCE_DAYS: i64 = 62;
+
+/// A nationality as a comparable key: an ISO-2 code in capitals. The catalog writes both
+/// codes and English names ("KR", "Korea", "South Korea"). Empty, "Generated" and
+/// one-letter junk are unknown (`""`); a name this table does not know is kept upper-cased.
+pub fn nationality_key(raw: &str) -> String {
+    let trimmed = raw.trim();
+    let lower = trimmed.to_lowercase();
+    if trimmed.chars().count() < 2 || lower == "generated" {
+        return String::new();
+    }
+    let code = match lower.as_str() {
+        "south korea" | "korea" => "KR",
+        "china" => "CN",
+        "germany" => "DE",
+        "brazil" | "brasil" => "BR",
+        "mexico" => "MX",
+        "colombia" => "CO",
+        "argentina" => "AR",
+        "spain" => "ES",
+        "france" => "FR",
+        "peru" => "PE",
+        "denmark" => "DK",
+        "venezuela" => "VE",
+        "romania" => "RO",
+        "taiwan" => "TW",
+        "poland" => "PL",
+        "united states" => "US",
+        "czech republic" => "CZ",
+        "sweden" => "SE",
+        "chile" => "CL",
+        "hong kong" => "HK",
+        "austria" => "AT",
+        "belgium" => "BE",
+        "portugal" => "PT",
+        "greece" => "GR",
+        "jordan" => "JO",
+        "costa rica" => "CR",
+        "algeria" => "DZ",
+        "turkey" => "TR",
+        "hungary" => "HU",
+        "netherlands" => "NL",
+        "australia" => "AU",
+        "norway" => "NO",
+        _ => return trimmed.to_uppercase(),
+    };
+    code.to_string()
+}
+
+/// Whether two records share a folded name (match or full name, either way round).
+pub fn shares_folded_name(a: &Player, b: &Player) -> bool {
+    let names = folded_names(a);
+    folded_names(b).iter().any(|name| names.contains(name))
+}
+
+/// Whether two records could be one person. They must share a folded name, and no field
+/// present on both sides may tell them apart:
+/// - the birth dates, when both are readable, are at most 62 days apart;
+/// - the nationalities, when both are known, are the same;
+/// - when a birth date is missing on either side, the real names (two or more words) of the
+///   two records, when both have one, share a name. With no date on either side the
+///   records must share a real name, since a nick alone is how namesakes look.
+///
+/// This is the Rust form of `couldBeSamePerson` in `src/lib/transfers/model.ts`, extended to
+/// the swapped names the catalog ships.
+pub fn could_be_same_person(a: &Player, b: &Player) -> bool {
+    if !shares_folded_name(a, b) {
+        return false;
+    }
+    let (born_a, born_b) = (
+        parse_date_of_birth(&a.date_of_birth),
+        parse_date_of_birth(&b.date_of_birth),
+    );
+    let (nation_a, nation_b) = (
+        nationality_key(&a.nationality),
+        nationality_key(&b.nationality),
+    );
+    if !nation_a.is_empty() && !nation_b.is_empty() && nation_a != nation_b {
+        return false;
+    }
+    match (born_a, born_b) {
+        (Some(x), Some(y)) => (x - y).num_days().abs() <= SAME_PERSON_DOB_TOLERANCE_DAYS,
+        (None, None) => {
+            let real_a = folded_real_names(a);
+            folded_real_names(b)
+                .iter()
+                .any(|name| real_a.contains(name))
+        }
+        _ => {
+            let (real_a, real_b) = (folded_real_names(a), folded_real_names(b));
+            real_a.is_empty()
+                || real_b.is_empty()
+                || real_b.iter().any(|name| real_a.contains(name))
+        }
+    }
+}
+
+/// Players indexed by folded name, so "could this record be the same person as one of
+/// these" is a lookup, not a scan of the world. Build it once per pass.
+pub struct PersonIndex<'a> {
+    by_name: HashMap<String, Vec<&'a Player>>,
+}
+
+impl<'a> PersonIndex<'a> {
+    pub fn new(players: impl IntoIterator<Item = &'a Player>) -> Self {
+        let mut by_name: HashMap<String, Vec<&'a Player>> = HashMap::new();
+        for player in players {
+            for name in folded_names(player) {
+                by_name.entry(name).or_default().push(player);
+            }
+        }
+        Self { by_name }
+    }
+
+    /// Whether an indexed record other than `player` could be the same person
+    /// ([`could_be_same_person`]).
+    pub fn has_twin_of(&self, player: &Player) -> bool {
+        folded_names(player).iter().any(|name| {
+            self.by_name.get(name).is_some_and(|records| {
+                records
+                    .iter()
+                    .any(|other| other.id != player.id && could_be_same_person(player, other))
+            })
+        })
+    }
+}
+
 /// Whether every one of the nine attributes is 0: a placeholder row with no rating data.
 pub fn has_all_attributes_zero(player: &Player) -> bool {
     let a = &player.attributes;
@@ -180,6 +311,65 @@ mod tests {
             LolRole::Mid,
             PlayerAttributes::default(),
         )
+    }
+
+    fn person(match_name: &str, full_name: &str, dob: &str, nationality: &str) -> Player {
+        let mut player = named(match_name, full_name);
+        player.date_of_birth = dob.into();
+        player.nationality = nationality.into();
+        player
+    }
+
+    #[test]
+    fn nationality_names_and_codes_share_a_key() {
+        assert_eq!(nationality_key("South Korea"), nationality_key("kr"));
+        assert_eq!(nationality_key("Brasil"), "BR");
+        assert_eq!(nationality_key("Generated"), "");
+        assert_eq!(nationality_key("K"), "");
+    }
+
+    #[test]
+    fn a_month_off_birth_date_is_still_one_person() {
+        let a = person("Koldo", "Luis Perez", "2000-11-17", "ES");
+        let b = person("Koldo", "Luis Perez", "December 17, 2000", "Spain");
+        assert!(could_be_same_person(&a, &b));
+    }
+
+    #[test]
+    fn a_birth_date_a_year_off_is_another_person() {
+        let a = person("Koldo", "Luis Perez", "2000-11-17", "ES");
+        let b = person("Koldo", "Luis Perez", "2001-11-17", "ES");
+        assert!(!could_be_same_person(&a, &b));
+    }
+
+    #[test]
+    fn swapped_names_are_one_person() {
+        let a = person("Koldo", "Luis Perez", "2000-11-17", "ES");
+        let b = person("Luis Perez", "Koldo", "2000-11-17", "ES");
+        assert!(could_be_same_person(&a, &b));
+    }
+
+    #[test]
+    fn a_contradicting_nationality_keeps_namesakes_apart() {
+        let a = person("Raider", "Raider", "", "KR");
+        let b = person("Raider", "Fabijan Mandaric", "2004-01-30", "Croatia");
+        assert!(!could_be_same_person(&a, &b));
+    }
+
+    #[test]
+    fn a_nick_only_record_fits_a_dated_twin_but_two_dateless_nicks_do_not() {
+        let stub = person("Raider", "Raider", "", "HR");
+        let dated = person("Raider", "Fabijan Mandaric", "2004-01-30", "HR");
+        assert!(could_be_same_person(&stub, &dated));
+        let other_stub = person("Raider", "Raider", "", "HR");
+        assert!(!could_be_same_person(&stub, &other_stub));
+    }
+
+    #[test]
+    fn a_missing_date_with_two_different_real_names_is_two_people() {
+        let a = person("Leon", "Leonidas Vogiatzis", "", "GR");
+        let b = person("Leon", "Leon Maximilian Anton", "2001-10-08", "GR");
+        assert!(!could_be_same_person(&a, &b));
     }
 
     #[test]
