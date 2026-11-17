@@ -314,6 +314,41 @@ fn no_free_agent_shares_a_name_and_a_real_birth_date_with_a_contracted_player() 
     );
 }
 
+/// Measurement: the free agents of a new world that the AI signing guard treats as the twin
+/// of a contracted player, with the twin each one matched.
+///
+/// ```text
+/// cargo test --lib ai_guard_hidden_free_agents -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "measurement harness; run by hand"]
+fn ai_guard_hidden_free_agents() {
+    init_message_stores();
+    let overlay = bundled_world_overlay().expect("bundled overlay");
+    let game = &new_game(&overlay, "lec-fnatic").0;
+    let contracted = olm_core::person_identity::PersonIndex::new(
+        game.players.iter().filter(|p| p.team_id.is_some()),
+    );
+    let hidden: Vec<String> = game
+        .players
+        .iter()
+        .filter(|p| p.team_id.is_none())
+        .filter_map(|p| {
+            contracted
+                .twin_of(p)
+                .map(|twin| format!("{}  ~  {}", describe(game, &p.id), describe(game, twin)))
+        })
+        .collect();
+    println!(
+        "AI-GUARD hidden free agents: {} of {}",
+        hidden.len(),
+        game.players.iter().filter(|p| p.team_id.is_none()).count()
+    );
+    for line in &hidden {
+        println!("AI-GUARD {line}");
+    }
+}
+
 #[test]
 fn deferred_pairs_still_occur_and_never_grow() {
     let game = world();

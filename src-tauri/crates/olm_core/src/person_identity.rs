@@ -7,7 +7,7 @@
 
 use crate::domain::player::Player;
 use crate::player_age::parse_date_of_birth;
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use std::collections::HashMap;
 
 /// Decode the HTML entities the data is known to carry. Anything unknown is left as is.
@@ -153,6 +153,19 @@ pub fn folded_real_names(player: &Player) -> Vec<String> {
 /// writes the same date in two formats and a few records are a month off.
 const SAME_PERSON_DOB_TOLERANCE_DAYS: i64 = 62;
 
+/// The birth date the catalog writes when none is known. It says nothing about the person.
+const PLACEHOLDER_BIRTH_DATE: (i32, u32, u32) = (2002, 1, 1);
+
+/// Whether `date` is the catalog's placeholder birth date.
+pub fn is_placeholder_birth_date(date: &NaiveDate) -> bool {
+    (date.year(), date.month(), date.day()) == PLACEHOLDER_BIRTH_DATE
+}
+
+/// The birth date a record really carries: readable and not the placeholder.
+pub fn real_birth_date(raw: &str) -> Option<NaiveDate> {
+    parse_date_of_birth(raw).filter(|date| !is_placeholder_birth_date(date))
+}
+
 /// A nationality as a comparable key: an ISO-2 code in capitals. The catalog writes both
 /// codes and English names ("KR", "Korea", "South Korea"). Empty, "Generated" and
 /// one-letter junk are unknown (`""`); a name this table does not know is kept upper-cased.
@@ -232,7 +245,7 @@ impl PersonKey {
             id: player.id.clone(),
             names,
             real_names,
-            born: parse_date_of_birth(&player.date_of_birth),
+            born: real_birth_date(&player.date_of_birth),
             nationality: nationality_key(&player.nationality),
         }
     }
@@ -241,9 +254,9 @@ impl PersonKey {
     /// full name, either way round), and no field present on both sides may tell them apart:
     /// - the birth dates, when both are readable, are at most 62 days apart;
     /// - the nationalities, when both are known, are the same;
-    /// - when a birth date is missing on either side, the real names (two or more words) of
-    ///   the two records, when both have one, share a name. With no date on either side the
-    ///   records must share a real name, since a nick alone is how namesakes look.
+    /// - when a birth date is missing on either side, or is the 2002-01-01 placeholder, the
+    ///   records must share a real name (two or more words): a nick alone is how namesakes
+    ///   look.
     ///
     /// This is the Rust form of `couldBeSamePerson` in `src/lib/transfers/model.ts`, extended
     /// to the swapped names the catalog ships.
@@ -259,18 +272,12 @@ impl PersonKey {
         }
         match (self.born, other.born) {
             (Some(x), Some(y)) => (x - y).num_days().abs() <= SAME_PERSON_DOB_TOLERANCE_DAYS,
-            (None, None) => self
+            // A date is missing on a side (or is the placeholder): a nick alone is how
+            // namesakes look, so the records must share a real name.
+            _ => self
                 .real_names
                 .iter()
                 .any(|name| other.real_names.contains(name)),
-            _ => {
-                self.real_names.is_empty()
-                    || other.real_names.is_empty()
-                    || other
-                        .real_names
-                        .iter()
-                        .any(|name| self.real_names.contains(name))
-            }
         }
     }
 }
@@ -306,17 +313,21 @@ impl PersonIndex {
         self.keys.push(key);
     }
 
-    /// Whether an indexed record other than `player` could be the same person.
-    pub fn has_twin_of(&self, player: &Player) -> bool {
+    /// The id of an indexed record other than `player` that could be the same person.
+    pub fn twin_of(&self, player: &Player) -> Option<&str> {
         let key = PersonKey::of(player);
         key.names
             .iter()
             .filter_map(|name| self.by_name.get(name))
             .flatten()
-            .any(|&position| {
-                let other = &self.keys[position];
-                other.id != key.id && key.could_be(other)
-            })
+            .map(|&position| &self.keys[position])
+            .find(|other| other.id != key.id && key.could_be(other))
+            .map(|other| other.id.as_str())
+    }
+
+    /// Whether an indexed record other than `player` could be the same person.
+    pub fn has_twin_of(&self, player: &Player) -> bool {
+        self.twin_of(player).is_some()
     }
 }
 
@@ -400,12 +411,32 @@ mod tests {
     }
 
     #[test]
-    fn a_nick_only_record_fits_a_dated_twin_but_two_dateless_nicks_do_not() {
+    fn a_dateless_nick_only_record_needs_a_shared_real_name_even_with_a_dated_twin() {
         let stub = person("Raider", "Raider", "", "HR");
         let dated = person("Raider", "Fabijan Mandaric", "2004-01-30", "HR");
-        assert!(could_be_same_person(&stub, &dated));
+        assert!(!could_be_same_person(&stub, &dated));
         let other_stub = person("Raider", "Raider", "", "HR");
         assert!(!could_be_same_person(&stub, &other_stub));
+    }
+
+    #[test]
+    fn a_dateless_record_with_a_shared_real_name_is_one_person() {
+        let dateless = person("Raider", "Fabijan Mandaric", "", "HR");
+        let dated = person("Fabijan Mandaric", "Raider", "2004-01-30", "HR");
+        assert!(could_be_same_person(&dateless, &dated));
+    }
+
+    #[test]
+    fn the_placeholder_birth_date_is_a_missing_date() {
+        let a = person("Nick", "Alpha Beta", "2002-01-01", "ES");
+        let b = person("Nick", "Gamma Delta", "2002-01-01", "ES");
+        assert!(!could_be_same_person(&a, &b));
+        let c = person("Nick", "Alpha Beta", "2002-01-01", "ES");
+        let d = person("Nick", "Alpha Beta", "2003-02-02", "ES");
+        assert!(
+            could_be_same_person(&c, &d),
+            "a shared real name still settles it"
+        );
     }
 
     #[test]

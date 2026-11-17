@@ -11,9 +11,11 @@ use crate::domain::stats::LolRole;
 use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
-use crate::person_identity::{could_be_same_person, folded_names, has_all_attributes_zero};
+use crate::person_identity::{
+    could_be_same_person, folded_names, has_all_attributes_zero, real_birth_date,
+};
 use crate::player_age::parse_date_of_birth;
-use chrono::{Datelike, NaiveDate};
+use chrono::NaiveDate;
 use log::{info, warn};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
@@ -856,11 +858,6 @@ pub struct CollapseEvidence<'a> {
     pub pool_add_ids: &'a HashSet<String>,
 }
 
-/// The birth date the catalog writes when none is known.
-fn is_placeholder_birth_date(date: &NaiveDate) -> bool {
-    (date.year(), date.month(), date.day()) == (2002, 1, 1)
-}
-
 /// Minimal union-find over record indexes.
 fn find(parent: &mut [usize], mut i: usize) -> usize {
     while parent[i] != i {
@@ -944,9 +941,7 @@ pub fn collapse_same_person_records(
     }
 
     // A free agent and a contracted record that share a name and a real birth date.
-    let real_birth_date = |player: &Player| {
-        parse_date_of_birth(&player.date_of_birth).filter(|date| !is_placeholder_birth_date(date))
-    };
+    let real_birth_date = |player: &Player| real_birth_date(&player.date_of_birth);
     for (index, player) in players.iter().enumerate() {
         if player.team_id.is_some() {
             continue;

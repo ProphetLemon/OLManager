@@ -2683,11 +2683,35 @@ mod tests {
     }
 
     #[test]
-    fn rehydration_drops_a_nick_only_record_whose_twin_has_a_birth_date() {
+    fn rehydration_drops_a_dateless_record_that_shares_a_real_name_with_a_dated_twin() {
         assert_dropped_for(
-            ("Raider", "Raider", "", "HR"),
+            ("Fabijan Mandaric", "Raider", "", "HR"),
             ("Fabijan Mandaric", "Raider", "2004-01-30", "HR"),
             "prime_league-a",
+        );
+    }
+
+    #[test]
+    fn rehydration_keeps_a_nick_only_record_released_even_when_its_namesake_has_a_birth_date() {
+        assert_released_for(
+            ("Raider", "Raider", "", "HR"),
+            &[(
+                "namesake",
+                "prime_league-a",
+                ("Fabijan Mandaric", "Raider", "2004-01-30", "HR"),
+            )],
+        );
+    }
+
+    #[test]
+    fn rehydration_keeps_namesakes_released_when_their_only_match_is_the_placeholder_date() {
+        assert_released_for(
+            ("Alpha Beta", "SameNick", "2002-01-01", "ES"),
+            &[(
+                "namesake",
+                "prime_league-a",
+                ("Gamma Delta", "SameNick", "2002-01-01", "ES"),
+            )],
         );
     }
 

@@ -15,7 +15,9 @@ use olm_core::domain::stats::StatsState;
 use olm_core::game::Game;
 use olm_core::game_setup;
 use olm_core::messages::FoundingMode;
-use olm_core::player_rating_overrides::{ApplyReport, PlayerRatingOverrides, apply_player_rating_overrides};
+use olm_core::player_rating_overrides::{
+    ApplyReport, PlayerRatingOverrides, apply_player_rating_overrides, move_rating_override,
+};
 use olm_core::wage_scale;
 use olm_core::generator::definitions::CompetitionManifest;
 use olm_core::roster_stability;
@@ -273,6 +275,17 @@ fn collapse_same_person_records(
         }
         if game.moved_player_ids.contains(&duplicate.dropped_id) {
             game.moved_player_ids.insert(duplicate.kept_id.clone());
+        }
+        // The dropped record's stat-derived rating describes the same person: keep it on
+        // the survivor unless the survivor has its own.
+        let survivor = game.players.iter_mut().find(|p| p.id == duplicate.kept_id);
+        if survivor
+            .is_some_and(|p| move_rating_override(p, rating_overrides, &duplicate.dropped_id))
+        {
+            info!(
+                "[game] moved the rating override of {} to {}",
+                duplicate.dropped_id, duplicate.kept_id
+            );
         }
     }
     info!("[game] collapsed {} duplicate records of one person", collapsed.len());
@@ -1952,6 +1965,102 @@ mod tests {
             founder_overrides: None,
             founder_photos: None,
         }
+    }
+
+    /// A rating-override document with one entry per `(id, value)`.
+    fn overrides_for(entries: &[(&str, u8)]) -> PlayerRatingOverrides {
+        let entries: Vec<String> = entries
+            .iter()
+            .map(|(id, value)| {
+                format!(
+                    r#"{{"id":"{id}","authored_ovr":60,"games":40,"confidence":0.8,
+                    "attributes":{{"mechanics":{value},"laning":{value},"teamfighting":{value},
+                    "macro_play":{value},"consistency":{value},"shotcalling":{value},
+                    "champion_pool":{value},"discipline":{value},"mental_resilience":{value}}},
+                    "potential_floor":60}}"#
+                )
+            })
+            .collect();
+        let json = format!(
+            r#"{{"version":1,"method":"stat-blend-v1","source":"test",
+            "window":{{"since":"2025-01-01","until":"2026-01-01"}},
+            "league_levels":{{"cblol":{{"median":75.0,"sd":3.0}}}},
+            "entries":[{}]}}"#,
+            entries.join(",")
+        );
+        PlayerRatingOverrides::parse(&json).expect("overrides parse")
+    }
+
+    /// A contracted Deadly and his teamless twin DeadlyMark (same real name and birth date).
+    fn game_with_a_contracted_player_and_his_free_agent_twin() -> Game {
+        use olm_core::domain::player::LolRole;
+        let attributes = PlayerAttributes::from_array([60; 9]);
+        let mut contracted = Player::new(
+            "club".to_string(),
+            "Deadly".to_string(),
+            "Miguel Angel Cucho Rivera".to_string(),
+            "2006-08-19".to_string(),
+            "PE".to_string(),
+            LolRole::Mid,
+            attributes.clone(),
+        );
+        contracted.team_id = Some("team-1".to_string());
+        let mut free_agent = Player::new(
+            "fa".to_string(),
+            "DeadlyMark".to_string(),
+            "Miguel Angel Cucho Rivera".to_string(),
+            "2006-08-19".to_string(),
+            "PE".to_string(),
+            LolRole::Mid,
+            attributes,
+        );
+        free_agent.team_id = None;
+        let manager = olm_core::domain::manager::Manager::new(
+            "m".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "ES".to_string(),
+        );
+        let clock = olm_core::clock::GameClock::new(
+            chrono::TimeZone::with_ymd_and_hms(&chrono::Utc, 2027, 1, 1, 12, 0, 0).unwrap(),
+        );
+        Game::new(
+            clock,
+            manager,
+            vec![],
+            vec![contracted, free_agent],
+            vec![],
+            vec![],
+        )
+    }
+
+    fn mechanics_of(game: &Game, id: &str) -> u8 {
+        game.players
+            .iter()
+            .find(|p| p.id == id)
+            .map(|p| p.attributes.mechanics)
+            .expect("player present")
+    }
+
+    #[test]
+    fn a_collapsed_free_agents_rating_override_moves_to_the_contracted_survivor() {
+        let mut game = game_with_a_contracted_player_and_his_free_agent_twin();
+
+        collapse_same_person_records(&mut game, None, &overrides_for(&[("fa", 88)]));
+
+        assert!(game.players.iter().all(|p| p.id != "fa"));
+        assert_eq!(mechanics_of(&game, "club"), 88);
+    }
+
+    #[test]
+    fn a_survivor_that_has_its_own_rating_override_keeps_it() {
+        let mut game = game_with_a_contracted_player_and_his_free_agent_twin();
+        game.players[0].attributes = PlayerAttributes::from_array([77; 9]);
+
+        collapse_same_person_records(&mut game, None, &overrides_for(&[("fa", 88), ("club", 77)]));
+
+        assert_eq!(mechanics_of(&game, "club"), 77);
     }
 
     #[test]
