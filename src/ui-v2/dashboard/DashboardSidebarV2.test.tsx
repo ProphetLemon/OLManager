@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useNavMemoryStore } from "@/store/navMemoryStore";
 
 vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
   default: () => (
@@ -36,11 +37,13 @@ function setup(overrides: Partial<React.ComponentProps<typeof DashboardSidebarV2
   const view = render(<DashboardSidebarV2 {...props} />);
   const rerender = (next: Partial<typeof props>) =>
     view.rerender(<DashboardSidebarV2 {...props} {...next} />);
-  return { props, rerender };
+  return { props, rerender, unmount: view.unmount };
 }
 
 const nav = () => screen.getByRole("navigation", { name: "Main navigation" });
 const stop = (name: RegExp | string) => screen.getByRole("button", { name });
+
+beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
 
 describe("DashboardSidebarV2 rail", () => {
   it("renders a labelled nav with direct stops and group launchers", () => {
@@ -109,6 +112,16 @@ describe("DashboardSidebarV2 rail", () => {
     const { props, rerender } = setup({ activeTab: "Squad" });
     rerender({ activeTab: "Finances" });
     rerender({ activeTab: "Home" });
+    fireEvent.click(stop(/^Club/));
+    expect(props.onNavClick).toHaveBeenLastCalledWith("Finances");
+  });
+
+  it("keeps each group's last tab after the dashboard unmounts and mounts again", () => {
+    const first = setup({ activeTab: "Squad" });
+    first.rerender({ activeTab: "Finances" });
+    first.unmount();
+
+    const { props } = setup({ activeTab: "Home" });
     fireEvent.click(stop(/^Club/));
     expect(props.onNavClick).toHaveBeenLastCalledWith("Finances");
   });

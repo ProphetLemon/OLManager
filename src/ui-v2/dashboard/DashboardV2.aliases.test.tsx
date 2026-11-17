@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { GameStateData } from "@/store/gameStore";
+import { useNavMemoryStore } from "@/store/navMemoryStore";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((command: string) => {
@@ -96,6 +97,7 @@ describe("DashboardV2 backend tab aliases", () => {
       showFiredModal: false,
     });
     useSettingsStore.setState({ loaded: true });
+    useNavMemoryStore.getState().resetNavMemory();
   });
 
   it("lands the backend 'YouthAcademy' tab on the v2 Youth tab", async () => {
@@ -110,5 +112,55 @@ describe("DashboardV2 backend tab aliases", () => {
     fireEvent.click(await screen.findByRole("button", { name: "go-youth-academy" }));
 
     expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
+  });
+
+  it("returns to the same tab after the dashboard unmounts, as Settings or a match do", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+
+    const first = render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "go-youth-academy" }));
+    expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
+    first.unmount();
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
+  });
+
+  it("lets an alias route win over the remembered tab", async () => {
+    useNavMemoryStore.getState().rememberTab("Youth");
+    const DashboardV2 = (await import("./DashboardV2")).default;
+
+    render(
+      <MemoryRouter initialEntries={["/finanzas"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole("navigation", { name: "Main navigation" });
+    expect(screen.queryByTestId("youth-tab-v2")).toBeNull();
+    expect(useNavMemoryStore.getState().activeTab).toBe("Finances");
+  });
+
+  it("opens on Home once the remembered tab is reset", async () => {
+    useNavMemoryStore.getState().rememberTab("Youth");
+    useNavMemoryStore.getState().resetNavMemory();
+    const DashboardV2 = (await import("./DashboardV2")).default;
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("button", { name: "go-youth-academy" })).toBeInTheDocument();
+    expect(screen.queryByTestId("youth-tab-v2")).toBeNull();
   });
 });

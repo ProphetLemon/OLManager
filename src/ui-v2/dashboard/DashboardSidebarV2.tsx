@@ -1,3 +1,4 @@
+import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LogOut, Settings } from "lucide-react";
@@ -72,11 +73,12 @@ export function DashboardSidebarV2({
   );
 
   // Last tab seen inside each group, so a launcher reopens where the user left.
-  const lastVisited = useRef<Partial<Record<RailGroupId, string>>>({});
+  // Held in a store so it survives the dashboard unmounting for Settings or a match.
+  const lastVisited = useNavMemoryStore((s) => s.lastByGroup);
+  const rememberTab = useNavMemoryStore((s) => s.rememberTab);
   useEffect(() => {
-    const group = groupForTab(activeTab);
-    if (group) lastVisited.current[group] = activeTab;
-  }, [activeTab]);
+    rememberTab(activeTab);
+  }, [activeTab, rememberTab]);
 
   const groups = useMemo(
     () => RAIL_GROUPS.filter((g) => !(isUnemployed && g.hiddenWhenUnemployed)),
@@ -88,13 +90,13 @@ export function DashboardSidebarV2({
       ...RAIL_DIRECT.map((item) => ({ id: item.tab, activate: () => onNavClick(item.tab) })),
       ...groups.map((g) => ({
         id: `group:${g.id}`,
-        activate: () => onNavClick(resolveGroupLanding(g.id, lastVisited.current)),
+        activate: () => onNavClick(resolveGroupLanding(g.id, lastVisited)),
       })),
       { id: "settings", activate: onNavigateSettings },
       { id: "exit", activate: onExitClick },
       { id: "Manager", activate: () => onNavClick("Manager") },
     ],
-    [groups, onNavClick, onNavigateSettings, onExitClick],
+    [groups, lastVisited, onNavClick, onNavigateSettings, onExitClick],
   );
 
   const currentStopId = activeTab === "Manager" ? "Manager" : railStopForTab(activeTab);
@@ -226,7 +228,7 @@ export function DashboardSidebarV2({
               active={groupForTab(activeTab) === g.id}
               badge={groupBadge(g.id)}
               compact={compact}
-              onClick={() => onNavClick(resolveGroupLanding(g.id, lastVisited.current))}
+              onClick={() => onNavClick(resolveGroupLanding(g.id, lastVisited))}
               {...itemProps(`group:${g.id}`)}
             />
           ))}
