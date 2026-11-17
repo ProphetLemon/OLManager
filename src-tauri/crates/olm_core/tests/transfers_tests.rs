@@ -2210,6 +2210,117 @@ fn ai_free_agent_signing_matches_player_state_to_history() {
     );
 }
 
+/// A contracted ADC and a teamless record of the same person (swapped nick and real name).
+fn contracted_player_and_his_teamless_twin() -> (Player, Player) {
+    let mut contracted = make_free_agent("contracted-koldo", LolRole::Adc);
+    contracted.match_name = "Koldo".to_string();
+    contracted.full_name = "Luis Perez Garcia".to_string();
+    contracted.date_of_birth = "2000-11-07".to_string();
+    contracted.team_id = Some("team-other".to_string());
+    contracted.contract_end = Some("2027-11-30".to_string());
+
+    let mut twin = make_free_agent("teamless-koldo", LolRole::Adc);
+    twin.match_name = "Luis Perez Garcia".to_string();
+    twin.full_name = "Koldo".to_string();
+    twin.date_of_birth = "November 7, 2000".to_string();
+    twin.market_value = 900_000;
+    (contracted, twin)
+}
+
+#[test]
+fn ai_agent_purchase_skips_a_teamless_twin_of_a_contracted_player_and_signs_the_next_free_agent() {
+    let (contracted, twin) = contracted_player_and_his_teamless_twin();
+    let valid = make_free_agent("valid-adc", LolRole::Adc);
+    let mut game = make_game_with_free_agents(vec![twin, valid, contracted]);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(
+        team_of("teamless-koldo"),
+        None,
+        "the twin must stay teamless"
+    );
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+}
+
+#[test]
+fn ai_agent_purchase_signs_nobody_when_every_candidate_is_a_twin() {
+    let (contracted, twin) = contracted_player_and_his_teamless_twin();
+    let mut game = make_game_with_free_agents(vec![twin, contracted]);
+
+    assert!(!ai_agent_purchase(&mut game, "team-ai", "ADC"));
+}
+
+#[test]
+fn ai_agent_purchase_moves_past_several_twins_on_top_to_the_first_valid_free_agent() {
+    let mut players = vec![make_free_agent("valid-adc", LolRole::Adc)];
+    for (n, nick) in ["Koldo", "Macaquinho", "Legolas"].into_iter().enumerate() {
+        let mut contracted = make_free_agent(&format!("contracted-{n}"), LolRole::Adc);
+        contracted.match_name = nick.to_string();
+        contracted.full_name = format!("Real Name {n}");
+        contracted.date_of_birth = format!("200{n}-05-05");
+        contracted.team_id = Some("team-other".to_string());
+        contracted.contract_end = Some("2027-11-30".to_string());
+        let mut twin = make_free_agent(&format!("twin-{n}"), LolRole::Adc);
+        twin.match_name = format!("Real Name {n}");
+        twin.full_name = nick.to_string();
+        twin.date_of_birth = format!("200{n}-05-05");
+        twin.market_value = 900_000 + n as u64 * 100_000;
+        players.push(contracted);
+        players.push(twin);
+    }
+    let mut game = make_game_with_free_agents(players);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+    assert!((0..3).all(|n| team_of(&format!("twin-{n}")).is_none()));
+}
+
+#[test]
+fn ai_agent_purchase_skips_a_dateless_nick_only_ghost_of_a_contracted_player() {
+    let mut contracted = make_free_agent("contracted-lehends", LolRole::Adc);
+    contracted.match_name = "Lehends".to_string();
+    contracted.full_name = "Son Si-woo".to_string();
+    contracted.date_of_birth = "1998-12-24".to_string();
+    contracted.team_id = Some("team-other".to_string());
+    contracted.contract_end = Some("2027-11-30".to_string());
+    let mut ghost = make_free_agent("ghost-lehends", LolRole::Adc);
+    ghost.match_name = "Lehends".to_string();
+    ghost.full_name = "Lehends".to_string();
+    ghost.date_of_birth = String::new();
+    ghost.market_value = 900_000;
+    let valid = make_free_agent("valid-adc", LolRole::Adc);
+    let mut game = make_game_with_free_agents(vec![ghost, valid, contracted]);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(
+        team_of("ghost-lehends"),
+        None,
+        "the ghost must stay teamless"
+    );
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+}
+
 #[test]
 fn ai_agent_purchase_respects_daily_cap() {
     let free_agents = vec![

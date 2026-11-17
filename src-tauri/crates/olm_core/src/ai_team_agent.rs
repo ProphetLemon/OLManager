@@ -543,13 +543,19 @@ pub fn evaluate_purchases(team_id: &str, game: &mut Game, report: &RosterReport)
         .map(|p| i64::from(p.wage))
         .sum();
 
-    // Compute cheapest available free agent wage + estimate for headroom
-    let cheapest_fa_wage = game
+    // Compute cheapest available free agent wage + estimate for headroom. A teamless twin
+    // of a contracted player is not available: the club would not sign him.
+    let twins = crate::transfers::contracted_person_index(game);
+    let mut free_agents: Vec<&Player> = game
         .players
         .iter()
         .filter(|p| p.team_id.is_none())
+        .collect();
+    free_agents.sort_by_key(|p| p.wage);
+    let cheapest_fa_wage = free_agents
+        .into_iter()
+        .find(|p| !twins.has_twin_of(p))
         .map(|p| p.wage)
-        .min()
         .unwrap_or(0);
 
     let projected_bill = current_wage_bill + i64::from(cheapest_fa_wage);
@@ -756,6 +762,7 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
     // Free-agent fallback: sign a high-impact free agent for the weak role.
     let mut fa_candidate: Option<(String, u64, u64)> = None;
     let mut rejected_candidate: Option<(String, u64)> = None;
+    let twins = crate::transfers::contracted_person_index(game);
     for p in game
         .players
         .iter()
@@ -769,7 +776,8 @@ pub fn ai_strategic_recruitment(game: &mut Game, team_id: &str) {
         let decision = ai_signing_policy(game, &team, p, SigningIntent::Strategic);
         if decision.accepted {
             let current_best = fa_candidate.as_ref().map(|(_, _, mv)| *mv).unwrap_or(0);
-            if p.market_value > current_best {
+            // A teamless twin of a contracted player is checked only when it would lead.
+            if p.market_value > current_best && !twins.has_twin_of(p) {
                 fa_candidate = Some((p.id.clone(), fee as u64, p.market_value));
             }
         } else if matches!(
@@ -3058,5 +3066,78 @@ mod tests {
             result1, result2,
             "OR-06 violated: identical game state produced different decisions"
         );
+    }
+
+    /// An elite club with an empty roster, a contracted Koldo on another club, his teamless
+    /// twin (the higher value, so the first pick) and one unrelated teamless free agent.
+    fn strategic_game_with_a_twin() -> Game {
+        use crate::domain::season::TransferWindowStatus;
+
+        let mut contracted = make_player(
+            "contracted",
+            "Koldo",
+            "other",
+            LolRole::Support,
+            70,
+            6.0,
+            100_000,
+            Some("2028-06-15"),
+            "2000-11-07",
+            vec![],
+        );
+        contracted.full_name = "Luis Perez Garcia".to_string();
+        let free_agent = |id: &str, nick: &str, full: &str, dob: &str, value: u64| {
+            let mut player =
+                make_player(id, nick, "x", LolRole::Top, 70, 6.0, 0, None, dob, vec![]);
+            player.team_id = None;
+            player.full_name = full.to_string();
+            player.market_value = value;
+            player.attributes = PlayerAttributes {
+                mechanics: 95,
+                laning: 95,
+                teamfighting: 95,
+                macro_play: 95,
+                consistency: 95,
+                shotcalling: 95,
+                champion_pool: 95,
+                discipline: 95,
+                mental_resilience: 95,
+            };
+            player
+        };
+        let twin = free_agent(
+            "twin",
+            "Luis Perez Garcia",
+            "Koldo",
+            "November 7, 2000",
+            1_500_000,
+        );
+        let valid = free_agent("valid", "Valid", "Valid Person", "1999-03-03", 1_200_000);
+        let mut game =
+            make_full_game_for_conflict(vec![contracted, twin, valid], vec!["elite", "other"]);
+        let elite = game.teams.iter_mut().find(|t| t.id == "elite").unwrap();
+        elite.reputation = 1_500;
+        elite.transfer_budget = 50_000_000;
+        elite.finance = 50_000_000;
+        elite.wage_budget = 50_000_000;
+        game.season_context.transfer_window.status = TransferWindowStatus::Open;
+        game
+    }
+
+    fn team_of(game: &Game, id: &str) -> Option<String> {
+        game.players
+            .iter()
+            .find(|p| p.id == id)
+            .and_then(|p| p.team_id.clone())
+    }
+
+    #[test]
+    fn strategic_recruitment_does_not_sign_a_teamless_twin_of_a_contracted_player() {
+        let mut game = strategic_game_with_a_twin();
+
+        ai_strategic_recruitment(&mut game, "elite");
+
+        assert_eq!(team_of(&game, "twin"), None, "the twin must stay teamless");
+        assert_eq!(team_of(&game, "valid").as_deref(), Some("elite"));
     }
 }

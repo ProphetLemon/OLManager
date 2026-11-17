@@ -563,6 +563,7 @@ pub fn fill_new_game_rosters_excluding(
 
     let current_date = current_date(game);
     let mut fills = Vec::new();
+    let mut twins = crate::transfers::contracted_person_index(game);
     for (_, team_id) in team_order {
         let missing = missing_roles(&eligible_team_players(game, &team_id, current_date));
         let mut wage_bill = annual_team_wage_bill(game, &team_id);
@@ -574,9 +575,11 @@ pub fn fill_new_game_rosters_excluding(
                 current_date,
                 wage_bill,
                 reserved,
+                &twins,
             );
             if let Some((index, signing_wage)) = free_agent {
                 wage_bill += i64::from(signing_wage);
+                twins.add(&game.players[index]);
                 let player_id = game.players[index].id.clone();
                 let player = &mut game.players[index];
                 player.team_id = Some(team_id.clone());
@@ -625,9 +628,10 @@ fn best_free_agent_for_new_game(
     current_date: NaiveDate,
     wage_bill: i64,
     reserved: &HashSet<String>,
+    twins: &crate::person_identity::PersonIndex,
 ) -> Option<(usize, u32)> {
     let team = game.teams.iter().find(|team| team.id == team_id)?;
-    let scored = free_agent_candidates(game, role, current_date)
+    let mut scored = free_agent_candidates(game, role, current_date)
         .into_iter()
         .filter(|(id, _)| !reserved.contains(id))
         .map(|(id, index)| {
@@ -638,29 +642,34 @@ fn best_free_agent_for_new_game(
         })
         .collect::<Vec<_>>();
 
-    let best_affordable = scored
-        .iter()
-        .filter(|(_, _, _, decision)| decision.accepted)
-        .min_by(|(left_id, _, left_ovr, _), (right_id, _, right_ovr, _)| {
-            right_ovr
-                .total_cmp(left_ovr)
-                .then_with(|| left_id.cmp(right_id))
-        });
-    if let Some((_, index, _, decision)) = best_affordable {
-        return Some((*index, decision.annual_wage));
-    }
-
-    scored
-        .iter()
-        .min_by(
-            |(left_id, _, left_ovr, left), (right_id, _, right_ovr, right)| {
-                left.annual_wage
-                    .cmp(&right.annual_wage)
-                    .then_with(|| right_ovr.total_cmp(left_ovr))
+    // The pick, then the next one when it is a teamless twin of a contracted player: a twin
+    // is dropped from the ranking, it does not end the search.
+    loop {
+        let best_affordable = scored
+            .iter()
+            .filter(|(_, _, _, decision)| decision.accepted)
+            .min_by(|(left_id, _, left_ovr, _), (right_id, _, right_ovr, _)| {
+                right_ovr
+                    .total_cmp(left_ovr)
                     .then_with(|| left_id.cmp(right_id))
-            },
-        )
-        .map(|(_, index, _, decision)| (*index, decision.annual_wage))
+            });
+        let pick = best_affordable.or_else(|| {
+            scored.iter().min_by(
+                |(left_id, _, left_ovr, left), (right_id, _, right_ovr, right)| {
+                    left.annual_wage
+                        .cmp(&right.annual_wage)
+                        .then_with(|| right_ovr.total_cmp(left_ovr))
+                        .then_with(|| left_id.cmp(right_id))
+                },
+            )
+        });
+        let (id, index, _, decision) = pick?;
+        if !twins.has_twin_of(&game.players[*index]) {
+            return Some((*index, decision.annual_wage));
+        }
+        let twin_id = id.clone();
+        scored.retain(|(id, ..)| *id != twin_id);
+    }
 }
 
 fn renew_needed_current_players(game: &mut Game, team_id: &str, actions: &mut Vec<RepairAction>) {
@@ -783,12 +792,19 @@ fn assign_free_agent(
             .then_with(|| left_id.cmp(right_id))
     });
 
+    // Built on the first candidate the policy accepts: most calls sign at most one player.
+    let mut twins: Option<crate::person_identity::PersonIndex> = None;
     for (_, index) in candidates {
         let decision = {
             let player = &game.players[index];
             ai_signing_policy(game, &team, player, signing_intent)
         };
         if !decision.accepted {
+            continue;
+        }
+        // A teamless second record of a contracted player is the same person on two clubs.
+        let twins = twins.get_or_insert_with(|| crate::transfers::contracted_person_index(game));
+        if twins.has_twin_of(&game.players[index]) {
             continue;
         }
         // The daily cap limits how often a club shops. A club whose contracts ended today

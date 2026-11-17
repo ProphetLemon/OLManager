@@ -11,7 +11,9 @@ use crate::domain::stats::LolRole;
 use crate::domain::team::{Team, TeamKind};
 use crate::game::Game;
 use crate::generator::definitions::CompetitionManifest;
-use crate::person_identity::{folded_names, has_all_attributes_zero};
+use crate::person_identity::{
+    could_be_same_person, folded_names, has_all_attributes_zero, real_birth_date,
+};
 use crate::player_age::parse_date_of_birth;
 use chrono::NaiveDate;
 use log::{info, warn};
@@ -103,25 +105,89 @@ fn person_key(name: &str) -> String {
         .to_lowercase()
 }
 
-/// The stale-competition player `player` is the same person as, if any: the same full
-/// name and birth date, or the same match name and birth date (the stale records write the
-/// nickname as the full name and the date as "July 6, 2002"). A date that is missing or
-/// unreadable never matches, and neither does an empty name.
-fn same_person_survivor<'a>(
-    player: &Player,
-    stale_by_name: &'a HashMap<(String, NaiveDate), String>,
-    stale_by_match_name: &'a HashMap<(String, NaiveDate), String>,
-) -> Option<&'a str> {
-    let born = parse_date_of_birth(&player.date_of_birth)?;
-    let full_name = person_key(&player.full_name);
-    let match_name = person_key(&player.match_name);
-    let by_name = (!full_name.is_empty())
-        .then(|| stale_by_name.get(&(full_name, born)))
-        .flatten();
-    let by_match_name = (!match_name.is_empty())
-        .then(|| stale_by_match_name.get(&(match_name, born)))
-        .flatten();
-    by_name.or(by_match_name).map(String::as_str)
+/// A record a dropped player may be the same person as. A lower `rank` is the better home
+/// for the survivor: 0 is the paired stale club, 1 a surviving academy.
+struct Candidate<'a> {
+    player: &'a Player,
+    rank: u8,
+}
+
+/// The record of `pool` that `player` is the same person as, if there is exactly one such
+/// person. Two records are one person when [`could_be_same_person`] says so: a shared folded
+/// name (match or full, either way round), birth dates at most 62 days apart or missing, and
+/// no contradicting nationality. When two fitting candidates are different people the answer
+/// is `None`: the record stays released rather than being merged into the wrong namesake.
+/// When the fitting candidates are one person, the best-ranked record is the survivor.
+fn same_person_survivor<'a>(player: &Player, pool: &[Candidate<'a>]) -> Option<&'a str> {
+    let fits: Vec<&Candidate<'a>> = pool
+        .iter()
+        .filter(|candidate| could_be_same_person(player, candidate.player))
+        .collect();
+    let ambiguous = fits.iter().enumerate().any(|(i, one)| {
+        fits[i + 1..]
+            .iter()
+            .any(|other| !could_be_same_person(one.player, other.player))
+    });
+    if ambiguous {
+        return None;
+    }
+    fits.into_iter()
+        .min_by_key(|candidate| candidate.rank)
+        .map(|candidate| candidate.player.id.as_str())
+}
+
+/// An id-safe slug of a team name, as the catalog writes it into `academy-{family}-{slug}`.
+fn slug(name: &str) -> String {
+    name.to_lowercase()
+        .split(|c: char| !c.is_ascii_alphanumeric())
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>()
+        .join("-")
+}
+
+/// The stale club an orphan canonical club is paired with: the team of the stale
+/// competition with the same id after the competition prefix (`prm-team-x` and
+/// `prime_league-team-x`) or, failing that, the same name.
+fn paired_stale_club<'a>(orphan: &Team, teams: &'a [Team]) -> Option<&'a Team> {
+    let canonical = orphan.competition_id.as_deref()?;
+    let (stale, _) = STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .find(|(_, candidate)| *candidate == canonical)?;
+    let same_id = orphan
+        .id
+        .strip_prefix(&format!("{canonical}-"))
+        .map(|rest| format!("{stale}-{rest}"));
+    let name = person_key(&orphan.name);
+    teams.iter().find(|team| {
+        team.competition_id.as_deref() == Some(*stale)
+            && (same_id.as_deref() == Some(team.id.as_str()) || person_key(&team.name) == name)
+    })
+}
+
+/// The academies of an orphan canonical club that are in the game: `academy-{family}-{slug}`
+/// for either copy of the family (the pass that removes the stale copies runs first).
+fn academies_of_club<'a>(orphan: &Team, teams: &'a [Team]) -> Vec<&'a Team> {
+    let Some(canonical) = orphan.competition_id.as_deref() else {
+        return Vec::new();
+    };
+    let Some((stale, _)) = STALE_DUPLICATE_COMPETITIONS
+        .iter()
+        .find(|(_, candidate)| *candidate == canonical)
+    else {
+        return Vec::new();
+    };
+    let slug = slug(&orphan.name);
+    ACADEMY_FAMILIES
+        .iter()
+        .filter(|(competition, _, _)| competition == stale)
+        .flat_map(|(_, stale_prefix, canonical_prefix)| [stale_prefix, canonical_prefix])
+        .filter_map(|prefix| {
+            let id = format!("{prefix}{slug}");
+            teams
+                .iter()
+                .find(|team| team.team_kind == TeamKind::Academy && team.id == id)
+        })
+        .collect()
 }
 
 /// Player ids whose team was changed in play, so catalog rehydration keeps them where the
@@ -342,10 +408,10 @@ pub struct CanonicalDuplicateReport {
 /// something).
 ///
 /// The removed clubs' staff are freed and their players released with their wage. A player
-/// who is the same person as a player of the stale competition (see `same_person_survivor`)
-/// is dropped and tombstoned in `retired_player_ids`, so the catalog does not re-add it, and
-/// every id-keyed reference to it is pointed at the surviving record. A player that moved,
-/// has a transfer record or was swapped into a transfer is released instead, never dropped.
+/// who is the same person as a player of its paired stale club or of its academies (see
+/// `same_person_survivor`) is dropped and tombstoned in `retired_player_ids`, so the catalog
+/// does not re-add it, and every id-keyed reference to it is pointed at the surviving
+/// record. A player that moved, has a transfer record or was swapped into a transfer is released instead, never dropped.
 /// Ids are appended to `removed_team_ids` once.
 pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> CanonicalDuplicateReport {
     let scheduled = scheduled_team_ids(game);
@@ -388,47 +454,39 @@ pub fn remove_unscheduled_canonical_duplicates(game: &mut Game) -> CanonicalDupl
         );
     }
 
-    let stale_teams: HashSet<&str> = game
-        .teams
-        .iter()
-        .filter(|team| {
-            team.competition_id
-                .as_deref()
-                .is_some_and(|c| stale_competitions.contains(c))
-        })
-        .map(|team| team.id.as_str())
-        .collect();
-    let mut stale_by_name: HashMap<(String, NaiveDate), String> = HashMap::new();
-    let mut stale_by_match_name: HashMap<(String, NaiveDate), String> = HashMap::new();
+    let mut roster: HashMap<&str, Vec<&Player>> = HashMap::new();
     for player in &game.players {
-        if !player
-            .team_id
-            .as_deref()
-            .is_some_and(|id| stale_teams.contains(id))
-        {
-            continue;
-        }
-        if let Some(born) = parse_date_of_birth(&player.date_of_birth) {
-            stale_by_name
-                .entry((person_key(&player.full_name), born))
-                .or_insert_with(|| player.id.clone());
-            stale_by_match_name
-                .entry((person_key(&player.match_name), born))
-                .or_insert_with(|| player.id.clone());
+        if let Some(team) = player.team_id.as_deref() {
+            roster.entry(team).or_default().push(player);
         }
     }
     let protected = transfer_protected_player_ids(game);
     let mut survivors: HashMap<String, String> = HashMap::new();
-    for player in &game.players {
-        let on_orphan = player
-            .team_id
-            .as_ref()
-            .is_some_and(|id| orphans.contains(id));
-        if !on_orphan || protected.contains(&player.id) {
+    for orphan in game.teams.iter().filter(|team| orphans.contains(&team.id)) {
+        // Each orphan looks for its twins on its own paired stale club and its own
+        // academies, never on the rest of the stale competition.
+        let mut pool: Vec<Candidate> = Vec::new();
+        let paired = paired_stale_club(orphan, &game.teams);
+        let academies = academies_of_club(orphan, &game.teams);
+        let homes = paired
+            .into_iter()
+            .map(|team| (team, 0))
+            .chain(academies.into_iter().map(|team| (team, 1)));
+        for (team, rank) in homes {
+            for player in roster.get(team.id.as_str()).into_iter().flatten() {
+                pool.push(Candidate { player, rank });
+            }
+        }
+        if pool.is_empty() {
             continue;
         }
-        if let Some(survivor) = same_person_survivor(player, &stale_by_name, &stale_by_match_name) {
-            survivors.insert(player.id.clone(), survivor.to_string());
+        for player in roster.get(orphan.id.as_str()).into_iter().flatten() {
+            if protected.contains(&player.id) {
+                continue;
+            }
+            if let Some(survivor) = same_person_survivor(player, &pool) {
+                survivors.insert(player.id.clone(), survivor.to_string());
+            }
         }
     }
 
@@ -547,23 +605,17 @@ pub fn remove_stale_academy_duplicates(game: &mut Game) -> AcademyDuplicateRepor
     let protected = transfer_protected_player_ids(game);
     let mut survivors: HashMap<String, String> = HashMap::new();
     for (removed, surviving) in &pairs {
-        let mut by_name: HashMap<(String, NaiveDate), String> = HashMap::new();
-        let mut by_match_name: HashMap<(String, NaiveDate), String> = HashMap::new();
-        for player in roster.get(surviving.as_str()).into_iter().flatten() {
-            if let Some(born) = parse_date_of_birth(&player.date_of_birth) {
-                by_name
-                    .entry((person_key(&player.full_name), born))
-                    .or_insert_with(|| player.id.clone());
-                by_match_name
-                    .entry((person_key(&player.match_name), born))
-                    .or_insert_with(|| player.id.clone());
-            }
-        }
+        let pool: Vec<Candidate> = roster
+            .get(surviving.as_str())
+            .into_iter()
+            .flatten()
+            .map(|&player| Candidate { player, rank: 0 })
+            .collect();
         for player in roster.get(removed).into_iter().flatten() {
             if protected.contains(&player.id) {
                 continue;
             }
-            if let Some(survivor) = same_person_survivor(player, &by_name, &by_match_name) {
+            if let Some(survivor) = same_person_survivor(player, &pool) {
                 survivors.insert(player.id.clone(), survivor.to_string());
             }
         }
@@ -824,9 +876,14 @@ fn find(parent: &mut [usize], mut i: usize) -> usize {
 ///   accents ignored, either way round). Nationality and birth date are not tested: a stub
 ///   carries a guessed nationality and no date, and the nick and the real name swap places;
 /// - or one is a pool add (a teamless overlay add) and the other is on a club, and they share
-///   two folded names, for example the nick and a real name of two or more words.
+///   two folded names, for example the nick and a real name of two or more words;
+/// - or a free agent and a contracted record share any folded name and the same birth date,
+///   which must be readable and not the 2002-01-01 placeholder. A free agent that fits
+///   records on two clubs is left alone, as are two clubs and two free agents: those need a
+///   survivor chosen from the source.
 ///
-/// The survivor of a group is the record, in this order of priority: that is not a pool add,
+/// The survivor of a group is the record, in this order of priority: that is on a club,
+/// that is not a pool add,
 /// that a stat-derived rating override names (the override lands only there), that an overlay
 /// op names, that has a readable birth date and a real full name, that has a readable birth
 /// date, that has a real full name, and finally the first in the list.
@@ -883,6 +940,32 @@ pub fn collapse_same_person_records(
         }
     }
 
+    // A free agent and a contracted record that share a name and a real birth date.
+    let real_birth_date = |player: &Player| real_birth_date(&player.date_of_birth);
+    for (index, player) in players.iter().enumerate() {
+        if player.team_id.is_some() {
+            continue;
+        }
+        let Some(born) = real_birth_date(player) else {
+            continue;
+        };
+        let mut roots: Vec<usize> = Vec::new();
+        for name in &names[index] {
+            for &other in rostered_by_name.get(name.as_str()).into_iter().flatten() {
+                if real_birth_date(&players[other]) == Some(born) {
+                    let root = find(&mut parent, other);
+                    if !roots.contains(&root) {
+                        roots.push(root);
+                    }
+                }
+            }
+        }
+        if let [root] = roots[..] {
+            let own = find(&mut parent, index);
+            parent[own] = root;
+        }
+    }
+
     let mut groups: HashMap<usize, Vec<usize>> = HashMap::new();
     for index in 0..players.len() {
         let root = find(&mut parent, index);
@@ -896,6 +979,7 @@ pub fn collapse_same_person_records(
             && crate::person_identity::fold_name(&player.full_name)
                 != crate::person_identity::fold_name(&player.match_name);
         (
+            player.team_id.is_some(),
             !evidence.pool_add_ids.contains(&player.id),
             (evidence.has_rating_override)(&player.id),
             evidence.overlay_op_ids.contains(&player.id),
@@ -1697,6 +1781,102 @@ mod tests {
         let ghost = born(player("ghost", "Lehends", None), "Son Si-woo", "");
         let mut players = vec![ghost, rostered];
         assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_free_agent_with_a_swapped_name_and_the_same_birth_date_collapses_into_the_contracted_record()
+     {
+        let contracted = born(
+            on_team(player("club", "Koldo", None), "es-t1"),
+            "Luis Perez Garcia",
+            "2000-11-07",
+        );
+        let free_agent = born(
+            player("fa", "Luis Perez Garcia", None),
+            "Koldo",
+            "2000-11-07",
+        );
+        let mut players = vec![free_agent, contracted];
+        let collapsed = collapse(&mut players, &[], &[], &[]);
+        assert_eq!(player_ids(&players), vec!["club"]);
+        assert_eq!(
+            collapsed,
+            vec![CollapsedDuplicate {
+                kept_id: "club".into(),
+                dropped_id: "fa".into()
+            }]
+        );
+    }
+
+    #[test]
+    fn the_contracted_record_survives_even_when_the_free_agent_has_the_rating_override() {
+        let contracted = born(
+            on_team(player("club", "Deadly", None), "t1"),
+            "Deadly",
+            "2006-08-19",
+        );
+        let free_agent = born(player("fa", "DeadlyMark", None), "Deadly", "2006-08-19");
+        let mut players = vec![free_agent, contracted];
+        collapse(&mut players, &["fa"], &[], &[]);
+        assert_eq!(player_ids(&players), vec!["club"]);
+    }
+
+    #[test]
+    fn a_free_agent_sharing_a_name_with_another_birth_date_stays() {
+        let contracted = born(
+            on_team(player("club", "Castle", None), "t1"),
+            "Cho Hyeon-seong",
+            "2002-10-08",
+        );
+        let free_agent = born(player("fa", "Castle", None), "Matthew Castle", "2002-08-20");
+        let mut players = vec![free_agent, contracted];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn the_placeholder_birth_date_never_collapses_a_free_agent() {
+        let contracted = born(
+            on_team(player("club", "Nick", None), "t1"),
+            "Real One",
+            "2002-01-01",
+        );
+        let free_agent = born(player("fa", "Nick", None), "Other Real", "2002-01-01");
+        let mut players = vec![free_agent, contracted];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn two_free_agents_with_one_birth_date_are_left_to_review() {
+        let a = born(
+            player("a", "Chapters", None),
+            "Leandro Paiano",
+            "2005-01-17",
+        );
+        let b = born(player("b", "KUMEW", None), "Leandro Paiano", "2005-01-17");
+        let mut players = vec![a, b];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+    }
+
+    #[test]
+    fn a_free_agent_that_fits_two_clubs_is_left_alone() {
+        let one = born(
+            on_team(player("one", "Legolas", None), "t1"),
+            "Sergio Vicente",
+            "2000-12-20",
+        );
+        let two = born(
+            on_team(player("two", "Legolas", None), "t2"),
+            "Sergio Vicente",
+            "2000-12-20",
+        );
+        let free_agent = born(
+            player("fa", "Legolas", None),
+            "Sergio Vicente",
+            "2000-12-20",
+        );
+        let mut players = vec![free_agent, one, two];
+        assert!(collapse(&mut players, &[], &[], &[]).is_empty());
+        assert_eq!(players.len(), 3);
     }
 
     #[test]

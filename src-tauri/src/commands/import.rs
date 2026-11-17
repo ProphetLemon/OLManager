@@ -1282,8 +1282,9 @@ pub(crate) fn apply_catalog_to_game(
     mut catalog_staff: Vec<Staff>,
 ) -> RehydrateCounts {
     let stale_teams_removed = world_catalog::remove_orphan_stale_teams(game).len();
-    let canonical = world_catalog::remove_unscheduled_canonical_duplicates(game);
+    // Academies first: the canonical pass looks for twins on the academies that survive.
     let academies = world_catalog::remove_stale_academy_duplicates(game);
+    let canonical = world_catalog::remove_unscheduled_canonical_duplicates(game);
     let teams = merge_missing_teams(game, catalog_teams);
 
     let players_reassigned = reassign_stale_player_teams(game, &catalog_players);
@@ -2566,7 +2567,7 @@ mod tests {
     fn rehydration_keeps_a_player_with_the_same_match_name_and_another_birth_date() {
         let mut game = game_with_person_records(
             ("Linus Grönlund", "RoyalKanin", "2002-07-06"),
-            ("Kanin", "RoyalKanin", "July 7, 2002"),
+            ("Kanin", "RoyalKanin", "July 7, 2005"),
         );
 
         apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
@@ -2604,6 +2605,272 @@ mod tests {
         let kept = game.players.iter().find(|p| p.id == "canonical-person");
         assert_eq!(kept.expect("moved player kept").team_id, None);
         assert!(game.retired_player_ids.is_empty());
+    }
+
+    /// One record of a person: `(full name, match name, date of birth, nationality)`.
+    type PersonRecord<'a> = (&'a str, &'a str, &'a str, &'a str);
+
+    fn person_record(id: &str, team: &str, (full, nick, dob, nationality): PersonRecord) -> Player {
+        let mut player = rehydrate_test_player(id, Some(team));
+        player.full_name = full.to_string();
+        player.match_name = nick.to_string();
+        player.date_of_birth = dob.to_string();
+        player.nationality = nationality.to_string();
+        player
+    }
+
+    /// The prm pair of `game_with_canonical_twin`, with the canonical club named "Nord" and
+    /// its surviving academy `academy-prm-nord` in the world.
+    fn game_with_orphan_and_academy() -> Game {
+        let mut game = game_with_canonical_twin("prime_league", "prm");
+        game.teams
+            .iter_mut()
+            .find(|team| team.id == "prm-a")
+            .expect("canonical club")
+            .name = "Nord".to_string();
+        game.teams.push(academy_team("academy-prm-nord"));
+        game
+    }
+
+    fn assert_dropped_for(orphan: PersonRecord, twin: PersonRecord, twin_team: &str) {
+        let mut game = game_with_orphan_and_academy();
+        game.players
+            .push(person_record("canonical-person", "prm-a", orphan));
+        game.players
+            .push(person_record("twin-person", twin_team, twin));
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(game.players.iter().all(|p| p.id != "canonical-person"));
+        assert!(game.players.iter().any(|p| p.id == "twin-person"));
+        assert_eq!(
+            game.retired_player_ids,
+            vec!["canonical-person".to_string()]
+        );
+    }
+
+    fn assert_released_for(orphan: PersonRecord, twins: &[(&str, &str, PersonRecord)]) {
+        let mut game = game_with_orphan_and_academy();
+        game.players
+            .push(person_record("canonical-person", "prm-a", orphan));
+        for (id, team, record) in twins {
+            game.players.push(person_record(id, team, *record));
+        }
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let kept = game.players.iter().find(|p| p.id == "canonical-person");
+        assert_eq!(kept.expect("released, not dropped").team_id, None);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    #[test]
+    fn rehydration_drops_a_twin_whose_birth_date_is_a_month_off() {
+        assert_dropped_for(
+            ("Same Person", "SameNick", "2000-11-17", "ES"),
+            ("Same Person", "SameNick", "December 17, 2000", "ES"),
+            "prime_league-a",
+        );
+    }
+
+    #[test]
+    fn rehydration_drops_a_twin_whose_nick_and_full_name_are_swapped() {
+        assert_dropped_for(
+            ("Luis Perez Garcia", "Koldo", "2000-11-07", "ES"),
+            ("Koldo", "Luis Perez Garcia", "November 7, 2000", "ES"),
+            "prime_league-a",
+        );
+    }
+
+    #[test]
+    fn rehydration_drops_a_dateless_record_that_shares_a_real_name_with_a_dated_twin() {
+        assert_dropped_for(
+            ("Fabijan Mandaric", "Raider", "", "HR"),
+            ("Fabijan Mandaric", "Raider", "2004-01-30", "HR"),
+            "prime_league-a",
+        );
+    }
+
+    #[test]
+    fn rehydration_keeps_a_nick_only_record_released_even_when_its_namesake_has_a_birth_date() {
+        assert_released_for(
+            ("Raider", "Raider", "", "HR"),
+            &[(
+                "namesake",
+                "prime_league-a",
+                ("Fabijan Mandaric", "Raider", "2004-01-30", "HR"),
+            )],
+        );
+    }
+
+    #[test]
+    fn rehydration_keeps_namesakes_released_when_their_only_match_is_the_placeholder_date() {
+        assert_released_for(
+            ("Alpha Beta", "SameNick", "2002-01-01", "ES"),
+            &[(
+                "namesake",
+                "prime_league-a",
+                ("Gamma Delta", "SameNick", "2002-01-01", "ES"),
+            )],
+        );
+    }
+
+    #[test]
+    fn rehydration_drops_a_twin_that_exists_only_on_the_surviving_academy() {
+        assert_dropped_for(
+            ("Same Person", "SameNick", "2000-11-17", "ES"),
+            ("Same Person", "SameNick", "2000-11-17", "ES"),
+            "academy-prm-nord",
+        );
+    }
+
+    #[test]
+    fn rehydration_keeps_a_namesake_with_another_nationality_released() {
+        assert_released_for(
+            ("Raider", "Raider", "", "Korea"),
+            &[(
+                "namesake",
+                "prime_league-a",
+                ("Fabijan Mandaric", "Raider", "2004-01-30", "Brazil"),
+            )],
+        );
+    }
+
+    #[test]
+    fn rehydration_leaves_a_nick_only_record_released_when_two_namesakes_fit() {
+        assert_released_for(
+            ("Peter", "Peter", "", "ES"),
+            &[
+                (
+                    "first",
+                    "academy-prm-nord",
+                    ("Pedro Gil", "Peter", "2003-02-01", "ES"),
+                ),
+                (
+                    "second",
+                    "academy-prm-nord",
+                    ("Pieter Dijk", "Peter", "1999-09-09", "ES"),
+                ),
+            ],
+        );
+    }
+
+    #[test]
+    fn rehydration_prefers_the_twin_on_the_paired_club_over_the_academy_copy() {
+        let mut game = game_with_orphan_and_academy();
+        let record = ("Same Person", "SameNick", "2000-11-17", "ES");
+        game.players
+            .push(person_record("canonical-person", "prm-a", record));
+        game.players
+            .push(person_record("on-club", "prime_league-a", record));
+        game.players
+            .push(person_record("on-academy", "academy-prm-nord", record));
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        assert!(game.players.iter().all(|p| p.id != "canonical-person"));
+        assert_eq!(
+            game.retired_player_ids,
+            vec!["canonical-person".to_string()]
+        );
+    }
+
+    #[test]
+    fn rehydration_releases_a_moved_player_even_with_a_compatible_twin() {
+        let mut game = game_with_orphan_and_academy();
+        let record = ("Same Person", "SameNick", "2000-11-17", "ES");
+        game.players
+            .push(person_record("canonical-person", "prm-a", record));
+        game.players
+            .push(person_record("twin-person", "prime_league-a", record));
+        game.moved_player_ids.insert("canonical-person".to_string());
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let kept = game.players.iter().find(|p| p.id == "canonical-person");
+        assert_eq!(kept.expect("moved player kept").team_id, None);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
+    /// Evidence harness for the old-save load repair: the teamless records that have a
+    /// contracted twin before and after `apply_catalog_to_game`, on a COPY of a save.
+    ///
+    /// ```text
+    /// OLM_SAVE_COPY=/scratch/copy.olsave cargo test --lib owner_save_twin_report -- --ignored --nocapture
+    /// ```
+    ///
+    /// It only reads the file it is given; it never writes a save.
+    #[test]
+    #[ignore = "evidence harness; needs OLM_SAVE_COPY, see the doc comment"]
+    fn owner_save_twin_report() {
+        use olm_core::person_identity::PersonIndex;
+        use std::io::Read;
+
+        let path = std::env::var("OLM_SAVE_COPY").expect("OLM_SAVE_COPY names a save copy");
+        let bytes = std::fs::read(&path).expect("read the save copy");
+        let mut json = String::new();
+        flate2::read::GzDecoder::new(&bytes[4..])
+            .read_to_string(&mut json)
+            .expect("gunzip the save copy");
+        let mut game: Game = serde_json::from_str(&json).expect("parse the save copy");
+
+        // The strict key is what the repair could drop; the loose key is what the AI guard hides.
+        let teamless_twins = |game: &Game, strict: bool| -> Vec<String> {
+            let contracted = PersonIndex::new(game.players.iter().filter(|p| p.team_id.is_some()));
+            game.players
+                .iter()
+                .filter(|p| p.team_id.is_none())
+                .filter(|p| {
+                    if strict {
+                        contracted.has_strict_twin_of(p)
+                    } else {
+                        contracted.has_twin_of(p)
+                    }
+                })
+                .map(|p| p.id.clone())
+                .collect()
+        };
+        let before = teamless_twins(&game, true);
+        let before_loose = teamless_twins(&game, false);
+        let protected = olm_core::world_catalog::transfer_protected_player_ids(&game);
+        let (teams_before, players_before) = (game.teams.len(), game.players.len());
+        let counts = apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+        let after = teamless_twins(&game, true);
+        let after_loose = teamless_twins(&game, false);
+        let guarded = after.iter().filter(|id| protected.contains(*id)).count();
+        let already_teamless: HashSet<&String> = before.iter().collect();
+        println!("teams {teams_before} -> {}", game.teams.len());
+        println!("players {players_before} -> {}", game.players.len());
+        println!(
+            "canonical clubs removed {}",
+            counts.canonical_duplicates_removed
+        );
+        println!("teamless with a contracted twin: before {}", before.len());
+        println!(
+            "teamless with a contracted twin: after {} (guarded moved players {guarded}, \
+             teamless already before the load {})",
+            after.len(),
+            after
+                .iter()
+                .filter(|id| already_teamless.contains(id))
+                .count()
+        );
+        println!(
+            "LOOSE key (AI guard hides): before {}, after {}",
+            before_loose.len(),
+            after_loose.len()
+        );
+        for id in &after {
+            let player = game.players.iter().find(|p| &p.id == id).expect("player");
+            println!(
+                "  left {id} {} / {} dob={:?} guarded={} teamless_before={}",
+                player.match_name,
+                player.full_name,
+                player.date_of_birth,
+                protected.contains(id),
+                already_teamless.contains(id)
+            );
+        }
     }
 
     #[test]
