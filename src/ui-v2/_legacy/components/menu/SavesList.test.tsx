@@ -231,4 +231,39 @@ describe("SavesList saves this version cannot read", () => {
 
     expect(notCancelled).toBe(true);
   });
+
+  it("keeps the reason on screen while the delete confirmation is open", () => {
+    renderList({ saves: [otherVersion], confirmDeleteId: "v4" });
+
+    expect(screen.getByText(/menu\.saveStatus\.otherVersionReason/)).toBeInTheDocument();
+  });
+
+  it("always has an element for every aria-describedby reference", () => {
+    for (const confirmDeleteId of [null, "v4", "bad"]) {
+      const { container, unmount } = render(
+        <SavesList
+          {...{
+            saves: [otherVersion, unreadable],
+            isLoading: false,
+            confirmDeleteId,
+            onLoad: vi.fn(),
+            onDelete: vi.fn(),
+            onConfirmDelete: vi.fn(),
+            onClose: vi.fn(),
+            onExport: vi.fn(),
+            onImport: vi.fn(),
+            onConfirmReplace: vi.fn(),
+            onCancelReplace: vi.fn(),
+            transferBusy: false,
+            transferNotice: null,
+            pendingReplace: null,
+          }}
+        />,
+      );
+      for (const el of container.querySelectorAll("[aria-describedby]")) {
+        expect(document.getElementById(el.getAttribute("aria-describedby")!)).not.toBeNull();
+      }
+      unmount();
+    }
+  });
 });

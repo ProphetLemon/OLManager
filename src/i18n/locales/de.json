@@ -193,6 +193,7 @@
         "unknown": "Etwas ist schiefgelaufen: {{error}}"
       }
     },
+    "loadFailed": "Der Spielstand konnte nicht geladen werden: {{error}}",
     "saveStatus": {
       "otherVersion": "Aus anderer Version",
       "unreadable": "Nicht lesbar",

@@ -195,6 +195,7 @@
         "unknown": "Something went wrong: {{error}}"
       }
     },
+    "loadFailed": "The save could not be loaded: {{error}}",
     "saveStatus": {
       "otherVersion": "From another version",
       "unreadable": "Can't be read",

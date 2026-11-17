@@ -195,6 +195,7 @@
         "unknown": "Algo salió mal: {{error}}"
       }
     },
+    "loadFailed": "No se pudo cargar la partida: {{error}}",
     "saveStatus": {
       "otherVersion": "De otra versión",
       "unreadable": "No se puede leer",

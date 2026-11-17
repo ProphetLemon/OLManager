@@ -193,6 +193,7 @@
         "unknown": "Algo deu errado: {{error}}"
       }
     },
+    "loadFailed": "Não foi possível carregar o save: {{error}}",
     "saveStatus": {
       "otherVersion": "De outra versão",
       "unreadable": "Não pode ser lido",

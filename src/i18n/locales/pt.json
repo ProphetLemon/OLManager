@@ -193,6 +193,7 @@
         "unknown": "Algo correu mal: {{error}}"
       }
     },
+    "loadFailed": "Não foi possível carregar o jogo: {{error}}",
     "saveStatus": {
       "otherVersion": "De outra versão",
       "unreadable": "Não se consegue ler",

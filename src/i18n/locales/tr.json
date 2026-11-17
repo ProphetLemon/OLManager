@@ -193,6 +193,7 @@
         "unknown": "Bir şeyler ters gitti: {{error}}"
       }
     },
+    "loadFailed": "Kayıt yüklenemedi: {{error}}",
     "saveStatus": {
       "otherVersion": "Başka bir sürümden",
       "unreadable": "Okunamıyor",

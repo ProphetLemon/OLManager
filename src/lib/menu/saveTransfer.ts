@@ -28,3 +28,25 @@ export function parseTransferError(raw: unknown): ParsedTransferError {
   }
   return { code: "unknown", message: text };
 }
+
+export type ParsedLoadError =
+  | { kind: "incompatible"; found: number | null; message: string }
+  | { kind: "unreadable"; message: string }
+  | { kind: "unknown"; message: string };
+
+/**
+ * Loading a save the app cannot read fails with `save_incompatible: <detail>` or
+ * `save_unreadable: <detail>`; the code is only taken from the start of the text.
+ */
+export function parseLoadError(raw: unknown): ParsedLoadError {
+  const text = typeof raw === "string" ? raw : raw instanceof Error ? raw.message : String(raw);
+  if (text.startsWith("save_incompatible:")) {
+    const message = text.slice("save_incompatible:".length).trim();
+    const found = /format (\d+)/.exec(message);
+    return { kind: "incompatible", found: found ? Number(found[1]) : null, message };
+  }
+  if (text.startsWith("save_unreadable:")) {
+    return { kind: "unreadable", message: text.slice("save_unreadable:".length).trim() };
+  }
+  return { kind: "unknown", message: text };
+}

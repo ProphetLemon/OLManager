@@ -30,6 +30,7 @@
         "unknown": "Qualcosa è andato storto: {{error}}"
       }
     },
+    "loadFailed": "Non è stato possibile caricare il salvataggio: {{error}}",
     "saveStatus": {
       "otherVersion": "Di un’altra versione",
       "unreadable": "Non leggibile",

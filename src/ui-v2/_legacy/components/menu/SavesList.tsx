@@ -261,7 +261,7 @@ export default function SavesList({
                   </button>
                 </div>
               )}
-              {!loadable && confirmDeleteId !== save.id && (
+              {!loadable && (
                 <p id={reasonId} className="px-1 text-sm text-dim">
                   {save.status === "unreadable"
                     ? t("menu.saveStatus.unreadableReason")

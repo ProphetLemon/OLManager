@@ -193,6 +193,7 @@
         "unknown": "Une erreur s’est produite : {{error}}"
       }
     },
+    "loadFailed": "La sauvegarde n’a pas pu être chargée : {{error}}",
     "saveStatus": {
       "otherVersion": "D’une autre version",
       "unreadable": "Illisible",
