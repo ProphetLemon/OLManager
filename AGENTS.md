@@ -66,12 +66,12 @@ src/
 | AppV2 | MainMenu, MatchSimulation, UpdateModal; `SettingsV2` es nativo en `ui-v2/pages/` y envuelve `_legacy/pages/Settings` (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
 | DashboardV2 | `DashboardOverlays`, `FiredModal`, `dashboardHelpers` y `DashboardWorkspaceContent` → `DashboardTabContent` → `EndOfSeasonScreen`: ese camino sólo se monta con la pantalla de fin de temporada (Home); el resto de pestañas son nativas v2 |
 | TeamSelectionV2 | `LeaguePickerV2`, `TeamGridV2`, `teamSelection.helpers`; FloatingBugButton en el pie de `RosterOverlayPanel` (prop `actions`), en todos los pasos de /select-team |
-| DashboardSidebarV2 | FloatingBugButton (el rail lo aloja en las rutas del dashboard) |
+| DashboardSidebarV2 | FloatingBugButton: variante `cell` (celda de iconos del cluster en Tree y Split de escritorio, con `open` controlado para abrirlo con Enter) y `hidden` (sólo el modal, abierto desde el menú Más de Android, donde las utilidades viven) |
 | LiveMatchV2 | FloatingBugButton en la fila de controles de /match (no flota: no tapa el mapa ni las tarjetas) |
 
 El partido en directo ya no es un wrapper: `_legacy/pages/MatchSimulation` monta la pantalla nativa `ui-v2/match/LiveMatchV2` en la etapa `first_half`. Se retiraron `LolMatchLive`, `lol-prototype/ui/render.ts` y `lol-prototype/ui/panels.tsx` (y sus dos tests); un guard (`ui-v2/match/liveMatchCutover.guard.test.ts`) impide que vuelvan a importarse. Lo que sigue en `_legacy/` para esa pantalla es el motor (`lol-prototype/engine`, `backend`, `ui/stepInterpolation.ts`), `championProfiles`, `itemNames` y `matchRuntimeEvents`.
 
-Tocado en _legacy por On Air: `FloatingBugButton` (ya sólo en línea, sin variante flotante) y el cambio `text-primary` → `text-club-text` en los ficheros que lo usaban.
+Tocado en _legacy por On Air: `FloatingBugButton` (variantes `inline`, `cell` y `hidden`; sin variante flotante) y el cambio `text-primary` → `text-club-text` en los ficheros que lo usaban.
 
 ---
 
@@ -79,7 +79,7 @@ Tocado en _legacy por On Air: `FloatingBugButton` (ya sólo en línea, sin varia
 
 **P1 On Air.** Tokens en `src/themes/default.css`; sólo tokens, nunca colores crudos.
 
-- Tipografía: **Barlow Condensed** (`--font-heading`), mayúsculas, números tabulares. Tamaños con `--text-*` (2xs, caption, nav, section, title, ovr, scoreboard); mínimo 0.75rem y todo en rem. Únicas excepciones: `--text-map: max(0.75rem, 10px)`, sólo para las etiquetas sobre el mapa del partido en vivo (`src/ui-v2/match/`), y `--text-nav: max(0.75rem, 10px)`, sólo para las etiquetas de navegación (`src/ui-v2/shell/`); Android usa una raíz de 9 px y 0.75rem quedaría en 6.75 px.
+- Tipografía: **Barlow Condensed** (`--font-heading`), mayúsculas, números tabulares. Tamaños con `--text-*` (2xs, caption, nav, section, title, ovr, scoreboard); mínimo 0.75rem y todo en rem. Únicas excepciones: `--text-map: max(0.75rem, 10px)`, sólo para las etiquetas sobre el mapa del partido en vivo (`src/ui-v2/match/`), y `--text-nav: max(0.75rem, 10px)`, sólo para las etiquetas de navegación (`src/ui-v2/shell/`, `DashboardSidebarV2` y la miga de `DashboardHeaderV2`, R16: `text-caption` serían 6.75 px en Android); Android usa una raíz de 9 px y 0.75rem quedaría en 6.75 px.
 - Primary dirigido por el club: `--primary` = `--club` (`useClubTheme`). Texto sobre relleno de club: `--club-foreground`. Texto con el color del club: `--club-text` (`text-club-text`). `--club-wash` = tinte del club (desaparece en alto contraste).
 - Superficies: `--rail` (rail), `--line` (bordes), `--dim` (texto atenuado), `--surface-clamp` (superficie de referencia para el contraste del color del club).
 - Regla: `text-primary` desnudo está prohibido, usar `text-club-text`. Lo impone `src/ui-v2/tokens.guard.test.ts` (excluye `components/ui/`, `shell/` y `FloatingBugButton`).
