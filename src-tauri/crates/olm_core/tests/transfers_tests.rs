@@ -2210,6 +2210,53 @@ fn ai_free_agent_signing_matches_player_state_to_history() {
     );
 }
 
+/// A contracted ADC and a teamless record of the same person (swapped nick and real name).
+fn contracted_player_and_his_teamless_twin() -> (Player, Player) {
+    let mut contracted = make_free_agent("contracted-koldo", LolRole::Adc);
+    contracted.match_name = "Koldo".to_string();
+    contracted.full_name = "Luis Perez Garcia".to_string();
+    contracted.date_of_birth = "2000-11-07".to_string();
+    contracted.team_id = Some("team-other".to_string());
+    contracted.contract_end = Some("2027-11-30".to_string());
+
+    let mut twin = make_free_agent("teamless-koldo", LolRole::Adc);
+    twin.match_name = "Luis Perez Garcia".to_string();
+    twin.full_name = "Koldo".to_string();
+    twin.date_of_birth = "November 7, 2000".to_string();
+    twin.market_value = 900_000;
+    (contracted, twin)
+}
+
+#[test]
+fn ai_agent_purchase_skips_a_teamless_twin_of_a_contracted_player_and_signs_the_next_free_agent() {
+    let (contracted, twin) = contracted_player_and_his_teamless_twin();
+    let valid = make_free_agent("valid-adc", LolRole::Adc);
+    let mut game = make_game_with_free_agents(vec![twin, valid, contracted]);
+
+    assert!(ai_agent_purchase(&mut game, "team-ai", "ADC"));
+
+    let team_of = |id: &str| {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    };
+    assert_eq!(
+        team_of("teamless-koldo"),
+        None,
+        "the twin must stay teamless"
+    );
+    assert_eq!(team_of("valid-adc").as_deref(), Some("team-ai"));
+}
+
+#[test]
+fn ai_agent_purchase_signs_nobody_when_every_candidate_is_a_twin() {
+    let (contracted, twin) = contracted_player_and_his_teamless_twin();
+    let mut game = make_game_with_free_agents(vec![twin, contracted]);
+
+    assert!(!ai_agent_purchase(&mut game, "team-ai", "ADC"));
+}
+
 #[test]
 fn ai_agent_purchase_respects_daily_cap() {
     let free_agents = vec![

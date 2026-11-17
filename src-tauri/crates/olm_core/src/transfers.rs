@@ -16,6 +16,7 @@ use crate::finances::{
     record_transaction_with_text,
 };
 use crate::game::Game;
+use crate::person_identity::PersonIndex;
 use crate::player_age::player_age;
 use crate::roster_stability::{RosterStabilityReason, repair_team};
 use chrono::{Datelike, NaiveDate};
@@ -888,6 +889,43 @@ fn parse_offer_date(date: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(date, "%Y-%m-%d").ok()
 }
 
+/// The contracted players of the world, as an index of who a teamless record could be.
+/// The catalog and old saves keep a teamless second record of some contracted players; an AI
+/// club that signed one would put one person on two clubs. Build it once per pass.
+pub(crate) fn contracted_person_index(game: &Game) -> PersonIndex {
+    PersonIndex::new(
+        game.players
+            .iter()
+            .filter(|player| player.team_id.is_some()),
+    )
+}
+
+/// A free-agent pick: player id, asking price, market value.
+type FreeAgentPick = (String, u64, u64);
+
+/// The best pick of `pick` that could not be the same person as a contracted player. `pick`
+/// returns the best candidate that is not in the skip set; a twin goes into the set and the
+/// pick is repeated, so only the few twins on top of the ranking cost a second scan.
+fn pick_untwinned(
+    game: &Game,
+    twins: &PersonIndex,
+    mut pick: impl FnMut(&HashSet<String>) -> Option<FreeAgentPick>,
+) -> Option<FreeAgentPick> {
+    let mut skip: HashSet<String> = HashSet::new();
+    loop {
+        let candidate = pick(&skip)?;
+        let is_twin = game
+            .players
+            .iter()
+            .find(|player| player.id == candidate.0)
+            .is_some_and(|player| twins.has_twin_of(player));
+        if !is_twin {
+            return Some(candidate);
+        }
+        skip.insert(candidate.0);
+    }
+}
+
 fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
     let linked_club_id = crate::academy_link::user_linked_club_id(game);
     let mut candidate_team_ids: Vec<String> = game
@@ -916,6 +954,7 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
     });
 
     let mut completed = 0_usize;
+    let mut twins = contracted_person_index(game);
 
     for team_id in candidate_team_ids {
         if completed >= MAX_AI_FREE_AGENT_SIGNINGS_PER_DAY {
@@ -941,36 +980,38 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
 
         let preferred_role = ai_team_priority_role(game, &team_id);
 
-        let role_candidate = game
-            .players
-            .iter()
-            .filter(|player| player.team_id.is_none())
-            .filter(|player| crate::residency::has_import_slot_for(game, team, player))
-            .filter(|player| lol_role_to_string(&player.natural_position) == preferred_role)
-            .filter_map(|player| {
-                let asking_price = (player.market_value as i64).max(25_000) / 5;
-                (asking_price > 0 && asking_price <= budget_cap).then_some((
-                    player.id.clone(),
-                    asking_price as u64,
-                    player.market_value,
-                ))
-            })
-            .max_by_key(|(_, _, market_value)| *market_value);
+        let role_candidate = pick_untwinned(game, &twins, |skip| {
+            game.players
+                .iter()
+                .filter(|player| player.team_id.is_none() && !skip.contains(&player.id))
+                .filter(|player| crate::residency::has_import_slot_for(game, team, player))
+                .filter(|player| lol_role_to_string(&player.natural_position) == preferred_role)
+                .filter_map(|player| {
+                    let asking_price = (player.market_value as i64).max(25_000) / 5;
+                    (asking_price > 0 && asking_price <= budget_cap).then_some((
+                        player.id.clone(),
+                        asking_price as u64,
+                        player.market_value,
+                    ))
+                })
+                .max_by_key(|(_, _, market_value)| *market_value)
+        });
 
-        let candidate = game
-            .players
-            .iter()
-            .filter(|player| player.team_id.is_none())
-            .filter(|player| crate::residency::has_import_slot_for(game, team, player))
-            .filter_map(|player| {
-                let asking_price = (player.market_value as i64).max(25_000) / 5;
-                (asking_price > 0 && asking_price <= budget_cap).then_some((
-                    player.id.clone(),
-                    asking_price as u64,
-                    player.market_value,
-                ))
-            })
-            .max_by_key(|(_, _, market_value)| *market_value);
+        let candidate = pick_untwinned(game, &twins, |skip| {
+            game.players
+                .iter()
+                .filter(|player| player.team_id.is_none() && !skip.contains(&player.id))
+                .filter(|player| crate::residency::has_import_slot_for(game, team, player))
+                .filter_map(|player| {
+                    let asking_price = (player.market_value as i64).max(25_000) / 5;
+                    (asking_price > 0 && asking_price <= budget_cap).then_some((
+                        player.id.clone(),
+                        asking_price as u64,
+                        player.market_value,
+                    ))
+                })
+                .max_by_key(|(_, _, market_value)| *market_value)
+        });
 
         let Some((player_id, fee, _)) = role_candidate.or(candidate) else {
             continue;
@@ -993,6 +1034,10 @@ fn simulate_ai_free_agent_signings(game: &mut Game, user_team_id: &str) {
 
         if execute_free_agent_signing(game, &player_id, &team_id, fee).is_ok() {
             completed = completed.saturating_add(1);
+            // He is under contract now: his own teamless twin is off the table too.
+            if let Some(signed) = game.players.iter().find(|p| p.id == player_id) {
+                twins.add(signed);
+            }
         }
     }
 }
@@ -1011,21 +1056,23 @@ pub fn ai_agent_purchase(game: &mut Game, team_id: &str, role: &str) -> bool {
         return false;
     }
 
-    let candidate = game
-        .players
-        .iter()
-        .filter(|player| player.team_id.is_none())
-        .filter(|player| crate::residency::has_import_slot_for(game, &team, player))
-        .filter(|player| lol_role_to_string(&player.natural_position) == role)
-        .filter_map(|player| {
-            let asking_price = (player.market_value as i64).max(25_000) / 5;
-            (asking_price > 0 && asking_price <= budget_cap).then_some((
-                player.id.clone(),
-                asking_price as u64,
-                player.market_value,
-            ))
-        })
-        .max_by_key(|(_, fee, _)| *fee);
+    let twins = contracted_person_index(game);
+    let candidate = pick_untwinned(game, &twins, |skip| {
+        game.players
+            .iter()
+            .filter(|player| player.team_id.is_none() && !skip.contains(&player.id))
+            .filter(|player| crate::residency::has_import_slot_for(game, &team, player))
+            .filter(|player| lol_role_to_string(&player.natural_position) == role)
+            .filter_map(|player| {
+                let asking_price = (player.market_value as i64).max(25_000) / 5;
+                (asking_price > 0 && asking_price <= budget_cap).then_some((
+                    player.id.clone(),
+                    asking_price as u64,
+                    player.market_value,
+                ))
+            })
+            .max_by_key(|(_, fee, _)| *fee)
+    });
 
     if let Some((player_id, fee, _market_value)) = candidate {
         let Some(player) = game.players.iter().find(|p| p.id == player_id) else {
@@ -3237,13 +3284,16 @@ fn academy_role_count(game: &Game, academy_team_id: &str, role: &str) -> usize {
 }
 
 fn try_assign_free_agent_by_role(game: &mut Game, academy_team_id: &str, role: &str) -> bool {
-    let candidate_id = game
-        .players
-        .iter()
-        .filter(|player| player.team_id.is_none())
-        .filter(|player| lol_role_to_string(&player.natural_position) == role)
-        .max_by_key(|player| player.market_value)
-        .map(|player| player.id.clone());
+    let twins = contracted_person_index(game);
+    let candidate_id = pick_untwinned(game, &twins, |skip| {
+        game.players
+            .iter()
+            .filter(|player| player.team_id.is_none() && !skip.contains(&player.id))
+            .filter(|player| lol_role_to_string(&player.natural_position) == role)
+            .max_by_key(|player| player.market_value)
+            .map(|player| (player.id.clone(), 0, player.market_value))
+    })
+    .map(|(id, _, _)| id);
 
     let Some(candidate_id) = candidate_id else {
         return false;
@@ -3806,5 +3856,131 @@ mod renewal_session_tests {
 
         assert_eq!(game.players[0].team_id.as_deref(), Some("buyer"));
         assert!(game.players[0].morale_core.renewal_state.is_none());
+    }
+}
+
+#[cfg(test)]
+mod twin_guard_tests {
+    use super::*;
+    use crate::clock::GameClock;
+    use crate::domain::manager::Manager;
+    use crate::domain::player::{Player, PlayerAttributes};
+    use crate::domain::stats::LolRole;
+    use crate::domain::team::Team;
+    use chrono::{TimeZone, Utc};
+
+    fn club(id: &str) -> Team {
+        let mut team = Team::new(
+            id.to_string(),
+            id.to_string(),
+            "TST".to_string(),
+            "England".to_string(),
+            "London".to_string(),
+            "Arena".to_string(),
+            10_000,
+        );
+        team.finance = 50_000_000;
+        team.transfer_budget = 50_000_000;
+        team.wage_budget = 50_000_000;
+        team.reputation = 50;
+        team
+    }
+
+    fn adc(id: &str, nick: &str, full: &str, dob: &str, team: Option<&str>) -> Player {
+        let skill = 60;
+        let mut player = Player::new(
+            id.to_string(),
+            nick.to_string(),
+            full.to_string(),
+            dob.to_string(),
+            "England".to_string(),
+            LolRole::Adc,
+            PlayerAttributes {
+                mechanics: skill,
+                laning: skill,
+                teamfighting: skill,
+                macro_play: skill,
+                consistency: skill,
+                shotcalling: skill,
+                champion_pool: skill,
+                discipline: skill,
+                mental_resilience: skill,
+            },
+        );
+        player.team_id = team.map(str::to_string);
+        player.contract_end = team.map(|_| "2027-11-30".to_string());
+        player.market_value = 500_000;
+        player.morale = 70;
+        player
+    }
+
+    /// An AI club, a contracted Koldo on another club, his teamless twin (the better, and so
+    /// the first choice) and one unrelated teamless ADC.
+    fn game_with_a_twin_and_a_valid_free_agent() -> Game {
+        let clock = GameClock::new(Utc.with_ymd_and_hms(2026, 8, 1, 12, 0, 0).unwrap());
+        let manager = Manager::new(
+            "mgr".to_string(),
+            "Test".to_string(),
+            "Manager".to_string(),
+            "1980-01-01".to_string(),
+            "England".to_string(),
+        );
+        let mut twin = adc(
+            "twin",
+            "Luis Perez Garcia",
+            "Koldo",
+            "November 7, 2000",
+            None,
+        );
+        twin.market_value = 900_000;
+        let players = vec![
+            adc(
+                "contracted",
+                "Koldo",
+                "Luis Perez Garcia",
+                "2000-11-07",
+                Some("other"),
+            ),
+            twin,
+            adc("valid", "Valid", "Valid Person", "1999-03-03", None),
+        ];
+        let mut game = Game::new(
+            clock,
+            manager,
+            vec![club("ai"), club("other")],
+            players,
+            vec![],
+            vec![],
+        );
+        game.season_context.transfer_window.status =
+            crate::domain::season::TransferWindowStatus::Open;
+        game
+    }
+
+    fn team_of(game: &Game, id: &str) -> Option<String> {
+        game.players
+            .iter()
+            .find(|player| player.id == id)
+            .and_then(|player| player.team_id.clone())
+    }
+
+    #[test]
+    fn the_daily_free_agent_pass_skips_a_twin_of_a_contracted_player() {
+        let mut game = game_with_a_twin_and_a_valid_free_agent();
+
+        simulate_ai_free_agent_signings(&mut game, "nobody");
+
+        assert_eq!(team_of(&game, "twin"), None, "the twin must stay teamless");
+        assert_eq!(team_of(&game, "valid").as_deref(), Some("ai"));
+    }
+
+    #[test]
+    fn the_academy_refill_skips_a_twin_of_a_contracted_player() {
+        let mut game = game_with_a_twin_and_a_valid_free_agent();
+
+        assert!(try_assign_free_agent_by_role(&mut game, "ai", "ADC"));
+
+        assert_eq!(team_of(&game, "twin"), None, "the twin must stay teamless");
+        assert_eq!(team_of(&game, "valid").as_deref(), Some("ai"));
     }
 }

@@ -7,6 +7,7 @@
 
 use crate::domain::player::Player;
 use crate::player_age::parse_date_of_birth;
+use chrono::NaiveDate;
 use std::collections::HashMap;
 
 /// Decode the HTML entities the data is known to carry. Anything unknown is left as is.
@@ -199,81 +200,108 @@ pub fn nationality_key(raw: &str) -> String {
     code.to_string()
 }
 
-/// Whether two records share a folded name (match or full name, either way round).
-pub fn shares_folded_name(a: &Player, b: &Player) -> bool {
-    let names = folded_names(a);
-    folded_names(b).iter().any(|name| names.contains(name))
+/// What the same-person check reads from a record, copied out so an index can outlive the
+/// game it was built from (the AI signs players while it holds one).
+#[derive(Debug, Clone)]
+pub struct PersonKey {
+    id: String,
+    names: Vec<String>,
+    real_names: Vec<String>,
+    born: Option<NaiveDate>,
+    nationality: String,
 }
 
-/// Whether two records could be one person. They must share a folded name, and no field
-/// present on both sides may tell them apart:
-/// - the birth dates, when both are readable, are at most 62 days apart;
-/// - the nationalities, when both are known, are the same;
-/// - when a birth date is missing on either side, the real names (two or more words) of the
-///   two records, when both have one, share a name. With no date on either side the
-///   records must share a real name, since a nick alone is how namesakes look.
-///
-/// This is the Rust form of `couldBeSamePerson` in `src/lib/transfers/model.ts`, extended to
-/// the swapped names the catalog ships.
-pub fn could_be_same_person(a: &Player, b: &Player) -> bool {
-    if !shares_folded_name(a, b) {
-        return false;
+impl PersonKey {
+    pub fn of(player: &Player) -> Self {
+        Self {
+            id: player.id.clone(),
+            names: folded_names(player),
+            real_names: folded_real_names(player),
+            born: parse_date_of_birth(&player.date_of_birth),
+            nationality: nationality_key(&player.nationality),
+        }
     }
-    let (born_a, born_b) = (
-        parse_date_of_birth(&a.date_of_birth),
-        parse_date_of_birth(&b.date_of_birth),
-    );
-    let (nation_a, nation_b) = (
-        nationality_key(&a.nationality),
-        nationality_key(&b.nationality),
-    );
-    if !nation_a.is_empty() && !nation_b.is_empty() && nation_a != nation_b {
-        return false;
-    }
-    match (born_a, born_b) {
-        (Some(x), Some(y)) => (x - y).num_days().abs() <= SAME_PERSON_DOB_TOLERANCE_DAYS,
-        (None, None) => {
-            let real_a = folded_real_names(a);
-            folded_real_names(b)
+
+    /// Whether the two records could be one person. They must share a folded name (match or
+    /// full name, either way round), and no field present on both sides may tell them apart:
+    /// - the birth dates, when both are readable, are at most 62 days apart;
+    /// - the nationalities, when both are known, are the same;
+    /// - when a birth date is missing on either side, the real names (two or more words) of
+    ///   the two records, when both have one, share a name. With no date on either side the
+    ///   records must share a real name, since a nick alone is how namesakes look.
+    ///
+    /// This is the Rust form of `couldBeSamePerson` in `src/lib/transfers/model.ts`, extended
+    /// to the swapped names the catalog ships.
+    pub fn could_be(&self, other: &Self) -> bool {
+        if !self.names.iter().any(|name| other.names.contains(name)) {
+            return false;
+        }
+        if !self.nationality.is_empty()
+            && !other.nationality.is_empty()
+            && self.nationality != other.nationality
+        {
+            return false;
+        }
+        match (self.born, other.born) {
+            (Some(x), Some(y)) => (x - y).num_days().abs() <= SAME_PERSON_DOB_TOLERANCE_DAYS,
+            (None, None) => self
+                .real_names
                 .iter()
-                .any(|name| real_a.contains(name))
-        }
-        _ => {
-            let (real_a, real_b) = (folded_real_names(a), folded_real_names(b));
-            real_a.is_empty()
-                || real_b.is_empty()
-                || real_b.iter().any(|name| real_a.contains(name))
-        }
-    }
-}
-
-/// Players indexed by folded name, so "could this record be the same person as one of
-/// these" is a lookup, not a scan of the world. Build it once per pass.
-pub struct PersonIndex<'a> {
-    by_name: HashMap<String, Vec<&'a Player>>,
-}
-
-impl<'a> PersonIndex<'a> {
-    pub fn new(players: impl IntoIterator<Item = &'a Player>) -> Self {
-        let mut by_name: HashMap<String, Vec<&'a Player>> = HashMap::new();
-        for player in players {
-            for name in folded_names(player) {
-                by_name.entry(name).or_default().push(player);
+                .any(|name| other.real_names.contains(name)),
+            _ => {
+                self.real_names.is_empty()
+                    || other.real_names.is_empty()
+                    || other
+                        .real_names
+                        .iter()
+                        .any(|name| self.real_names.contains(name))
             }
         }
-        Self { by_name }
+    }
+}
+
+/// Whether two records could be one person; see [`PersonKey::could_be`].
+pub fn could_be_same_person(a: &Player, b: &Player) -> bool {
+    PersonKey::of(a).could_be(&PersonKey::of(b))
+}
+
+/// Records indexed by folded name, so "could this record be the same person as one of
+/// these" is a lookup, not a scan of the world. Build it once per pass.
+#[derive(Debug, Default)]
+pub struct PersonIndex {
+    keys: Vec<PersonKey>,
+    by_name: HashMap<String, Vec<usize>>,
+}
+
+impl PersonIndex {
+    pub fn new<'a>(players: impl IntoIterator<Item = &'a Player>) -> Self {
+        let mut index = Self::default();
+        for player in players {
+            index.add(player);
+        }
+        index
     }
 
-    /// Whether an indexed record other than `player` could be the same person
-    /// ([`could_be_same_person`]).
+    pub fn add(&mut self, player: &Player) {
+        let key = PersonKey::of(player);
+        let position = self.keys.len();
+        for name in &key.names {
+            self.by_name.entry(name.clone()).or_default().push(position);
+        }
+        self.keys.push(key);
+    }
+
+    /// Whether an indexed record other than `player` could be the same person.
     pub fn has_twin_of(&self, player: &Player) -> bool {
-        folded_names(player).iter().any(|name| {
-            self.by_name.get(name).is_some_and(|records| {
-                records
-                    .iter()
-                    .any(|other| other.id != player.id && could_be_same_person(player, other))
+        let key = PersonKey::of(player);
+        key.names
+            .iter()
+            .filter_map(|name| self.by_name.get(name))
+            .flatten()
+            .any(|&position| {
+                let other = &self.keys[position];
+                other.id != key.id && key.could_be(other)
             })
-        })
     }
 }
 
