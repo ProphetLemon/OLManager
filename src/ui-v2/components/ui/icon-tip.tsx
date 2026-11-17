@@ -15,6 +15,8 @@ import { cn } from "@/ui-v2/lib/utils";
 export const ICON_TIP_HOVER_DELAY_MS = 350;
 export const ICON_TIP_LONG_PRESS_MS = 450;
 export const ICON_TIP_TOUCH_HIDE_MS = 2500;
+/** After the pointer leaves the trigger or the tip, the tip stays this long so it can be reached (WCAG 1.4.13). */
+export const ICON_TIP_LEAVE_GRACE_MS = 150;
 /** After a long press ends, the click the browser still sends is swallowed for this long. */
 const CLICK_SWALLOW_MS = 600;
 const VIEWPORT_MARGIN = 6;
@@ -53,11 +55,13 @@ export function IconTip({ label, className, followFocus = false, children, ...re
   const hoverTimer = useRef<number | undefined>(undefined);
   const pressTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
+  const leaveTimer = useRef<number | undefined>(undefined);
 
   const clearTimers = useCallback(() => {
     window.clearTimeout(hoverTimer.current);
     window.clearTimeout(pressTimer.current);
     window.clearTimeout(hideTimer.current);
+    window.clearTimeout(leaveTimer.current);
   }, []);
 
   const close = useCallback(() => {
@@ -96,6 +100,10 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     const onPointerDown = () => {
       pointerFocus = true;
     };
+    // A press that never focused the button must not hide the next keyboard focus.
+    const onPointerEnd = () => {
+      pointerFocus = false;
+    };
     const onFocus = () => {
       if (!pointerFocus) setOpen(true);
     };
@@ -104,10 +112,14 @@ export function IconTip({ label, className, followFocus = false, children, ...re
       close();
     };
     parent.addEventListener("pointerdown", onPointerDown);
+    parent.addEventListener("pointerup", onPointerEnd);
+    parent.addEventListener("pointercancel", onPointerEnd);
     parent.addEventListener("focus", onFocus);
     parent.addEventListener("blur", onBlur);
     return () => {
       parent.removeEventListener("pointerdown", onPointerDown);
+      parent.removeEventListener("pointerup", onPointerEnd);
+      parent.removeEventListener("pointercancel", onPointerEnd);
       parent.removeEventListener("focus", onFocus);
       parent.removeEventListener("blur", onBlur);
     };
@@ -125,14 +137,20 @@ export function IconTip({ label, className, followFocus = false, children, ...re
 
   const onPointerEnter = (event: ReactPointerEvent<HTMLSpanElement>) => {
     if (event.pointerType === "touch") return;
+    window.clearTimeout(leaveTimer.current);
     window.clearTimeout(hoverTimer.current);
     hoverTimer.current = window.setTimeout(() => setOpen(true), ICON_TIP_HOVER_DELAY_MS);
   };
 
+  // The tip is hoverable: leaving the trigger or the tip waits a short grace before closing.
   const onPointerLeave = (event: ReactPointerEvent<HTMLSpanElement>) => {
     if (event.pointerType === "touch") return;
-    close();
+    window.clearTimeout(hoverTimer.current);
+    window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(close, ICON_TIP_LEAVE_GRACE_MS);
   };
+
+  const keepOpen = () => window.clearTimeout(leaveTimer.current);
 
   const onPointerDown = (event: ReactPointerEvent<HTMLSpanElement>) => {
     if (event.pointerType !== "touch") return;
@@ -161,12 +179,22 @@ export function IconTip({ label, className, followFocus = false, children, ...re
       onContextMenu={(event) => event.preventDefault()}
     >
       {children}
-      {open ? <IconTipPlate label={label} anchor={triggerRef} /> : null}
+      {open ? <IconTipPlate label={label} anchor={triggerRef} onEnter={keepOpen} onLeave={onPointerLeave} /> : null}
     </span>
   );
 }
 
-function IconTipPlate({ label, anchor }: { label: string; anchor: React.RefObject<HTMLSpanElement | null> }) {
+function IconTipPlate({
+  label,
+  anchor,
+  onEnter,
+  onLeave,
+}: {
+  label: string;
+  anchor: React.RefObject<HTMLSpanElement | null>;
+  onEnter: () => void;
+  onLeave: (event: ReactPointerEvent<HTMLSpanElement>) => void;
+}) {
   const plateRef = useRef<HTMLSpanElement>(null);
   const [placement, setPlacement] = useState<Placement | null>(null);
 
@@ -188,8 +216,10 @@ function IconTipPlate({ label, anchor }: { label: string; anchor: React.RefObjec
       ref={plateRef}
       role="tooltip"
       data-slot="icon-tip"
+      onPointerEnter={onEnter}
+      onPointerLeave={onLeave}
       className={cn(
-        "pointer-events-none fixed z-50 w-max max-w-[min(16rem,calc(100vw-1rem))] rounded border border-line bg-popover px-2 py-1",
+        "fixed z-50 w-max max-w-[min(16rem,calc(100vw-1rem))] rounded border border-line bg-popover px-2 py-1",
         "font-heading text-caption font-semibold leading-tight text-popover-foreground shadow-md",
         "motion-safe:animate-in motion-safe:fade-in-0",
       )}

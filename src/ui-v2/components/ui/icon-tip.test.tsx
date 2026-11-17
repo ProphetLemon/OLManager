@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   ICON_TIP_HOVER_DELAY_MS,
+  ICON_TIP_LEAVE_GRACE_MS,
   ICON_TIP_LONG_PRESS_MS,
   ICON_TIP_TOUCH_HIDE_MS,
   IconTip,
@@ -46,7 +47,44 @@ describe("hover (mouse and pen)", () => {
     advance(ICON_TIP_HOVER_DELAY_MS);
     expect(tip()).not.toBeNull();
     fireEvent.pointerLeave(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS);
     expect(tip()).toBeNull();
+  });
+
+  it("stays open through a short grace after the pointer leaves the trigger (WCAG 1.4.13)", () => {
+    const { icon } = setup();
+    fireEvent.pointerEnter(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    fireEvent.pointerLeave(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS - 1);
+    expect(tip()).not.toBeNull();
+    advance(1);
+    expect(tip()).toBeNull();
+  });
+
+  it("is hoverable: moving onto the tip keeps it open, leaving the tip closes it after the grace", () => {
+    const { icon } = setup();
+    fireEvent.pointerEnter(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    fireEvent.pointerLeave(icon, { pointerType: "mouse" });
+    fireEvent.pointerEnter(tip()!, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS * 3);
+    expect(tip()).not.toBeNull();
+    expect(tip()!.className).not.toContain("pointer-events-none");
+    fireEvent.pointerLeave(tip()!, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS);
+    expect(tip()).toBeNull();
+  });
+
+  it("coming back to the trigger within the grace cancels the close", () => {
+    const { icon } = setup();
+    fireEvent.pointerEnter(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    fireEvent.pointerLeave(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS - 10);
+    fireEvent.pointerEnter(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS * 3);
+    expect(tip()).not.toBeNull();
   });
 
   it("is not a native title and is not focusable", () => {
@@ -205,6 +243,21 @@ describe("keyboard focus of the parent (followFocus)", () => {
     const button = focusSetup();
     fireEvent.pointerDown(button, { pointerType: "mouse" });
     act(() => button.focus());
+    expect(tip()).toBeNull();
+  });
+
+  it("opens for a later keyboard focus when the earlier click never focused the button", () => {
+    const button = focusSetup();
+    fireEvent.pointerDown(button, { pointerType: "mouse" });
+    fireEvent.pointerUp(button, { pointerType: "mouse" }); // a webview where the click did not focus
+    act(() => button.focus());
+    expect(tip()).toHaveTextContent("Settings");
+  });
+
+  it("closes on blur at once, without the hover grace", () => {
+    const button = focusSetup();
+    act(() => button.focus());
+    act(() => button.blur());
     expect(tip()).toBeNull();
   });
 
