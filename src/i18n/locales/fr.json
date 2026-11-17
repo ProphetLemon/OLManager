@@ -193,6 +193,12 @@
         "unknown": "Une erreur s’est produite : {{error}}"
       }
     },
+    "saveStatus": {
+      "otherVersion": "D’une autre version",
+      "unreadable": "Illisible",
+      "otherVersionReason": "Enregistrée au format {{found}}, que cette version ne lit pas. Elle reste sur votre appareil : exportez-la pour en garder une copie, ou ouvrez-la avec la version qui l’a créée.",
+      "unreadableReason": "Le fichier est endommagé ou incomplet, il ne peut donc pas être chargé. Il reste sur votre appareil : exportez-le pour conserver ce qu’il contient, ou supprimez-le."
+    },
     "noResults": "Aucun résultat",
     "failedStartGame": "Échec du démarrage du jeu : {{error}}",
     "community": "Community",

@@ -193,6 +193,12 @@
         "unknown": "Bir şeyler ters gitti: {{error}}"
       }
     },
+    "saveStatus": {
+      "otherVersion": "Başka bir sürümden",
+      "unreadable": "Okunamıyor",
+      "otherVersionReason": "{{found}} biçimiyle kaydedilmiş; bu sürüm bu biçimi okumuyor. Kayıt cihazınızda kalır: bir kopyasını saklamak için dışa aktarın ya da onu oluşturan sürümle açın.",
+      "unreadableReason": "Dosya hasarlı veya eksik olduğundan yüklenemiyor. Cihazınızda kalır: içindekileri korumak için dışa aktarın ya da silin."
+    },
     "noResults": "Sonuç bulunamadı",
     "failedStartGame": "Oyun başlatılamadı: {{error}}",
     "community": "Topluluk",

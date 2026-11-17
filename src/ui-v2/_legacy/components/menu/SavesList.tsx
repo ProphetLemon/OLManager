@@ -6,6 +6,8 @@ import type { SaveImportPreview } from "@/api/types";
 import type { TransferNotice } from "./useSaveTransfer";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 
+type SaveStatus = "ok" | "other_version" | "unreadable";
+
 interface SaveEntry {
   id: string;
   name: string;
@@ -14,7 +16,13 @@ interface SaveEntry {
   checksum: string;
   created_at: string;
   last_played_at: string;
+  /** Worked out from the file on every listing; a list without it is read as `ok`. */
+  status?: SaveStatus;
+  /** The format number the file declares, when it is from another version. */
+  format_version?: number | null;
 }
+
+const canLoad = (save: SaveEntry): boolean => (save.status ?? "ok") === "ok";
 
 interface SavesListProps {
   saves: SaveEntry[];
@@ -58,7 +66,10 @@ export default function SavesList({
     itemCount: saves.length,
     columns: 1,
     loop: false,
-    onSelect: (i) => onLoad(saves[i]?.id),
+    onSelect: (i) => {
+      const save = saves[i];
+      if (save && canLoad(save)) onLoad(save.id);
+    },
     getItemLabel: (i) => saves[i]?.name ?? "",
   });
 
@@ -68,8 +79,16 @@ export default function SavesList({
     }
   }, [activeIndex, isLoading, saves.length]);
 
+  // Enter and Space act on the focused button. Only a row's Load button is a roving item,
+  // so every other button keeps its own key handling instead of loading the active row.
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const actsOnButton = e.key === "Enter" || e.key === " ";
+    if (actsOnButton && !(e.target as HTMLElement).closest("[data-save-load]")) return;
+    handleKeyDown(e);
+  };
+
   return (
-    <div className="flex flex-col" onKeyDown={handleKeyDown}>
+    <div className="flex flex-col" onKeyDown={onKeyDown}>
       <div className="flex justify-between items-center pb-5">
         <h2 className="text-2xl font-heading font-bold uppercase tracking-wider text-white drop-shadow">
           {t("menu.loadGame")}
@@ -141,7 +160,10 @@ export default function SavesList({
             {t("menu.noSaves")}
           </div>
         ) : (
-          saves.map((save, i) => (
+          saves.map((save, i) => {
+            const loadable = canLoad(save);
+            const reasonId = `save-reason-${save.id}`;
+            return (
             <div
               key={save.id}
               className="group relative flex flex-col gap-2 w-full py-4 text-left transition-colors border-b border-white/10 hover:bg-white/5"
@@ -173,15 +195,30 @@ export default function SavesList({
                 <div className="flex items-center gap-3 w-full">
                   <button
                     ref={(el) => { itemRefs.current[i] = el; }}
+                    data-save-load
                     tabIndex={getTabIndex(i)}
-                    onClick={() => onLoad(save.id)}
-                    className="flex flex-col gap-2 flex-1 text-left min-w-0 px-1"
+                    // Not `disabled`: a disabled button leaves the tab order, and the keyboard
+                    // user would never reach the reason this save cannot be loaded.
+                    aria-disabled={loadable ? undefined : true}
+                    aria-describedby={loadable ? undefined : reasonId}
+                    onClick={() => {
+                      if (loadable) onLoad(save.id);
+                    }}
+                    className={`flex flex-col gap-2 flex-1 text-left min-w-0 px-1 ${loadable ? "" : "cursor-not-allowed"}`}
                   >
                     <div className="flex justify-between items-center w-full">
                       <span className="font-heading font-bold text-white text-lg uppercase tracking-wide truncate">
                         {save.name}
                       </span>
-                      {loadingSaveId === save.id ? (
+                      {!loadable ? (
+                        <span className="shrink-0 ml-2 px-2 py-0.5 border border-warning text-warning text-caption font-heading font-bold uppercase tracking-wide rounded">
+                          {t(
+                            save.status === "unreadable"
+                              ? "menu.saveStatus.unreadable"
+                              : "menu.saveStatus.otherVersion",
+                          )}
+                        </span>
+                      ) : loadingSaveId === save.id ? (
                         <Loader2 className="w-4 h-4 text-accent-400 animate-spin shrink-0" />
                       ) : (
                         <Play className="w-4 h-4 text-accent-400 opacity-0 group-hover:opacity-100 transition-all shrink-0" />
@@ -224,8 +261,16 @@ export default function SavesList({
                   </button>
                 </div>
               )}
+              {!loadable && confirmDeleteId !== save.id && (
+                <p id={reasonId} className="px-1 text-sm text-dim">
+                  {save.status === "unreadable"
+                    ? t("menu.saveStatus.unreadableReason")
+                    : t("menu.saveStatus.otherVersionReason", { found: save.format_version ?? "?" })}
+                </p>
+              )}
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

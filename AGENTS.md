@@ -71,6 +71,8 @@ El partido en directo ya no es un wrapper: `_legacy/pages/MatchSimulation` monta
 
 Tocado en _legacy por On Air: `FloatingBugButton` (ya sólo en línea, sin variante flotante) y el cambio `text-primary` → `text-club-text` en los ficheros que lo usaban.
 
+Tocado en _legacy por la conservación de partidas: `SavesList` etiqueta una partida de otra versión o ilegible y explica por qué no se carga (Cargar con `aria-disabled` y `aria-describedby`; Exportar y Eliminar siguen activos), y deja Enter/Espacio a su propio botón; `MainMenu` sólo amplía el tipo local `SaveEntry`.
+
 ---
 
 ## 4. Diseño

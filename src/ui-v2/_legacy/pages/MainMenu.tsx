@@ -36,6 +36,8 @@ interface SaveEntry {
   checksum: string;
   created_at: string;
   last_played_at: string;
+  status?: "ok" | "other_version" | "unreadable";
+  format_version?: number | null;
 }
 
 function normaliseSearchText(value: string): string {
