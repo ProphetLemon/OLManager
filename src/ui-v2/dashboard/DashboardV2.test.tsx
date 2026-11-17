@@ -783,6 +783,12 @@ describe("DashboardV2 rail mode", () => {
     }
   });
 
+  it("hands the sidebar the attention map built from the call items", async () => {
+    await renderDashboard();
+    expect(shell.sidebar).toHaveProperty("attention");
+    expect(shell.sidebar?.attention).toEqual({});
+  });
+
   it("passes Tree to the sidebar and hides the strip when the body fits the tree", async () => {
     await renderDashboard();
     measure(1280, 764);

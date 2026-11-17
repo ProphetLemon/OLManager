@@ -59,6 +59,7 @@ import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
 import { useRailMode } from "@/ui-v2/shell/useRailMode";
+import { buildAttentionMap } from "@/ui-v2/shell/attention";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 
 
@@ -692,6 +693,7 @@ export default function DashboardV2() {
         compact={showSeasonSummary}
         railMode={rail.mode}
         railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need }}
+        attention={buildAttentionMap(callResult?.items ?? [])}
       />
 
       <DashboardOverlays
