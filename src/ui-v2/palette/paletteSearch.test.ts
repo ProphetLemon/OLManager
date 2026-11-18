@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { paletteKeyAction } from "./paletteKeys";
 import {
@@ -134,6 +134,23 @@ describe("searchPalette", () => {
     ];
     expect(ids(searchPalette(rows, "", "en"))).toEqual(["call", "section-1", "section-2"]);
     expect(ids(searchPalette(rows, "   ", "en"))).toEqual(["call", "section-1", "section-2"]);
+  });
+
+  it("normalizes a row's fields once per index build and the query once per keystroke", () => {
+    const rows = [row("squad", { label: "Squad" }), row("staff", { label: "Staff", zone: "Club" })];
+    const spy = vi.spyOn(String.prototype, "normalize");
+    try {
+      searchPalette(rows, "s", "en");
+      spy.mockClear();
+      searchPalette(rows, "st", "en");
+      expect(spy).toHaveBeenCalledTimes(1);
+      // Another language folds differently, so it normalizes the fields again.
+      spy.mockClear();
+      searchPalette(rows, "st", "tr");
+      expect(spy.mock.calls.length).toBeGreaterThan(1);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("returns nothing when nothing matches", () => {

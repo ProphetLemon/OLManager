@@ -128,6 +128,10 @@ const detail = (parts: (string | null | undefined)[], sep: "›" | "·" = "·"):
  * resolved here, live, so Recent always names what is there now. There are no
  * actions (Continue, Save, Exit) and no Settings sections; finding unvisited
  * players, teams or staff by name is deferred (R28).
+ *
+ * NR2.8: memoize the call on [decisionItems, recent, game, lang, t]. Search
+ * normalizes each row once per row object, so a rebuild per keystroke would
+ * throw that away.
  */
 export function buildPaletteIndex(input: PaletteIndexInput): PaletteEntry[] {
   const { t } = input;

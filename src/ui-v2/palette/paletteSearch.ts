@@ -59,9 +59,20 @@ function fieldRank(field: string, q: string): MatchRank | null {
   return null;
 }
 
+/**
+ * A row's searched fields, normalized once per row object and language. Rows are
+ * built anew by each `buildPaletteIndex` and never changed after, so a keystroke
+ * normalizes only its query. The cache is weak: it goes with the index.
+ */
+const normalizedFields = new WeakMap<PaletteSearchable, { lang: string; fields: string[] }>();
+
 function fieldsOf(entry: PaletteSearchable, lang: string): string[] {
+  const cached = normalizedFields.get(entry);
+  if (cached && cached.lang === lang) return cached.fields;
   const label = entry.labelPrefix ? `${entry.labelPrefix} ${entry.label}` : entry.label;
-  return [entry.label, label, entry.zone ?? "", entry.alias, entry.headline ?? ""].map((f) => normalize(f, lang));
+  const fields = [entry.label, label, entry.zone ?? "", entry.alias, entry.headline ?? ""].map((f) => normalize(f, lang));
+  normalizedFields.set(entry, { lang, fields });
+  return fields;
 }
 
 function rankNormalized(fields: string[], q: string): MatchRank | null {
