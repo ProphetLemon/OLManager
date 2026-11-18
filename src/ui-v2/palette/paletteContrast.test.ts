@@ -40,4 +40,10 @@ describe("the Go palette's active row contrast, dark theme", () => {
       expect(contrastRatio(foreground, wash), primary).toBeGreaterThanOrEqual(4.5);
     }
   });
+
+  it("keeps the active bar at 3:1 against the panel, whatever the club (R76)", () => {
+    for (const { primary, palette } of palettes) {
+      expect(contrastRatio(palette.accentText, popover), primary).toBeGreaterThanOrEqual(3);
+    }
+  });
 });

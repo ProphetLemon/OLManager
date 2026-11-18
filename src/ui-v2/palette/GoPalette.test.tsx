@@ -409,4 +409,13 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     expect(secondary(first)).not.toHaveClass("text-muted-foreground");
     for (const row of rest) expect(secondary(row)).toHaveClass("text-muted-foreground");
   });
+
+  it("draws the active bar in the club text colour, as the rail does (R76)", async () => {
+    await openPalette();
+    const bars = document.querySelectorAll('[data-slot="palette-option-bar"]');
+    expect(bars).toHaveLength(1);
+    expect(activeOption()?.contains(bars[0])).toBe(true);
+    expect(bars[0]).toHaveClass("bg-club-text");
+    expect(bars[0]).not.toHaveClass("bg-club");
+  });
 });

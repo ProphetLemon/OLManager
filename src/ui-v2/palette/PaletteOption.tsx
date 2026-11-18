@@ -65,7 +65,8 @@ export function PaletteOption({ entry, id, active, onHighlight, onActivate }: Pr
       )}
     >
       {active && (
-        <span aria-hidden="true" data-slot="palette-option-bar" className="absolute inset-y-1 start-0 w-[3px] rounded-e-sm bg-club" />
+        // R76: the club text colour, clamped for contrast, as the rail's bar; the raw club can fall under 3:1.
+        <span aria-hidden="true" data-slot="palette-option-bar" className="absolute inset-y-1 start-0 w-[3px] rounded-e-sm bg-club-text" />
       )}
       {entry.kind === "call" && (
         <TagBlock tone={entry.item.tagTone} size="sm" className="shrink-0 text-nav">
