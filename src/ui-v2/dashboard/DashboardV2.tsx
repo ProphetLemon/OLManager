@@ -45,6 +45,7 @@ import {
   type NavIntent,
 } from "@/lib/dashboard/profileNavigation";
 import { backTitle, describeLocation, routeAnnouncement, tabTitle } from "@/lib/dashboard/describeLocation";
+import { MAIN_CONTENT_ID, focusMainContent } from "./focusMainContent";
 import { RouteAnnouncer, useRouteAnnouncer } from "./RouteAnnouncer";
 import { createDashboardTabContentModel } from "@/lib/dashboard/tabContentModel";
 import {
@@ -134,7 +135,6 @@ const TAB_TO_DISCORD_KEY: Record<string, string> = {
 /** DOM id of the Home "Needs your call" panel (owned by NeedsYourCallPanel). */
 const NEEDS_YOUR_CALL_ID = "needs-your-call";
 const BLOCKER_REFRESH_DEBOUNCE_MS = 400;
-const MAIN_CONTENT_ID = "main-content";
 /** The panel mounts after a lazy Home chunk resolves, so look for it for a short while. */
 const FOCUS_CALLS_ATTEMPTS = 40;
 const FOCUS_CALLS_INTERVAL_MS = 50;
@@ -500,7 +500,7 @@ export default function DashboardV2() {
     else go(move);
     const after = currentLocation(useDashboardLocationStore.getState().nav);
     if (sameLocation(before, after)) return;
-    if (focusMain) document.getElementById(MAIN_CONTENT_ID)?.focus();
+    if (focusMain) focusMainContent();
     const text = speak && gameState ? routeAnnouncement(after, { t, game: gameState }) : null;
     if (text) announce(text);
     else clearRoute();
@@ -530,7 +530,7 @@ export default function DashboardV2() {
 
   const handleSkipToMain = (event: { preventDefault: () => void }) => {
     event.preventDefault();
-    document.getElementById(MAIN_CONTENT_ID)?.focus();
+    focusMainContent();
   };
 
   const handleNavigate = (tab: string, context?: DashboardNavigateContext) =>
