@@ -154,6 +154,8 @@ describe("DashboardHeaderV2", () => {
           "dark:hover:bg-transparent",
           "active:not-aria-[haspopup]:translate-y-0",
           "forced-colors:text-[color:GrayText]",
+          // `hover:text-dim` would beat the forced-colours GrayText on hover without its own override.
+          "forced-colors:hover:text-[color:GrayText]",
         ]),
       );
       expect(classes).not.toContain("dark:hover:bg-muted/50");
