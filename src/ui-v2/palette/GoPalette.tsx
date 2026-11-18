@@ -111,18 +111,19 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   const optionId = (entry: PaletteEntry) =>
     `${listId}-opt-${entry.id.replace(/[^A-Za-z0-9-]/g, (c) => `_${c.codePointAt(0)?.toString(16)}_`)}`;
 
+  // R84: with no query (nothing indexed, as with no game) there is nothing to match against.
+  const emptyText = query.trim()
+    ? t("onAir.palette.empty", { query, defaultValue: "No matches for “{{query}}”" })
+    : t("onAir.palette.nothing", { defaultValue: "Nothing to go to" });
+
   // One status region (R45): the count once typing pauses, or the empty text; nothing on open.
   useEffect(() => {
     if (!open || !typed) return;
     const timer = setTimeout(() => {
-      setStatus(
-        results.length === 0
-          ? t("onAir.palette.empty", { query, defaultValue: "No matches for “{{query}}”" })
-          : t("onAir.palette.results", { count: results.length, defaultValue: "{{count}} results" }),
-      );
+      setStatus(results.length === 0 ? emptyText : t("onAir.palette.results", { count: results.length, defaultValue: "{{count}} results" }));
     }, PALETTE_STATUS_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [open, typed, query, results.length, t]);
+  }, [open, typed, results.length, emptyText, t]);
 
   // Back (popstate, raised by the Android back gesture) closes the palette. It does not
   // consume the event: DashboardV2's own popstate handler still runs, as intended (spec §5.5).
@@ -361,7 +362,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
               </div>
             ) : (
               <p data-slot="go-palette-empty" className="px-4 py-6 text-entry text-muted-foreground">
-                {t("onAir.palette.empty", { query, defaultValue: "No matches for “{{query}}”" })}
+                {emptyText}
               </p>
             )}
           </div>

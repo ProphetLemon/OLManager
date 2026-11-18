@@ -3736,7 +3736,8 @@
       },
       "results_one": "{{count}} resultado",
       "results_other": "{{count}} resultados",
-      "empty": "Nenhum resultado para “{{query}}”"
+      "empty": "Nenhum resultado para “{{query}}”",
+      "nothing": "Nenhum destino"
     },
     "tags": {
       "blocker": "Bloqueio",

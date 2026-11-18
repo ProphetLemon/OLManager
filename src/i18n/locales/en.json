@@ -3770,7 +3770,8 @@
       },
       "results_one": "{{count}} result",
       "results_other": "{{count}} results",
-      "empty": "No matches for “{{query}}”"
+      "empty": "No matches for “{{query}}”",
+      "nothing": "Nothing to go to"
     },
     "tags": {
       "blocker": "Blocker",

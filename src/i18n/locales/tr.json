@@ -3736,7 +3736,8 @@
       },
       "results_one": "{{count}} sonuç",
       "results_other": "{{count}} sonuç",
-      "empty": "“{{query}}” için sonuç yok"
+      "empty": "“{{query}}” için sonuç yok",
+      "nothing": "Gidilecek bir yer yok"
     },
     "tags": {
       "blocker": "Engel",

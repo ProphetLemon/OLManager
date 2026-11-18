@@ -474,6 +474,21 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
       expect(line).not.toHaveClass("truncate");
     }
   });
+
+  it("says there is nothing to go to when nothing is indexed and nothing is typed (R84)", async () => {
+    render(<Harness rows={[]} />);
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await screen.findByRole("dialog");
+    const empty = () => document.querySelector('[data-slot="go-palette-empty"]');
+    expect(empty()).toHaveTextContent(/^Nothing to go to$/);
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    type("zz");
+    expect(empty()).toHaveTextContent("No matches for “zz”");
+    type("");
+    act(() => vi.advanceTimersByTime(300));
+    expect(empty()).toHaveTextContent(/^Nothing to go to$/);
+    expect(status()).toHaveTextContent(/^Nothing to go to$/);
+  });
 });
 
 // R79: the app routes the Android back gesture through webview history (wry's
