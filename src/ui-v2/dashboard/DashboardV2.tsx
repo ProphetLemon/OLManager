@@ -543,7 +543,8 @@ export default function DashboardV2() {
   };
 
   // A lane pill goes where its call is fixed, says so, and puts focus on main (R37). When
-  // that place is already the current one, nothing moves, but focus still goes to main.
+  // that place is already the current one, nothing moves, but focus still goes to main
+  // and the place is still named (R64).
   // A renewal opens its own dialog, which takes focus and is spoken, so the pill
   // does neither, even when that profile is already open: each press is a new
   // request, so a dialog closed since then opens again (R57).
@@ -552,7 +553,13 @@ export default function DashboardV2() {
       runIntent(intent);
       return;
     }
-    if (!runIntent(intent, { announce: true, focusMain: true })) focusMainContent();
+    if (runIntent(intent, { announce: true, focusMain: true })) return;
+    // Already there: focus on an unnamed main says little, so name the place, or the
+    // press seems to have done nothing (R64).
+    focusMainContent();
+    const here = currentLocation(useDashboardLocationStore.getState().nav);
+    const text = gameState ? routeAnnouncement(here, { t, game: gameState }) : null;
+    if (text) announce(text);
   };
 
   const handleSkipToMain = (event: { preventDefault: () => void }) => {

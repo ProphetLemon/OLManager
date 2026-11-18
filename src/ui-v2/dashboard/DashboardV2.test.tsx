@@ -1061,10 +1061,14 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
   });
 
-  it("focuses the main region even when the call's place is the current one", async () => {
+  it("focuses the main region and says where it is even when the call's place is the current one (R64)", async () => {
     await renderOn("Youth");
     fireEvent.click(await screen.findByRole("button", { name: /Academy incomplete/ }));
     expect(document.activeElement).toBe(document.getElementById("main-content"));
+    await waitFor(() =>
+      // This file's t returns the key: "Now on {{place}}" (onAir.route.now) was posted.
+      expect(document.querySelector('[data-slot="route-announcer"]')?.textContent).toBe("onAir.route.now"),
+    );
   });
 
   /** One starter whose contract ends in three weeks: the only decision, a renewal. */
