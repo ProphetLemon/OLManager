@@ -1,10 +1,15 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import type { TFunction } from "i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardHeaderV2 } from "@/ui-v2/dashboard/DashboardHeaderV2";
 import { DashboardSidebarV2 } from "@/ui-v2/dashboard/DashboardSidebarV2";
 import { AttentionLaneV2 } from "@/ui-v2/dashboard/AttentionLaneV2";
 import type { LanePill } from "@/lib/dashboard/attentionLane";
+import { usePaletteStore } from "@/store/paletteStore";
+import { translateFromEnglish } from "@/test-i18n";
+import { GoPalette } from "@/ui-v2/palette/GoPalette";
+import { buildPaletteIndex, type PaletteIndexInput } from "@/ui-v2/palette/paletteIndex";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
@@ -202,5 +207,82 @@ describe("compact (the end-of-season screen)", () => {
     expect(screen.queryByRole("group", { name: /sections/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Inbox" }));
     expect(onNavClick).toHaveBeenCalledWith("Inbox");
+  });
+});
+
+describe.each(["off", "high"])("the Go palette, open, contrast %s (NR2.8, R25, R44, R45, R48)", (mode) => {
+  const home = { tab: "Home", playerId: null, teamId: null, staffId: null, championKey: null };
+  const entries = buildPaletteIndex({
+    callState: { decisionItems: LANE_PILLS.flatMap((p) => (p.kind === "call" ? [p.item] : [])) },
+    recent: [{ ...home, tab: "Inbox" }],
+    current: home,
+    unemployed: false,
+    scheduleCalendar: true,
+    selectedCompetitionId: null,
+    game: {
+      manager: { team_id: "team-1" },
+      user_competition_id: null,
+      leagues: [],
+      players: [],
+      teams: [{ id: "team-1", name: "Night Owls" }],
+      staff: [],
+    } as unknown as PaletteIndexInput["game"],
+    t: translateFromEnglish as unknown as TFunction,
+  });
+
+  beforeEach(() => {
+    if (mode === "high") document.documentElement.setAttribute("data-contrast", "high");
+    usePaletteStore.getState().reset();
+  });
+
+  async function renderOpen() {
+    const view = renderShell();
+    render(<GoPalette entries={entries} callCount={2} platform="desktop" onActivate={vi.fn()} />);
+    act(() => usePaletteStore.getState().openPalette(null));
+    const dialog = await screen.findByRole("dialog", { name: "Go to" });
+    return { ...view, dialog };
+  }
+
+  it("is one named modal dialog that takes the shell out of the accessibility tree", async () => {
+    const { dialog } = await renderOpen();
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(screen.queryByRole("navigation")).toBeNull();
+    expect(screen.queryByRole("region", { name: "Before you continue" })).toBeNull();
+  });
+
+  it("names every control and gives the combobox the states it requires", async () => {
+    const { dialog } = await renderOpen();
+    for (const el of dialog.querySelectorAll("button, input")) expect(el).toHaveAccessibleName();
+    const input = within(dialog).getByRole("combobox");
+    expect(input).toHaveAttribute("aria-expanded", "true");
+    const list = document.getElementById(input.getAttribute("aria-controls") ?? "");
+    expect(list).toHaveAttribute("role", "listbox");
+    const active = document.getElementById(input.getAttribute("aria-activedescendant") ?? "");
+    expect(active).toHaveAttribute("role", "option");
+    expect(list!.contains(active)).toBe(true);
+  });
+
+  it("nests only named groups of options in the listbox, one of them selected", async () => {
+    const { dialog } = await renderOpen();
+    const list = within(dialog).getByRole("listbox");
+    for (const child of list.children) expect(child).toHaveAttribute("role", "group");
+    for (const group of within(list).getAllByRole("group")) {
+      expect(group).toHaveAccessibleName();
+      for (const child of group.children) expect(["option", "presentation"]).toContain(child.getAttribute("role"));
+    }
+    const options = within(list).getAllByRole("option");
+    expect(options.every((o) => o.hasAttribute("aria-selected"))).toBe(true);
+    expect(options.filter((o) => o.getAttribute("aria-selected") === "true")).toHaveLength(1);
+  });
+
+  it("has one live region, no title, no positive or option tabindex, and no duplicate id", async () => {
+    const { dialog } = await renderOpen();
+    expect(dialog.querySelectorAll('[aria-live], [role="status"], [role="alert"]')).toHaveLength(1);
+    expect(dialog.querySelector("[title]")).toBeNull();
+    expect(dialog.querySelector('[tabindex]:not([tabindex="0"]):not([tabindex="-1"])')).toBeNull();
+    expect(dialog.querySelector('[role="option"][tabindex]')).toBeNull();
+    expect(dialog.querySelector('[aria-hidden="true"] button, [aria-hidden="true"] input')).toBeNull();
+    const ids = [...document.querySelectorAll("[id]")].map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
