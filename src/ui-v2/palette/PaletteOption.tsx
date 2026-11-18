@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type MouseEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { callTagLabel } from "@/lib/dashboard/callLabels";
@@ -12,7 +12,8 @@ interface Props {
   entry: PaletteEntry;
   id: string;
   active: boolean;
-  onHighlight: () => void;
+  /** Every mousemove over the row, the active one included, so the palette can tell a real move (R78). */
+  onPointerMove: (e: MouseEvent<HTMLDivElement>) => void;
   onActivate: () => void;
 }
 
@@ -35,7 +36,7 @@ function Sep({ sign }: { sign: "›" | "·" }) {
  * wears the rail's active look (wash, bar, weight) and `aria-selected`; it never
  * takes DOM focus, which stays in the input (R25). No `title`: Orca reads it twice (R48).
  */
-export function PaletteOption({ entry, id, active, onHighlight, onActivate }: Props) {
+export function PaletteOption({ entry, id, active, onPointerMove, onActivate }: Props) {
   const { t } = useTranslation();
   let primary: ReactNode = entry.label;
   if (entry.labelPrefix) {
@@ -56,7 +57,7 @@ export function PaletteOption({ entry, id, active, onHighlight, onActivate }: Pr
       data-slot="palette-option"
       // Keep DOM focus in the input: a press must not blur it before the click lands.
       onMouseDown={(e) => e.preventDefault()}
-      onMouseMove={active ? undefined : onHighlight}
+      onMouseMove={onPointerMove}
       onClick={onActivate}
       className={cn(
         "relative flex min-h-[var(--palette-row)] cursor-pointer items-center gap-3 px-4 py-1 text-foreground",

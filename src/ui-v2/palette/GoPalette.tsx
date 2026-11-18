@@ -158,6 +158,16 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     closePalette();
   };
 
+  // R78: the pointer's last position over the list. WebKit and Chromium send a mousemove
+  // after a scroll with the pointer where it was, so a move that has not moved is ignored,
+  // and a pointer parked over the list never takes the highlight from the keys.
+  const pointer = useRef({ x: -1, y: -1 });
+  const pointerMove = (index: number, e: { clientX: number; clientY: number }) => {
+    if (e.clientX === pointer.current.x && e.clientY === pointer.current.y) return;
+    pointer.current = { x: e.clientX, y: e.clientY };
+    if (index !== activeIndex) setActive(index);
+  };
+
   const move = (index: number) => {
     setActive(index);
     document.getElementById(optionId(results[index]))?.scrollIntoView({ block: "nearest" });
@@ -334,7 +344,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
                             entry={entry}
                             id={optionId(entry)}
                             active={index === activeIndex}
-                            onHighlight={() => setActive(index)}
+                            onPointerMove={(e) => pointerMove(index, e)}
                             onActivate={() => activate(entry)}
                           />
                         );

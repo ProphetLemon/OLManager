@@ -198,7 +198,7 @@ describe("GoPalette: keys, pointer and activation (spec §5.5, R27, R37)", () =>
 
   it("highlights the row under the pointer", async () => {
     await openPalette();
-    fireEvent.mouseMove(options()[3]);
+    fireEvent.mouseMove(options()[3], { clientX: 24, clientY: 160 });
     expect(activeOption()).toBe(options()[3]);
   });
 
@@ -430,5 +430,24 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
   it("places the desktop panel from the --palette-top token, which a short window lowers (R80)", async () => {
     const dialog = await openPalette();
     expect(dialog).toHaveClass("top-[var(--palette-top)]", "max-h-[var(--palette-h)]");
+  });
+
+  it("ignores a mousemove whose pointer has not moved, as a browser sends after a scroll (R78)", async () => {
+    await openPalette();
+    fireEvent.mouseMove(options()[1], { clientX: 40, clientY: 120 });
+    expect(activeOption()).toBe(options()[1]);
+    press("ArrowDown");
+    expect(activeOption()).toBe(options()[2]);
+    // The list scrolled under the parked pointer: the same point, now over another row.
+    fireEvent.mouseMove(options()[3], { clientX: 40, clientY: 120 });
+    expect(activeOption()).toBe(options()[2]);
+    // A move over the active row counts as the last position too.
+    fireEvent.mouseMove(options()[2], { clientX: 40, clientY: 132 });
+    press("ArrowDown");
+    fireEvent.mouseMove(options()[4], { clientX: 40, clientY: 132 });
+    expect(activeOption()).toBe(options()[3]);
+    // A real move highlights again.
+    fireEvent.mouseMove(options()[4], { clientX: 41, clientY: 140 });
+    expect(activeOption()).toBe(options()[4]);
   });
 });
