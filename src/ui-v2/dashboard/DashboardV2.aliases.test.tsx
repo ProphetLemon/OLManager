@@ -60,9 +60,25 @@ vi.mock("@/ui-v2/dashboard/tabs/YouthTabV2", () => ({
   ),
 }));
 vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
-  default: ({ startWithRenewalModal, onClose }: { startWithRenewalModal?: boolean; onClose: () => void }) => (
+  default: ({
+    startWithRenewalModal,
+    onClose,
+    onSelectTeam,
+  }: {
+    startWithRenewalModal?: boolean;
+    onClose: () => void;
+    onSelectTeam: (id: string) => void;
+  }) => (
     <div data-testid="player-profile" data-renewal={String(startWithRenewalModal)}>
       <button onClick={onClose}>close-profile</button>
+      <button onClick={() => onSelectTeam("team-1")}>open-team-1</button>
+    </div>
+  ),
+}));
+vi.mock("@/ui-v2/pages/TeamProfileV2", () => ({
+  default: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="team-profile">
+      <button onClick={onClose}>close-team</button>
     </div>
   ),
 }));
@@ -168,6 +184,18 @@ describe("DashboardV2 backend tab aliases", () => {
     expect(profile.dataset.renewal).toBe("false");
 
     fireEvent.click(screen.getByRole("button", { name: "close-profile" }));
+    expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByTestId("player-profile")).toBeNull();
+  });
+
+  it("skips a profile whose player has left the game when going back", async () => {
+    await renderAt("/dashboard");
+    fireEvent.click(await screen.findByRole("button", { name: "go-youth-academy" }));
+    // p1 is not among the game's players: it was released or retired since.
+    fireEvent.click(await screen.findByRole("button", { name: "renew-p1" }, { timeout: 3000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "open-team-1" }));
+    fireEvent.click(await screen.findByRole("button", { name: "close-team" }, { timeout: 3000 }));
+
     expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
     expect(screen.queryByTestId("player-profile")).toBeNull();
   });
