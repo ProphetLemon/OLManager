@@ -1,6 +1,6 @@
 import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 
 import type { GameStateData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
@@ -52,6 +52,7 @@ vi.mock("@/ui-v2/dashboard/DashboardSidebarV2", () => ({
   DashboardSidebarV2: ({ onNavClick }: { onNavClick: (tab: string) => void }) => (
     <nav aria-label="Main navigation">
       <button onClick={() => onNavClick("Squad")}>rail-squad</button>
+      <button onClick={() => onNavClick("Home")}>rail-home</button>
     </nav>
   ),
 }));
@@ -148,6 +149,50 @@ describe("useRouteAnnouncer", () => {
   });
 });
 
+describe("useRouteAnnouncer on a silent move (R51)", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("cancels a route message still queued", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => result.current.announce("Now on Squad, Club"));
+    act(() => result.current.clearRoute());
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("");
+  });
+
+  it("empties a route message already posted", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => result.current.announce("Now on Squad, Club"));
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    act(() => result.current.clearRoute());
+    expect(result.current.message).toBe("");
+  });
+
+  it("posts the same arrival again as plain text after a clear", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => result.current.announce("Now on Squad, Club"));
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    act(() => result.current.clearRoute());
+    act(() => result.current.announce("Now on Squad, Club"));
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("Now on Squad, Club");
+  });
+
+  it("keeps a status message, queued or posted (R42)", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => result.current.announce("3 to resolve", "status"));
+    act(() => result.current.clearRoute());
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("3 to resolve");
+    act(() => result.current.clearRoute());
+    expect(result.current.message).toBe("3 to resolve");
+  });
+});
+
 describe("RouteAnnouncer", () => {
   it("is one polite, atomic, visually hidden status region", () => {
     render(<RouteAnnouncer message="Now on Home" />);
@@ -173,10 +218,18 @@ function setupDashboard() {
   resetSessionNavigation();
 }
 
+/** Lets a test change the route, as a link to an alias path (/competitions) does. */
+let navigateTo: (path: string) => void = () => {};
+function RouterProbe() {
+  navigateTo = useNavigate();
+  return null;
+}
+
 async function renderDashboard() {
   const DashboardV2 = (await import("./DashboardV2")).default;
   render(
     <MemoryRouter initialEntries={["/dashboard"]}>
+      <RouterProbe />
       <DashboardV2 />
     </MemoryRouter>,
   );
@@ -226,6 +279,54 @@ describe("the route announcer in the dashboard (R46)", () => {
     await screen.findByTestId("player-profile", {}, { timeout: 3000 });
     expect(document.getElementById("main-content")).toHaveFocus();
     await waitFor(() => expect(announcer()).toHaveTextContent("Now on Faker, Club"));
+  });
+
+  /** Opens p1 from Squad, so the header Back lands on Squad. */
+  const openProfile = async () => {
+    await renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "rail-squad" }));
+    fireEvent.click(await screen.findByRole("button", { name: "open-p1" }, { timeout: 3000 }));
+    await screen.findByTestId("player-profile", {}, { timeout: 3000 });
+  };
+
+  it("never names Squad when a rail move follows Back within the quiet spell (R51)", async () => {
+    await openProfile();
+    const said: string[] = [];
+    const observer = new MutationObserver(() => said.push(announcer().textContent ?? ""));
+    observer.observe(announcer(), { childList: true, characterData: true, subtree: true });
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to Squad" }));
+    fireEvent.click(screen.getByRole("button", { name: "rail-home" }));
+    await settle();
+    observer.disconnect();
+
+    expect(said.some((text) => text.includes("Now on"))).toBe(false);
+    expect(announcer()).toHaveTextContent("");
+  });
+
+  it("never names Squad when an alias route follows Back, as it bypasses runIntent (R51)", async () => {
+    await openProfile();
+    const said: string[] = [];
+    const observer = new MutationObserver(() => said.push(announcer().textContent ?? ""));
+    observer.observe(announcer(), { childList: true, characterData: true, subtree: true });
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to Squad" }));
+    act(() => navigateTo("/competitions"));
+    await settle();
+    observer.disconnect();
+
+    expect(useDashboardLocationStore.getState().nav.activeTab).toBe("Competitions");
+    expect(said.some((text) => text.includes("Now on"))).toBe(false);
+    expect(announcer()).toHaveTextContent("");
+  });
+
+  it("empties the region when a rail move follows a spoken arrival (R51)", async () => {
+    await openProfile();
+    fireEvent.click(screen.getByRole("button", { name: "Back to Squad" }));
+    await waitFor(() => expect(announcer()).toHaveTextContent("Now on Squad, Club"));
+
+    fireEvent.click(screen.getByRole("button", { name: "rail-home" }));
+    expect(announcer().textContent).toBe("");
   });
 
   it("says nothing when Back has nowhere to go", async () => {

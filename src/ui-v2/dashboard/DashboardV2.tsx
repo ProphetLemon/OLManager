@@ -176,7 +176,7 @@ export default function DashboardV2() {
   const back = useDashboardLocationStore((s) => s.back);
   const closeChampion = useDashboardLocationStore((s) => s.closeChampion);
   const clearOneShots = useDashboardLocationStore((s) => s.clearOneShots);
-  const { message: routeMessage, announce } = useRouteAnnouncer();
+  const { message: routeMessage, announce, clearRoute } = useRouteAnnouncer();
   const viewingChampionKey = profileNavigation.championKey;
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isExitingToMenu, setIsExitingToMenu] = useState(false);
@@ -211,8 +211,12 @@ export default function DashboardV2() {
     if (!tab) {
       return;
     }
-    if (useDashboardLocationStore.getState().nav.activeTab !== tab) go({ kind: "tab", tab });
-  }, [location.pathname, hasActiveGame, go]);
+    if (useDashboardLocationStore.getState().nav.activeTab !== tab) {
+      go({ kind: "tab", tab });
+      // It bypasses runIntent, so it drops a route message itself (R51).
+      clearRoute();
+    }
+  }, [location.pathname, hasActiveGame, go, clearRoute]);
 
   // The location survives an unmount, but its one-shot intents (the renewal modal,
   // the message or competition to preselect) belong to the visit that carried them.
@@ -481,8 +485,10 @@ export default function DashboardV2() {
    * `go` directly). With `focusMain`, focus goes to the main region; an
    * in-page Back asks for it because its own button unmounts with the page. With
    * `announce`, the arrival is spoken as "Now on {title}, {group}" (R46). A rail
-   * row does neither: its aria-current already says where the user is. A move that
-   * goes nowhere does nothing at all.
+   * row does neither: its aria-current already says where the user is. A move
+   * that says nothing clears a route message still queued or shown, so the region
+   * never names a place the user has left (R51). A move that goes nowhere does
+   * nothing at all.
    */
   const runIntent = (
     move: NavIntent | { kind: "back" } | { kind: "closeChampion" },
@@ -495,10 +501,9 @@ export default function DashboardV2() {
     const after = currentLocation(useDashboardLocationStore.getState().nav);
     if (sameLocation(before, after)) return;
     if (focusMain) document.getElementById(MAIN_CONTENT_ID)?.focus();
-    if (speak && gameState) {
-      const text = routeAnnouncement(after, { t, game: gameState });
-      if (text) announce(text);
-    }
+    const text = speak && gameState ? routeAnnouncement(after, { t, game: gameState }) : null;
+    if (text) announce(text);
+    else clearRoute();
   };
 
   const handleNavClick = (tab: string) => runIntent({ kind: "tab", tab });
