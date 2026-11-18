@@ -3696,7 +3696,9 @@
       "manager": "Perfil do técnico",
       "needsCall_one": "{{label}}, precisa da sua decisão",
       "needsCall_other": "{{label}}, {{count}} precisam da sua decisão",
-      "more": "Mais"
+      "more": "Mais",
+      "go": "Ir para…",
+      "goShort": "Ir"
     },
     "lane": {
       "title": "Antes de continuar",

@@ -109,6 +109,19 @@ describe("attention lane tokens (NR2.6, R24, R35)", () => {
   });
 });
 
+describe("Go row token (NR2.9, R30)", () => {
+  it("declares --go-row as max(2.5rem, 40px), raised to the touch hit on Android", () => {
+    expect(ruleBody(":root")).toContain("--go-row: max(2.5rem, 40px);");
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--go-row: var(--hit);");
+  });
+
+  it("is what railMode's goRow mirrors", async () => {
+    const { goRow } = await import("@/ui-v2/shell/railMode");
+    const [, rem, px] = ruleBody(":root").match(/--go-row: max\(([\d.]+)rem, (\d+)px\);/) ?? [];
+    for (const r of [9, 12, 16, 18, 20]) expect(goRow(r)).toBe(Math.max(Number(rem) * r, Number(px)));
+  });
+});
+
 describe("Go palette tokens (NR2.8, spec §5.7, R29)", () => {
   it("caps the desktop panel to the window and floors its rows like a rail row", () => {
     const root = ruleBody(":root");

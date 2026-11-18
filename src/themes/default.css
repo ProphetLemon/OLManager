@@ -211,6 +211,8 @@
   --rail-w-split: max(4.75rem, 64px); /* the icon rail beside a docked panel */
   --rail-w-compact: max(3.5rem, 56px); /* the icon rail on the end-of-season screen */
   --nav-panel-w: max(9rem, 136px); /* the docked panel of the active group (Split) */
+  /* The Tree's Go row (NR2.9, R30), with 5 px above and below: railMode.goReserve mirrors it. */
+  --go-row: max(2.5rem, 40px);
   /* The "Before you continue" lane (R24): the band and its pills. Android raises both to --hit. */
   --lane-h: max(2.875rem, 46px);
   --lane-pill-h: var(--nav-row);
@@ -341,6 +343,7 @@
   --lane-h: calc(var(--hit) + 1px);
   --lane-pill-h: var(--hit);
   --palette-row: var(--hit);
+  --go-row: var(--hit);
 }
 
 /* ── High contrast (data-contrast set on <html> by AppV2) ───────

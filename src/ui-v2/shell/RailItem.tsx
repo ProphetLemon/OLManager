@@ -42,6 +42,14 @@ export const RAIL_LABEL_CLASS =
   "w-full wrap-break-word font-heading text-nav leading-4 line-clamp-2 text-balance hyphens-auto";
 /** What a stop's label loses to its margin (mx-1.5 twice) and padding (px-1 twice), in rem. */
 export const RAIL_STOP_INSET_REM = 1.25;
+/** The shape of a stop, labelled or not; shared with the Go stop. */
+export const RAIL_STOP_CLASS =
+  "relative mx-1.5 flex w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center text-center transition-colors";
+/** A labelled stop's size: the touch hit at least, icon over label. */
+export const RAIL_STOP_LABELLED_CLASS = "min-h-[var(--hit)] min-w-[var(--hit)] gap-0.5 px-1 py-1.5";
+/** The inset focus ring every rail control wears. */
+export const RAIL_FOCUS_CLASS =
+  "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring";
 
 /** One icon-over-label stop of the navigation rail. */
 export function RailItem({
@@ -94,9 +102,9 @@ export function RailItem({
       data-rail-stop={rest["data-rail-stop"]}
       data-nav-id={rest["data-nav-id"]}
       className={cn(
-        "relative mx-1.5 flex w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center text-center transition-colors",
-        iconOnly ? "h-[var(--nav-cell)] min-w-[var(--hit)]" : "min-h-[var(--hit)] min-w-[var(--hit)] gap-0.5 px-1 py-1.5",
-        "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring",
+        RAIL_STOP_CLASS,
+        iconOnly ? "h-[var(--nav-cell)] min-w-[var(--hit)]" : RAIL_STOP_LABELLED_CLASS,
+        RAIL_FOCUS_CLASS,
         tone === "danger"
           ? "text-negative hover:bg-negative/10"
           : active

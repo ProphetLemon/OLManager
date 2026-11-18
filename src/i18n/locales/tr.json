@@ -3696,7 +3696,9 @@
       "manager": "Menajer profili",
       "needsCall_one": "{{label}}, kararını bekliyor",
       "needsCall_other": "{{label}}, {{count}} öğe kararını bekliyor",
-      "more": "Daha fazla"
+      "more": "Daha fazla",
+      "go": "Şuraya git…",
+      "goShort": "Git"
     },
     "lane": {
       "title": "Devam etmeden önce",

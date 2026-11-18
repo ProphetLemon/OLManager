@@ -3696,7 +3696,9 @@
       "manager": "Managerprofil",
       "needsCall_one": "{{label}}, braucht deine Entscheidung",
       "needsCall_other": "{{label}}, {{count}} brauchen deine Entscheidung",
-      "more": "Mehr"
+      "more": "Mehr",
+      "go": "Gehe zu…",
+      "goShort": "Los"
     },
     "lane": {
       "title": "Bevor du weitermachst",

@@ -3730,7 +3730,9 @@
       "manager": "Manager profile",
       "needsCall_one": "{{label}}, needs your call",
       "needsCall_other": "{{label}}, {{count}} need your call",
-      "more": "More"
+      "more": "More",
+      "go": "Go to…",
+      "goShort": "Go"
     },
     "lane": {
       "title": "Before you continue",

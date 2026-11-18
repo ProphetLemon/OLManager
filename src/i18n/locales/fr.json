@@ -3696,7 +3696,9 @@
       "manager": "Profil du manager",
       "needsCall_one": "{{label}}, attend votre décision",
       "needsCall_other": "{{label}}, {{count}} attendent votre décision",
-      "more": "Plus"
+      "more": "Plus",
+      "go": "Aller à…",
+      "goShort": "Aller"
     },
     "lane": {
       "title": "Avant de continuer",
