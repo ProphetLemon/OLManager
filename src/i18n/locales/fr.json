@@ -3729,10 +3729,9 @@
       "title": "Aller à",
       "placeholder": "Rechercher sections et lieux",
       "close": "Fermer",
-      "escKey": "Échap",
       "groups": {
         "recent": "Récents",
-        "sections": "Sections",
+        "sections": "Rubriques",
         "views": "Vues"
       },
       "results_one": "{{count}} résultat",

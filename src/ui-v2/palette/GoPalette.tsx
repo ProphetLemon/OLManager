@@ -109,8 +109,8 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     const timer = setTimeout(() => {
       setStatus(
         results.length === 0
-          ? t("onAir.palette.empty", { query })
-          : t("onAir.palette.results", { count: results.length }),
+          ? t("onAir.palette.empty", { query, defaultValue: "No matches for “{{query}}”" })
+          : t("onAir.palette.results", { count: results.length, defaultValue: "{{count}} results" }),
       );
     }, PALETTE_STATUS_DELAY_MS);
     return () => clearTimeout(timer);
@@ -220,13 +220,13 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   const groupLabel = (group: PaletteGroupId) => {
     switch (group) {
       case "calls":
-        return t("onAir.home.needsTitle");
+        return t("onAir.home.needsTitle", { defaultValue: "Needs your call" });
       case "recent":
-        return t("onAir.palette.groups.recent");
+        return t("onAir.palette.groups.recent", { defaultValue: "Recent" });
       case "sections":
-        return t("onAir.palette.groups.sections");
+        return t("onAir.palette.groups.sections", { defaultValue: "Sections" });
       case "views":
-        return t("onAir.palette.groups.views");
+        return t("onAir.palette.groups.views", { defaultValue: "Views" });
     }
   };
 
@@ -262,7 +262,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
             tabIndex={-1}
             className="px-4 pt-3 font-heading text-section font-bold uppercase leading-tight text-foreground outline-none"
           >
-            {t("onAir.palette.title")}
+            {t("onAir.palette.title", { defaultValue: "Go to" })}
           </Dialog.Title>
           <div className="flex min-h-[var(--palette-row)] items-center gap-2 border-b border-line ps-4 pe-1">
             <Search aria-hidden="true" className="size-[var(--nav-icon)] shrink-0 text-muted-foreground" />
@@ -281,22 +281,14 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
               spellCheck={false}
               inputMode="search"
               enterKeyHint="go"
-              placeholder={t("onAir.palette.placeholder")}
+              placeholder={t("onAir.palette.placeholder", { defaultValue: "Search sections and places" })}
               value={query}
               onChange={(e) => changeQuery(e.target.value)}
               onKeyDown={handleInputKeyDown}
               className="min-h-[var(--hit)] min-w-0 flex-1 rounded-sm bg-transparent text-entry text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
             />
-            {!android && (
-              <kbd
-                aria-hidden="true"
-                className="shrink-0 rounded-sm border border-line px-1.5 font-heading text-caption uppercase text-muted-foreground"
-              >
-                {t("onAir.palette.escKey")}
-              </kbd>
-            )}
             <Dialog.Close
-              render={<Button type="button" variant="ghost" size="icon-touch" aria-label={t("onAir.palette.close")} />}
+              render={<Button type="button" variant="ghost" size="icon-touch" aria-label={t("onAir.palette.close", { defaultValue: "Close" })} />}
             >
               <X aria-hidden="true" className="size-[var(--nav-icon)]" />
             </Dialog.Close>
@@ -311,7 +303,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
                       <div
                         id={labelId}
                         role="presentation"
-                        className="px-4 pb-1 pt-2 font-heading text-nav font-semibold uppercase tracking-wider text-muted-foreground"
+                        className="px-4 pb-1 pt-2 font-heading text-nav font-semibold uppercase tracking-wide text-muted-foreground"
                       >
                         {groupLabel(group)}
                         {group === "calls" && (
@@ -340,7 +332,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
               </div>
             ) : (
               <p data-slot="go-palette-empty" className="px-4 py-6 text-entry text-muted-foreground">
-                {t("onAir.palette.empty", { query })}
+                {t("onAir.palette.empty", { query, defaultValue: "No matches for “{{query}}”" })}
               </p>
             )}
           </div>

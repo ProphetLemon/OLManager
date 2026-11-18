@@ -3729,7 +3729,6 @@
       "title": "Şuraya git",
       "placeholder": "Bölüm ve yer ara",
       "close": "Kapat",
-      "escKey": "Esc",
       "groups": {
         "recent": "Son gezilenler",
         "sections": "Bölümler",

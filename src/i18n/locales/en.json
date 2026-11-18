@@ -3763,7 +3763,6 @@
       "title": "Go to",
       "placeholder": "Search sections and places",
       "close": "Close",
-      "escKey": "Esc",
       "groups": {
         "recent": "Recent",
         "sections": "Sections",

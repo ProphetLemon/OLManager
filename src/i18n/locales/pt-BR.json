@@ -3729,7 +3729,6 @@
       "title": "Ir para",
       "placeholder": "Buscar seções e lugares",
       "close": "Fechar",
-      "escKey": "Esc",
       "groups": {
         "recent": "Recentes",
         "sections": "Seções",

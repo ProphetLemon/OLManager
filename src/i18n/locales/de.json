@@ -3729,7 +3729,6 @@
       "title": "Gehe zu",
       "placeholder": "Bereiche und Orte suchen",
       "close": "Schließen",
-      "escKey": "Esc",
       "groups": {
         "recent": "Zuletzt besucht",
         "sections": "Bereiche",
