@@ -149,7 +149,9 @@ export async function runRefresh(options) {
     const addedPages = (entries) => new Set(entries.filter((entry) => entry.op.op === "add" && entry.page).map((entry) => entry.page));
     const rosterTitles = { player: addedPages(ops.players), staff: addedPages(ops.staff) };
     const recentRoles = options.pool.statsRows ? recentRolesFromRows(options.pool.statsRows, { since: settings.since }) : null;
-    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles, recentRoles });
+    const addedRecords = (entries, kind) => entries.filter((entry) => entry.op.op === "add").map((entry) => entry.op[kind]);
+    const rosterRecords = { player: addedRecords(ops.players, "player"), staff: addedRecords(ops.staff, "staff") };
+    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles });
     // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;

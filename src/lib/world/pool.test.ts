@@ -188,6 +188,33 @@ describe("selectPool", () => {
     expect(playing.statuses.get("Coachy")).toMatchObject({ state: "excluded", code: "roster-overlay", reason: expect.stringContaining("as a player") });
   });
 
+  it("leaves out a pool player the game already has as staff, and a pool coach it already has as a player", () => {
+    // Score is a staff member of the fixture world (Go Dong-bin, an assistant): the pool does not add him as a free agent player.
+    const score = [row({ player: "Score", ign: "Score", name: "Go Dong-bin", country: "South Korea", rmin: "Jungle", rmax: "Jungle", prole: "Jungle" })];
+    const asPlayer = select(score);
+    expect(asPlayer.players).toHaveLength(0);
+    expect(asPlayer.statuses.get("Score")).toMatchObject({ state: "excluded", code: "in-game", id: "staff-0c9b8a0b", reason: expect.stringContaining("as staff") });
+    // Diable is a player of the fixture world: the pool does not add him as a free agent coach.
+    const diable = [row({ player: "Diable", ign: "Diable", name: "Nam Dae-geun", country: "South Korea", birth: "2007-10-17", rmin: "Head Coach", rmax: "Head Coach", prole: "" })];
+    const asCoach = select(diable);
+    expect(asCoach.staff).toHaveLength(0);
+    expect(asCoach.statuses.get("Diable")).toMatchObject({ state: "excluded", code: "in-game", id: "player-14e1d543", reason: expect.stringContaining("as a player") });
+  });
+
+  it("leaves out a player whose Players page makes him staff when the roster adds an undated coach with his real name and country", () => {
+    // Nulu and Selfie: one Marcin Wolski (PL); Nulu's Players page says Coach of Shopify Rebellion, whose staff table lists Selfie.
+    const nulu = [row({ player: "Nulu", ign: "Nulu", name: "Marcin Wolski", country: "Poland", birth: "1997-02-07", prole: "Coach", rmin: "Mid", rmax: "Mid" })];
+    const selfie = { id: "staff-04c5f93c", nickname: "Selfie", first_name: "Marcin Wolski", last_name: "Wolski", nationality: "Poland", date_of_birth: "1990-01-01" };
+    expect(select(nulu).players).toHaveLength(1);
+    const coached = select(nulu, { rosterRecords: { staff: [selfie] } });
+    expect(coached.players).toHaveLength(0);
+    expect(coached.statuses.get("Nulu")).toMatchObject({ state: "excluded", code: "roster-overlay", reason: expect.stringContaining("real name and country") });
+    // A known, different birth date tells them apart; so does a Players page that names a position, not a staff role.
+    expect(select(nulu, { rosterRecords: { staff: [{ ...selfie, date_of_birth: "1995-03-03" }] } }).players).toHaveLength(1);
+    expect(select([{ ...nulu[0], prole: "Mid" }], { rosterRecords: { staff: [selfie] } }).players).toHaveLength(1);
+    expect(select(nulu, { rosterRecords: { staff: [{ ...selfie, nationality: "Germany" }] } }).players).toHaveLength(1);
+  });
+
   it("refuses both pages when one person reads as a player under one spelling and as staff under another", () => {
     // AkaRyu and Akaryu: one Players page, found once in playing rosters and once in staff tables.
     const asPlayer = row({ player: "AkaRyu", ign: "AkaRyu", name: "Bourekda Abdelhai", country: "Algeria", birth: "1999-11-11", rmin: "Support", rmax: "Support", prole: "Support" });

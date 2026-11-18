@@ -7,9 +7,9 @@
 //  - qualifier-flagged tournaments count only up to `cap` roster entries (open qualifiers hold thousands of names);
 //  - nobody the game already has, nobody on a team the roster overlay handles.
 import { IdCollisionError, deterministicId, generatePlayer, generateStaff } from "./generate.mjs";
-import { worldBuildChecker } from "./same-person.mjs";
+import { foldName, worldBuildChecker } from "./same-person.mjs";
 import { pageUrl } from "./leaguepedia-parse.mjs";
-import { OPEN_QUALIFIER_ENTRIES, gameStatus, qualifierSplit } from "./pool-scope.mjs";
+import { OPEN_QUALIFIER_ENTRIES, gameStatus, isStaffLabel, qualifierSplit } from "./pool-scope.mjs";
 import { GAME_POSITION, POSITION_MIN_GAMES, RATING_STATS, RATING_TIER_DEFAULT, latestMappedCompetition, ratePoolPlayer, shapeBaselines, tierBaselines } from "./pool-rating.mjs";
 import { dataRoleForLabel } from "./staff-policy.mjs";
 import { compactKey, countryToIso2 } from "./text.mjs";
@@ -42,6 +42,9 @@ export function isoDate(value) {
   const date = new Date(`${raw}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === raw ? raw : null;
 }
+
+/** The birth date the staff generator writes when it has none (generate.mjs `generateStaff`). */
+const STAFF_PLACEHOLDER_DOB = "1990-01-01";
 
 /** Stable id of a pool person: the same hash the roster refresh uses for a new person, keyed by the Leaguepedia page. */
 export const poolId = (kind, page) => deterministicId(kind === "staff" ? "staff" : "player", page);
@@ -99,8 +102,16 @@ function identityKey(person) {
  *   roster overlay adds in this run; a pool person whose page has the same `titleKey` is the same person, whatever id his
  *   spelling hashes to. Kinds do not stay apart: a head coach the roster overlay adds is not also a pool player, and a player
  *   it adds is not also a pool coach (one person, one record).
+ * @param {{player?: object[], staff?: object[]}|null} [input.rosterRecords] the player and staff records the roster overlay adds in
+ *   this run; a pool player whose own Players page makes him staff is the coach it adds undated with his real name and country.
  */
-export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {}, recentRoles = null }) {
+export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {}, rosterRecords = null, recentRoles = null }) {
+  // Real name and country of the staff the roster overlay of this run adds without a birth date (the generator's 1990-01-01).
+  const undatedRosterStaff = new Set(
+    (rosterRecords?.staff ?? [])
+      .filter((staff) => !staff.date_of_birth || staff.date_of_birth === STAFF_PLACEHOLDER_DOB)
+      .map((staff) => `${foldName(staff.first_name)}|${countryToIso2(staff.nationality)}`),
+  );
   const rosterKeys = { player: new Set([...(rosterTitles.player ?? [])].map(titleKey)), staff: new Set([...(rosterTitles.staff ?? [])].map(titleKey)) };
   const counts = { considered: 0, noPage: 0, inGame: 0, onGameTeam: 0, handledByRoster: 0, uncertain: 0, nonSportingStaff: 0, noPosition: 0, duplicates: 0, collisions: 0, sameAsGameRecord: 0 };
   const statuses = new Map();
@@ -130,10 +141,21 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
     }
     const id = poolId(person.kind, person.page);
     const other = person.kind === "staff" ? "player" : "staff";
+    // The game may hold him in the other role: a coach of the bundled world is not also a free agent player, and the reverse.
+    const asOther = gameStatus({ ...person, kind: other }, context);
+    if (asOther.status === "in-game") {
+      counts.inGame += 1;
+      statuses.set(person.page, { state: "excluded", code: "in-game", reason: `already in the game ${other === "staff" ? "as staff" : "as a player"}: ${asOther.id}`, id: asOther.id });
+      continue;
+    }
     const sameTitle = rosterKeys[person.kind === "staff" ? "staff" : "player"].has(titleKey(person.page));
     // The other kind too: a coach the roster overlay adds to a staff table is that person, not a free agent player as well.
     const otherRole = rosterIds.has(poolId(other, person.page)) || rosterKeys[other].has(titleKey(person.page));
-    const handledByOverlay = rosterIds.has(id) || sameTitle || otherRole;
+    // A player whose own Players page makes him staff, when the roster overlay adds an undated staff member with his real name
+    // and country: the same coach under another page (Nulu and Selfie, Marcin Wolski, PL, both on Shopify Rebellion's staff).
+    const coachElsewhere = person.kind !== "staff" && isStaffLabel(person.profile.role) && String(person.profile.name ?? "").trim().split(/\s+/).length >= 2
+      && undatedRosterStaff.has(`${foldName(person.profile.name)}|${countryToIso2(countryOf(person))}`);
+    const handledByOverlay = rosterIds.has(id) || sameTitle || otherRole || coachElsewhere;
     // A current team the game has excludes a person only when the roster overlay of this run really handles him. A player
     // whose Players page names a game team but who is on none of its playing rosters (a co-streamer, say) is nobody's
     // business but the pool's, so he falls through to the same checks as any other candidate.
@@ -152,7 +174,8 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
       counts.handledByRoster += 1;
       const why = rosterIds.has(id) ? `already adds or moves ${id}`
         : sameTitle ? `already adds the page "${person.page}" under another spelling`
-        : `already handles the page "${person.page}" ${other === "staff" ? "as staff" : "as a player"}`;
+        : otherRole ? `already handles the page "${person.page}" ${other === "staff" ? "as staff" : "as a player"}`
+        : `already adds a staff member with his real name and country, and his Players page makes him staff (${person.profile.role})`;
       statuses.set(person.page, { state: "excluded", code: "roster-overlay", reason: `the roster overlay of this run ${why}`, id });
       continue;
     }
