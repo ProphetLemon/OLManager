@@ -54,6 +54,23 @@ describe("paletteKeyAction: PageUp and PageDown", () => {
   });
 });
 
+describe("paletteKeyAction: PageUp and PageDown on a single group (R82)", () => {
+  const ONE_GROUP = Array.from({ length: 20 }, () => "sections");
+  const one = (activeIndex: number): PaletteKeyState => ({ optionGroups: ONE_GROUP, activeIndex, query: "s" });
+
+  it("move by 8 options", () => {
+    expect(press(one(0), "PageDown")).toEqual({ type: "move", index: 8 });
+    expect(press(one(12), "PageUp")).toEqual({ type: "move", index: 4 });
+  });
+
+  it("clamp to the last and the first option, and do nothing there", () => {
+    expect(press(one(15), "PageDown")).toEqual({ type: "move", index: 19 });
+    expect(press(one(19), "PageDown")).toEqual({ type: "none" });
+    expect(press(one(5), "PageUp")).toEqual({ type: "move", index: 0 });
+    expect(press(one(0), "PageUp")).toEqual({ type: "none" });
+  });
+});
+
 describe("paletteKeyAction: Enter and Escape", () => {
   it("Enter activates the active option", () => {
     expect(press(at(3), "Enter")).toEqual({ type: "activate", index: 3 });

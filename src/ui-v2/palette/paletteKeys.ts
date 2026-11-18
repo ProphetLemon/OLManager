@@ -26,6 +26,8 @@ export type PaletteKeyAction =
 
 const NONE: PaletteKeyAction = { type: "none" };
 const IME_PROCESSING = 229;
+/** How far PageUp and PageDown move within a result of a single group (R82). */
+const PAGE_STEP = 8;
 
 /** The index where the group holding `index` starts. */
 function groupStart(groups: readonly string[], index: number): number {
@@ -34,14 +36,26 @@ function groupStart(groups: readonly string[], index: number): number {
   return start;
 }
 
+/** Every option belongs to one group. */
+function singleGroup(groups: readonly string[]): boolean {
+  return groups.every((group) => group === groups[0]);
+}
+
+/** A move to `target` clamped to the options, or nothing when it stays on `from`. */
+function clampedMove(from: number, target: number, count: number): PaletteKeyAction {
+  const index = Math.min(Math.max(target, 0), count - 1);
+  return index === from ? NONE : { type: "move", index };
+}
+
 /**
  * The palette's keys (spec §5.5), for the combobox whose DOM focus stays in the
  * input. Up and Down move and wrap; PageUp and PageDown jump to the first option
- * of the previous or next group; Enter activates the active option; Escape
- * clears the query, then closes. Home, End, Tab and typing stay with the input
- * and the focus trap, and every key stays with an IME composition (R48). It also
- * drives the hand-rolled fallback (R25), and gamepad bumpers map to PageUp and
- * PageDown in phase 3.
+ * of the previous or next group, or, when the result is a single group (as most
+ * queries return), move 8 options and clamp at its ends (R82); Enter activates
+ * the active option; Escape clears the query, then closes. Home, End, Tab and
+ * typing stay with the input and the focus trap, and every key stays with an IME
+ * composition (R48). It also drives the hand-rolled fallback (R25), and gamepad
+ * bumpers map to PageUp and PageDown in phase 3.
  */
 export function paletteKeyAction(state: PaletteKeyState, key: PaletteKey): PaletteKeyAction {
   if (key.isComposing || key.keyCode === IME_PROCESSING) return NONE;
@@ -59,11 +73,13 @@ export function paletteKeyAction(state: PaletteKeyState, key: PaletteKey): Palet
     case "PageDown": {
       if (count === 0) return NONE;
       if (!hasActive) return { type: "move", index: 0 };
+      if (singleGroup(groups)) return clampedMove(active, active + PAGE_STEP, count);
       const next = groups.findIndex((group, i) => i > active && group !== groups[active]);
       return next === -1 ? NONE : { type: "move", index: next };
     }
     case "PageUp": {
       if (!hasActive) return NONE;
+      if (singleGroup(groups)) return clampedMove(active, active - PAGE_STEP, count);
       const start = groupStart(groups, active);
       return start === 0 ? NONE : { type: "move", index: groupStart(groups, start - 1) };
     }
