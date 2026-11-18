@@ -146,6 +146,29 @@ describe("DashboardHeaderV2", () => {
       expect(back.className).toContain("text-dim");
     });
 
+    it("gives the dimmed Back no hover wash or press nudge, and GrayText in forced colours (R53)", () => {
+      setup({ backTo: null });
+      const classes = screen.getByRole("button", { name: "Nothing to go back to" }).className.split(/\s+/);
+      expect(classes).toEqual(
+        expect.arrayContaining([
+          "dark:hover:bg-transparent",
+          "active:not-aria-[haspopup]:translate-y-0",
+          "forced-colors:text-[color:GrayText]",
+        ]),
+      );
+      expect(classes).not.toContain("dark:hover:bg-muted/50");
+      expect(classes).not.toContain("active:not-aria-[haspopup]:translate-y-px");
+    });
+
+    it("keeps the hover wash and press nudge on a Back that goes somewhere", () => {
+      setup({ backTo: "Squad" });
+      const classes = screen.getByRole("button", { name: "Back to Squad" }).className.split(/\s+/);
+      expect(classes).toEqual(
+        expect.arrayContaining(["dark:hover:bg-muted/50", "active:not-aria-[haspopup]:translate-y-px"]),
+      );
+      expect(classes).not.toContain("forced-colors:text-[color:GrayText]");
+    });
+
     it("is named after its destination and goes back when pressed", () => {
       const { onBack } = setup({ backTo: "Squad" });
       const back = screen.getByRole("button", { name: "Back to Squad" });

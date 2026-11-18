@@ -462,6 +462,8 @@ describe("TeamProfileV2", () => {
 
     const back = screen.getByRole("button", { name: "Back to Squad" });
     expect(back).toHaveTextContent(/^Back$/);
+    // Forced colours give aria-disabled no GrayText of their own (R53).
+    expect(back.className).toContain("aria-disabled:forced-colors:text-[color:GrayText]");
     expect(back.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     fireEvent.click(back);
     expect(onClose).toHaveBeenCalledTimes(1);

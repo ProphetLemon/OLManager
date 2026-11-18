@@ -116,7 +116,14 @@ export function DashboardHeaderV2({
             aria-label={backLabel}
             aria-disabled={canGoBack ? undefined : true}
             data-slot="bar-back"
-            className={cn("shrink-0", !canGoBack && "cursor-default text-dim hover:bg-transparent hover:text-dim")}
+            // Dimmed, it gives no hover wash or press nudge (the ghost variant's dark hover and the
+            // base press each need their own override), and forced colours show it as GrayText,
+            // which they give only to :disabled (R53).
+            className={cn(
+              "shrink-0",
+              !canGoBack &&
+                "cursor-default text-dim hover:bg-transparent hover:text-dim dark:hover:bg-transparent active:not-aria-[haspopup]:translate-y-0 forced-colors:text-[color:GrayText]",
+            )}
           >
             <IconTip label={backLabel} followFocus className="inline-flex">
               <ArrowLeft aria-hidden="true" className="size-4" />

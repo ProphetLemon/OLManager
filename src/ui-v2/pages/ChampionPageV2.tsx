@@ -90,7 +90,7 @@ export default function ChampionPageV2({ championKey, backTo, onClose }: Props) 
           onClick={back.disabled ? undefined : onClose}
           aria-label={back.label}
           aria-disabled={back.disabled || undefined}
-          className="absolute left-4 top-4 z-20 flex size-9 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition-all hover:bg-black/70 hover:text-white aria-disabled:cursor-default aria-disabled:opacity-50"
+          className="absolute left-4 top-4 z-20 flex size-9 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition-all hover:bg-black/70 hover:text-white aria-disabled:cursor-default aria-disabled:opacity-50 aria-disabled:forced-colors:text-[color:GrayText]"
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
         </button>

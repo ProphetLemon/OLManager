@@ -55,7 +55,7 @@ function TeamProfileContent({
           onClick={back.disabled ? undefined : onClose}
           aria-label={back.label}
           aria-disabled={back.disabled || undefined}
-          className="mb-4 inline-flex w-fit items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground aria-disabled:cursor-default aria-disabled:text-dim aria-disabled:hover:text-dim"
+          className="mb-4 inline-flex w-fit items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground aria-disabled:cursor-default aria-disabled:text-dim aria-disabled:hover:text-dim aria-disabled:forced-colors:text-[color:GrayText]"
         >
           <ChevronLeft aria-hidden="true" className="size-4" />
           {t("common.back")}

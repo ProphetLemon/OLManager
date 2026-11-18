@@ -127,6 +127,8 @@ describe("ChampionPageV2 Back (R41)", () => {
     render(<ChampionPageV2 championKey="Ahri" backTo={null} onClose={onClose} />);
     const back = screen.getByRole("button", { name: "No hay nada a lo que volver" });
     expect(back).toHaveAttribute("aria-disabled", "true");
+    // Forced colours give aria-disabled no GrayText of their own (R53).
+    expect(back.className).toContain("aria-disabled:forced-colors:text-[color:GrayText]");
     fireEvent.click(back);
     expect(onClose).not.toHaveBeenCalled();
   });
