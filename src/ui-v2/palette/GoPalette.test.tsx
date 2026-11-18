@@ -399,4 +399,14 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     expect(input().getAttribute("aria-activedescendant")).not.toBe(inbox);
     expect(activeOption()).toBe(options()[0]);
   });
+
+  it("writes the active row's secondary text in the foreground, over the club wash (R75)", async () => {
+    await openPalette();
+    const secondary = (option: HTMLElement) => option.querySelector('[data-slot="palette-option-secondary"]');
+    const [first, ...rest] = options().filter((o) => secondary(o));
+    expect(first).toBe(activeOption());
+    expect(secondary(first)).toHaveClass("text-foreground");
+    expect(secondary(first)).not.toHaveClass("text-muted-foreground");
+    for (const row of rest) expect(secondary(row)).toHaveClass("text-muted-foreground");
+  });
 });

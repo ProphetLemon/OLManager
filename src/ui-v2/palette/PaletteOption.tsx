@@ -77,7 +77,11 @@ export function PaletteOption({ entry, id, active, onHighlight, onActivate }: Pr
           {primary}
         </span>
         {entry.secondary.length > 0 && (
-          <span data-slot="palette-option-secondary" className="truncate text-nav text-muted-foreground">
+          <span
+            data-slot="palette-option-secondary"
+            // R75: muted text drops under 4.5:1 on the club wash, so the active row uses the foreground.
+            className={cn("truncate text-nav", active ? "text-foreground" : "text-muted-foreground")}
+          >
             {entry.secondary.map((part, i) => (
               <Fragment key={i}>
                 {part.sep && <Sep sign={part.sep} />}
