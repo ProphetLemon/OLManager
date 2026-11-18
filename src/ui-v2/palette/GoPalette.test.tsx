@@ -464,6 +464,16 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     const label = document.getElementById(calls.getAttribute("aria-labelledby") ?? "");
     expect(label?.querySelector(".tabular-nums")).toHaveTextContent(/^1$/);
   });
+
+  it("wraps a long secondary line onto a second line rather than cutting it at once (R83)", async () => {
+    await openPalette();
+    const lines = document.querySelectorAll('[data-slot="palette-option-secondary"]');
+    expect(lines.length).toBeGreaterThan(0);
+    for (const line of lines) {
+      expect(line).toHaveClass("line-clamp-2");
+      expect(line).not.toHaveClass("truncate");
+    }
+  });
 });
 
 // R79: the app routes the Android back gesture through webview history (wry's

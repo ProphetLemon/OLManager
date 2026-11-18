@@ -31,8 +31,8 @@ function Sep({ sign }: { sign: "›" | "·" }) {
 
 /**
  * One option of the Go palette (spec §5.8): the primary text, prefixed by its tab
- * for a view, and the truncated secondary text, whose whole text stays in the
- * accessible name. A call row carries its tag, a tone and a word. The active row
+ * for a view, and the secondary text, clamped to two lines (R83), whose whole text
+ * stays in the accessible name. A call row carries its tag, a tone and a word. The active row
  * wears the rail's active look (wash, bar, weight) and `aria-selected`; it never
  * takes DOM focus, which stays in the input (R25). No `title`: Orca reads it twice (R48).
  */
@@ -82,7 +82,8 @@ export function PaletteOption({ entry, id, active, onPointerMove, onActivate }: 
           <span
             data-slot="palette-option-secondary"
             // R75: muted text drops under 4.5:1 on the club wash, so the active row uses the foreground.
-            className={cn("truncate text-nav", active ? "text-foreground" : "text-muted-foreground")}
+            // R83: two lines before it is cut, so zoomed text keeps more of what the name says.
+            className={cn("line-clamp-2 text-nav", active ? "text-foreground" : "text-muted-foreground")}
           >
             {entry.secondary.map((part, i) => (
               <Fragment key={i}>
