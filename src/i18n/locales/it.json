@@ -63,7 +63,7 @@
     "invalidDob": "Data di nascita non valida"
   },
   "rosterOverlay": {
-    "asOf": "Rose aggiornate al {{date}}",
+    "asOf": "Rose al {{date}}",
     "attribution": "Dati delle rose: collaboratori di {{name}},",
     "checking": "Controllo degli aggiornamenti delle rose…",
     "checkFailed": "Impossibile controllare gli aggiornamenti delle rose",
