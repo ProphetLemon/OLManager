@@ -215,6 +215,30 @@ describe("useRouteAnnouncer on a silent move (R51)", () => {
     act(() => result.current.clearRoute());
     expect(result.current.message).toBe("3 to resolve");
   });
+
+  it("cancels a queued route message but keeps the status message already shown", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => result.current.announce("3 to resolve", "status"));
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    act(() => result.current.announce("Now on Squad, Club"));
+    act(() => result.current.clearRoute());
+    expect(result.current.message).toBe("3 to resolve");
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("3 to resolve");
+  });
+
+  it("empties a shown route message but keeps a status message still queued", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => result.current.announce("Now on Squad, Club"));
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    act(() => result.current.announce("3 to resolve", "status"));
+    act(() => result.current.clearRoute());
+    expect(result.current.message).toBe("");
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("3 to resolve");
+  });
 });
 
 describe("RouteAnnouncer", () => {
