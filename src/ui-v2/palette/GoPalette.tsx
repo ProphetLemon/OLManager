@@ -196,13 +196,16 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     return (openerId ? document.getElementById(openerId) : null) ?? document.getElementById("main-content");
   }, []);
 
-  // Base UI asks for the final focus after the close completes, so the reason is reset on the next open.
+  // Base UI asks for the final focus after the close completes, so the reason is reset on
+  // the next open. A row whose close a reopening interrupted is dropped there too.
   useEffect(() => {
-    if (open) closeReason.current = "dismiss";
+    if (!open) return;
+    closeReason.current = "dismiss";
+    pending.current = null;
   }, [open]);
 
   const handleOpenChangeComplete = (isOpen: boolean) => {
-    if (isOpen) return;
+    if (isOpen || closeReason.current !== "activate") return;
     const entry = pending.current;
     pending.current = null;
     if (entry) setActivated({ entry });

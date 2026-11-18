@@ -85,7 +85,10 @@ async function openPalette(platform: "android" | "desktop" = "desktop") {
   const go = screen.getByRole("button", { name: "Go" });
   act(() => go.focus());
   act(() => usePaletteStore.getState().openPalette("util:go"));
-  return screen.findByRole("dialog");
+  const dialog = await screen.findByRole("dialog");
+  // Base UI moves the initial focus a frame after the dialog mounts.
+  await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
+  return dialog;
 }
 
 const input = () => screen.getByRole("combobox") as HTMLInputElement;
@@ -101,7 +104,18 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  delete (HTMLElement.prototype as { getAnimations?: unknown }).getAnimations;
+});
+
+/** Gives every element an exit animation that never ends while `running()` holds, so a close stays in progress. */
+function holdExitAnimations(running: () => boolean) {
+  Object.defineProperty(HTMLElement.prototype, "getAnimations", {
+    configurable: true,
+    value: () => (running() ? [{ finished: new Promise(() => {}) }] : []),
+  });
+}
 
 describe("GoPalette: the decisive ARIA tests (R25)", () => {
   it("is a modal dialog named Go to", async () => {
@@ -281,5 +295,33 @@ describe("GoPalette on Android (R29, R39)", () => {
   it("sizes the options with the palette row token, var(--hit) on Android", async () => {
     await openPalette("android");
     expect(options()[0]).toHaveClass("min-h-[var(--palette-row)]");
+  });
+});
+
+describe("GoPalette: one activation per close (code review)", () => {
+  it("runs an activated row once, and a later reopen and dismissal run nothing", async () => {
+    await openPalette();
+    press("Enter");
+    await waitFor(() => expect(onActivate).toHaveBeenCalledTimes(1));
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await screen.findByRole("dialog");
+    press("Escape");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(onActivate).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops a row whose close a reopening interrupted, so the next dismissal runs nothing", async () => {
+    await openPalette();
+    let exiting = true;
+    holdExitAnimations(() => exiting);
+    press("Enter");
+    // Reopened while the activated close still animates: that close never completes.
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    exiting = false;
+    press("Escape");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(onActivate).not.toHaveBeenCalled();
   });
 });
