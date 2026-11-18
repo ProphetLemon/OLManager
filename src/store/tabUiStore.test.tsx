@@ -1,9 +1,10 @@
 import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameStore } from "./gameStore";
 import {
   DEFAULT_TAB_UI_STATES,
   useTabUiField,
+  useOneShotOverride,
   useTabUiStore,
   useValidTabUiField,
 } from "./tabUiStore";
@@ -141,5 +142,25 @@ describe("tabUiStore", () => {
 
     expect(result.current[0]).toBe("here");
     expect(useTabUiStore.getState().tabs.squad.selectedId).toBe("here");
+  });
+});
+
+describe("useOneShotOverride", () => {
+  it("applies the same one-shot again after it went back to null", () => {
+    const apply = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ oneShot }: { oneShot: string | null }) => useOneShotOverride(oneShot, "stored", apply),
+      { initialProps: { oneShot: "m2" as string | null } },
+    );
+    expect(result.current).toBe("m2");
+    expect(apply).toHaveBeenCalledTimes(1);
+
+    rerender({ oneShot: null });
+    expect(result.current).toBe("stored");
+
+    // A second link to the same id is a new navigation: it wins and is applied again.
+    rerender({ oneShot: "m2" });
+    expect(result.current).toBe("m2");
+    expect(apply).toHaveBeenCalledTimes(2);
   });
 });

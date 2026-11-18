@@ -282,6 +282,8 @@ export function useOneShotOverride<V>(
   apply: (linked: V) => void,
 ): V | null {
   const consumed = useRef<V | null>(null);
+  // Once the link is gone, the same id carried again later is a new navigation.
+  if (oneShot == null) consumed.current = null;
   const pending = oneShot != null && consumed.current !== oneShot ? oneShot : null;
   useLayoutEffect(() => {
     if (pending == null) return;
