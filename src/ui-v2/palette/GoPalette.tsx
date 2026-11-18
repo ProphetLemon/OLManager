@@ -265,7 +265,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
             "fixed z-50 flex flex-col overflow-hidden border-line bg-popover text-popover-foreground shadow-lg outline-none",
             android
               ? "inset-y-0 start-0 h-[var(--palette-vvh,100dvh)] w-[var(--palette-sheet-w)] max-w-full border-e pt-[var(--safe-top)] ps-[var(--safe-left)] pb-[var(--safe-bottom)]"
-              : "start-1/2 top-[15vh] max-h-[var(--palette-h)] w-[var(--palette-w)] -translate-x-1/2 rounded-lg border rtl:translate-x-1/2",
+              : "start-1/2 top-[var(--palette-top)] max-h-[var(--palette-h)] w-[var(--palette-w)] -translate-x-1/2 rounded-lg border rtl:translate-x-1/2",
           )}
         >
           <Dialog.Title

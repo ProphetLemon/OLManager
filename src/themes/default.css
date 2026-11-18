@@ -218,6 +218,7 @@
      options are a rail row high, and the Android sheet covers the rail and its panel. */
   --palette-w: min(36rem, calc(100vw - 2rem));
   --palette-h: min(32rem, calc(100dvh - 6rem));
+  --palette-top: 15vh;
   --palette-row: max(2.5rem, 40px);
   --palette-sheet-w: max(22rem, 320px);
   /* Display-cutout and system-bar insets. 0px wherever the webview reports none
@@ -276,6 +277,16 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: var(--club-text);
+}
+
+/* R80: a short window (a 1280x720 one at 400% zoom is 180 CSS px high) gives the Go
+   palette the whole height and starts it near the top, so its list keeps rows below
+   the title and the input instead of being clipped. */
+@media (max-height: 30rem) {
+  :root {
+    --palette-h: calc(100dvh - 1rem);
+    --palette-top: min(15vh, 0.5rem);
+  }
 }
 
 /* ── Dark mode ─────────────────────────────────────────────── */

@@ -122,6 +122,16 @@ describe("Go palette tokens (NR2.8, spec §5.7, R29)", () => {
     expect(ruleBody(':root[data-platform="android"]')).toContain("--palette-row: var(--hit);");
   });
 
+  it("gives a short window the whole height and a top near the edge, so the list keeps room at 400% zoom (R80)", () => {
+    expect(ruleBody(":root")).toContain("--palette-top: 15vh;");
+    const short = css.match(/@media \(max-height: 30rem\) \{\s*:root \{([^}]*)\}\s*\}/);
+    expect(short, "@media (max-height: 30rem)").not.toBeNull();
+    expect(short![1]).toContain("--palette-h: calc(100dvh - 1rem);");
+    expect(short![1]).toContain("--palette-top: min(15vh, 0.5rem);");
+    // After the base block, so it wins over it.
+    expect(css.indexOf("@media (max-height: 30rem)")).toBeGreaterThan(css.indexOf("--palette-h: min("));
+  });
+
   it("gives the palette tokens no --color-* or --text-* twin", () => {
     const taken = new Set([...css.matchAll(/^\s*--(?:color|text)-([a-z0-9-]+):/gm)].map((m) => m[1]));
     const names = [...css.matchAll(/^\s*--(palette-[a-z-]+):/gm)].map((m) => m[1]);

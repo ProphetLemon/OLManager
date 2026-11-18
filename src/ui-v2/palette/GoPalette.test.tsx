@@ -426,4 +426,9 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     expect(input()).toHaveClass("outline-hidden", "focus-visible:ring-2");
     expect(input()).not.toHaveClass("outline-none");
   });
+
+  it("places the desktop panel from the --palette-top token, which a short window lowers (R80)", async () => {
+    const dialog = await openPalette();
+    expect(dialog).toHaveClass("top-[var(--palette-top)]", "max-h-[var(--palette-h)]");
+  });
 });
