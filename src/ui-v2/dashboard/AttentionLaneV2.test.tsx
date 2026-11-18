@@ -204,7 +204,8 @@ describe("AttentionLaneV2 (R24, R47)", () => {
     vi.mocked(Element.prototype.scrollIntoView).mockClear();
     view.rerender(<Frame pills={pillsOf([scrims, renewal])} />);
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
-    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts.at(-1)).toBe(focused());
+    const contexts = vi.mocked(Element.prototype.scrollIntoView).mock.contexts;
+    expect(contexts[contexts.length - 1]).toBe(focused());
   });
 
   it("leaves focus on the page when the user had already left the pill that goes (R59)", () => {
