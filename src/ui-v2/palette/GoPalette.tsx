@@ -17,6 +17,13 @@ import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
 
 import { PaletteOption } from "./PaletteOption";
+import {
+  forgetPaletteEntry,
+  paletteEntryPop,
+  pushPaletteEntry,
+  releasePaletteEntry,
+  whenPaletteEntryOff,
+} from "./paletteHistory";
 import type { PaletteEntry } from "./paletteIndex";
 import { paletteKeyAction, type PaletteKey } from "./paletteKeys";
 import { groupPaletteResults, searchPalette, type PaletteGroupId } from "./paletteSearch";
@@ -126,14 +133,23 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   }, [open, typed, results.length, emptyText, t]);
 
   // Back (popstate, raised by the Android back gesture) closes the palette. It does not
-  // consume the event: DashboardV2's own popstate handler still runs, as intended (spec §5.5).
-  // R79: this is the app's only back path. wry's WryActivity turns the gesture into the
-  // webview's goBack, which raises popstate, and the app pushes no history entry anywhere,
-  // so the palette pushes no sentinel either. With no entry to go back to, the gesture
-  // leaves the app instead; that case is for the device pass.
+  // consume the event: DashboardV2's handler asks paletteHistory whether this pop only took
+  // the palette's entry off, and then runs no navigate (spec §5.5, R87).
+  // R79, R87: wry 0.55.1 raises that popstate only when the webview can go back, so on
+  // Android the palette pushes an entry of its own while open, and a close by any other
+  // path takes it off. Desktop pushes nothing.
+  useEffect(() => {
+    if (!android) return;
+    if (open) pushPaletteEntry();
+    else releasePaletteEntry();
+  }, [open, android]);
+  useEffect(() => () => forgetPaletteEntry(), []);
+
   useEffect(() => {
     if (!open) return;
-    const onPopState = () => {
+    const onPopState = (event: PopStateEvent) => {
+      // The late pop of an entry a close already took off is not a Back for this opening.
+      if (paletteEntryPop(event) === "release") return;
       closeReason.current = "dismiss";
       closePalette();
     };
@@ -244,10 +260,14 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   // R37: run the row from an effect, after the commit that unmounts the popup. Base UI
   // may report the close complete while the background is still `aria-hidden` (at once
   // when nothing animates), and focus or an announcement there would be lost.
+  // On Android it also waits for the palette's history entry to come off (R87), so a route
+  // the row pushes is not undone by that pop.
   useEffect(() => {
     if (!activated || ranActivation.current === activated) return;
-    ranActivation.current = activated;
-    onActivate(activated.entry);
+    return whenPaletteEntryOff(() => {
+      ranActivation.current = activated;
+      onActivate(activated.entry);
+    });
   }, [activated, onActivate]);
 
   const groupLabel = (group: PaletteGroupId) => {

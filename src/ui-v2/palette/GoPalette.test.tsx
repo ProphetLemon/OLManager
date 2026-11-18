@@ -515,10 +515,10 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
   });
 });
 
-// R79: the app routes the Android back gesture through webview history (wry's
-// WryActivity calls goBack, which raises popstate) and pushes no entry of its own
-// anywhere, so the palette closes on that same popstate and adds no sentinel.
-describe("GoPalette: back and history (R79)", () => {
+// R79, R87: on desktop the palette closes on a popstate and touches no history. On
+// Android it pushes an entry of its own (below), since wry 0.55.1 turns the back
+// gesture into the webview's goBack only when the webview can go back.
+describe("GoPalette: back and history on desktop (R79)", () => {
   const HISTORY_METHODS = ["pushState", "replaceState", "back", "forward", "go"] as const;
 
   it("closes on back without consuming it, so DashboardV2's own popstate handler still runs", async () => {
@@ -550,5 +550,90 @@ describe("GoPalette: back and history (R79)", () => {
     } finally {
       for (const spy of spies) spy.mockRestore();
     }
+  });
+});
+
+describe("GoPalette: its own history entry on Android (R87, R79)", () => {
+  // Each test starts on a marked entry with a router-like state; "as it was" means that
+  // same entry is current again. history.length counts the entry left ahead, so a cycle
+  // is checked by the current entry and by the length staying put across cycles.
+  let mark = 0;
+  let before: Record<string, unknown>;
+  beforeEach(() => {
+    before = { idx: 0, key: `entry-${++mark}` };
+    window.history.replaceState(before, "");
+  });
+  /** The pop that takes the entry off arrives in a later task. */
+  const settled = () => waitFor(() => expect(window.history.state).toEqual(before));
+  const noFurtherPop = () => act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+
+  it("pushes one entry on open, with the router's state and at the same URL", async () => {
+    const url = window.location.href;
+    await openPalette("android");
+    expect(window.history.state).toEqual({ ...before, olmPalette: true });
+    expect(window.location.href).toBe(url);
+    press("Escape");
+    await settled();
+  });
+
+  it("closes on Back, which pops its entry, and goes back no further", async () => {
+    await openPalette("android");
+    act(() => window.history.back());
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await settled();
+    await noFurtherPop();
+    expect(window.history.state).toEqual(before);
+  });
+
+  it.each(["Back", "Escape", "Close", "an activation"])(
+    "leaves history as it was when it opens and closes by %s, cycle after cycle",
+    async (how) => {
+      const cycle = async () => {
+        act(() => usePaletteStore.getState().openPalette("util:go"));
+        await screen.findByRole("dialog");
+        expect(window.history.state).toMatchObject({ olmPalette: true });
+        if (how === "Back") act(() => window.history.back());
+        else if (how === "Escape") press("Escape");
+        else if (how === "Close") fireEvent.click(screen.getByRole("button", { name: "Close" }));
+        else press("Enter");
+        await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+        await settled();
+        await noFurtherPop();
+        expect(window.history.state).toEqual(before);
+      };
+      render(<Harness platform="android" />);
+      await cycle();
+      const length = window.history.length;
+      await cycle();
+      expect(window.history.length).toBe(length);
+      if (how === "an activation") expect(onActivate).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it("runs an activated row only once its entry is off, so a route the row pushes stays", async () => {
+    let stateAtRun: unknown = "not run";
+    onActivate.mockImplementation(() => {
+      stateAtRun = window.history.state;
+      window.history.pushState({ idx: 1, key: "row-route" }, "");
+    });
+    await openPalette("android");
+    press("Enter");
+    await waitFor(() => expect(onActivate).toHaveBeenCalledTimes(1));
+    expect(stateAtRun).toEqual(before);
+    await noFurtherPop();
+    expect(window.history.state).toEqual({ idx: 1, key: "row-route" });
+  });
+
+  it("keeps an entry when it reopens before the old one has come off", async () => {
+    await openPalette("android");
+    press("Escape");
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await noFurtherPop();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(window.history.state).toEqual({ ...before, olmPalette: true });
+    // Its Back still closes it, and lands where it began.
+    act(() => window.history.back());
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await settled();
   });
 });

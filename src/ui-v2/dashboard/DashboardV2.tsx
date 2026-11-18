@@ -74,6 +74,7 @@ import { usePaletteStore } from "@/store/paletteStore";
 import { GoPalette } from "@/ui-v2/palette/GoPalette";
 import { buildPaletteIndex, type PaletteEntry } from "@/ui-v2/palette/paletteIndex";
 import { entryToIntent, writePaletteView } from "@/ui-v2/palette/paletteActivate";
+import { paletteEntryPop } from "@/ui-v2/palette/paletteHistory";
 
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
@@ -212,9 +213,11 @@ export default function DashboardV2() {
     if (!settingsLoaded) loadSettings();
   }, [settingsLoaded, loadSettings]);
 
-  // Block browser back from leaving the dashboard
+  // Block browser back from leaving the dashboard. The pop that only takes the Go
+  // palette's own entry off (Android, R87) leaves the dashboard as it is.
   useEffect(() => {
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (paletteEntryPop(event)) return;
       navigate("/dashboard", { replace: true });
     };
     window.addEventListener("popstate", handlePopState);

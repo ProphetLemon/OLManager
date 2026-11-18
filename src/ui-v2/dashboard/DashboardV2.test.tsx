@@ -1211,14 +1211,31 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
     return <div data-testid="settings-page">{(state as { from?: string } | null)?.from ?? "none"}</div>;
   }
 
+  /** Every router location key the dashboard route has had: a navigate, even a replace, adds one. */
+  const routeKeys: string[] = [];
+  function RouteKeyProbe() {
+    const { key } = useLocation();
+    if (routeKeys[routeKeys.length - 1] !== key) routeKeys.push(key);
+    return null;
+  }
+
   async function renderOn(tab: string) {
+    routeKeys.length = 0;
     const location = useDashboardLocationStore.getState();
     if (location.nav.activeTab !== tab) location.go({ kind: "tab", tab });
     const DashboardV2 = (await import("./DashboardV2")).default;
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>
         <Routes>
-          <Route path="/dashboard" element={<DashboardV2 />} />
+          <Route
+            path="/dashboard"
+            element={
+              <>
+                <DashboardV2 />
+                <RouteKeyProbe />
+              </>
+            }
+          />
           <Route path="/settings" element={<SettingsProbe />} />
         </Routes>
       </MemoryRouter>,
@@ -1348,6 +1365,43 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
     fireEvent.keyDown(input, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await waitFor(() => expect(go).toHaveFocus());
+  });
+
+  describe("on Android, with the palette's own history entry (R87, R79)", () => {
+    let before: Record<string, unknown>;
+    beforeEach(() => {
+      document.documentElement.dataset.platform = "android";
+      before = { idx: 0, key: `dash-${Math.random()}` };
+      window.history.replaceState(before, "");
+    });
+    afterEach(() => {
+      delete document.documentElement.dataset.platform;
+    });
+
+    it.each(["Back", "Escape"])(
+      "closes by %s, runs no navigate for the pop that takes the entry off, and leaves history as it was",
+      async (how) => {
+        await renderOn("Home");
+        const keys = routeKeys.length;
+        act(() => usePaletteStore.getState().openPalette(null));
+        const input = await screen.findByRole("combobox");
+        expect(window.history.state).toEqual({ ...before, olmPalette: true });
+        if (how === "Back") act(() => window.history.back());
+        else fireEvent.keyDown(input, { key: "Escape" });
+        await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+        await waitFor(() => expect(window.history.state).toEqual(before));
+        await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+        expect(routeKeys).toHaveLength(keys);
+        expect(window.history.state).toEqual(before);
+      },
+    );
+
+    it("still keeps a Back with the palette closed on the dashboard", async () => {
+      await renderOn("Home");
+      const keys = routeKeys.length;
+      act(() => window.dispatchEvent(new PopStateEvent("popstate", { state: null })));
+      await waitFor(() => expect(routeKeys).toHaveLength(keys + 1));
+    });
   });
 
   it("does not rebuild the index while the user types", async () => {
