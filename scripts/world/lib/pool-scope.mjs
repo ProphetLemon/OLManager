@@ -194,39 +194,57 @@ export const roleLabels = (value) => text(value).split(/[,;]/).map((x) => x.trim
 
 const POSITION_LABELS = Object.freeze({ Top: "top", Jungle: "jungle", Mid: "mid", Bot: "bot", Support: "support" });
 
-/**
- * Whether the roster can hold `position` as a playing label: it is one of the labels the roster rows name, or it lies strictly
- * between the MIN and MAX of a row that reads two different labels. The people query only returns those two extremes of each
- * row's roles, so the labels between them are hidden, not ruled out. `spans` are the [MIN, MAX] pairs of such rows.
- */
-function rosterMayHold(position, labels, spans) {
-  if (labels.some((label) => playerPosition(label) === position)) return true;
-  const name = POSITION_LABELS[position];
-  return spans.some(([low, high]) => text(low).toLowerCase() < name && name < text(high).toLowerCase());
+/** The roster row that started last: `roleRows` are `{last, min, max}` per people-query row. Rows without a date lose to rows with one. */
+export function latestRoleRow(roleRows) {
+  let best = null;
+  for (const row of roleRows ?? []) if (!best || text(row.last) > text(best.last)) best = row;
+  return best ? { min: text(best.min), max: text(best.max) } : null;
 }
 
 /**
- * Player or staff, and the position or staff label. `roles` are the roster role values the person has in the filter;
- * `profileRole` is `Players.Role`, used when the roster values name nothing. A person who ever held a playing position
- * is a player; otherwise one who held only staff labels is staff.
- *
- * His position is the first playing label of the roster, unless the Players page role is a position the roster may hold
- * (see `rosterMayHold`): then that one is his, because the roster values are only the alphabetical extremes of what he played
- * and the first of them says nothing about his lane. The profile role never overrides a roster that rules it out.
+ * The playing position of a player, from the evidence that says most about where he plays now, and which step decided:
+ *  - "b": the latest roster row names one playing label (no span, no list, no staff label);
+ *  - "c": the Players page role, when the roster names it as a label;
+ *  - "d": the Players page role, when it only lies between the MIN and MAX of a roster row (the people query returns those two
+ *    extremes of each row's roles, so the labels between them are hidden, not ruled out);
+ *  - "first": else the first playing label of the roster.
+ * A staff label is never a position. Step "a", his own recent games, is applied by `selectPool` on top of this.
  */
-export function describePerson(roles, profileRole, spans = []) {
-  const labels = roles.flatMap(roleLabels);
+function choosePosition({ labels, profilePosition, spans, latest }) {
   const rosterPosition = labels.map(playerPosition).find(Boolean) ?? null;
+  if (!rosterPosition) return null;
+  if (latest && latest.min === latest.max && !/[,;]/.test(latest.min)) {
+    const single = playerPosition(latest.min);
+    if (single) return { position: single, step: "b" };
+  }
+  if (profilePosition && labels.some((label) => playerPosition(label) === profilePosition)) return { position: profilePosition, step: "c" };
+  const name = POSITION_LABELS[profilePosition];
+  if (name && spans.some(([low, high]) => text(low).toLowerCase() < name && name < text(high).toLowerCase())) return { position: profilePosition, step: "d" };
+  return { position: rosterPosition, step: "first" };
+}
+
+/**
+ * Player or staff, the position or staff label, and the step that chose a position. `roles` are the roster role values the
+ * person has in the filter; `profileRole` is `Players.Role`, used when the roster values name nothing; `spans` are the [MIN, MAX]
+ * pairs of the rows that read two different labels and `latest` is `{min, max}` of the row that started last (see `choosePosition`).
+ * A person who ever held a playing position is a player; otherwise one who held only staff labels is staff.
+ */
+export function describePersonDetailed(roles, profileRole, spans = [], latest = null) {
+  const labels = roles.flatMap(roleLabels);
   const staffLabel = labels.find(isStaffLabel) ?? null;
   const profilePosition = playerPosition(profileRole);
-  if (rosterPosition) {
-    const position = profilePosition && rosterMayHold(profilePosition, labels, spans) ? profilePosition : rosterPosition;
-    return { kind: "player", position, staffLabel: null };
-  }
-  if (staffLabel) return { kind: "staff", position: null, staffLabel };
-  if (profilePosition) return { kind: "player", position: profilePosition, staffLabel: null };
-  if (isStaffLabel(profileRole)) return { kind: "staff", position: null, staffLabel: text(profileRole) };
-  return { kind: "player", position: null, staffLabel: null };
+  const chosen = choosePosition({ labels, profilePosition, spans, latest });
+  if (chosen) return { kind: "player", position: chosen.position, staffLabel: null, step: chosen.step };
+  if (staffLabel) return { kind: "staff", position: null, staffLabel, step: null };
+  if (profilePosition) return { kind: "player", position: profilePosition, staffLabel: null, step: "profile" };
+  if (isStaffLabel(profileRole)) return { kind: "staff", position: null, staffLabel: text(profileRole), step: null };
+  return { kind: "player", position: null, staffLabel: null, step: null };
+}
+
+/** `describePersonDetailed` without the step. */
+export function describePerson(roles, profileRole, spans = [], latest = null) {
+  const { step: _step, ...person } = describePersonDetailed(roles, profileRole, spans, latest);
+  return person;
 }
 
 /**
@@ -272,13 +290,19 @@ export function personFromRow(row) {
   };
   const roles = [row.rmin, row.rmax].map(text).filter(Boolean);
   const spans = text(row.rmin) && text(row.rmax) && text(row.rmin) !== text(row.rmax) ? [[text(row.rmin), text(row.rmax)]] : [];
+  const roleRows = [{ last: text(row.last), min: text(row.rmin), max: text(row.rmax) }];
+  const detailed = describePersonDetailed(roles, profile.role, spans, latestRoleRow(roleRows));
   const { tournaments, truncated } = parseTournaments(row.tours);
   return {
     page: text(row.player),
     profile,
     roles,
     spans,
-    ...describePerson(roles, profile.role, spans),
+    roleRows,
+    kind: detailed.kind,
+    position: detailed.position,
+    staffLabel: detailed.staffLabel,
+    positionStep: detailed.step,
     tier: tierFromAggregates({
       leagueLevelMin: text(row.lmin), tournamentLevelMin: text(row.tmin), tournamentOfficial: text(row.toff), leagueOfficial: text(row.loff),
     }),
@@ -296,11 +320,17 @@ export function mergePerson(a, b) {
   const profileRole = a.profile.role || b.profile.role;
   const roles = [...new Set([...a.roles, ...b.roles])];
   const spans = [...(a.spans ?? []), ...(b.spans ?? [])];
+  const roleRows = [...(a.roleRows ?? []), ...(b.roleRows ?? [])];
+  const detailed = describePersonDetailed(roles, profileRole, spans, latestRoleRow(roleRows));
   return {
     ...a,
     roles,
     spans,
-    ...describePerson(roles, profileRole, spans),
+    roleRows,
+    kind: detailed.kind,
+    position: detailed.position,
+    staffLabel: detailed.staffLabel,
+    positionStep: detailed.step,
     tier: Math.min(a.tier, b.tier),
     bestLevel: bestLevel(a.bestLevel, b.bestLevel),
     lastStart: a.lastStart > b.lastStart ? a.lastStart : b.lastStart,

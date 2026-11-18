@@ -35,6 +35,8 @@ export interface PoolEntry {
   id: string;
   /** Game position (Top, Jungle, Mid, ADC, Support) for a player, game staff role for staff. */
   role: string;
+  /** The step of the position evidence that chose `role`: a (recent games), b (latest roster row), c (profile role on the roster), d (profile role inside a span), first, profile; null for staff. */
+  step: string | null;
   person: Person;
 }
 export type PoolStatus =
@@ -67,7 +69,10 @@ export function selectPool(input: {
   world: World;
   rosterIds?: Set<string>;
   rosterTitles?: { player?: Set<string>; staff?: Set<string> };
+  recentRoles?: Map<string, { position: string; games: number; last: string }> | null;
 }): PoolSelection;
+/** How many of the selected players took each step of the position evidence. */
+export function positionSteps(selection: PoolSelection): { a: number; b: number; c: number; d: number; first: number; profile: number };
 /** Comparison key of a page title: NFKC, underscores as spaces, collapsed and trimmed whitespace, lower case. */
 export function titleKey(title: unknown): string;
 

@@ -23,7 +23,7 @@ import { explainProbe } from "./pool-report.mjs";
 import { gameTeamKeys } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, dropWorldBuildTwins, selectPool } from "./pool.mjs";
 import { contractedPlayers } from "./same-person.mjs";
-import { poolSkillFromRows } from "./pool-rating.mjs";
+import { poolSkillFromRows, recentRolesFromRows } from "./pool-rating.mjs";
 import { poolOfLevels } from "../../stats/lib/levels.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
@@ -148,7 +148,8 @@ export async function runRefresh(options) {
     // Titles too: the same person can be spelled differently on a team page and in the pool query, which hashes to another id.
     const addedPages = (entries) => new Set(entries.filter((entry) => entry.op.op === "add" && entry.page).map((entry) => entry.page));
     const rosterTitles = { player: addedPages(ops.players), staff: addedPages(ops.staff) };
-    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles });
+    const recentRoles = options.pool.statsRows ? recentRolesFromRows(options.pool.statsRows, { since: settings.since }) : null;
+    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles, recentRoles });
     // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;

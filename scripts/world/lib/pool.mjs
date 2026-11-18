@@ -7,10 +7,10 @@
 //  - qualifier-flagged tournaments count only up to `cap` roster entries (open qualifiers hold thousands of names);
 //  - nobody the game already has, nobody on a team the roster overlay handles.
 import { IdCollisionError, deterministicId, generatePlayer, generateStaff } from "./generate.mjs";
-import { foldedByWorldBuild } from "./same-person.mjs";
+import { worldBuildChecker } from "./same-person.mjs";
 import { pageUrl } from "./leaguepedia-parse.mjs";
 import { OPEN_QUALIFIER_ENTRIES, gameStatus, qualifierSplit } from "./pool-scope.mjs";
-import { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, latestMappedCompetition, ratePoolPlayer, shapeBaselines, tierBaselines } from "./pool-rating.mjs";
+import { GAME_POSITION, POSITION_MIN_GAMES, RATING_STATS, RATING_TIER_DEFAULT, latestMappedCompetition, ratePoolPlayer, shapeBaselines, tierBaselines } from "./pool-rating.mjs";
 import { dataRoleForLabel } from "./staff-policy.mjs";
 import { compactKey, countryToIso2 } from "./text.mjs";
 
@@ -92,11 +92,13 @@ function identityKey(person) {
  * @param {{playerIndex: unknown, staffIndex: unknown, overrides: unknown, teamKeys: Set<string>}} input.context what the game has
  * @param {import("./world.mjs").World} input.world
  * @param {Set<string>} [input.rosterIds] ids the roster overlay already adds or touches in this run
+ * @param {Map<string, {position: string, games: number, last: string}>|null} [input.recentRoles] where each player has played lately
+ *   (`recentRolesFromRows`); his role is the one he played most when those games are not older than his latest roster row
  * @param {{player?: Set<string>, staff?: Set<string>}} [input.rosterTitles] page titles of the players and of the staff the
  *   roster overlay adds in this run; a pool person of the same kind whose page has the same `titleKey` is the same person,
  *   whatever id his spelling hashes to. Kinds stay apart: a head coach is not also a pool player.
  */
-export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {} }) {
+export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {}, recentRoles = null }) {
   const rosterKeys = { player: new Set([...(rosterTitles.player ?? [])].map(titleKey)), staff: new Set([...(rosterTitles.staff ?? [])].map(titleKey)) };
   const counts = { considered: 0, noPage: 0, inGame: 0, onGameTeam: 0, handledByRoster: 0, uncertain: 0, nonSportingStaff: 0, noPosition: 0, duplicates: 0, collisions: 0, sameAsGameRecord: 0 };
   const statuses = new Map();
@@ -148,6 +150,7 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
       continue;
     }
     let role;
+    let step = null;
     if (person.kind === "staff") {
       role = dataRoleForLabel(person.staffLabel);
       if (!role) {
@@ -155,13 +158,18 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
         continue;
       }
     } else {
-      role = GAME_POSITION[person.position] ?? null;
+      // Position evidence, best first: (a) his own recent games, when he has enough of them and the roster has no newer word; then
+      // what the roster and the Players page say (describePerson: b, c, d, first).
+      const recent = recentRoles?.get(person.page);
+      const byGames = recent && recent.games >= POSITION_MIN_GAMES && recent.last >= (person.lastStart ?? "") && GAME_POSITION[recent.position] ? recent : null;
+      step = byGames ? "a" : person.positionStep;
+      role = GAME_POSITION[byGames ? byGames.position : person.position] ?? null;
       if (!role) {
         refuse(person, "no-position", `no usable position (roster roles ${JSON.stringify(person.roles)}, profile role "${person.profile.role}")`, "noPosition");
         continue;
       }
     }
-    accepted.push({ page: person.page, kind: person.kind, id, role, person });
+    accepted.push({ page: person.page, kind: person.kind, id, role, step, person });
   }
 
   // Two pages that read as the same person are ambiguous: neither is added.
@@ -318,8 +326,9 @@ export function buildPoolOps({ selection, tournamentIndex, games = null, skill =
 export function dropWorldBuildTwins({ selection, ops, contracted }) {
   const players = [];
   const dropped = new Set();
+  const foldedBy = worldBuildChecker(contracted, ops.players.map((entry) => entry.op.player));
   for (const entry of ops.players) {
-    const hit = foldedByWorldBuild(entry.op.player, contracted);
+    const hit = foldedBy(entry.op.player);
     if (!hit) {
       players.push(entry);
       continue;
@@ -333,4 +342,11 @@ export function dropWorldBuildTwins({ selection, ops, contracted }) {
   }
   selection.players = selection.players.filter((entry) => !dropped.has(entry.id));
   return { ...ops, players };
+}
+
+/** How many of the selected players took each step of the position evidence (see `choosePosition` in pool-scope.mjs; "a" is his own recent games). */
+export function positionSteps(selection) {
+  const steps = { a: 0, b: 0, c: 0, d: 0, first: 0, profile: 0 };
+  for (const entry of selection.players) if (entry.step in steps) steps[entry.step] += 1;
+  return steps;
 }

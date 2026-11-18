@@ -8,7 +8,8 @@ import { PEOPLE_FILTER, fetchPoolInputs, type PoolInputs } from "../../../script
 import {
   bestLevel, classifyTournaments, mergePerson, normalizeTournament, parseTournaments, personFromRow, qualifierSplit, TOURS_MAX_CHARS,
 } from "../../../scripts/world/lib/pool-scope.mjs";
-import { RATING_TIER_DEFAULT, TIER_OFFSETS, buildPoolOps, dropWorldBuildTwins, isoDate, poolId, poolTournaments, selectPool, tierBaselines } from "../../../scripts/world/lib/pool.mjs";
+import { RATING_TIER_DEFAULT, TIER_OFFSETS, buildPoolOps, dropWorldBuildTwins, isoDate, poolId, poolTournaments, positionSteps, selectPool, tierBaselines } from "../../../scripts/world/lib/pool.mjs";
+import { POSITION_MIN_GAMES, recentRolesFromRows } from "../../../scripts/world/lib/pool-rating.mjs";
 import { baselines, context, entryRows, overlayOf, peopleOf, row, select, stubClient, tournamentRows, world } from "./poolFixtures";
 
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -255,6 +256,56 @@ describe("ids", () => {
     const gameStaff = new Set(world.staff.map((s) => s.id));
     expect(players.some((id) => gamePlayers.has(id))).toBe(false);
     expect(staff.some((id) => gameStaff.has(id))).toBe(false);
+  });
+});
+
+describe("the position from the player's own recent games (step a)", () => {
+  const wady = row({ player: "Wady", ign: "Wady", name: "Lê Quang Duy", country: "Vietnam", birth: "2007-04-18", prole: "Top", rmin: "Jungle", rmax: "Jungle", last: "2026-09-11", n: "2" });
+  const vander = row({ player: "Vander", ign: "Vander", name: "Vander Test", country: "Poland", birth: "2001-03-04", prole: "Bot", rmin: "Bot", rmax: "Bot", last: "2025-03-13", n: "1" });
+  const roleOf = (selected: ReturnType<typeof selectPool>, page: string) => selected.players.find((e) => e.page === page)!;
+  const recent = (position: string, games: number, last: string) => ({ position, games, last });
+
+  it("takes the majority role of at least 5 games in the window when they are not older than the latest roster row", () => {
+    // Wady (cache, stats rows): 8 games, all Jungle, from 2025-05-08 to 2026-09-20; his latest roster row starts 2026-09-11.
+    const selected = selectPool({ people: peopleOf([wady]), context, world, recentRoles: new Map([["Wady", recent("Jungle", 8, "2026-09-20")]]) });
+    expect(roleOf(selected, "Wady")).toMatchObject({ role: "Jungle", step: "a" });
+    // The same games decide against a Players page role of Top.
+    expect(wady.prole).toBe("Top");
+  });
+
+  it("ignores games older than the latest roster row, and fewer than 5 games", () => {
+    // Vander (cache, stats rows): 15 Support games, the last on 2025-02-25; his latest roster row is Bot and starts 2025-03-13.
+    const stale = selectPool({ people: peopleOf([vander]), context, world, recentRoles: new Map([["Vander", recent("Support", 15, "2025-02-25")]]) });
+    expect(roleOf(stale, "Vander")).toMatchObject({ role: "ADC", step: "b" });
+    const few = selectPool({ people: peopleOf([vander]), context, world, recentRoles: new Map([["Vander", recent("Support", 4, "2025-05-25")]]) });
+    expect(roleOf(few, "Vander")).toMatchObject({ role: "ADC", step: "b" });
+  });
+
+  it("counts how many players took each step", () => {
+    const selected = selectPool({ people: peopleOf([wady, vander]), context, world, recentRoles: new Map([["Wady", recent("Jungle", 8, "2026-09-20")]]) });
+    expect(positionSteps(selected)).toEqual({ a: 1, b: 1, c: 0, d: 0, first: 0, profile: 0 });
+  });
+});
+
+describe("recentRolesFromRows", () => {
+  const game = (playerKey: string, role: string, date: string) => ({ playerKey, role, date });
+
+  it("keeps the games inside the window and the role most of them were played in", () => {
+    const rows = [
+      ...Array.from({ length: 3 }, () => game("Wady", "Jungle", "2026-09-11")),
+      ...Array.from({ length: 5 }, () => game("Wady", "Jungle", "2026-09-20")),
+      game("Wady", "Top", "2026-01-01"),
+      game("Wady", "Top", "2022-01-01"),
+    ];
+    const roles = recentRolesFromRows(rows, { since: "2023-11-12" });
+    expect(roles.get("Wady")).toEqual({ position: "Jungle", games: 9, last: "2026-09-20" });
+  });
+
+  it("gives no role when no role holds more than half of the games, or there are fewer than 5", () => {
+    const split = [...Array.from({ length: 3 }, () => game("Mix", "Top", "2026-01-01")), ...Array.from({ length: 3 }, () => game("Mix", "Mid", "2026-01-02"))];
+    expect(recentRolesFromRows(split, { since: "2023-11-12" }).get("Mix")).toBeUndefined();
+    expect(recentRolesFromRows(Array.from({ length: 4 }, () => game("Few", "Mid", "2026-01-01")), { since: "2023-11-12" }).get("Few")).toBeUndefined();
+    expect(POSITION_MIN_GAMES).toBe(5);
   });
 });
 

@@ -11,6 +11,7 @@ import {
   chunkNames,
   classifyTournaments,
   describePerson,
+  describePersonDetailed,
   evenSample,
   fieldCoverage,
   gameStatus,
@@ -228,32 +229,49 @@ describe("roles", () => {
   });
 });
 
-describe("the position of a person whose roster roles are only the extremes of a range", () => {
-  // The people query asks for MIN(Role) and MAX(Role) per row, so "Coach".."Support" hides every label in between. The
-  // Players page role settles which of the labels the roster may hold he plays; it never adds a label the roster rules out.
-  it("takes the profile role when it is one of the roster's playing labels", () => {
-    // Nade (cache, Players page role Support; rosters Bot, Support, Coach): the first label alphabetically is not his lane.
-    expect(describePerson(["Bot", "Support", "Coach"], "Support")).toMatchObject({ kind: "player", position: "Support" });
-    expect(describePerson(["Top", "Jungle"], "Top")).toMatchObject({ position: "Top" });
+describe("the position of a player: latest roster row, then the profile role, then a span", () => {
+  // The people query returns MIN(Role) and MAX(Role) per row, and the roster rows keep their start dates (`last`). The order of
+  // evidence: (b) the playing label of the latest roster row when it is a single label; (c) the Players page role when the roster
+  // names it; (d) the Players page role when it lies between the MIN and MAX of a row; else the first playing label of the roster.
+  // Step (a), the person's own recent games, is applied by selectPool (pool.test.ts).
+  const step = (roles: string[], profile: string, spans: string[][], latest: { min: string; max: string } | null) =>
+    describePersonDetailed(roles, profile, spans as never, latest);
+
+  it("(b) takes the single playing label of the latest roster row", () => {
+    // Wady (cache): Top row from 2026-02-01, Jungle rows from 2026-05-02 and 2026-09-11; Players page role Top.
+    expect(step(["Top", "Jungle"], "Top", [], { min: "Jungle", max: "Jungle" })).toMatchObject({ position: "Jungle", step: "b" });
+    // Vander (cache): roster rows Coach..Support (2025-01-28) and Bot (2025-03-13); Players page role Bot.
+    expect(step(["Bot", "Coach", "Support"], "Bot", [["Coach", "Support"]], { min: "Bot", max: "Bot" })).toMatchObject({ position: "Bot", step: "b" });
   });
 
-  it("takes the profile role when it lies inside a MIN..MAX span the roster rows only bound", () => {
-    // SofM (cache, profile Jungle; his 14 LCP rows read MIN "Coach", MAX "Support"): Jungle sits between them.
-    expect(describePerson(["Coach", "Support"], "Jungle", [["Coach", "Support"]])).toMatchObject({ kind: "player", position: "Jungle" });
+  it("(c) takes the profile role when the latest row is not a single playing label but the roster names it", () => {
+    // Huron (cache): latest row Bot..Support (2026-08-04), Players page role Support.
+    expect(step(["Bot", "Support"], "Support", [["Bot", "Support"]], { min: "Bot", max: "Support" })).toMatchObject({ position: "Support", step: "c" });
   });
 
-  it("keeps the roster's label when the roster rules the profile role out", () => {
-    // Revelate (cache, profile Jungle; every roster row reads Support..Support): an exact row says Support.
-    expect(describePerson(["Support"], "Jungle", [])).toMatchObject({ position: "Support" });
-    // Outside the span "Bot".."Mid" the profile role Support cannot be a roster label.
-    expect(describePerson(["Bot", "Mid"], "Support", [["Bot", "Mid"]])).toMatchObject({ position: "Bot" });
+  it("(d) accepts a profile role that only lies inside a span, and never a non-playing label", () => {
+    // SofM (cache): rows Coach (latest, 2026-10-15) and Coach..Support; Players page role Jungle.
+    expect(step(["Coach", "Support"], "Jungle", [["Coach", "Support"]], { min: "Coach", max: "Coach" })).toMatchObject({ kind: "player", position: "Jungle", step: "d" });
+    expect(step(["Bot", "Mid"], "Jungle", [["Bot", "Mid"]], null)).toMatchObject({ position: "Jungle", step: "d" });
+    // The latest row is a coach: a staff label is never a position.
+    expect(step(["Coach", "Bot"], "", [], { min: "Coach", max: "Coach" })).toMatchObject({ position: "Bot" });
   });
 
-  it("carries the spans through personFromRow and mergePerson", () => {
-    const sofm = personFromRow({ player: "SofM", ign: "SofM", name: "Lê Quang Duy", prole: "Jungle", rmin: "Coach", rmax: "Support", n: "14" });
-    expect(sofm.position).toBe("Jungle");
-    const merged = mergePerson(personFromRow({ player: "SofM", ign: "SofM", prole: "Jungle", rmin: "Coach", rmax: "Coach", n: "2" }), sofm);
-    expect(merged.position).toBe("Jungle");
+  it("keeps the roster's first playing label when the roster rules the profile role out", () => {
+    expect(step(["Support"], "Jungle", [], { min: "Support", max: "Support" })).toMatchObject({ position: "Support", step: "b" });
+    expect(step(["Bot", "Mid"], "Support", [["Bot", "Mid"]], null)).toMatchObject({ position: "Bot", step: "first" });
+  });
+
+  it("follows the latest row through personFromRow and mergePerson", () => {
+    const wadyTop = personFromRow({ player: "Wady", ign: "Wady", name: "Lê Quang Duy", prole: "Top", rmin: "Top", rmax: "Top", last: "2026-02-01", n: "1" });
+    const wadyJungle = personFromRow({ player: "Wady", ign: "Wady", name: "Lê Quang Duy", prole: "Top", rmin: "Jungle", rmax: "Jungle", last: "2026-09-11", n: "2" });
+    expect(mergePerson(wadyTop, wadyJungle)).toMatchObject({ position: "Jungle", positionStep: "b" });
+    expect(mergePerson(wadyJungle, wadyTop)).toMatchObject({ position: "Jungle", positionStep: "b" });
+    const sofm = mergePerson(
+      personFromRow({ player: "SofM", ign: "SofM", prole: "Jungle", rmin: "Coach", rmax: "Support", last: "2026-07-25", n: "14" }),
+      personFromRow({ player: "SofM", ign: "SofM", prole: "Jungle", rmin: "Coach", rmax: "Coach", last: "2026-10-15", n: "2" }),
+    );
+    expect(sofm).toMatchObject({ position: "Jungle", positionStep: "d" });
   });
 });
 
