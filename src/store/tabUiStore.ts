@@ -260,8 +260,10 @@ export function useValidTabUiField<T extends keyof TabUiStates, K extends keyof 
   const fallback = DEFAULT_TAB_UI_STATES[tab][key];
   const valid = value == null || value === fallback || isValid(value as NonNullable<TabUiStates[T][K]>);
   useEffect(() => {
-    if (!valid) setValue(fallback);
-  }, [valid, fallback, setValue]);
+    // Only the stale id this render read is dropped: a link applied before paint
+    // (useOneShotOverride) may already have replaced it in the store.
+    if (!valid && useTabUiStore.getState().tabs[tab][key] === value) setValue(fallback);
+  }, [valid, value, fallback, setValue, tab, key]);
   return [valid ? value : fallback, setValue];
 }
 

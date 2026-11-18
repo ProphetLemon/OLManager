@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -467,6 +468,34 @@ describe("Stored tab state never hides what a link or the current data shows", (
       teamSearch: "",
       playerSearch: "",
     });
+  });
+
+  it("Inbox opens a linked message over a stale stored one, and the store keeps the link", () => {
+    seed("inbox", { selectedId: "gone" });
+    renderInbox("m2");
+
+    expect(selectedSubject()).toBe("Subject m2");
+    expect(useTabUiStore.getState().tabs.inbox.selectedId).toBe("m2");
+  });
+
+  it("Inbox keeps a linked message over a stale stored one in StrictMode", () => {
+    seed("inbox", { selectedId: "gone" });
+    render(
+      <StrictMode>
+        <InboxTabV2 gameState={inboxState()} onGameUpdate={vi.fn()} initialMessageId="m2" />
+      </StrictMode>,
+    );
+
+    expect(selectedSubject()).toBe("Subject m2");
+    expect(useTabUiStore.getState().tabs.inbox.selectedId).toBe("m2");
+  });
+
+  it("Competitions opens a linked competition over a stale stored one, and the store keeps the link", () => {
+    seed("competitions", { selectedCid: "gone" });
+    renderCompetitions("lck");
+
+    expect(selectedLeague()).toBe("LCK");
+    expect(useTabUiStore.getState().tabs.competitions.selectedCid).toBe("lck");
   });
 
   it("Schedule drops a stored day the week card no longer shows", () => {
