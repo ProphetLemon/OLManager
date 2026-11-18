@@ -5,6 +5,7 @@ import { useCallCacheStore } from "./callCacheStore";
 import { useDashboardLocationStore } from "./dashboardLocationStore";
 import { useGameStore } from "./gameStore";
 import { useNavMemoryStore } from "./navMemoryStore";
+import { usePaletteStore } from "./paletteStore";
 import { resetSessionNavigation } from "./sessionReset";
 import { useTabUiStore } from "./tabUiStore";
 
@@ -21,6 +22,7 @@ const dirtyTabUi = () =>
 function dirtySession() {
   dirtyTabUi();
   useNavMemoryStore.getState().rememberTab("Transfers");
+  usePaletteStore.setState({ open: true, openerId: "util:go" });
   useDashboardLocationStore.getState().go({ kind: "tab", tab: "Squad" });
   useDashboardLocationStore.getState().go({ kind: "player", id: "p1" });
   useCallCacheStore.getState().setLastBlockers({
@@ -34,6 +36,7 @@ function expectFreshSession() {
   expect(useTabUiStore.getState().tabs.transfers.view).toBe("my_list");
   expect(useTabUiStore.getState().tabs.scouting.searchQuery).toBe("");
   expect(useNavMemoryStore.getState().lastByGroup).toEqual({});
+  expect(usePaletteStore.getState()).toMatchObject({ open: false, openerId: null });
   expect(useNavMemoryStore.getState().openGroups).toEqual({});
   const { nav, recent } = useDashboardLocationStore.getState();
   expect(currentLocation(nav)).toEqual({
