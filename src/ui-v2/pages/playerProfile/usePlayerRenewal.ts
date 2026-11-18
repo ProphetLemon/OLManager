@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { GameStateData, PlayerData } from "@/store/gameStore";
 import { resolveBackendText } from "@/lib/i18n/backendI18n";
@@ -52,7 +52,9 @@ export function usePlayerRenewal({
   const [renewalFeedback, setRenewalFeedback] = useState<NegotiationFeedbackData | null>(null);
   const [renewalProjection, setRenewalProjection] =
     useState<RenewalProjectionData["projection"] | null>(null);
-  const [hasConsumedInitialRenewalIntent, setHasConsumedInitialRenewalIntent] = useState(false);
+  // The request last answered, for this player: a new one opens the dialog once, and one
+  // that comes while the dialog is open is met by it, so closing it stays closed (R57).
+  const answered = useRef<{ playerId: string; request: object | null | undefined } | null>(null);
 
   const renewalOfferedWage = Number(renewalWage);
   const renewalOfferedYears = Number(renewalLength);
@@ -101,18 +103,21 @@ export function usePlayerRenewal({
   }
 
   useEffect(() => {
-    setHasConsumedInitialRenewalIntent(false);
-  }, [player.id, startWithRenewalModal, renewalRequest]);
-
-  useEffect(() => {
-    if (!canRenew || !startWithRenewalModal || showRenewalModal || hasConsumedInitialRenewalIntent) {
+    if (!startWithRenewalModal) {
+      answered.current = null;
       return;
     }
-
-    setHasConsumedInitialRenewalIntent(true);
+    const last = answered.current;
+    if (last && last.playerId === player.id && last.request === renewalRequest) return;
+    if (showRenewalModal) {
+      answered.current = { playerId: player.id, request: renewalRequest };
+      return;
+    }
+    if (!canRenew) return;
+    answered.current = { playerId: player.id, request: renewalRequest };
     openRenewalModal();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasConsumedInitialRenewalIntent, canRenew, showRenewalModal, startWithRenewalModal]);
+  }, [player.id, renewalRequest, canRenew, showRenewalModal, startWithRenewalModal]);
 
   useEffect(() => {
     if (!showRenewalModal || !isRenewalWageValid) {

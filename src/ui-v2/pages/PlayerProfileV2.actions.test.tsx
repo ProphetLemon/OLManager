@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 import type { GameStateData } from "@/store/gameStore";
@@ -138,6 +138,32 @@ describe("PlayerProfileV2 actions", () => {
     rerender(<PlayerProfileV2 {...props} startWithRenewalModal renewalRequest={{}} />);
 
     expect(await screen.findByLabelText("playerProfile.renewalWage")).toBeInTheDocument();
+  });
+
+  it("does not reopen the renewal modal on a re-render with the same request (R57)", async () => {
+    const props = { gameState: gameState("team-1"), playerId: "player-1", onClose: vi.fn(), onGameUpdate: vi.fn() };
+    const request = {};
+    const { rerender } = render(<PlayerProfileV2 {...props} startWithRenewalModal renewalRequest={request} />);
+    await screen.findByLabelText("playerProfile.renewalWage");
+    fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+    await waitFor(() => expect(screen.queryByLabelText("playerProfile.renewalWage")).toBeNull());
+
+    rerender(<PlayerProfileV2 {...props} startWithRenewalModal renewalRequest={request} />);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+
+    expect(screen.queryByLabelText("playerProfile.renewalWage")).toBeNull();
+  });
+
+  it("treats a request that comes while the renewal modal is open as met, so closing it stays closed (R57)", async () => {
+    const props = { gameState: gameState("team-1"), playerId: "player-1", onClose: vi.fn(), onGameUpdate: vi.fn() };
+    const { rerender } = render(<PlayerProfileV2 {...props} startWithRenewalModal renewalRequest={{}} />);
+    await screen.findByLabelText("playerProfile.renewalWage");
+    rerender(<PlayerProfileV2 {...props} startWithRenewalModal renewalRequest={{}} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+
+    expect(screen.queryByLabelText("playerProfile.renewalWage")).toBeNull();
   });
 
   describe("renewal contract length", () => {
