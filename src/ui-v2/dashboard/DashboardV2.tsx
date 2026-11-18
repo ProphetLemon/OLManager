@@ -27,7 +27,6 @@ import {
 } from "@/lib/home/blockerRules";
 import type { PlayerData } from "@/store/gameStore";
 import { resolveActiveLineupIds } from "@/store/types";
-import { resolveNavTab } from "@/ui-v2/shell/navModel";
 
 import {
   formatDateFull,
@@ -37,13 +36,9 @@ import {
 import DashboardOverlays from "@/ui-v2/_legacy/components/dashboard/DashboardOverlays";
 import FiredModal from "@/ui-v2/_legacy/components/dashboard/FiredModal";
 import {
-  createDashboardProfileNavigationState,
-  goBackDashboardProfile,
   hasDashboardProfileHistory,
-  navigateDashboardProfiles,
-  selectDashboardPlayer,
-  selectDashboardTeam,
-  selectDashboardStaff,
+  isLocationInGame,
+  type DashboardLocation,
   type DashboardNavigateContext,
 } from "@/lib/dashboard/profileNavigation";
 import { createDashboardTabContentModel } from "@/lib/dashboard/tabContentModel";
@@ -57,6 +52,7 @@ import {
 import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 
 import { useNavMemoryStore } from "@/store/navMemoryStore";
+import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
 import { useRailMode } from "@/ui-v2/shell/useRailMode";
@@ -184,15 +180,24 @@ export default function DashboardV2() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
-  const [profileNavigation, setProfileNavigation] = useState(() =>
-    createDashboardProfileNavigationState(
-      PATH_TAB_MAP[location.pathname] ?? useNavMemoryStore.getState().activeTab ?? "Home",
-    ),
-  );
+  // An alias route wins over the remembered location from the first render, so the
+  // remembered tab never paints (and never stays mounted, hidden, behind Suspense).
+  // Moving to the location it is already on is a no-op, so a second call is harmless.
+  useState(() => {
+    const tab = PATH_TAB_MAP[location.pathname];
+    if (tab) useDashboardLocationStore.getState().go({ kind: "tab", tab });
+  });
+  // Where the user is lives in a store, so it survives this component unmounting
+  // for Settings or a match (R22).
+  const profileNavigation = useDashboardLocationStore((s) => s.nav);
+  const go = useDashboardLocationStore((s) => s.go);
+  const back = useDashboardLocationStore((s) => s.back);
+  const closeChampion = useDashboardLocationStore((s) => s.closeChampion);
+  const clearOneShots = useDashboardLocationStore((s) => s.clearOneShots);
+  const viewingChampionKey = profileNavigation.championKey;
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isExitingToMenu, setIsExitingToMenu] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  const [viewingChampionKey, setViewingChampionKey] = useState<string | null>(null);
   // What blocks the advance, for "Needs your call". Fed by the Continue modal and
   // by the backend pre-check, which re-runs after every game state update. Kept in
   // a store so a return from Settings or a match starts from it, not from 0.
@@ -216,15 +221,19 @@ export default function DashboardV2() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [navigate]);
 
+  // An alias route opens its tab. It runs again once the backend probe activates
+  // the game, because activating a game resets the session's location.
   useEffect(() => {
     const tab = PATH_TAB_MAP[location.pathname];
     if (!tab) {
       return;
     }
-    setProfileNavigation((s) =>
-      s.activeTab === tab ? s : navigateDashboardProfiles(s, tab),
-    );
-  }, [location.pathname]);
+    if (useDashboardLocationStore.getState().nav.activeTab !== tab) go({ kind: "tab", tab });
+  }, [location.pathname, hasActiveGame, go]);
+
+  // The location survives an unmount, but its one-shot intents (the renewal modal,
+  // the message or competition to preselect) belong to the visit that carried them.
+  useEffect(() => () => clearOneShots(), [clearOneShots]);
 
   // Remember the tab, so returning from Settings or a match lands on it again.
   const rememberTab = useNavMemoryStore((s) => s.rememberTab);
@@ -480,10 +489,7 @@ export default function DashboardV2() {
     }
   };
 
-  const handleNavClick = (tab: string) => {
-    setViewingChampionKey(null);
-    setProfileNavigation((s) => navigateDashboardProfiles(s, tab));
-  };
+  const handleNavClick = (tab: string) => go({ kind: "tab", tab });
 
   // Header chip: go Home and move focus to the "Needs your call" panel. Home
   // is lazy, so poll briefly until the panel exists.
@@ -510,21 +516,23 @@ export default function DashboardV2() {
     document.getElementById(MAIN_CONTENT_ID)?.focus();
   };
 
-  const handleNavigate = (tab: string, context?: DashboardNavigateContext) => {
-    setViewingChampionKey(null);
-    setProfileNavigation((s) => navigateDashboardProfiles(s, resolveNavTab(tab), context));
-  };
+  const handleNavigate = (tab: string, context?: DashboardNavigateContext) =>
+    go({ kind: "tab", tab, context });
 
-  const handleBack = () => setProfileNavigation((s) => goBackDashboardProfile(s));
+  // Back skips the entries whose player, team or staff member has left the game.
+  const isValidLocation = (loc: DashboardLocation) =>
+    gameState ? isLocationInGame(loc, gameState) : true;
+
+  const handleBack = () => back(isValidLocation);
 
   const selectPlayer = (id: string, options?: PlayerSelectionOptions) =>
-    setProfileNavigation((s) => selectDashboardPlayer(s, id, options));
+    go({ kind: "player", id, openRenewal: options?.openRenewal });
 
-  const selectTeam = (id: string) =>
-    setProfileNavigation((s) => selectDashboardTeam(s, id));
+  const selectTeam = (id: string) => go({ kind: "team", id });
 
-  const selectStaff = (id: string) =>
-    setProfileNavigation((s) => selectDashboardStaff(s, id));
+  const selectStaff = (id: string) => go({ kind: "staff", id });
+
+  const viewChampion = (key: string) => go({ kind: "champion", key });
 
   const MODE_META: Record<MatchModeType, DashboardMatchModeMeta> = useMemo(
     () => ({
@@ -648,7 +656,7 @@ export default function DashboardV2() {
           onSelectTeam: selectTeam,
           onGameUpdate: setGameState,
           onNavigate: handleNavigate,
-          onViewChampion: (k) => setViewingChampionKey(k),
+          onViewChampion: viewChampion,
         },
       })
     : null;
@@ -999,7 +1007,7 @@ export default function DashboardV2() {
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ChampionsWorldTabV2
               champions={gameState.champions}
-              onViewChampion={(k) => setViewingChampionKey(k)}
+              onViewChampion={viewChampion}
             />
           </div>
         ) : profileNavigation.activeTab === "Meta" &&
@@ -1009,7 +1017,7 @@ export default function DashboardV2() {
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <MetaTabV2
               gameState={gameState}
-              onViewChampion={(k) => setViewingChampionKey(k)}
+              onViewChampion={viewChampion}
               onGameUpdate={setGameState}
             />
           </div>
@@ -1019,13 +1027,11 @@ export default function DashboardV2() {
               gameState={gameState}
               playerId={profileNavigation.selectedPlayerId}
               startWithRenewalModal={profileNavigation.selectedPlayerOptions?.openRenewal === true}
-              onClose={() =>
-                setProfileNavigation((s) => goBackDashboardProfile(s))
-              }
+              onClose={handleBack}
               onGameUpdate={setGameState}
               onSelectPlayer={selectPlayer}
               onSelectTeam={selectTeam}
-              onViewChampion={(k) => setViewingChampionKey(k)}
+              onViewChampion={viewChampion}
             />
           </div>
         ) : profileNavigation.selectedTeamId && !viewingChampionKey && !profileNavigation.selectedPlayerId ? (
@@ -1051,7 +1057,7 @@ export default function DashboardV2() {
           <div className="flex-1 overflow-hidden">
             <ChampionPageV2
               championKey={viewingChampionKey}
-              onClose={() => setViewingChampionKey(null)}
+              onClose={() => closeChampion(isValidLocation)}
             />
           </div>
         ) : (

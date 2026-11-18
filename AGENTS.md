@@ -39,7 +39,8 @@ src/
 │   ├── components/ui/         # shadcn primitives + On Air primitives (see section 4)
 │   ├── shell/                 # navModel.ts (paradas, grupos, defaultOpen), railMode.ts (Tree/Split puro), treeRows.ts (teclado puro),
 │   │                          # RailTree, RailSplit, RailUtility, RailMore, RailRow, RailItem, useRailMode, useFadeMask, attention.ts, ClockPlate
-│   │                          # (estado en store/navMemoryStore: pestaña, última por grupo, grupos abiertos)
+│   │                          # (estado en store/navMemoryStore: última por grupo, grupos abiertos; la ubicación,
+│   │                          #  la pila de Back (30) y Recent (6) en store/dashboardLocationStore; reset en store/sessionReset)
 │   ├── lib/utils.ts           # cn()
 │   ├── pages/                 # v2 pages (SettingsV2, TeamSelectionV2, PlayerProfileV2, TeamProfileV2, StaffProfileV2, ChampionPageV2; customTeam/, playerProfile/, settings/, teamProfile/)
 │   ├── match/                 # partido en directo (Arena): LiveMatchV2.tsx es la pantalla; MatchSimulation la monta

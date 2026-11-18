@@ -1,9 +1,7 @@
 import { resolveUserLeague } from "@/lib/userLeague";
 import { create } from 'zustand';
 import type { EndOfSeasonSummaryData, GameStateData } from './types';
-import { useTabUiStore } from './tabUiStore';
-import { useNavMemoryStore } from "./navMemoryStore";
-import { useCallCacheStore } from "./callCacheStore";
+import { resetSessionNavigation } from "./sessionReset";
 
 // Re-export all types so existing imports from gameStore keep working
 export type {
@@ -138,9 +136,8 @@ export const useGameStore = create<GameStore>((set) => ({
   pendingSeasonSummary: null,
   setGameActive: (active, managerName) => {
     console.log("[store] setGameActive called:", { active, managerName });
-    // A new game or a load starts with a fresh remembered tab, never the previous save's.
-    useNavMemoryStore.getState().resetNavMemory();
-    useCallCacheStore.getState().reset();
+    // A new game or a load starts a fresh session: nothing of the previous save's navigation carries over.
+    resetSessionNavigation();
     set({
       hasActiveGame: active,
       managerName: managerName || null,
@@ -155,9 +152,7 @@ export const useGameStore = create<GameStore>((set) => ({
   setShowFiredModal: (show) => set({ showFiredModal: show }),
   setPendingSeasonSummary: (summary) => set({ pendingSeasonSummary: summary }),
   clearGame: () => {
-    useTabUiStore.getState().resetTabUi();
-    useNavMemoryStore.getState().resetNavMemory();
-    useCallCacheStore.getState().reset();
+    resetSessionNavigation();
     set({
       hasActiveGame: false,
       managerName: null,

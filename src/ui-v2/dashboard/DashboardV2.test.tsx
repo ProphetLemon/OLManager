@@ -5,8 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
-import { useNavMemoryStore } from "@/store/navMemoryStore";
-import { useCallCacheStore } from "@/store/callCacheStore";
+import { resetSessionNavigation } from "@/store/sessionReset";
 import type { GameStateData, PlayerData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
 import type { CallState } from "@/lib/dashboard/needsYourCall";
@@ -236,10 +235,9 @@ function minimalGameState(): GameStateData {
 
 // ─── Tests ───────────────────────────────────────────────────────────────
 
-// The remembered tab and the blocker cache outlive a render on purpose, so each test starts a fresh game.
+// The location, the rail memory and the blocker cache outlive a render on purpose, so each test starts a fresh session.
 beforeEach(() => {
-  useNavMemoryStore.getState().resetNavMemory();
-  useCallCacheStore.getState().reset();
+  resetSessionNavigation();
   shell.activeGame = null;
 });
 
