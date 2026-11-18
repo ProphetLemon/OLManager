@@ -48,22 +48,22 @@ const precheck = vi.hoisted(() => ({ blockers: [] as { id: string; severity: str
 vi.mock("@/hooks/useAdvanceTime", async () => {
   const { useSyncExternalStore } = await import("react");
   return {
-  useAdvanceTime: () => ({
-    isAdvancing: useSyncExternalStore(advance.subscribe, advance.get),
-    showMatchConfirm: false,
-    setShowMatchConfirm: vi.fn(),
-    matchMode: "live",
-    blockerModal: null,
-    setBlockerModal: vi.fn(),
-    autoDelegationNotice: null,
-    matchPlayedNotice: null,
-    scrimResultNotice: null,
-    dismissScrimResultNotice: vi.fn(),
-    handleContinue: vi.fn(),
-    handleConfirmMatch: vi.fn(),
-    handleSkipToMatchDay: vi.fn(),
-    handleSkipToNextDay: vi.fn(),
-  }),
+    useAdvanceTime: () => ({
+      isAdvancing: useSyncExternalStore(advance.subscribe, advance.get),
+      showMatchConfirm: false,
+      setShowMatchConfirm: vi.fn(),
+      matchMode: "live",
+      blockerModal: null,
+      setBlockerModal: vi.fn(),
+      autoDelegationNotice: null,
+      matchPlayedNotice: null,
+      scrimResultNotice: null,
+      dismissScrimResultNotice: vi.fn(),
+      handleContinue: vi.fn(),
+      handleConfirmMatch: vi.fn(),
+      handleSkipToMatchDay: vi.fn(),
+      handleSkipToNextDay: vi.fn(),
+    }),
   };
 });
 

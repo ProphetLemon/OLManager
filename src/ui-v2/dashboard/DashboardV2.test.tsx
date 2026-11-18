@@ -1037,6 +1037,17 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     expect(document.activeElement).toBe(document.getElementById("main-content"));
   });
 
+  it("leaves focus on Home's panel after its pinned pill, not on the main region (R47)", async () => {
+    await renderOn("Training");
+    await waitFor(() => expect(lane()).not.toBeNull());
+    const pin = lane()!.querySelector<HTMLButtonElement>('[data-pill-id="lane:home"]')!;
+    act(() => pin.focus());
+    fireEvent.click(pin);
+    await screen.findByTestId("home-tab-v2");
+    expect(lane()).toBeNull();
+    await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
+  });
+
   it("focuses the main region even when the call's place is the current one", async () => {
     await renderOn("Youth");
     fireEvent.click(await screen.findByRole("button", { name: /Academy incomplete/ }));
