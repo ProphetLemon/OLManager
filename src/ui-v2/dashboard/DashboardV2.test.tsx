@@ -1,12 +1,14 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { resetSessionNavigation } from "@/store/sessionReset";
 import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
+import { usePaletteStore } from "@/store/paletteStore";
+import { useTabUiStore } from "@/store/tabUiStore";
 import type { GameStateData, PlayerData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
 import type { CallState } from "@/lib/dashboard/needsYourCall";
@@ -52,6 +54,19 @@ const stableT = vi.hoisted(() => (key: string) => key);
 vi.mock("react-i18next", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-i18next")>();
   return { ...actual, useTranslation: () => ({ t: stableT }) };
+});
+
+// Counts the palette index builds, which must not follow the palette's keystrokes.
+const palette = vi.hoisted(() => ({ builds: 0 }));
+vi.mock("@/ui-v2/palette/paletteIndex", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/ui-v2/palette/paletteIndex")>();
+  return {
+    ...actual,
+    buildPaletteIndex: (input: Parameters<typeof actual.buildPaletteIndex>[0]) => {
+      palette.builds += 1;
+      return actual.buildPaletteIndex(input);
+    },
+  };
 });
 
 const calls = vi.hoisted(() => ({ build: 0 }));
@@ -1140,5 +1155,172 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     // A dialog closed since then opens again: the press is a new request, not a no-op.
     await waitFor(() => expect(profile.getAttribute("data-request")).not.toBe(first));
     expect(document.activeElement).toBe(document.getElementById("main-content"));
+  });
+});
+
+describe("DashboardV2 Go palette (NR2.8)", () => {
+  class MockResizeObserver {
+    static all: MockResizeObserver[] = [];
+    constructor(private cb: (entries: Array<{ contentRect: { width: number; height: number } }>) => void) {
+      MockResizeObserver.all.push(this);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    emit(width: number, height: number) {
+      this.cb([{ contentRect: { width, height } }]);
+    }
+  }
+
+  beforeEach(() => {
+    MockResizeObserver.all = [];
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    Element.prototype.scrollIntoView = vi.fn();
+    shell.header = null;
+    shell.blockerModal = null;
+    shell.scrimResultNotice = null;
+    shell.checkBlockingActions.mockReset();
+    shell.checkBlockingActions.mockResolvedValue([]);
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: minimalGameState(),
+      pendingSeasonSummary: null,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+    resetSessionNavigation();
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  function SettingsProbe() {
+    const { state } = useLocation();
+    return <div data-testid="settings-page">{(state as { from?: string } | null)?.from ?? "none"}</div>;
+  }
+
+  async function renderOn(tab: string) {
+    const location = useDashboardLocationStore.getState();
+    if (location.nav.activeTab !== tab) location.go({ kind: "tab", tab });
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route path="/dashboard" element={<DashboardV2 />} />
+          <Route path="/settings" element={<SettingsProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    act(() => MockResizeObserver.all.forEach((o) => o.emit(1280, 764)));
+    await waitFor(() => expect(shell.header).not.toBeNull());
+  }
+
+  const announcer = () => document.querySelector('[data-slot="route-announcer"]');
+
+  /** Opens the palette, types the query and presses Enter on the best row. */
+  async function goTo(query: string) {
+    act(() => usePaletteStore.getState().openPalette(null));
+    const input = await screen.findByRole("combobox");
+    fireEvent.change(input, { target: { value: query } });
+    fireEvent.keyDown(input, { key: "Enter" });
+  }
+
+  it("lands on main after a Sections row, with nothing over main aria-hidden, then says where (R27, R37)", async () => {
+    await renderOn("Home");
+    const main = document.getElementById("main-content")!;
+    const atFocus: { hidden: boolean; said: string }[] = [];
+    main.addEventListener("focus", () =>
+      atFocus.push({
+        hidden: main.closest('[aria-hidden="true"], [inert]') !== null,
+        said: announcer()?.textContent ?? "",
+      }),
+    );
+
+    await goTo("inbox");
+
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Inbox"));
+    await waitFor(() => expect(document.activeElement).toBe(main));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(atFocus[0]).toEqual({ hidden: false, said: "" });
+    // This file's t returns the key: Inbox is a direct stop, so "Now on {{title}}" was posted after the focus.
+    await waitFor(() => expect(announcer()?.textContent).toBe("onAir.route.nowNoGroup"));
+  });
+
+  it("writes a Views row's view, then goes to its tab", async () => {
+    await renderOn("Home");
+    await goTo("offers");
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Transfers"));
+    expect(useTabUiStore.getState().tabs.transfers.view).toBe("offers");
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById("main-content")));
+  });
+
+  it("writes a Competitions view and the manager's league in one update (R67)", async () => {
+    const game = {
+      ...minimalGameState(),
+      user_competition_id: "lec",
+      leagues: [{ id: "league-lec", competition_id: "lec", name: "LEC" }],
+    } as unknown as GameStateData;
+    shell.activeGame = game;
+    useGameStore.setState({ gameState: game });
+    await renderOn("Home");
+    const writes: { view: string; selectedCid: string | null }[] = [];
+    const unsubscribe = useTabUiStore.subscribe((s, prev) => {
+      if (s.tabs.competitions !== prev.tabs.competitions) writes.push({ ...s.tabs.competitions });
+    });
+
+    await goTo("standings");
+
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Competitions"));
+    unsubscribe();
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({ view: "standings", selectedCid: "lec" });
+  });
+
+  it("hands focus to main and says where for a renewal call row (R69)", async () => {
+    const starter = {
+      id: "p-mid",
+      match_name: "Faker",
+      full_name: "Lee Sang-hyeok",
+      team_id: "team-1",
+      position: "MID",
+      natural_position: "MID",
+      lol_ovr: 80,
+      condition: 100,
+      contract_end: "2025-07-10",
+    } as unknown as PlayerData;
+    const game = {
+      ...minimalGameState(),
+      teams: [{ id: "team-1", name: "Test Team", active_lineup_ids: [starter.id] }],
+      players: [starter],
+    } as unknown as GameStateData;
+    shell.activeGame = game;
+    useGameStore.setState({ gameState: game });
+    await renderOn("Training");
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    act(() => usePaletteStore.getState().openPalette(null));
+    const input = await screen.findByRole("combobox");
+    // The decision is the first row, active on open.
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect((await screen.findByTestId("player-profile")).getAttribute("data-renewal")).toBe("true");
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById("main-content")));
+    await waitFor(() => expect(announcer()?.textContent).not.toBe(""));
+  });
+
+  it("leaves for Settings with where it came from, and moves no focus itself", async () => {
+    await renderOn("Home");
+    await goTo("settings");
+    expect((await screen.findByTestId("settings-page")).textContent).toBe("/dashboard");
+  });
+
+  it("does not rebuild the index while the user types", async () => {
+    await renderOn("Home");
+    act(() => usePaletteStore.getState().openPalette(null));
+    const input = await screen.findByRole("combobox");
+    const before = palette.builds;
+    for (const query of ["s", "sq", "squ"]) fireEvent.change(input, { target: { value: query } });
+    expect(palette.builds).toBe(before);
   });
 });

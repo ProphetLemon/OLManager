@@ -67,6 +67,11 @@ import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 import { AttentionLaneV2 } from "./AttentionLaneV2";
 import { isHomeOnScreen, laneModel } from "@/lib/dashboard/attentionLane";
 import { opensOwnFocus } from "@/lib/dashboard/callAction";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useTabUiStore } from "@/store/tabUiStore";
+import { GoPalette } from "@/ui-v2/palette/GoPalette";
+import { buildPaletteIndex, type PaletteEntry } from "@/ui-v2/palette/paletteIndex";
+import { entryToIntent, writePaletteView } from "@/ui-v2/palette/paletteActivate";
 
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
@@ -145,7 +150,8 @@ const FOCUS_CALLS_INTERVAL_MS = 50;
 export default function DashboardV2() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n?.language ?? "en";
   const {
     hasActiveGame,
     managerName,
@@ -179,6 +185,10 @@ export default function DashboardV2() {
   const back = useDashboardLocationStore((s) => s.back);
   const closeChampion = useDashboardLocationStore((s) => s.closeChampion);
   const clearOneShots = useDashboardLocationStore((s) => s.clearOneShots);
+  const recent = useDashboardLocationStore((s) => s.recent);
+  const selectedCompetitionId = useTabUiStore((s) => s.tabs.competitions.selectedCid);
+  // Schedule's Calendar exists only on a wide enough window, so its Views row too.
+  const scheduleCalendar = useMediaQuery("(min-width: 768px)", true);
   const { message: routeMessage, announce, clearRoute, clearStatus } = useRouteAnnouncer();
   const viewingChampionKey = profileNavigation.championKey;
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -562,6 +572,24 @@ export default function DashboardV2() {
     if (text) announce(text);
   };
 
+  // A Go palette row, once the palette has closed (R27, R37). Settings leaves the
+  // dashboard and its page takes the focus. A Views row writes its view first, with
+  // its league for Competitions (R67). Every row then moves as a lane pill does:
+  // focus on main and the place named, a renewal included (R69).
+  const handlePaletteActivate = (entry: PaletteEntry) => {
+    const intent = entryToIntent(entry);
+    if (intent.kind === "route") {
+      navigate(intent.path, { state: { from: "/dashboard" } });
+      return;
+    }
+    if (intent.kind === "tab" && "view" in intent) {
+      writePaletteView(intent.view, useTabUiStore.getState().setTabFields);
+      handleLaneCall({ kind: "tab", tab: intent.tab });
+      return;
+    }
+    handleLaneCall(intent);
+  };
+
   const handleSkipToMain = (event: { preventDefault: () => void }) => {
     event.preventDefault();
     focusMainContent();
@@ -698,6 +726,27 @@ export default function DashboardV2() {
     [currentGameDate, dashboardAlerts, lastBlockers, startingFive, t],
   );
   const attention = useMemo(() => buildAttentionMap(callState.items), [callState.items]);
+  // The Go palette's rows. Labels resolve live, so the index is rebuilt when a source
+  // changes or the language does (`t` follows it), never per keystroke: search keeps
+  // its folded fields per row object (NR2.7).
+  const decisionItems = callState.decisionItems;
+  const paletteEntries = useMemo(
+    () =>
+      gameState
+        ? buildPaletteIndex({
+            callState: { decisionItems },
+            recent,
+            current: currentLocation(profileNavigation),
+            unemployed: isUnemployed ?? false,
+            scheduleCalendar,
+            selectedCompetitionId,
+            game: gameState,
+            t,
+          })
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lang: labels change with the language
+    [decisionItems, recent, profileNavigation, isUnemployed, scheduleCalendar, selectedCompetitionId, gameState, lang, t],
+  );
   // A tab's own content shows only while no profile or champion page is open over it.
   const profileOpen = Boolean(
     profileNavigation.selectedPlayerId ||
@@ -793,6 +842,12 @@ export default function DashboardV2() {
       >
         {t("onAir.nav.skip", { defaultValue: "Skip to main content" })}
       </a>
+      <GoPalette
+        entries={paletteEntries}
+        callCount={callState.count}
+        platform={rail.platform}
+        onActivate={handlePaletteActivate}
+      />
       <RouteAnnouncer message={routeMessage} />
       <DashboardSidebarV2
         activeTab={profileNavigation.activeTab}
