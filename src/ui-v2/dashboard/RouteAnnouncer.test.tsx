@@ -64,12 +64,36 @@ vi.mock("@/ui-v2/dashboard/tabs/SquadTabV2", () => ({
     </div>
   ),
 }));
+/** The last onClose the profile was given, kept to fire it after the profile has gone (CR2). */
+const profile = vi.hoisted(() => ({ close: null as (() => void) | null }));
 vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
-  default: ({ onSelectTeam }: { onSelectTeam: (id: string) => void }) => (
-    <div data-testid="player-profile">
-      <button onClick={() => onSelectTeam("team-1")}>open-team-1</button>
-    </div>
-  ),
+  default: ({
+    onSelectTeam,
+    onClose,
+    onGameUpdate,
+  }: {
+    onSelectTeam: (id: string) => void;
+    onClose: () => void;
+    onGameUpdate: (game: GameStateData) => void;
+  }) => {
+    profile.close = onClose;
+    return (
+      <div data-testid="player-profile">
+        <button onClick={() => onSelectTeam("team-1")}>open-team-1</button>
+        {/* As usePlayerTransfer confirms a release: the updated game first, then onClose. */}
+        <button
+          onClick={() => {
+            const released = game();
+            released.players = released.players.map((p) => ({ ...p, team_id: null }));
+            onGameUpdate(released);
+            onClose();
+          }}
+        >
+          release-contract
+        </button>
+      </div>
+    );
+  },
 }));
 vi.mock("@/ui-v2/pages/TeamProfileV2", () => ({
   default: ({ onClose, backTo }: { onClose: () => void; backTo?: string | null }) => (
@@ -327,6 +351,42 @@ describe("the route announcer in the dashboard (R46)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "rail-home" }));
     expect(announcer().textContent).toBe("");
+  });
+
+  it("moves focus to main and says 'Now on Squad, Club' after a contract release closes the profile (R50)", async () => {
+    await openProfile();
+    const release = screen.getByRole("button", { name: "release-contract" });
+    act(() => release.focus());
+    fireEvent.click(release);
+
+    await screen.findByTestId("squad-tab", {}, { timeout: 3000 });
+    expect(document.getElementById("main-content")).toHaveFocus();
+    await waitFor(() => expect(announcer()).toHaveTextContent("Now on Squad, Club"));
+  });
+
+  it("does nothing when a stale profile onClose fires on a root tab with no history (CR2)", async () => {
+    await openProfile();
+    const staleClose = profile.close!;
+    // Back twice: Squad, then Home, where history is empty.
+    fireEvent.click(screen.getByRole("button", { name: "Back to Squad" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Back to Home" }, { timeout: 3000 }));
+    await screen.findByTestId("home-tab", {}, { timeout: 3000 });
+    await settle();
+    const before = useDashboardLocationStore.getState().nav;
+    expect(before.navHistory).toEqual([]);
+    const rail = screen.getByRole("button", { name: "rail-home" });
+    act(() => rail.focus());
+    const said: string[] = [];
+    const observer = new MutationObserver(() => said.push(announcer().textContent ?? ""));
+    observer.observe(announcer(), { childList: true, characterData: true, subtree: true });
+
+    act(() => staleClose());
+    await settle();
+    observer.disconnect();
+
+    expect(said).toEqual([]);
+    expect(rail).toHaveFocus();
+    expect(useDashboardLocationStore.getState().nav).toEqual(before);
   });
 
   it("says nothing when Back has nowhere to go", async () => {
