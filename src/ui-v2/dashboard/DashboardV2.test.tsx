@@ -158,13 +158,23 @@ vi.mock("@/ui-v2/dashboard/DashboardHeaderV2", () => ({
   },
 }));
 
-vi.mock("@/ui-v2/dashboard/DashboardSidebarV2", () => ({
-  DashboardSidebarV2: (props: Record<string, unknown>) => {
-    shell.sidebar = props;
-    const onNavClick = props.onNavClick as (tab: string) => void;
-    return <button onClick={() => onNavClick("Training")}>Training</button>;
-  },
-}));
+vi.mock("@/ui-v2/dashboard/DashboardSidebarV2", async () => {
+  // The real Go control, wired as the sidebar wires it, so the opener test runs end to end.
+  const { GO_ID, GoButton } = await import("@/ui-v2/shell/GoButton");
+  const { usePaletteStore: palettes } = await import("@/store/paletteStore");
+  return {
+    DashboardSidebarV2: (props: Record<string, unknown>) => {
+      shell.sidebar = props;
+      const onNavClick = props.onNavClick as (tab: string) => void;
+      return (
+        <>
+          <GoButton variant="cell" onClick={() => palettes.getState().openPalette(GO_ID)} />
+          <button onClick={() => onNavClick("Training")}>Training</button>
+        </>
+      );
+    },
+  };
+});
 
 vi.mock("@/ui-v2/dashboard/tabs/HomeTabV2", () => ({
   HomeTabV2: (props: Record<string, unknown>) => {
@@ -1325,6 +1335,19 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
     act(() => usePaletteStore.getState().openPalette(null));
     await screen.findByRole("combobox");
     expect(palette.builds).toBe(1);
+  });
+
+  it("returns focus to Go when the palette it opened closes by Escape (NR2.9)", async () => {
+    await renderOn("Home");
+    const go = document.getElementById("util:go")!;
+    act(() => go.focus());
+    fireEvent.click(go);
+    expect(usePaletteStore.getState().openerId).toBe("util:go");
+    const input = await screen.findByRole("combobox");
+    await waitFor(() => expect(input).toHaveFocus());
+    fireEvent.keyDown(input, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(go).toHaveFocus());
   });
 
   it("does not rebuild the index while the user types", async () => {
