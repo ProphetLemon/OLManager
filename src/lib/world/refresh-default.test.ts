@@ -14,7 +14,9 @@ import { FIXTURES } from "./fixtures";
 
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
 const OVERLAY_SHA = "9523a5346a65bc3623580e26b0579bb488bf6cc2ed179ff52b5b2dd8421df13a";
-const REPORT_SHA = "6859fad4e462f5043b42c1c0a749da1bb35fdb7b84e9c8992bcb985d8aa139f5";
+// The report hash moved once since: the no-player-staff-twins gate adds one row to the gate table; without that row the
+// report hashes to the commit-96595a65 value 6859fad4e462f5043b42c1c0a749da1bb35fdb7b84e9c8992bcb985d8aa139f5.
+const REPORT_SHA = "09d1cb5891069363d620ae980cf0adca182b86979a9245e367111d93c17b95dc";
 const CLI = path.resolve(__dirname, "../../../scripts/world/refresh.mjs");
 
 describe("the default refresh is unchanged", () => {
@@ -28,7 +30,7 @@ describe("the default refresh is unchanged", () => {
     });
     expect(sha256(serializeOverlay(result.overlay))).toBe(OVERLAY_SHA);
     expect(sha256(result.report)).toBe(REPORT_SHA);
-    expect(result.gates.results).toHaveLength(6);
+    expect(result.gates.results).toHaveLength(7);
     expect(result.report).not.toContain("Active-pros pool");
   });
 
@@ -44,7 +46,7 @@ describe("the default refresh is unchanged", () => {
       expect(run.status).toBe(0);
       expect(run.stdout.split(report).join("<report>")).toBe(
         "players: 10 ops, staff: 8 ops, unmapped teams: 1, unreadable pages: 0\n" +
-          "gates: 6/6 passed\n" +
+          "gates: 7/7 passed\n" +
           "requests: 0 live, 35 cached; report: <report>\n",
       );
       expect(sha256(fs.readFileSync(report, "utf8"))).toBe(REPORT_SHA);

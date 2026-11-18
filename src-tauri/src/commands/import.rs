@@ -2547,6 +2547,37 @@ mod tests {
         game
     }
 
+    /// Ace of Senshi eSports: the three records an old save can hold when the overlay of 2026-11-14 (b084a971) added him
+    /// as the teamless pool add `5236c06a` beside the catalog record `cea7803b` and the nick-only stub `2ba313af`, both
+    /// on Senshi (`hll-team-ca24ae43`). The rehydration repair (Strict rule) only reaches records of a stale league
+    /// and its canonical twin, and Senshi is in a live league, so it leaves all three: an old save is not repaired
+    /// here. What keeps one Ace is the collapse at new-game creation (`collapse_same_person_records`), and the new
+    /// overlay no longer adds `5236c06a`.
+    #[test]
+    fn rehydration_does_not_repair_a_duplicate_on_a_live_club_so_an_old_save_keeps_its_three_aces() {
+        let mut game = rehydrate_test_game(vec![
+            rehydrate_test_player("player-2ba313af", Some("hll-team-ca24ae43")),
+            rehydrate_test_player("player-cea7803b", Some("hll-team-ca24ae43")),
+            rehydrate_test_player("player-5236c06a", None),
+        ]);
+        for (player, match_name, full_name) in [
+            (0, "Ace", "Ace"),
+            (1, "Ace (Ignacio David Piaggio)", "Ignacio David Piaggio"),
+            (2, "Ace", "Ignacio David Piaggio"),
+        ] {
+            game.players[player].match_name = match_name.to_string();
+            game.players[player].full_name = full_name.to_string();
+            game.players[player].date_of_birth = String::new();
+        }
+
+        apply_catalog_to_game(&mut game, vec![], vec![], vec![]);
+
+        let mut ids: Vec<&str> = game.players.iter().map(|p| p.id.as_str()).collect();
+        ids.sort_unstable();
+        assert_eq!(ids, vec!["player-2ba313af", "player-5236c06a", "player-cea7803b"]);
+        assert!(game.retired_player_ids.is_empty());
+    }
+
     #[test]
     fn rehydration_drops_a_same_person_known_by_match_name_and_a_differently_written_date() {
         let mut game = game_with_person_records(

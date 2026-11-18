@@ -8,7 +8,8 @@ import { PEOPLE_FILTER, fetchPoolInputs, type PoolInputs } from "../../../script
 import {
   bestLevel, classifyTournaments, mergePerson, normalizeTournament, parseTournaments, personFromRow, qualifierSplit, TOURS_MAX_CHARS,
 } from "../../../scripts/world/lib/pool-scope.mjs";
-import { RATING_TIER_DEFAULT, TIER_OFFSETS, buildPoolOps, isoDate, poolId, poolTournaments, selectPool, tierBaselines } from "../../../scripts/world/lib/pool.mjs";
+import { RATING_TIER_DEFAULT, TIER_OFFSETS, buildPoolOps, dropWorldBuildTwins, isoDate, poolId, poolTournaments, positionSteps, selectPool, tierBaselines } from "../../../scripts/world/lib/pool.mjs";
+import { POSITION_MIN_GAMES, recentRolesFromRows } from "../../../scripts/world/lib/pool-rating.mjs";
 import { baselines, context, entryRows, overlayOf, peopleOf, row, select, stubClient, tournamentRows, world } from "./poolFixtures";
 
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -103,8 +104,8 @@ describe("selectPool", () => {
   });
 
   it("adds the people the game does not have and says what it left out", () => {
-    expect(result.counts).toMatchObject({ considered: 61, noPage: 6, inGame: 5, onGameTeam: 1, handledByRoster: 0, uncertain: 0, noPosition: 1, duplicates: 0, collisions: 0 });
-    expect(result.players).toHaveLength(34);
+    expect(result.counts).toMatchObject({ considered: 61, noPage: 6, inGame: 5, onGameTeam: 0, handledByRoster: 0, uncertain: 0, noPosition: 1, duplicates: 0, collisions: 0 });
+    expect(result.players).toHaveLength(35);
     expect(result.staff).toHaveLength(14);
   });
 
@@ -117,8 +118,31 @@ describe("selectPool", () => {
     expect(result.statuses.get("Aiming")).toMatchObject({ id: world.players.find((p) => p.match_name === "Aiming")!.id });
   });
 
-  it("leaves out people on a team the game has: the roster overlay handles them", () => {
-    expect(result.statuses.get("Obsess")).toMatchObject({ state: "excluded", code: "on-game-team" });
+  it("leaves out people on a team the game has only when the roster overlay of this run handles them", () => {
+    const rows = [row({ player: "Obsess", ign: "Obsess", name: "Patrick Engelmann", team: "Fnatic", rmin: "Top", rmax: "Top", prole: "Top" })];
+    const handled = select(rows, { rosterTitles: { player: new Set(["Obsess"]) } });
+    expect(handled.statuses.get("Obsess")).toMatchObject({ state: "excluded", code: "on-game-team" });
+    expect(handled.counts.onGameTeam).toBe(1);
+    expect(handled.players).toHaveLength(0);
+  });
+
+  it("does not add a person on a game team whose name may match a game record: it needs a human", () => {
+    const rows = [row({ player: "Aimingg", ign: "Aimingg", name: "Kim Ha-ram", country: "South Korea", birth: "", team: "Fnatic", prole: "Co-Streamer", rmin: "Bot", rmax: "Bot" })];
+    const out = select(rows);
+    expect(out.players).toHaveLength(0);
+    expect(out.statuses.get("Aimingg")).toMatchObject({ state: "refused", code: "ambiguous-with-game" });
+  });
+
+  it("keeps a person whose team the game has but whom no roster handles (a co-streamer): the normal pool rule decides", () => {
+    // Players-page team is a game team, role is not a playing one, and the roster overlay adds nobody by this name.
+    const rows = [row({ player: "Obsess", ign: "Obsess", name: "Patrick Engelmann", team: "Fnatic", prole: "Co-Streamer", rmin: "Top", rmax: "Top" })];
+    const out = select(rows);
+    expect(out.statuses.get("Obsess")).toMatchObject({ state: "added" });
+    expect(out.counts.onGameTeam).toBe(0);
+    expect(out.players.map((e) => e.page)).toEqual(["Obsess"]);
+    // still subject to the other rules: an unmatched person with no position stays out
+    const none = select([row({ player: "Obsess", ign: "Obsess", name: "Patrick Engelmann", team: "Fnatic", prole: "Co-Streamer", rmin: "Co-Streamer", rmax: "Co-Streamer" })]);
+    expect(none.statuses.get("Obsess")).toMatchObject({ state: "refused", code: "no-position" });
   });
 
   it("leaves out people the same run's roster overlay already adds", () => {
@@ -142,8 +166,67 @@ describe("selectPool", () => {
     expect(select(accented).players).toHaveLength(1);
     expect(select(accented, { rosterTitles: { player: new Set(["Mur\u00edlo"]) } }).players).toHaveLength(0);
     expect(select(rows, { rosterTitles: { player: new Set(["Revenge (Another Person)"]) } }).players).toHaveLength(1);
-    // Kinds stay apart: a page the roster adds as a head coach does not remove the same page from the pool's players.
-    expect(select(rows, { rosterTitles: { staff: new Set(["Revenge (Yoon Jeong-bin)"]) } }).players).toHaveLength(1);
+    // Kinds do not stay apart: a page the roster adds as a head coach is that coach, so the pool does not add him as a player too.
+    expect(select(rows, { rosterTitles: { staff: new Set(["Revenge (Yoon Jeong-bin)"]) } }).players).toHaveLength(0);
+  });
+
+  it("leaves out a pool player the roster overlay of this run handles as staff, and a pool coach it handles as a player", () => {
+    // SofM: Players page team MVK Esports (a game team), on no playing roster, and MVK's staff table lists him as a coach.
+    const player = [row({ player: "SofM", ign: "SofM", name: "Le Quang Duy", country: "Vietnam", team: "Fnatic", rmin: "Jungle", rmax: "Jungle", prole: "Jungle" })];
+    expect(select(player).players).toHaveLength(1);
+    const coached = select(player, { rosterIds: new Set([poolId("staff", "SofM")]) });
+    expect(coached.players).toHaveLength(0);
+    expect(coached.statuses.get("SofM")).toMatchObject({ state: "excluded", code: "on-game-team" });
+    const byTitle = select([{ ...player[0], team: "" }], { rosterTitles: { staff: new Set(["sofm"]) } });
+    expect(byTitle.players).toHaveLength(0);
+    expect(byTitle.statuses.get("SofM")).toMatchObject({ state: "excluded", code: "roster-overlay", reason: expect.stringContaining("as staff") });
+    // The reverse: a coach the roster overlay adds as a player is that player.
+    const coach = [row({ player: "Coachy", ign: "Coachy", name: "Coach Person", rmin: "Head Coach", rmax: "Head Coach", prole: "" })];
+    expect(select(coach).staff).toHaveLength(1);
+    const playing = select(coach, { rosterIds: new Set([poolId("player", "Coachy")]) });
+    expect(playing.staff).toHaveLength(0);
+    expect(playing.statuses.get("Coachy")).toMatchObject({ state: "excluded", code: "roster-overlay", reason: expect.stringContaining("as a player") });
+  });
+
+  it("leaves out a pool player the game already has as staff, and a pool coach it already has as a player", () => {
+    // Score is a staff member of the fixture world (Go Dong-bin, an assistant): the pool does not add him as a free agent player.
+    const score = [row({ player: "Score", ign: "Score", name: "Go Dong-bin", country: "South Korea", rmin: "Jungle", rmax: "Jungle", prole: "Jungle" })];
+    const asPlayer = select(score);
+    expect(asPlayer.players).toHaveLength(0);
+    expect(asPlayer.statuses.get("Score")).toMatchObject({ state: "excluded", code: "in-game", id: "staff-0c9b8a0b", reason: expect.stringContaining("as staff") });
+    // Diable is a player of the fixture world: the pool does not add him as a free agent coach.
+    const diable = [row({ player: "Diable", ign: "Diable", name: "Nam Dae-geun", country: "South Korea", birth: "2007-10-17", rmin: "Head Coach", rmax: "Head Coach", prole: "" })];
+    const asCoach = select(diable);
+    expect(asCoach.staff).toHaveLength(0);
+    expect(asCoach.statuses.get("Diable")).toMatchObject({ state: "excluded", code: "in-game", id: "player-14e1d543", reason: expect.stringContaining("as a player") });
+  });
+
+  it("leaves out a player whose Players page makes him staff when the roster adds an undated coach with his real name and country", () => {
+    // Nulu and Selfie: one Marcin Wolski (PL); Nulu's Players page says Coach of Shopify Rebellion, whose staff table lists Selfie.
+    const nulu = [row({ player: "Nulu", ign: "Nulu", name: "Marcin Wolski", country: "Poland", birth: "1997-02-07", prole: "Coach", rmin: "Mid", rmax: "Mid" })];
+    const selfie = { id: "staff-04c5f93c", nickname: "Selfie", first_name: "Marcin Wolski", last_name: "Wolski", nationality: "Poland", date_of_birth: "1990-01-01" };
+    expect(select(nulu).players).toHaveLength(1);
+    const coached = select(nulu, { rosterRecords: { staff: [selfie] } });
+    expect(coached.players).toHaveLength(0);
+    expect(coached.statuses.get("Nulu")).toMatchObject({ state: "excluded", code: "roster-overlay", reason: expect.stringContaining("real name and country") });
+    // A known, different birth date tells them apart; so does a Players page that names a position, not a staff role.
+    expect(select(nulu, { rosterRecords: { staff: [{ ...selfie, date_of_birth: "1995-03-03" }] } }).players).toHaveLength(1);
+    expect(select([{ ...nulu[0], prole: "Mid" }], { rosterRecords: { staff: [selfie] } }).players).toHaveLength(1);
+    expect(select(nulu, { rosterRecords: { staff: [{ ...selfie, nationality: "Germany" }] } }).players).toHaveLength(1);
+  });
+
+  it("refuses both pages when one person reads as a player under one spelling and as staff under another", () => {
+    // AkaRyu and Akaryu: one Players page, found once in playing rosters and once in staff tables.
+    const asPlayer = row({ player: "AkaRyu", ign: "AkaRyu", name: "Bourekda Abdelhai", country: "Algeria", birth: "1999-11-11", rmin: "Support", rmax: "Support", prole: "Support" });
+    const asCoach = row({ player: "Akaryu", ign: "AkaRyu", name: "Bourekda Abdelhai", country: "Algeria", birth: "1999-11-11", rmin: "Head Coach", rmax: "Head Coach", prole: "" });
+    expect(select([asPlayer]).players).toHaveLength(1);
+    expect(select([asCoach]).staff).toHaveLength(1);
+    for (const rows of [[asPlayer, asCoach], [asCoach, asPlayer]]) {
+      const out = select(rows);
+      expect(out.players).toHaveLength(0);
+      expect(out.staff).toHaveLength(0);
+      expect(out.refused.map((r) => `${r.page}:${r.code}`).sort()).toEqual(["AkaRyu:duplicate-in-pool", "Akaryu:duplicate-in-pool"]);
+    }
   });
 
   it("honours the reviewed id-map: a pinned page is the game's person, a rejected pair is not", () => {
@@ -235,6 +318,87 @@ describe("ids", () => {
   });
 });
 
+describe("the position from the player's own recent games (step a)", () => {
+  const wady = row({ player: "Wady", ign: "Wady", name: "Lê Quang Duy", country: "Vietnam", birth: "2007-04-18", prole: "Top", rmin: "Jungle", rmax: "Jungle", last: "2026-09-11", n: "2" });
+  const vander = row({ player: "Vander", ign: "Vander", name: "Vander Test", country: "Poland", birth: "2001-03-04", prole: "Bot", rmin: "Bot", rmax: "Bot", last: "2025-03-13", n: "1" });
+  const roleOf = (selected: ReturnType<typeof selectPool>, page: string) => selected.players.find((e) => e.page === page)!;
+  const recent = (position: string, games: number, last: string) => ({ position, games, last });
+
+  it("takes the majority role of at least 5 games in the window when they are not older than the latest roster row", () => {
+    // Wady (cache, stats rows): 8 games, all Jungle, from 2025-05-08 to 2026-09-20; his latest roster row starts 2026-09-11.
+    const selected = selectPool({ people: peopleOf([wady]), context, world, recentRoles: new Map([["Wady", recent("Jungle", 8, "2026-09-20")]]) });
+    expect(roleOf(selected, "Wady")).toMatchObject({ role: "Jungle", step: "a" });
+    // The same games decide against a Players page role of Top.
+    expect(wady.prole).toBe("Top");
+  });
+
+  it("ignores games older than the latest roster row, and fewer than 5 games", () => {
+    // Vander (cache, stats rows): 15 Support games, the last on 2025-02-25; his latest roster row is Bot and starts 2025-03-13.
+    const stale = selectPool({ people: peopleOf([vander]), context, world, recentRoles: new Map([["Vander", recent("Support", 15, "2025-02-25")]]) });
+    expect(roleOf(stale, "Vander")).toMatchObject({ role: "ADC", step: "b" });
+    const few = selectPool({ people: peopleOf([vander]), context, world, recentRoles: new Map([["Vander", recent("Support", 4, "2025-05-25")]]) });
+    expect(roleOf(few, "Vander")).toMatchObject({ role: "ADC", step: "b" });
+  });
+
+  it("counts how many players took each step", () => {
+    const selected = selectPool({ people: peopleOf([wady, vander]), context, world, recentRoles: new Map([["Wady", recent("Jungle", 8, "2026-09-20")]]) });
+    expect(positionSteps(selected)).toEqual({ a: 1, b: 1, c: 0, d: 0, first: 0, profile: 0 });
+  });
+});
+
+describe("recentRolesFromRows", () => {
+  const game = (playerKey: string, role: string, date: string) => ({ playerKey, role, date });
+
+  it("keeps the games inside the window and the role most of them were played in", () => {
+    const rows = [
+      ...Array.from({ length: 3 }, () => game("Wady", "Jungle", "2026-09-11")),
+      ...Array.from({ length: 5 }, () => game("Wady", "Jungle", "2026-09-20")),
+      game("Wady", "Top", "2026-01-01"),
+      game("Wady", "Top", "2022-01-01"),
+    ];
+    const roles = recentRolesFromRows(rows, { since: "2023-11-12" });
+    expect(roles.get("Wady")).toEqual({ position: "Jungle", games: 9, last: "2026-09-20" });
+  });
+
+  it("gives no role when no role holds more than half of the games, or there are fewer than 5", () => {
+    const split = [...Array.from({ length: 3 }, () => game("Mix", "Top", "2026-01-01")), ...Array.from({ length: 3 }, () => game("Mix", "Mid", "2026-01-02"))];
+    expect(recentRolesFromRows(split, { since: "2023-11-12" }).get("Mix")).toBeUndefined();
+    expect(recentRolesFromRows(Array.from({ length: 4 }, () => game("Few", "Mid", "2026-01-01")), { since: "2023-11-12" }).get("Few")).toBeUndefined();
+    expect(POSITION_MIN_GAMES).toBe(5);
+  });
+});
+
+describe("dropWorldBuildTwins", () => {
+  it("leaves out a pool player the world build would fold into a record on a club, and says why", async () => {
+    const inputs = await fetchPoolInputs({ client: stubClient() });
+    const selected = selectPool({ people: inputs.people, context, world });
+    const ops = buildPoolOps({ selection: selected, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])), games: inputs.games, baselines });
+    const victim = ops.players[0];
+    const twin = { ...victim.op.player, id: "player-feedbeef", team_id: "lck-team-61bd92d5", full_name: `${victim.op.player.full_name}x` };
+    const before = ops.players.length;
+    const selectedBefore = selected.players.length;
+    const kept = dropWorldBuildTwins({ selection: selected, ops, contracted: [twin] });
+    expect(kept.players).toHaveLength(before - 1);
+    expect(kept.players.some((e) => e.id === victim.id)).toBe(false);
+    expect(selected.players).toHaveLength(selectedBefore - 1);
+    expect(kept.staff).toHaveLength(ops.staff.length);
+    const status = selected.statuses.get(victim.op.pool.page);
+    expect(status).toMatchObject({ state: "refused", code: "same-person-as-game-record" });
+    expect(status).toMatchObject({ reason: expect.stringContaining("player-feedbeef") });
+    expect(selected.refused[selected.refused.length - 1]).toMatchObject({ page: victim.op.pool.page, code: "same-person-as-game-record" });
+    expect(selected.counts.sameAsGameRecord).toBe(1);
+  });
+
+  it("changes nothing when no record on a club is a twin", async () => {
+    const inputs = await fetchPoolInputs({ client: stubClient() });
+    const selected = selectPool({ people: inputs.people, context, world });
+    const ops = buildPoolOps({ selection: selected, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])), games: inputs.games, baselines });
+    const kept = dropWorldBuildTwins({ selection: selected, ops, contracted: [] });
+    expect(kept.players).toHaveLength(ops.players.length);
+    expect(selected.counts.sameAsGameRecord).toBe(0);
+  });
+});
+
 describe("buildPoolOps", () => {
   let inputs: PoolInputs;
   let selected: ReturnType<typeof selectPool>;
@@ -250,7 +414,7 @@ describe("buildPoolOps", () => {
   const staffOp = (page: string) => ops.staff.find((e) => e.op.pool.page === page)!.op;
 
   it("emits teamless adds the overlay schema accepts", () => {
-    expect(ops.players).toHaveLength(34);
+    expect(ops.players).toHaveLength(35);
     expect(ops.staff).toHaveLength(14);
     for (const entry of [...ops.players, ...ops.staff]) {
       expect(entry).toMatchObject({ teamId: null, competition: null });

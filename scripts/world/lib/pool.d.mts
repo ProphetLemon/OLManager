@@ -35,6 +35,8 @@ export interface PoolEntry {
   id: string;
   /** Game position (Top, Jungle, Mid, ADC, Support) for a player, game staff role for staff. */
   role: string;
+  /** The step of the position evidence that chose `role`: a (recent games), b (latest roster row), c (profile role on the roster), d (profile role inside a span), first, profile; null for staff. */
+  step: string | null;
   person: Person;
 }
 export type PoolStatus =
@@ -55,6 +57,7 @@ export interface PoolSelection {
     noPosition: number;
     duplicates: number;
     collisions: number;
+    sameAsGameRecord: number;
   };
   refused: Array<{ page: string; kind: "player" | "staff"; code: string; reason: string }>;
   collisions: Array<{ page: string; kind: "player" | "staff"; id: string; with: string }>;
@@ -66,7 +69,11 @@ export function selectPool(input: {
   world: World;
   rosterIds?: Set<string>;
   rosterTitles?: { player?: Set<string>; staff?: Set<string> };
+  rosterRecords?: { player?: object[]; staff?: object[] } | null;
+  recentRoles?: Map<string, { position: string; games: number; last: string }> | null;
 }): PoolSelection;
+/** How many of the selected players took each step of the position evidence. */
+export function positionSteps(selection: PoolSelection): { a: number; b: number; c: number; d: number; first: number; profile: number };
 /** Comparison key of a page title: NFKC, underscores as spaces, collapsed and trimmed whitespace, lower case. */
 export function titleKey(title: unknown): string;
 
@@ -86,4 +93,10 @@ export function buildPoolOps(input: {
   baselines: Baselines;
   /** The game's league levels and defaults: ratings anchor to them instead of to the tier baseline. */
   anchors?: import("./pool-rating.mjs").PoolAnchors | null;
+}): { players: PoolOpEntry[]; staff: PoolOpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };
+/** Leave out the pool players the world build would fold into a record on a club or hide from the AI; updates `selection` with why. */
+export function dropWorldBuildTwins(input: {
+  selection: PoolSelection;
+  ops: { players: PoolOpEntry[]; staff: PoolOpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };
+  contracted: Array<Record<string, any>>;
 }): { players: PoolOpEntry[]; staff: PoolOpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };
