@@ -1315,6 +1315,17 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
     expect((await screen.findByTestId("settings-page")).textContent).toBe("/dashboard");
   });
 
+  it("builds the index only while the palette is open, so moves in the background never rebuild it", async () => {
+    palette.builds = 0;
+    await renderOn("Home");
+    fireEvent.click(screen.getByRole("button", { name: "Training" }));
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Training"));
+    expect(palette.builds).toBe(0);
+    act(() => usePaletteStore.getState().openPalette(null));
+    await screen.findByRole("combobox");
+    expect(palette.builds).toBe(1);
+  });
+
   it("does not rebuild the index while the user types", async () => {
     await renderOn("Home");
     act(() => usePaletteStore.getState().openPalette(null));

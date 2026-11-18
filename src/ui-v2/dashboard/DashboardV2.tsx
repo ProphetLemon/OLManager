@@ -69,6 +69,7 @@ import { isHomeOnScreen, laneModel } from "@/lib/dashboard/attentionLane";
 import { opensOwnFocus } from "@/lib/dashboard/callAction";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useTabUiStore } from "@/store/tabUiStore";
+import { usePaletteStore } from "@/store/paletteStore";
 import { GoPalette } from "@/ui-v2/palette/GoPalette";
 import { buildPaletteIndex, type PaletteEntry } from "@/ui-v2/palette/paletteIndex";
 import { entryToIntent, writePaletteView } from "@/ui-v2/palette/paletteActivate";
@@ -187,6 +188,7 @@ export default function DashboardV2() {
   const clearOneShots = useDashboardLocationStore((s) => s.clearOneShots);
   const recent = useDashboardLocationStore((s) => s.recent);
   const selectedCompetitionId = useTabUiStore((s) => s.tabs.competitions.selectedCid);
+  const paletteOpen = usePaletteStore((s) => s.open);
   // Schedule's Calendar exists only on a wide enough window, so its Views row too.
   const scheduleCalendar = useMediaQuery("(min-width: 768px)", true);
   const { message: routeMessage, announce, clearRoute, clearStatus } = useRouteAnnouncer();
@@ -726,13 +728,14 @@ export default function DashboardV2() {
     [currentGameDate, dashboardAlerts, lastBlockers, startingFive, t],
   );
   const attention = useMemo(() => buildAttentionMap(callState.items), [callState.items]);
-  // The Go palette's rows. Labels resolve live, so the index is rebuilt when a source
-  // changes or the language does (`t` follows it), never per keystroke: search keeps
-  // its folded fields per row object (NR2.7).
+  // The Go palette's rows, built only while it is open, so moves and league changes in
+  // the background never rebuild them. Labels resolve live, so an open palette rebuilds
+  // when a source or the language changes (`t` follows it), never per keystroke: search
+  // keeps its folded fields per row object (NR2.7).
   const decisionItems = callState.decisionItems;
   const paletteEntries = useMemo(
     () =>
-      gameState
+      paletteOpen && gameState
         ? buildPaletteIndex({
             callState: { decisionItems },
             recent,
@@ -745,7 +748,7 @@ export default function DashboardV2() {
           })
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lang: labels change with the language
-    [decisionItems, recent, profileNavigation, isUnemployed, scheduleCalendar, selectedCompetitionId, gameState, lang, t],
+    [paletteOpen, decisionItems, recent, profileNavigation, isUnemployed, scheduleCalendar, selectedCompetitionId, gameState, lang, t],
   );
   // A tab's own content shows only while no profile or champion page is open over it.
   const profileOpen = Boolean(

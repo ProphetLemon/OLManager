@@ -78,6 +78,11 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   const [activated, setActivated] = useState<{ entry: PaletteEntry } | null>(null);
   const ranActivation = useRef<{ entry: PaletteEntry } | null>(null);
 
+  // The caller builds the index only while the palette is open; the rows stay while it closes.
+  const [openEntries, setOpenEntries] = useState(entries);
+  if (open && openEntries !== entries) setOpenEntries(entries);
+  const shownEntries = open ? entries : openEntries;
+
   // Every opening starts in browse mode, on the first row, with nothing spoken.
   const [shownOpen, setShownOpen] = useState(open);
   if (shownOpen !== open) {
@@ -90,7 +95,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     }
   }
 
-  const results = useMemo(() => searchPalette(entries, query, lang), [entries, query, lang]);
+  const results = useMemo(() => searchPalette(shownEntries, query, lang), [shownEntries, query, lang]);
   const groups = useMemo(() => {
     let start = 0;
     return groupPaletteResults(results).map((g) => {

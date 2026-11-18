@@ -67,7 +67,13 @@ const entries = buildPaletteIndex({
 
 const onActivate = vi.fn<(entry: PaletteEntry) => void>();
 
-function Harness({ platform = "desktop" }: { platform?: "android" | "desktop" }) {
+function Harness({
+  platform = "desktop",
+  rows = entries,
+}: {
+  platform?: "android" | "desktop";
+  rows?: readonly PaletteEntry[];
+}) {
   return (
     <>
       <button id="util:go" type="button">
@@ -76,7 +82,7 @@ function Harness({ platform = "desktop" }: { platform?: "android" | "desktop" })
       <main id="main-content" tabIndex={-1}>
         content
       </main>
-      <GoPalette entries={entries} callCount={2} platform={platform} onActivate={onActivate} />
+      <GoPalette entries={rows} callCount={2} platform={platform} onActivate={onActivate} />
     </>
   );
 }
@@ -368,5 +374,16 @@ describe("GoPalette: one activation per close (code review)", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
     expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it("keeps its rows while it closes, though the caller drops the index (lazy build)", async () => {
+    const view = render(<Harness />);
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await screen.findByRole("dialog");
+    holdExitAnimations(() => true);
+    press("Escape");
+    view.rerender(<Harness rows={[]} />);
+    expect(document.querySelector('[data-slot="go-palette-empty"]')).toBeNull();
+    expect(document.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
   });
 });
