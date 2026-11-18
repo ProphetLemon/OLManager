@@ -329,10 +329,12 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
                         className="px-4 pb-1 pt-2 font-heading text-nav font-semibold uppercase tracking-wide text-muted-foreground"
                       >
                         {groupLabel(group)}
+                        {/* R81: the call rows the query keeps (every call while browsing), read
+                            after a pause, "Needs your call, 3": the comma is for screen readers. */}
                         {group === "calls" && (
                           <>
-                            {" "}
-                            <span className="tabular-nums">{callCount}</span>
+                            <span className="sr-only">,</span>{" "}
+                            <span className="tabular-nums">{query.trim() ? rows.length : callCount}</span>
                           </>
                         )}
                       </div>

@@ -321,8 +321,11 @@ describe("GoPalette: status, empty state and rows (R45, R48)", () => {
 
   it("groups the rows under named groups, Needs your call with its count", async () => {
     await openPalette();
-    const names = screen.getAllByRole("group").map((g) => g.getAttribute("aria-labelledby") && document.getElementById(g.getAttribute("aria-labelledby")!)?.textContent);
-    expect(names).toEqual(["Needs your call 2", "Recent", "Sections"]);
+    const groups = screen.getAllByRole("group");
+    expect(groups).toHaveLength(3);
+    expect(groups[0]).toBe(screen.getByRole("group", { name: "Needs your call, 2" }));
+    expect(groups[1]).toBe(screen.getByRole("group", { name: "Recent" }));
+    expect(groups[2]).toBe(screen.getByRole("group", { name: "Sections" }));
   });
 
   it("hides the separators from screen readers and gives rows no title (R48)", async () => {
@@ -449,5 +452,16 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     // A real move highlights again.
     fireEvent.mouseMove(options()[4], { clientX: 41, clientY: 140 });
     expect(activeOption()).toBe(options()[4]);
+  });
+
+  it("counts the call rows the query keeps, after a pause in the group's name (R81)", async () => {
+    await openPalette();
+    expect(screen.getByRole("group", { name: "Needs your call, 2" })).toBeInTheDocument();
+    type("scrims");
+    const calls = screen.getByRole("group", { name: "Needs your call, 1" });
+    expect(within(calls).getAllByRole("option")).toHaveLength(1);
+    // Sighted users see the number after a space; the comma is for screen readers only.
+    const label = document.getElementById(calls.getAttribute("aria-labelledby") ?? "");
+    expect(label?.querySelector(".tabular-nums")).toHaveTextContent(/^1$/);
   });
 });
