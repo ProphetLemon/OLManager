@@ -63,11 +63,20 @@ export function InboxTabV2({
     [allMessages],
   );
   const [storedId, setSelectedId] = useValidTabUiField("inbox", "selectedId", isMessage);
-  // A link to a message (a notification) opens it once over the stored one.
-  const selectedId = useOneShotOverride(initialMessageId, storedId, setSelectedId);
   const [filter, setFilter] = useTabUiField("inbox", "filter");
   const [sortOrder, setSortOrder] = useTabUiField("inbox", "sortOrder");
   const [query, setQuery] = useTabUiField("inbox", "query");
+  // A link to a message (a notification) opens it once over the stored one, and
+  // drops the stored filter and search so the list shows it.
+  const openLinkedMessage = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      setFilter(null);
+      setQuery("");
+    },
+    [setSelectedId, setFilter, setQuery],
+  );
+  const selectedId = useOneShotOverride(initialMessageId, storedId, openLinkedMessage);
   const [effect, setEffect] = useState<string | null>(null);
 
   const categoryCounts = useMemo(() => {

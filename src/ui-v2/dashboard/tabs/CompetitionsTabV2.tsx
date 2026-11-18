@@ -35,8 +35,8 @@ export function CompetitionsTabV2({ gameState, onSelectTeam, initialCompetitionI
   const { t } = useTranslation();
   // The selection, view, searches and pages survive a team visit (R23).
   const [view, setView] = useTabUiField("competitions", "view");
-  const [teamPage, setTeamPage] = useTabUiField("competitions", "teamPage");
-  const [playerPage, setPlayerPage] = useTabUiField("competitions", "playerPage");
+  const [storedTeamPage, setTeamPage] = useTabUiField("competitions", "teamPage");
+  const [storedPlayerPage, setPlayerPage] = useTabUiField("competitions", "playerPage");
   const [playerSearch, setPlayerSearch] = useTabUiField("competitions", "playerSearch");
   const [teamSearch, setTeamSearch] = useTabUiField("competitions", "teamSearch");
   const [visible, setVisible] = useState(false);
@@ -48,8 +48,20 @@ export function CompetitionsTabV2({ gameState, onSelectTeam, initialCompetitionI
     [leagues],
   );
   const [storedCid, setSelectedCid] = useValidTabUiField("competitions", "selectedCid", isCompetition);
-  // A link to a competition (a message action) opens it once over the stored one.
-  const selectedCid = useOneShotOverride(initialCompetitionId, storedCid, setSelectedCid);
+  // A link to a competition (a message action) opens it once over the stored one,
+  // on its standings with no stored search or page, as a fresh mount did.
+  const openLinkedCompetition = useCallback(
+    (cid: string) => {
+      setSelectedCid(cid);
+      setView("standings");
+      setTeamPage(0);
+      setPlayerPage(0);
+      setTeamSearch("");
+      setPlayerSearch("");
+    },
+    [setSelectedCid, setView, setTeamPage, setPlayerPage, setTeamSearch, setPlayerSearch],
+  );
+  const selectedCid = useOneShotOverride(initialCompetitionId, storedCid, openLinkedCompetition);
   const selectedLeague = selectedCid ? leagues.find((l) => (l.competition_id ?? l.id) === selectedCid) ?? null : null;
   const selectedTeamIds = selectedCid ? gameState.teams.filter((t) => t.competition_id === selectedCid).map((t) => t.id) : [];
   const selectedPlayers = selectedTeamIds.length > 0 ? gameState.players.filter((p) => p.team_id != null && selectedTeamIds.includes(p.team_id)) : [];
@@ -70,6 +82,9 @@ export function CompetitionsTabV2({ gameState, onSelectTeam, initialCompetitionI
 
   const teamTotalPages = Math.max(1, Math.ceil(filteredTeams.length / TEAM_PAGE_SIZE));
   const playerTotalPages = Math.max(1, Math.ceil(filteredPlayers.length / PLAYER_PAGE_SIZE));
+  // A stored page past the end (the list shrank while away) shows the last page.
+  const teamPage = Math.min(storedTeamPage, teamTotalPages - 1);
+  const playerPage = Math.min(storedPlayerPage, playerTotalPages - 1);
 
   const cid = selectedCid;
   const region = cid ? Object.keys(REGION_GRADIENT).find((k) => cid.includes(k) || k === cid) ?? null : null;

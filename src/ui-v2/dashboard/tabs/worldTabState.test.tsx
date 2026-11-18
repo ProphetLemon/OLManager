@@ -436,3 +436,59 @@ describe("World and direct tab state survives a remount (R23)", () => {
     expect(screen.queryByText("Theirs")).toBeNull();
   });
 });
+
+describe("Stored tab state never hides what a link or the current data shows", () => {
+  const seed = <T extends "inbox" | "competitions" | "schedule" | "players">(
+    tab: T,
+    state: Partial<ReturnType<typeof useTabUiStore.getState>["tabs"][T]>,
+  ) =>
+    useTabUiStore.setState((s) => ({ tabs: { ...s.tabs, [tab]: { ...s.tabs[tab], ...state } } }));
+
+  it("Inbox lists a linked message even when the stored filter and search would hide it", () => {
+    seed("inbox", { filter: "Finance", query: "zzz" });
+    renderInbox("m2");
+
+    expect(selectedSubject()).toBe("Subject m2");
+    expect(screen.getByRole("button", { name: /Subject m2/ })).toBeInTheDocument();
+    expect(useTabUiStore.getState().tabs.inbox).toMatchObject({ filter: null, query: "" });
+  });
+
+  it("Competitions opens a linked competition on its standings, with no stored search or page", () => {
+    seed("competitions", { selectedCid: "lck", view: "teams", teamPage: 2, teamSearch: "zzz", playerPage: 1 });
+    renderCompetitions("lec");
+
+    expect(selectedLeague()).toBe("LEC");
+    expect(screen.queryByPlaceholderText("Search team...")).toBeNull();
+    expect(useTabUiStore.getState().tabs.competitions).toMatchObject({
+      selectedCid: "lec",
+      view: "standings",
+      teamPage: 0,
+      playerPage: 0,
+      teamSearch: "",
+      playerSearch: "",
+    });
+  });
+
+  it("Schedule drops a stored day the week card no longer shows", () => {
+    seed("schedule", { selectedDay: "2026-12-20" });
+    const { container } = render(<ScheduleTabV2 gameState={scheduleState()} onSelectTeam={vi.fn()} />);
+
+    expect(container.querySelector('[data-fixture-date="2026-12-20"]')).toBeNull();
+    expect(useTabUiStore.getState().tabs.schedule.selectedDay).toBeNull();
+  });
+
+  it("Players shows its last page when the stored page is past the end", () => {
+    seed("players", { page: 5 });
+    renderPlayers();
+
+    expect(screen.getByText("2 / 2")).toBeInTheDocument();
+    expect(screen.getAllByText(/^(Top|Mid)\d\d$/)).toHaveLength(10);
+  });
+
+  it("Competitions shows its last team page when the stored page is past the end", () => {
+    seed("competitions", { selectedCid: "lec", view: "teams", teamPage: 3 });
+    renderCompetitions();
+
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
+  });
+});

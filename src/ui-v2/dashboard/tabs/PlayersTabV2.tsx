@@ -130,7 +130,7 @@ export function PlayersTabV2({
   const [competitionFilter, setCompetitionFilter] = useTabUiField("players", "competitionFilter");
   const [teamFilter, setTeamFilter] = useTabUiField("players", "teamFilter");
   const [sort, setSort] = useTabUiField("players", "sort");
-  const [page, setPage] = useTabUiField("players", "page");
+  const [storedPage, setPage] = useTabUiField("players", "page");
 
   // ── Debounced search ─────────────────────────────────────────
   useEffect(() => {
@@ -259,6 +259,8 @@ export function PlayersTabV2({
 
   // ── Pagination ───────────────────────────────────────────────
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  // A stored page past the end (the list shrank while away) shows the last page.
+  const page = Math.max(1, Math.min(storedPage, totalPages));
 
   // Reset to page 1 when filters or sort change
   const filterKey = `${debouncedSearch}|${[...selectedRoles].sort().join(",")}|${statusFilter}|${competitionFilter}|${teamFilter}|${sort.key}|${sort.dir}`;

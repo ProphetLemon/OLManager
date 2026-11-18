@@ -268,21 +268,23 @@ export function useValidTabUiField<T extends keyof TabUiStates, K extends keyof 
 /**
  * Lets a one-shot selection carried by a navigation (`initialMessageId`,
  * `initialCompetitionId`) override the stored one. It wins on the render that
- * carries it and is written to the store; the same value is never applied
- * twice, so a later pick by the user stays while the prop is unchanged, and a
- * remount without it (Back) shows the stored selection.
+ * carries it, and `apply` writes it to the store before paint, along with
+ * whatever the tab resets so the link is shown as a fresh mount showed it. The
+ * same value is never applied twice, so a later pick by the user stays while
+ * the prop is unchanged, and a remount without it (Back) shows the stored
+ * selection.
  */
 export function useOneShotOverride<V>(
   oneShot: V | null | undefined,
-  stored: V,
-  setStored: (next: V) => void,
-): V {
+  stored: V | null,
+  apply: (linked: V) => void,
+): V | null {
   const consumed = useRef<V | null>(null);
   const pending = oneShot != null && consumed.current !== oneShot ? oneShot : null;
   useLayoutEffect(() => {
     if (pending == null) return;
     consumed.current = pending;
-    setStored(pending);
-  }, [pending, setStored]);
+    apply(pending);
+  }, [pending, apply]);
   return pending ?? stored;
 }

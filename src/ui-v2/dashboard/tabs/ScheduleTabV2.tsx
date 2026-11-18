@@ -1,10 +1,10 @@
 import { resolveUserLeague } from "@/lib/userLeague";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, CalendarDays, ChevronRight } from "lucide-react";
 
 import type { GameStateData, FixtureData } from "@/store/gameStore";
-import { useTabUiField } from "@/store/tabUiStore";
+import { useTabUiField, useValidTabUiField } from "@/store/tabUiStore";
 import { getTeamName, formatMatchDate } from "@/lib/common/helpers";
 import {
   buildBestOfContext,
@@ -48,7 +48,12 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
   useEffect(() => { setVisible(true); }, []);
 
   const [fixtureResultView, setFixtureResultView] = useState<StoredFixtureDraftResult | null>(null);
-  const [selectedDayStr, setSelectedDayStr] = useTabUiField("schedule", "selectedDay");
+  // Only a day the week card shows: once the week moves on, nothing could toggle it off.
+  const isThisWeek = useCallback(
+    (day: string) => weekDayKeys(gameState.clock.current_date).includes(day),
+    [gameState.clock.current_date],
+  );
+  const [selectedDayStr, setSelectedDayStr] = useValidTabUiField("schedule", "selectedDay", isThisWeek);
   const league = resolveUserLeague(gameState) ?? undefined;
   const userTeamId = gameState.manager.team_id;
 
@@ -337,6 +342,20 @@ function getActiveLeague(gameState: GameStateData) {
   return resolveUserLeague(gameState);
 }
 
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** The seven days (YYYY-MM-DD, Monday first) of the week that holds the game date. */
+function weekDayKeys(currentDate: string): string[] {
+  const [y, m, d] = String(currentDate).slice(0, 10).split("-").map(Number);
+  const monday = new Date(y, (m || 1) - 1, d || 1);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    return `${day.getFullYear()}-${pad2(day.getMonth() + 1)}-${pad2(day.getDate())}`;
+  });
+}
+
 /** The highlighted day is the tab's stored day, so it comes back with the list under it. */
 function WeekScheduleCard({
   gameState,
@@ -352,18 +371,12 @@ function WeekScheduleCard({
   const teamId = gameState.manager.team_id;
 
   const todayKey = String(gameState.clock.current_date).slice(0, 10);
-  const todayParts = todayKey.split("-").map(Number);
-  const today = new Date(todayParts[0], (todayParts[1] || 1) - 1, todayParts[2] || 1);
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  monday.setHours(0, 0, 0, 0);
 
   const fullDay = new Intl.DateTimeFormat(i18n.language, { dateStyle: "full" });
 
-  const week = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const week = weekDayKeys(gameState.clock.current_date).map((dKey) => {
+    const [yy, mm, dd] = dKey.split("-").map(Number);
+    const d = new Date(yy, mm - 1, dd);
     const fixture =
       league && teamId
         ? league.fixtures.find(
