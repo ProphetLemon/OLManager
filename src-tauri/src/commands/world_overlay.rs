@@ -10,12 +10,13 @@
 //! the public key embedded in the app. The signature is checked before the overlay is parsed or
 //! cached, and again whenever the cache is read; anything unsigned or badly signed is ignored.
 //!
-//! A check is a conditional download. After a remote overlay verifies, a small record of it (its
-//! ETag, `as_of` and SHA-256) is kept next to the cache (`<name>.seen.json`), whether or not it was
-//! newer than the overlay in use. The next check sends that ETag as `If-None-Match` when a 304
-//! would change nothing, and a 304 then means "the same file, already judged": up to date, with
-//! neither the overlay nor its signature downloaded again. A server without ETags, a local file
-//! source, or a missing or unreadable record gets a full download every time.
+//! A check is a conditional download. After a remote overlay verifies, a small record of it (the
+//! source it came from, its ETag, `as_of` and SHA-256) is kept next to the cache
+//! (`<name>.seen.json`), whether or not it was newer than the overlay in use. The next check from
+//! the same source sends that ETag as `If-None-Match` when a 304 would change nothing, and a 304
+//! then means "the same file, already judged": up to date, with neither the overlay nor its
+//! signature downloaded again. A server without ETags, a local file source, a changed source, or a
+//! missing or unreadable record gets a full download every time.
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -550,10 +551,14 @@ where
         .unwrap_or_else(|_| Err(WorldOverlayError::Network("request timed out".to_string())))
 }
 
-/// The last remote overlay that verified: the ETag the server gave it, its
-/// `as_of` and the SHA-256 of its bytes.
+/// The last remote overlay that verified: the SHA-256 of the source it came
+/// from, the ETag that source gave it, its `as_of` and the SHA-256 of its bytes.
+///
+/// An ETag only names a file on the server that issued it, so the record keeps
+/// its source (hashed, which bounds the size and keeps the URL out of the file).
 #[derive(Debug, Serialize, Deserialize)]
 struct RemoteSeen {
+    source_sha256: String,
     etag: String,
     as_of: String,
     sha256: String,
@@ -562,12 +567,16 @@ struct RemoteSeen {
 impl RemoteSeen {
     /// Only a record whose every field looks right is trusted.
     fn is_well_formed(&self) -> bool {
-        usable_etag(&self.etag)
+        is_sha256_hex(&self.source_sha256)
+            && usable_etag(&self.etag)
             && self.as_of.len() == 10
             && chrono::NaiveDate::parse_from_str(&self.as_of, "%Y-%m-%d").is_ok()
-            && self.sha256.len() == 64
-            && self.sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+            && is_sha256_hex(&self.sha256)
     }
+}
+
+fn is_sha256_hex(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
@@ -584,21 +593,22 @@ fn store_floor<'a>(cached: Option<&'a WorldOverlay>, bundled: &'a WorldOverlay) 
     cached.map_or(bundled.as_of.as_str(), |cached| cached.as_of.as_str())
 }
 
-/// The ETag to revalidate with, if a 304 to it is safe to call "up to date".
+/// The ETag to revalidate `source` with, if a 304 to it is safe to call "up to date".
 ///
 /// A 304 means the remote is still the file recorded last time. That changes
 /// nothing when the file was older than the store floor (which never goes
 /// down) or is the very file in the cache. Otherwise, as with an unreadable or
-/// malformed record, there is no ETag and the check downloads in full; a 304
-/// must never keep a missing or broken cache that way.
+/// malformed record or one from another source, there is no ETag and the check
+/// downloads in full; a 304 must never keep a missing or broken cache that way.
 fn revalidation_etag(
     cache_path: &Path,
+    source: &str,
     cached: Option<&WorldOverlay>,
     bundled: &WorldOverlay,
 ) -> Option<String> {
     let bytes = read_local_capped(&remote_seen_path(cache_path), MAX_REMOTE_SEEN_BYTES).ok()?;
     let seen: RemoteSeen = serde_json::from_slice(&bytes).ok()?;
-    if !seen.is_well_formed() {
+    if !seen.is_well_formed() || seen.source_sha256 != sha256_hex(source.as_bytes()) {
         return None;
     }
     let older_than_floor = seen.as_of.as_str() < store_floor(cached, bundled);
@@ -613,11 +623,12 @@ fn revalidation_etag(
 /// Record the remote overlay that just verified, or drop a stale record when the
 /// server sent no usable ETag. A failure only costs a full download next time,
 /// so it is logged and the check still succeeds.
-fn remember_remote(cache_path: &Path, etag: Option<&str>, as_of: &str, bytes: &[u8]) {
+fn remember_remote(cache_path: &Path, source: &str, etag: Option<&str>, as_of: &str, bytes: &[u8]) {
     let path = remote_seen_path(cache_path);
     let result = match etag.filter(|etag| usable_etag(etag)) {
         Some(etag) => {
             let record = RemoteSeen {
+                source_sha256: sha256_hex(source.as_bytes()),
                 etag: etag.to_owned(),
                 as_of: as_of.to_owned(),
                 sha256: sha256_hex(bytes),
@@ -662,6 +673,7 @@ async fn refresh_cache(
 ) -> Result<WorldOverlayInfo, WorldOverlayError> {
     refresh_cache_with(
         cache_path,
+        source,
         timeout,
         key,
         |if_none_match, remaining| async move {
@@ -679,10 +691,12 @@ async fn refresh_cache(
     .await
 }
 
-/// [`refresh_cache`] with the two fetches passed in. `fetch_overlay` receives
-/// the stored ETag to revalidate, if any, and the time left.
+/// [`refresh_cache`] with the two fetches passed in. `source` only keys the
+/// record of what it served; `fetch_overlay` receives the stored ETag to
+/// revalidate, if any, and the time left.
 async fn refresh_cache_with<A, B>(
     cache_path: &Path,
+    source: &str,
     timeout: Duration,
     key: &OverlayPublicKey,
     fetch_overlay: impl FnOnce(Option<String>, Duration) -> A,
@@ -695,7 +709,7 @@ where
     let bundled = bundled_world_overlay().map_err(WorldOverlayError::BundledInvalid)?;
     let cached = read_cached_overlay(cache_path, key);
     let before = select_overlay(bundled.clone(), cached.clone());
-    let if_none_match = revalidation_etag(cache_path, cached.as_ref(), &bundled);
+    let if_none_match = revalidation_etag(cache_path, source, cached.as_ref(), &bundled);
 
     let fetched = fetch_pair_with(
         timeout,
@@ -734,7 +748,13 @@ where
         );
     }
     // Verified (and stored when newer): an unchanged remote now costs only a 304.
-    remember_remote(cache_path, etag.as_deref(), &downloaded.as_of, &bytes);
+    remember_remote(
+        cache_path,
+        source,
+        etag.as_deref(),
+        &downloaded.as_of,
+        &bytes,
+    );
     let after = resolve_from(Some(cache_path), key)?;
     let updated = after.overlay.as_of > before.overlay.as_of;
     Ok(after.info(updated))
@@ -1615,13 +1635,27 @@ mod tests {
         fetched_signature: bool,
     }
 
+    /// The source the faked refreshes download from, unless a test names another.
+    const FAKE_SOURCE: &str = "https://overlay.example.test/roster-overlay.json";
+
     /// Refresh `cache` against a fake server that answers the overlay request
     /// with `answer` and the signature request with `signature`.
     fn refresh_faked(cache: &Path, answer: OverlayFetch, signature: &str) -> FakeRefresh {
+        refresh_faked_from(cache, FAKE_SOURCE, answer, signature)
+    }
+
+    /// [`refresh_faked`] downloading from `source`.
+    fn refresh_faked_from(
+        cache: &Path,
+        source: &str,
+        answer: OverlayFetch,
+        signature: &str,
+    ) -> FakeRefresh {
         let sent_etag = std::cell::RefCell::new(None);
         let fetched_signature = std::cell::Cell::new(false);
         let result = run(refresh_cache_with(
             cache,
+            source,
             REQUEST_TIMEOUT,
             &test_key(),
             |if_none_match, _| {
@@ -1665,10 +1699,14 @@ mod tests {
             .collect()
     }
 
-    /// Records that the remote answered `etag` for `content`, dated `as_of`.
+    /// Records that [`FAKE_SOURCE`] answered `etag` for `content`, dated `as_of`.
     fn seed_seen(cache: &Path, etag: &str, as_of: &str, content: &[u8]) {
-        let record =
-            serde_json::json!({ "etag": etag, "as_of": as_of, "sha256": sha256_of(content) });
+        let record = serde_json::json!({
+            "source_sha256": sha256_of(FAKE_SOURCE.as_bytes()),
+            "etag": etag,
+            "as_of": as_of,
+            "sha256": sha256_of(content),
+        });
         std::fs::write(seen_file(cache), record.to_string()).expect("seed record");
     }
 
@@ -1692,9 +1730,86 @@ mod tests {
 
         assert!(run.result.expect("refresh").updated);
         let record = seen_record(&cache).expect("record");
+        assert_eq!(record["source_sha256"], sha256_of(FAKE_SOURCE.as_bytes()));
         assert_eq!(record["etag"], "\"v1\"");
         assert_eq!(record["as_of"], offset_date(2));
         assert_eq!(record["sha256"], sha256_of(doc.as_bytes()));
+    }
+
+    #[test]
+    fn a_record_from_another_source_is_not_sent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join("world").join(CACHE_FILE);
+        let doc = overlay_json(&offset_date(-30), 1);
+        let (answer, signature) = fresh(&doc, Some("\"old\""));
+        refresh_faked(&cache, answer, &signature)
+            .result
+            .expect("first check");
+        let (answer, signature) = fresh(&doc, Some("\"old\""));
+
+        // The same ETag from another server names a different file.
+        let run = refresh_faked_from(
+            &cache,
+            "https://mirror.example.test/roster-overlay.json",
+            answer,
+            &signature,
+        );
+
+        assert_eq!(run.sent_etag, None);
+        assert!(run.fetched_signature);
+    }
+
+    #[test]
+    fn a_record_without_a_source_is_not_sent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        // The record's shape before it named its source.
+        let legacy = serde_json::json!({
+            "etag": "\"old\"",
+            "as_of": offset_date(-30),
+            "sha256": sha256_of(b"the old remote"),
+        });
+        std::fs::write(seen_file(&cache), legacy.to_string()).expect("seed record");
+        let (answer, signature) = fresh(&overlay_json(&offset_date(-30), 1), Some("\"old\""));
+
+        assert_eq!(refresh_faked(&cache, answer, &signature).sent_etag, None);
+    }
+
+    #[test]
+    fn a_record_with_a_malformed_source_hash_is_not_sent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        let record = serde_json::json!({
+            "source_sha256": "not a hash",
+            "etag": "\"old\"",
+            "as_of": offset_date(-30),
+            "sha256": sha256_of(b"the old remote"),
+        });
+        std::fs::write(seen_file(&cache), record.to_string()).expect("seed record");
+        let (answer, signature) = fresh(&overlay_json(&offset_date(-30), 1), Some("\"old\""));
+
+        assert_eq!(refresh_faked(&cache, answer, &signature).sent_etag, None);
+    }
+
+    #[test]
+    fn a_corrupt_cache_with_a_record_older_than_the_bundled_overlay_keeps_the_bundled_one_on_a_304()
+    {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        std::fs::write(&cache, "{ not an overlay").expect("corrupt cache");
+        seed_seen(&cache, "\"old\"", &offset_date(-30), b"the old remote");
+
+        let run = refresh_faked(&cache, OverlayFetch::NotModified, "unused");
+
+        assert_eq!(run.sent_etag.as_deref(), Some("\"old\""));
+        assert!(!run.fetched_signature);
+        let info = run.result.expect("not modified");
+        assert!(!info.updated);
+        assert_eq!(info.origin, OverlayOrigin::Bundled);
+        assert_eq!(
+            std::fs::read(&cache).expect("read cache"),
+            b"{ not an overlay"
+        );
     }
 
     #[test]
