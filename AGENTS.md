@@ -52,7 +52,8 @@ src/
 │       ├── RouteAnnouncer.tsx      # la única región viva de cambios de ruta ("Now on {título}, {grupo}")
 │       └── tabs/              # tabs nativos v2 (home/, squad/ = On Air panels); vista, filtros, orden, página y
 │                              # selección de cada pestaña en store/tabUiStore (R23: sobreviven a un perfil; ids
-│                              # por useValidTabUiField; la página vuelve a 1 con hooks/useResetOnChange, nunca al montar)
+│                              # por useValidTabUiField; initialMessageId/initialCompetitionId ganan una vez por useOneShotOverride;
+│                              # la página vuelve a 1 con hooks/useResetOnChange, nunca al montar)
 └── store/, services/, hooks/, api/  # compartidos (hooks/useRovingFocus, useClubTheme)
 ```
 

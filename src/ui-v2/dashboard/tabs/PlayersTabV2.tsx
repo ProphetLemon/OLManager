@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 
 import type { GameStateData, PlayerData, PlayerSelectionOptions } from "@/store/gameStore";
+import { useTabUiField, type PlayersTabUiState } from "@/store/tabUiStore";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { getTeamName, calcAge, compareAgesUnknownLast, formatAge, formatVal } from "@/lib/common/helpers";
@@ -35,13 +37,8 @@ import { ROLE_ICON_PATHS } from "@/lib/players/roleIcons";
 // ─── Types ──────────────────────────────────────────────────────
 
 type LolRole = "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT";
-type SortKey = "pos" | "name" | "age" | "nationality" | "team" | "value" | "ovr" | "status";
-type StatusFilter = "all" | "transfer" | "loan";
-
-interface SortState {
-  key: SortKey;
-  dir: "asc" | "desc";
-}
+type SortKey = PlayersTabUiState["sort"]["key"];
+type StatusFilter = PlayersTabUiState["statusFilter"];
 
 interface PlayersTabV2Props {
   gameState: GameStateData;
@@ -121,15 +118,19 @@ export function PlayersTabV2({
   onSelectTeam,
 }: PlayersTabV2Props) {
   const { t } = useTranslation();
-  // ── Local state ──────────────────────────────────────────────
-  const [searchInput, setSearchInput] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedRoles, setSelectedRoles] = useState<Set<LolRole>>(new Set());
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [competitionFilter, setCompetitionFilter] = useState<string | null>(null);
-  const [teamFilter, setTeamFilter] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortState>({ key: "ovr", dir: "desc" });
-  const [page, setPage] = useState(1);
+  // ── View state ───────────────────────────────────────────────
+  // Search, filters, sort and page survive a profile visit (R23). The debounced
+  // copy of the search stays local and starts from the stored input, so a
+  // remount lists the searched players at once.
+  const [searchInput, setSearchInput] = useTabUiField("players", "searchInput");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchInput);
+  const [roles, setRoles] = useTabUiField("players", "roles");
+  const selectedRoles = useMemo(() => new Set<LolRole>(roles), [roles]);
+  const [statusFilter, setStatusFilter] = useTabUiField("players", "statusFilter");
+  const [competitionFilter, setCompetitionFilter] = useTabUiField("players", "competitionFilter");
+  const [teamFilter, setTeamFilter] = useTabUiField("players", "teamFilter");
+  const [sort, setSort] = useTabUiField("players", "sort");
+  const [page, setPage] = useTabUiField("players", "page");
 
   // ── Debounced search ─────────────────────────────────────────
   useEffect(() => {
@@ -163,10 +164,11 @@ export function PlayersTabV2({
     [gameState.leagues],
   );
 
-  // Reset team filter when competition changes (the selected team may not exist in the new comp)
-  useEffect(() => {
+  // Reset team filter when competition changes (the selected team may not exist in the new comp).
+  // Never on mount: a remount keeps the stored pair.
+  useResetOnChange([competitionFilter], () => {
     if (competitionFilter) setTeamFilter(null);
-  }, [competitionFilter]);
+  });
 
   // ── Filter pipeline ──────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -260,7 +262,7 @@ export function PlayersTabV2({
 
   // Reset to page 1 when filters or sort change
   const filterKey = `${debouncedSearch}|${[...selectedRoles].sort().join(",")}|${statusFilter}|${competitionFilter}|${teamFilter}|${sort.key}|${sort.dir}`;
-  useEffect(() => setPage(1), [filterKey]);
+  useResetOnChange([filterKey], () => setPage(1));
 
   const paginated = useMemo(
     () => sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -280,26 +282,21 @@ export function PlayersTabV2({
         return { key, dir: DEFAULT_SORT_ASC[key] ? "asc" : "desc" };
       });
     },
-    [],
+    [setSort],
   );
 
   const toggleRole = useCallback((role: LolRole) => {
-    setSelectedRoles((prev) => {
-      const next = new Set(prev);
-      if (next.has(role)) next.delete(role);
-      else next.add(role);
-      return next;
-    });
-  }, []);
+    setRoles((prev) => (prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]));
+  }, [setRoles]);
 
   const clearFilters = useCallback(() => {
     setSearchInput("");
     setDebouncedSearch("");
-    setSelectedRoles(new Set());
+    setRoles([]);
     setStatusFilter("all");
     setCompetitionFilter(null);
     setTeamFilter(null);
-  }, []);
+  }, [setSearchInput, setRoles, setStatusFilter, setCompetitionFilter, setTeamFilter]);
 
   // ── Render: empty state ──────────────────────────────────────
   if (gameState.players.length === 0) {

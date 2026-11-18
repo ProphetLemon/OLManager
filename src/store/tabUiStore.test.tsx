@@ -78,6 +78,51 @@ describe("tabUiStore", () => {
     expect(useTabUiStore.getState().tabs).toEqual(DEFAULT_TAB_UI_STATES);
   });
 
+  it("starts the World and direct tabs from their defaults", () => {
+    expect(useTabUiStore.getState().tabs).toMatchObject({
+      schedule: { view: "fixtures", selectedDay: null },
+      competitions: {
+        selectedCid: null,
+        view: "standings",
+        teamPage: 0,
+        playerPage: 0,
+        teamSearch: "",
+        playerSearch: "",
+      },
+      players: {
+        searchInput: "",
+        roles: [],
+        statusFilter: "all",
+        competitionFilter: null,
+        teamFilter: null,
+        sort: { key: "ovr", dir: "desc" },
+        page: 1,
+      },
+      teams: { filter: null, search: "", sort: "position", asc: true, page: 0 },
+      champions: { search: "", roleFilter: "ALL", page: 0 },
+      inbox: { selectedId: null, filter: null, sortOrder: "newest", query: "" },
+      news: { category: null, team: null, page: 0 },
+      market: { filter: "all" },
+    });
+  });
+
+  it("resetTabUi clears the World and direct tabs back to their defaults", () => {
+    const { setTabField } = useTabUiStore.getState();
+    setTabField("schedule", "selectedDay", "2027-01-01");
+    setTabField("competitions", "selectedCid", "lec");
+    setTabField("players", "roles", ["MID"]);
+    setTabField("players", "page", 3);
+    setTabField("teams", "asc", false);
+    setTabField("champions", "search", "ahri");
+    setTabField("inbox", "selectedId", "m1");
+    setTabField("news", "category", "Transfer");
+    setTabField("market", "filter", "user");
+
+    useTabUiStore.getState().resetTabUi();
+
+    expect(useTabUiStore.getState().tabs).toEqual(DEFAULT_TAB_UI_STATES);
+  });
+
   it("reads a stored id that is no longer valid as the default, and clears it", () => {
     useTabUiStore.getState().setTabField("squad", "selectedId", "gone");
     const { result } = renderHook(() =>

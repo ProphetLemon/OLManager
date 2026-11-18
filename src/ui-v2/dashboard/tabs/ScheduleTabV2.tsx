@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, CalendarDays, ChevronRight } from "lucide-react";
 
 import type { GameStateData, FixtureData } from "@/store/gameStore";
+import { useTabUiField } from "@/store/tabUiStore";
 import { getTeamName, formatMatchDate } from "@/lib/common/helpers";
 import {
   buildBestOfContext,
@@ -28,7 +29,8 @@ interface Props {
 
 export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
   const { t, i18n } = useTranslation();
-  const [view, setView] = useState<"fixtures" | "calendar">("fixtures");
+  // The view and the selected day survive a team visit (R23).
+  const [view, setView] = useTabUiField("schedule", "view");
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
     return window.matchMedia("(min-width: 768px)").matches;
@@ -46,7 +48,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
   useEffect(() => { setVisible(true); }, []);
 
   const [fixtureResultView, setFixtureResultView] = useState<StoredFixtureDraftResult | null>(null);
-  const [selectedDayStr, setSelectedDayStr] = useState<string | null>(null);
+  const [selectedDayStr, setSelectedDayStr] = useTabUiField("schedule", "selectedDay");
   const league = resolveUserLeague(gameState) ?? undefined;
   const userTeamId = gameState.manager.team_id;
 
@@ -146,7 +148,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
         <div className="flex flex-col gap-4">
           {/* Weekly calendar card */}
           <div className={cn("opacity-0 animate-fade-in-up")} style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
-            <WeekScheduleCard gameState={gameState} onDayClick={(dayStr) => {
+            <WeekScheduleCard gameState={gameState} selectedDay={selectedDayStr} onDayClick={(dayStr) => {
               setSelectedDayStr(selectedDayStr === dayStr ? null : dayStr);
             }} />
           </div>
@@ -335,15 +337,17 @@ function getActiveLeague(gameState: GameStateData) {
   return resolveUserLeague(gameState);
 }
 
+/** The highlighted day is the tab's stored day, so it comes back with the list under it. */
 function WeekScheduleCard({
   gameState,
+  selectedDay,
   onDayClick,
 }: {
   gameState: GameStateData;
+  selectedDay: string | null;
   onDayClick?: (date: string) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const league = getActiveLeague(gameState);
   const teamId = gameState.manager.team_id;
 
@@ -407,7 +411,6 @@ function WeekScheduleCard({
                   const m = String(d.date.getMonth() + 1).padStart(2, "0");
                   const day = String(d.date.getDate()).padStart(2, "0");
                   const key = `${y}-${m}-${day}`;
-                  setSelectedDay(selectedDay === key ? null : key);
                   onDayClick?.(key);
                 }}
                 className={cn(

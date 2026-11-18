@@ -1,6 +1,7 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { create } from "zustand";
 import type { LolRole } from "@/lib/home/scoreboard";
+import type { MessageSortOrder } from "@/lib/inbox/helpers";
 import type { FinancialTransactionKind } from "./types";
 
 export type SortDir = "asc" | "desc";
@@ -61,6 +62,69 @@ export interface YouthTabUiState {
   searchQuery: string;
 }
 
+export interface ScheduleTabUiState {
+  view: "fixtures" | "calendar";
+  /** The week card's day (YYYY-MM-DD) whose matches are listed. */
+  selectedDay: string | null;
+}
+
+export interface CompetitionsTabUiState {
+  /** A competition id: read it through `useValidTabUiField`. */
+  selectedCid: string | null;
+  view: "standings" | "calendar" | "teams" | "players";
+  teamPage: number;
+  playerPage: number;
+  teamSearch: string;
+  playerSearch: string;
+}
+
+export interface PlayersTabUiState {
+  /** The typed search; the tab keeps its own debounced copy. */
+  searchInput: string;
+  roles: LolRole[];
+  statusFilter: "all" | "transfer" | "loan";
+  competitionFilter: string | null;
+  teamFilter: string | null;
+  sort: {
+    key: "pos" | "name" | "age" | "nationality" | "team" | "value" | "ovr" | "status";
+    dir: SortDir;
+  };
+  /** 1-based, unlike the other tabs. */
+  page: number;
+}
+
+export interface TeamsTabUiState {
+  filter: string | null;
+  search: string;
+  sort: "position" | "name" | "ovr" | "value" | "rep" | "wr" | "players";
+  asc: boolean;
+  page: number;
+}
+
+export interface ChampionsTabUiState {
+  search: string;
+  roleFilter: "ALL" | LolRole;
+  page: number;
+}
+
+export interface InboxTabUiState {
+  /** A message id: read it through `useValidTabUiField`. */
+  selectedId: string | null;
+  filter: string | null;
+  sortOrder: MessageSortOrder;
+  query: string;
+}
+
+export interface NewsTabUiState {
+  category: string | null;
+  team: string | null;
+  page: number;
+}
+
+export interface MarketTabUiState {
+  filter: "all" | "user" | "ai";
+}
+
 export interface TabUiStates {
   transfers: TransfersTabUiState;
   scouting: ScoutingTabUiState;
@@ -71,6 +135,14 @@ export interface TabUiStates {
   worldStaff: StaffTabUiState;
   finances: FinancesTabUiState;
   youth: YouthTabUiState;
+  schedule: ScheduleTabUiState;
+  competitions: CompetitionsTabUiState;
+  players: PlayersTabUiState;
+  teams: TeamsTabUiState;
+  champions: ChampionsTabUiState;
+  inbox: InboxTabUiState;
+  news: NewsTabUiState;
+  market: MarketTabUiState;
 }
 
 const DEFAULT_STAFF_STATE: StaffTabUiState = {
@@ -105,6 +177,29 @@ export const DEFAULT_TAB_UI_STATES: TabUiStates = {
     ledgerSource: "all",
   },
   youth: { sortKey: "pos", sortDir: "asc", searchQuery: "" },
+  schedule: { view: "fixtures", selectedDay: null },
+  competitions: {
+    selectedCid: null,
+    view: "standings",
+    teamPage: 0,
+    playerPage: 0,
+    teamSearch: "",
+    playerSearch: "",
+  },
+  players: {
+    searchInput: "",
+    roles: [],
+    statusFilter: "all",
+    competitionFilter: null,
+    teamFilter: null,
+    sort: { key: "ovr", dir: "desc" },
+    page: 1,
+  },
+  teams: { filter: null, search: "", sort: "position", asc: true, page: 0 },
+  champions: { search: "", roleFilter: "ALL", page: 0 },
+  inbox: { selectedId: null, filter: null, sortOrder: "newest", query: "" },
+  news: { category: null, team: null, page: 0 },
+  market: { filter: "all" },
 };
 
 interface TabUiStore {
@@ -168,4 +263,26 @@ export function useValidTabUiField<T extends keyof TabUiStates, K extends keyof 
     if (!valid) setValue(fallback);
   }, [valid, fallback, setValue]);
   return [valid ? value : fallback, setValue];
+}
+
+/**
+ * Lets a one-shot selection carried by a navigation (`initialMessageId`,
+ * `initialCompetitionId`) override the stored one. It wins on the render that
+ * carries it and is written to the store; the same value is never applied
+ * twice, so a later pick by the user stays while the prop is unchanged, and a
+ * remount without it (Back) shows the stored selection.
+ */
+export function useOneShotOverride<V>(
+  oneShot: V | null | undefined,
+  stored: V,
+  setStored: (next: V) => void,
+): V {
+  const consumed = useRef<V | null>(null);
+  const pending = oneShot != null && consumed.current !== oneShot ? oneShot : null;
+  useLayoutEffect(() => {
+    if (pending == null) return;
+    consumed.current = pending;
+    setStored(pending);
+  }, [pending, setStored]);
+  return pending ?? stored;
 }

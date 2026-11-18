@@ -1,9 +1,10 @@
 import { resolveTeamLeague } from "@/lib/userLeague";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Building2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Filter, Search, SortAsc, Swords, Trophy } from "lucide-react";
 
 import type { GameStateData } from "@/store/gameStore";
+import { useTabUiField, type TeamsTabUiState } from "@/store/tabUiStore";
 import { compareStandingsByLolScore } from "@/store/gameStore";
 import { getMainTeams, isUserAcademyClub } from "@/store/academySelectors";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
@@ -18,17 +19,18 @@ interface Props {
   onSelectTeam: (id: string) => void;
 }
 
-type SortKey = "position" | "name" | "ovr" | "value" | "rep" | "wr" | "players";
+type SortKey = TeamsTabUiState["sort"];
 const PAGE_SIZE = 20;
 
 export function TeamsTabV2({ gameState, onSelectTeam }: Props) {
   const { t } = useTranslation();
   const userTeamId = gameState.manager.team_id;
-  const [filter, setFilter] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<SortKey>("position");
-  const [asc, setAsc] = useState(true);
-  const [page, setPage] = useState(0);
+  // Filter, search, sort and page survive a team visit (R23).
+  const [filter, setFilter] = useTabUiField("teams", "filter");
+  const [search, setSearch] = useTabUiField("teams", "search");
+  const [sort, setSort] = useTabUiField("teams", "sort");
+  const [asc, setAsc] = useTabUiField("teams", "asc");
+  const [page, setPage] = useTabUiField("teams", "page");
 
   const sortedByLeague = useMemo(
     () => new Map(gameState.leagues.map((l) => [l, [...l.standings].sort(compareStandingsByLolScore)])),

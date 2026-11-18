@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowDownUp,
@@ -24,11 +24,10 @@ import {
   isNavigateAction,
   sortInboxMessages,
   UNREAD_FILTER,
-  type MessageSortOrder,
 } from "@/lib/inbox/helpers";
 import { resolveInboxCategoryLabel } from "@/lib/inbox/categoryLabel";
 import { formatDateShort } from "@/lib/common/helpers";
-import { useTabUiStore } from "@/store/tabUiStore";
+import { useOneShotOverride, useTabUiField, useTabUiStore, useValidTabUiField } from "@/store/tabUiStore";
 
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
@@ -57,10 +56,18 @@ export function InboxTabV2({
     [messages, i18n.language],
   );
 
-  const [selectedId, setSelectedId] = useState<string | null>(initialMessageId ?? null);
-  const [filter, setFilter] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<MessageSortOrder>("newest");
-  const [query, setQuery] = useState("");
+  // The open message, filter, order and search survive a profile visit (R23).
+  // A deleted message reads as no selection.
+  const isMessage = useCallback(
+    (id: string) => allMessages.some((m) => m.id === id),
+    [allMessages],
+  );
+  const [storedId, setSelectedId] = useValidTabUiField("inbox", "selectedId", isMessage);
+  // A link to a message (a notification) opens it once over the stored one.
+  const selectedId = useOneShotOverride(initialMessageId, storedId, setSelectedId);
+  const [filter, setFilter] = useTabUiField("inbox", "filter");
+  const [sortOrder, setSortOrder] = useTabUiField("inbox", "sortOrder");
+  const [query, setQuery] = useTabUiField("inbox", "query");
   const [effect, setEffect] = useState<string | null>(null);
 
   const categoryCounts = useMemo(() => {
@@ -90,11 +97,6 @@ export function InboxTabV2({
     () => allMessages.find((m) => m.id === selectedId) ?? null,
     [allMessages, selectedId],
   );
-
-  useEffect(() => {
-    const ids = new Set(allMessages.map((m) => m.id));
-    if (selectedId && !ids.has(selectedId)) setSelectedId(null);
-  }, [allMessages, selectedId]);
 
   async function handleSelect(id: string) {
     setSelectedId(id);
