@@ -3,7 +3,7 @@ import type { TFunction } from "i18next";
 import type { DashboardAlert } from "@/lib/dashboard/helpers";
 import type { BlockerData } from "@/services/advanceTimeService";
 import type { PlayerData } from "@/store/gameStore";
-import { buildCallItems } from "./needsYourCall";
+import { buildCallItems, deriveCallState, EMPTY_CALL_STATE } from "./needsYourCall";
 
 const t = ((key: string, opts?: { defaultValue?: string; count?: number }) =>
   (opts?.defaultValue ?? key).replace("{{count}}", String(opts?.count ?? ""))) as unknown as TFunction;
@@ -259,5 +259,59 @@ describe("buildCallItems scrim week notice", () => {
   it("gives way to the hard setup blocker on the first scrim day", () => {
     const result = build({ alerts: [notice()], blockers: [blocker("scrim_setup_required", { tab: "Scrims" })] });
     expect(result.items.map((item) => item.id)).toEqual(["blocker:scrim_setup_required"]);
+  });
+});
+
+describe("deriveCallState", () => {
+  it("keeps hard and soft decisions in the order of items", () => {
+    const state = deriveCallState(
+      build({
+        canContinueAnyway: true,
+        blockers: [blocker("urgent_messages"), blocker("main_missing_roles"), blocker("scrim_setup_required")],
+        alerts: [alert("finance_runway")],
+      }),
+    );
+    expect(state.decisionItems.map((i) => i.id)).toEqual([
+      "blocker:scrim_setup_required",
+      "blocker:main_missing_roles",
+      "alert:finance_runway",
+    ]);
+    expect(state.decisionItems.map((i) => i.severity)).toEqual(["hard", "soft", "soft"]);
+    expect(state.items.map((i) => i.id)).toEqual([
+      "blocker:scrim_setup_required",
+      "blocker:main_missing_roles",
+      "alert:finance_runway",
+      "blocker:urgent_messages",
+    ]);
+  });
+
+  it("counts hidden contracts: 5 contracts with maxContracts 3 give count 5 and 3 contract rows", () => {
+    const startingFive = ["1", "2", "3", "4", "5"].map((n, i) => player(n, `2026-0${i + 2}-01`));
+    const state = deriveCallState(build({ startingFive, maxContracts: 3 }));
+    expect(state.count).toBe(5);
+    expect(state.hiddenContracts).toBe(2);
+    expect(state.total).toBe(5);
+    expect(state.items.filter((i) => i.kind === "contract")).toHaveLength(3);
+    expect(state.decisionItems).toHaveLength(3);
+  });
+
+  it("keeps notices out of decisionItems and lists them apart", () => {
+    const state = deriveCallState(
+      build({
+        alerts: [alert("scrim_auto_delegate_notice", "info"), alert("finance_crisis")],
+        blockers: [blocker("scrim_decision_required")],
+      }),
+    );
+    expect(state.decisionItems.map((i) => i.id)).toEqual([
+      "blocker:scrim_decision_required",
+      "alert:finance_crisis",
+    ]);
+    expect(state.notices.map((i) => i.id)).toEqual(["alert:scrim_auto_delegate_notice"]);
+    expect(state.count).toBe(2);
+    expect(state.total).toBe(3);
+  });
+
+  it("has an empty state that matches an empty build", () => {
+    expect(deriveCallState(build())).toEqual(EMPTY_CALL_STATE);
   });
 });

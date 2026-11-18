@@ -6,6 +6,17 @@ export interface DashboardNavigateContext {
   competitionId?: string;
 }
 
+/**
+ * A request to move somewhere in the dashboard, from the rail, Home, the lane or
+ * the palette. `openRenewal` and `context` are one-shot: they ride this move only.
+ */
+export type NavIntent =
+  | { kind: "tab"; tab: string; context?: DashboardNavigateContext }
+  | { kind: "player"; id: string; openRenewal?: boolean }
+  | { kind: "team"; id: string }
+  | { kind: "staff"; id: string }
+  | { kind: "champion"; key: string };
+
 export interface DashboardProfileHistoryEntry {
   tab: string;
   playerId: string | null;

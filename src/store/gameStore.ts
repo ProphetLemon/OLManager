@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type { EndOfSeasonSummaryData, GameStateData } from './types';
 import { useTabUiStore } from './tabUiStore';
 import { useNavMemoryStore } from "./navMemoryStore";
+import { useCallCacheStore } from "./callCacheStore";
 
 // Re-export all types so existing imports from gameStore keep working
 export type {
@@ -139,6 +140,7 @@ export const useGameStore = create<GameStore>((set) => ({
     console.log("[store] setGameActive called:", { active, managerName });
     // A new game or a load starts with a fresh remembered tab, never the previous save's.
     useNavMemoryStore.getState().resetNavMemory();
+    useCallCacheStore.getState().reset();
     set({
       hasActiveGame: active,
       managerName: managerName || null,
@@ -155,6 +157,7 @@ export const useGameStore = create<GameStore>((set) => ({
   clearGame: () => {
     useTabUiStore.getState().resetTabUi();
     useNavMemoryStore.getState().resetNavMemory();
+    useCallCacheStore.getState().reset();
     set({
       hasActiveGame: false,
       managerName: null,

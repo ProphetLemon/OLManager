@@ -1,16 +1,13 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { GameStateData, PlayerData } from "@/store/gameStore";
-import { resolveActiveLineupIds } from "@/store/types";
+import type { GameStateData } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
-import type { BlockerData } from "@/services/advanceTimeService";
-import type { DashboardAlert } from "@/lib/dashboard/helpers";
 import type { DashboardNavigateContext } from "@/lib/dashboard/profileNavigation";
-import { buildCallItems, type CallItem } from "@/lib/dashboard/needsYourCall";
+import { EMPTY_CALL_STATE, type CallItem, type CallState } from "@/lib/dashboard/needsYourCall";
+import { callAction } from "@/lib/dashboard/callAction";
 import { getRestNotice, getScoreboardData } from "@/lib/home/scoreboard";
 import { getStandingsPanelData } from "@/lib/home/standings";
-import { buildActiveLineupIds } from "@/lib/squad/helpers";
 import { resolveMessage } from "@/lib/i18n/backendI18n";
 
 import { ScoreboardHero } from "./home/ScoreboardHero";
@@ -22,15 +19,12 @@ interface Props {
   gameState: GameStateData;
   onNavigate?: (tab: string, context?: DashboardNavigateContext) => void;
   onSelectPlayer?: (id: string, options?: { openRenewal?: boolean }) => void;
-  alerts?: DashboardAlert[];
-  blockers?: BlockerData[];
-  canContinueAnyway?: boolean;
+  /** What needs a call, derived once by DashboardV2 (R18); Home never builds its own. */
+  calls?: CallState;
   unreadCount?: number;
 }
 
 const INBOX_ROWS = 5;
-const NO_ALERTS: DashboardAlert[] = [];
-const NO_BLOCKERS: BlockerData[] = [];
 
 /** Backend priorities are capitalised ("High"); compare case-insensitively. */
 function isUrgent(priority: string | undefined): boolean {
@@ -46,9 +40,7 @@ export function HomeTabV2({
   gameState,
   onNavigate,
   onSelectPlayer,
-  alerts = NO_ALERTS,
-  blockers = NO_BLOCKERS,
-  canContinueAnyway = false,
+  calls = EMPTY_CALL_STATE,
   unreadCount = 0,
 }: Props) {
   const { t } = useTranslation();
@@ -63,30 +55,6 @@ export function HomeTabV2({
     [scoreboard, gameState],
   );
   const standings = useMemo(() => getStandingsPanelData(gameState), [gameState]);
-
-  const startingFive = useMemo<PlayerData[]>(() => {
-    const myTeam = gameState.teams.find((team) => team.id === gameState.manager.team_id);
-    if (!myTeam) return [];
-    const roster = gameState.players.filter((player) => player.team_id === myTeam.id);
-    const byId = new Map(roster.map((player) => [player.id, player]));
-    return buildActiveLineupIds(roster, resolveActiveLineupIds(myTeam)).flatMap((id) => {
-      const player = byId.get(id);
-      return player ? [player] : [];
-    });
-  }, [gameState.teams, gameState.players, gameState.manager.team_id]);
-
-  const calls = useMemo(
-    () =>
-      buildCallItems({
-        alerts,
-        blockers,
-        canContinueAnyway,
-        startingFive,
-        currentDate: gameState.clock?.current_date ?? "",
-        t,
-      }),
-    [alerts, blockers, canContinueAnyway, startingFive, gameState.clock?.current_date, t],
-  );
 
   const inboxMessages = useMemo<InboxPanelMessage[]>(
     () =>
@@ -108,11 +76,12 @@ export function HomeTabV2({
   );
 
   const handleAct = (item: CallItem) => {
-    const playerId = item.target.context?.playerId;
-    if (item.kind === "contract" && typeof playerId === "string" && onSelectPlayer) {
-      onSelectPlayer(playerId, { openRenewal: true });
+    const intent = callAction(item);
+    if (intent.kind === "player" && onSelectPlayer) {
+      onSelectPlayer(intent.id, { openRenewal: intent.openRenewal });
       return;
     }
+    // A tab intent, or a contract while no profile can be opened: its own tab.
     onNavigate?.(item.target.tab, item.target.context as DashboardNavigateContext | undefined);
   };
 
@@ -140,7 +109,7 @@ export function HomeTabV2({
           <NeedsYourCallPanel
             items={calls.items}
             total={calls.total}
-            decisions={calls.decisions}
+            decisions={calls.count}
             hiddenContracts={calls.hiddenContracts}
             onAct={handleAct}
           />

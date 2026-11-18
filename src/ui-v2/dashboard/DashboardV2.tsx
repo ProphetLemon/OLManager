@@ -16,9 +16,10 @@ import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { isAcademyTeam } from "@/store/academySelectors";
 import { assetUrl } from "@/lib/assetUrl";
 import { DEFAULT_MANAGER_ICON_PATH } from "@/lib/common/managerAvatars";
-import { buildCallItems } from "@/lib/dashboard/needsYourCall";
+import { buildCallItems, deriveCallState, EMPTY_CALL_STATE } from "@/lib/dashboard/needsYourCall";
 import { buildActiveLineupIds } from "@/lib/squad/helpers";
-import type { BlockerData } from "@/services/advanceTimeService";
+import type { DashboardAlert } from "@/lib/dashboard/helpers";
+import { useCallCacheStore } from "@/store/callCacheStore";
 import { collectAdvanceBlockers } from "@/lib/home/advanceBlockers";
 import {
   canContinueAnyway as canOfferContinueAnyway,
@@ -165,13 +166,6 @@ const MAIN_CONTENT_ID = "main-content";
 const FOCUS_CALLS_ATTEMPTS = 40;
 const FOCUS_CALLS_INTERVAL_MS = 50;
 
-interface RetainedBlockers {
-  blockers: BlockerData[];
-  canContinueAnyway: boolean;
-  /** Game date the list was last confirmed for. */
-  date: string | null;
-}
-
 export default function DashboardV2() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -200,8 +194,10 @@ export default function DashboardV2() {
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [viewingChampionKey, setViewingChampionKey] = useState<string | null>(null);
   // What blocks the advance, for "Needs your call". Fed by the Continue modal and
-  // by the backend pre-check, which re-runs after every game state update.
-  const [lastBlockers, setLastBlockers] = useState<RetainedBlockers | null>(null);
+  // by the backend pre-check, which re-runs after every game state update. Kept in
+  // a store so a return from Settings or a match starts from it, not from 0.
+  const lastBlockers = useCallCacheStore((s) => s.lastBlockers);
+  const setLastBlockers = useCallCacheStore((s) => s.setLastBlockers);
   // The dashboard body (everything under the title bar) decides Tree or Split for the rail.
   const [railBody, setRailBody] = useState<HTMLDivElement | null>(null);
   const rail = useRailMode(railBody);
@@ -362,7 +358,7 @@ export default function DashboardV2() {
           }
         : null,
     );
-  }, [blockerModal, currentIsoDate]);
+  }, [blockerModal, currentIsoDate, setLastBlockers]);
 
   // Ask the backend what blocks the advance shortly after each game state update
   // (a new day, a phase change, a lineup fixed in Squad) while the modal is
@@ -423,6 +419,7 @@ export default function DashboardV2() {
     // gameState changes when the scrim setup is saved; the delegation toggle
     // changes the settings store instead, so it is a dependency of its own.
   }, [
+    setLastBlockers,
     gameState,
     hasGame,
     blockerModalOpen,
@@ -578,29 +575,36 @@ export default function DashboardV2() {
     ? t(TAB_TRANSLATION_KEYS[profileNavigation.activeTab], { defaultValue: profileNavigation.activeTab })
     : profileNavigation.activeTab;
 
-  const dashboardAlerts = gameState
-    ? getDashboardAlerts(gameState, hasMatchToday, t, {
-        assistantResolvesScrims: settings.scrim_review_mode === "assistant",
-      })
-    : [];
-  // The scrim result notice carries the Assistant Coach note itself.
-  if (autoDelegationNotice && !scrimResultNotice) {
-    dashboardAlerts.unshift({
-      id: "scrim_auto_delegate_notice",
-      text: autoDelegationNotice,
-      tab: "Scrims",
-      severity: "info",
-    });
-  }
-
-  if (matchPlayedNotice) {
-    dashboardAlerts.unshift({
-      id: "staff_played_match_notice",
-      text: matchPlayedNotice,
-      tab: "Schedule",
-      severity: "info",
-    });
-  }
+  const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
+    if (!gameState) return [];
+    const alerts = getDashboardAlerts(gameState, hasMatchToday, t, { assistantResolvesScrims });
+    // The scrim result notice carries the Assistant Coach note itself.
+    if (autoDelegationNotice && !scrimResultNotice) {
+      alerts.unshift({
+        id: "scrim_auto_delegate_notice",
+        text: autoDelegationNotice,
+        tab: "Scrims",
+        severity: "info",
+      });
+    }
+    if (matchPlayedNotice) {
+      alerts.unshift({
+        id: "staff_played_match_notice",
+        text: matchPlayedNotice,
+        tab: "Schedule",
+        severity: "info",
+      });
+    }
+    return alerts;
+  }, [
+    gameState,
+    hasMatchToday,
+    t,
+    assistantResolvesScrims,
+    autoDelegationNotice,
+    scrimResultNotice,
+    matchPlayedNotice,
+  ]);
 
   const startingFive = useMemo<PlayerData[]>(() => {
     if (!gameState || !myTeam) return [];
@@ -612,17 +616,25 @@ export default function DashboardV2() {
     });
   }, [gameState, myTeam]);
 
-  const callResult = gameState
-    ? buildCallItems({
-        alerts: dashboardAlerts,
-        blockers: lastBlockers?.blockers ?? [],
-        canContinueAnyway: lastBlockers?.canContinueAnyway ?? false,
-        startingFive,
-        currentDate: gameState.clock.current_date,
-        t,
-      })
-    : null;
-  const callCount = callResult?.decisions ?? 0;
+  // The one "Needs your call" source (R18): the chip, the rail markers and Home read it.
+  const currentGameDate = gameState?.clock.current_date ?? null;
+  const callState = useMemo(
+    () =>
+      currentGameDate === null
+        ? EMPTY_CALL_STATE
+        : deriveCallState(
+            buildCallItems({
+              alerts: dashboardAlerts,
+              blockers: lastBlockers?.blockers ?? [],
+              canContinueAnyway: lastBlockers?.canContinueAnyway ?? false,
+              startingFive,
+              currentDate: currentGameDate,
+              t,
+            }),
+          ),
+    [currentGameDate, dashboardAlerts, lastBlockers, startingFive, t],
+  );
+  const attention = useMemo(() => buildAttentionMap(callState.items), [callState.items]);
 
   const dashboardTabContentModel = gameState
     ? createDashboardTabContentModel({
@@ -688,7 +700,7 @@ export default function DashboardV2() {
         compact={showSeasonSummary}
         railMode={rail.mode}
         railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need, rootPx: rail.rootPx }}
-        attention={buildAttentionMap(callResult?.items ?? [])}
+        attention={attention}
         platform={rail.platform}
       />
 
@@ -737,7 +749,7 @@ export default function DashboardV2() {
           teamLogo={teamLogo}
           activeTab={profileNavigation.activeTab}
           isUnemployed={isUnemployed ?? false}
-          callCount={callCount}
+          callCount={callState.count}
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
         />
@@ -768,9 +780,7 @@ export default function DashboardV2() {
               gameState={gameState}
               onNavigate={handleNavigate}
               onSelectPlayer={selectPlayer}
-              alerts={dashboardAlerts}
-              blockers={lastBlockers?.blockers}
-              canContinueAnyway={Boolean(lastBlockers?.canContinueAnyway)}
+              calls={callState}
               unreadCount={unreadMessagesCount}
             />
           </div>

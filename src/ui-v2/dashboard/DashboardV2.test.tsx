@@ -6,8 +6,10 @@ import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { useNavMemoryStore } from "@/store/navMemoryStore";
-import type { GameStateData } from "@/store/gameStore";
+import { useCallCacheStore } from "@/store/callCacheStore";
+import type { GameStateData, PlayerData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
+import type { CallState } from "@/lib/dashboard/needsYourCall";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
@@ -19,6 +21,9 @@ interface BlockerModalMock {
 const shell = vi.hoisted(() => ({
   header: null as Record<string, unknown> | null,
   sidebar: null as Record<string, unknown> | null,
+  home: null as Record<string, unknown> | null,
+  /** What the backend probe answers; null answers the minimal game. */
+  activeGame: null as GameStateData | null,
   blockerModal: null as BlockerModalMock | null,
   scrimResultNotice: null as string[] | null,
   dismissScrimResultNotice: vi.fn(),
@@ -32,7 +37,7 @@ vi.mock("@/services/advanceTimeService", () => ({
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((command: string) => {
     if (command === "get_active_game") {
-      return Promise.resolve(minimalGameState());
+      return Promise.resolve(shell.activeGame ?? minimalGameState());
     }
     if (command === "get_champions") {
       return Promise.resolve([]);
@@ -41,9 +46,23 @@ vi.mock("@tauri-apps/api/core", () => ({
   }),
 }));
 
+// One t for every render, as react-i18next gives, so memoised values stay put.
+const stableT = vi.hoisted(() => (key: string) => key);
 vi.mock("react-i18next", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-i18next")>();
-  return { ...actual, useTranslation: () => ({ t: (key: string) => key }) };
+  return { ...actual, useTranslation: () => ({ t: stableT }) };
+});
+
+const calls = vi.hoisted(() => ({ build: 0 }));
+vi.mock("@/lib/dashboard/needsYourCall", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/dashboard/needsYourCall")>();
+  return {
+    ...actual,
+    buildCallItems: (input: Parameters<typeof actual.buildCallItems>[0]) => {
+      calls.build += 1;
+      return actual.buildCallItems(input);
+    },
+  };
 });
 
 vi.mock("@/hooks/useAdvanceTime", () => ({
@@ -132,11 +151,14 @@ vi.mock("@/ui-v2/dashboard/DashboardSidebarV2", () => ({
 }));
 
 vi.mock("@/ui-v2/dashboard/tabs/HomeTabV2", () => ({
-  HomeTabV2: () => (
-    <div data-testid="home-tab-v2">
-      <section id="needs-your-call" tabIndex={-1} aria-label="calls" />
-    </div>
-  ),
+  HomeTabV2: (props: Record<string, unknown>) => {
+    shell.home = props;
+    return (
+      <div data-testid="home-tab-v2">
+        <section id="needs-your-call" tabIndex={-1} aria-label="calls" />
+      </div>
+    );
+  },
 }));
 vi.mock("@/ui-v2/dashboard/tabs/InboxTabV2", () => ({ InboxTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/ScheduleTabV2", () => ({ ScheduleTabV2: () => null }));
@@ -214,8 +236,12 @@ function minimalGameState(): GameStateData {
 
 // ─── Tests ───────────────────────────────────────────────────────────────
 
-// The remembered tab outlives a render on purpose, so each test starts a fresh game.
-beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
+// The remembered tab and the blocker cache outlive a render on purpose, so each test starts a fresh game.
+beforeEach(() => {
+  useNavMemoryStore.getState().resetNavMemory();
+  useCallCacheStore.getState().reset();
+  shell.activeGame = null;
+});
 
 describe("DashboardV2 tab sync", () => {
   beforeEach(() => {
@@ -729,6 +755,85 @@ describe("DashboardV2 shell wiring", () => {
 
     await waitFor(() => expect(shell.header?.activeTab).toBe("Home"));
     await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
+  });
+});
+
+describe("DashboardV2 Needs your call source (R18)", () => {
+  const ROLES = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const;
+
+  /** Five starters whose contracts all end within 180 days: five decisions, two hidden by the cap of 3. */
+  function expiringStartersState(): GameStateData {
+    const base = minimalGameState();
+    const players = ROLES.map(
+      (role, i) =>
+        ({
+          id: `p-${role}`,
+          match_name: role,
+          full_name: `Player ${role}`,
+          team_id: "team-1",
+          position: role,
+          natural_position: role,
+          lol_ovr: 70,
+          condition: 100,
+          contract_end: `2025-0${7 + (i % 3)}-1${i}`,
+        }) as unknown as PlayerData,
+    );
+    return {
+      ...base,
+      teams: [{ id: "team-1", name: "Test Team", active_lineup_ids: players.map((p) => p.id) }],
+      players,
+    } as unknown as GameStateData;
+  }
+
+  beforeEach(() => {
+    shell.home = null;
+    shell.header = null;
+    shell.blockerModal = null;
+    shell.checkBlockingActions.mockReset();
+    shell.checkBlockingActions.mockResolvedValue([]);
+    shell.activeGame = expiringStartersState();
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: shell.activeGame,
+      pendingSeasonSummary: null,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  async function renderDashboard() {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+    return { view: render(tree()), tree };
+  }
+
+  it("gives the header chip the count of the call state Home renders, hidden contracts included", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+
+    const homeCalls = shell.home?.calls as CallState;
+    expect(homeCalls.count).toBe(5);
+    expect(homeCalls.hiddenContracts).toBe(2);
+    expect(homeCalls.items.filter((item) => item.kind === "contract")).toHaveLength(3);
+    expect(shell.header?.callCount).toBe(homeCalls.count);
+  });
+
+  it("does not build the call items again on a render that changes none of their inputs", async () => {
+    const { view, tree } = await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
+    const before = calls.build;
+
+    view.rerender(tree());
+    view.rerender(tree());
+
+    expect(calls.build).toBe(before);
   });
 });
 
