@@ -230,7 +230,8 @@
     "attribution": "Dados dos elencos: colaboradores de {{name}},",
     "checking": "Procurando atualizações dos elencos…",
     "checkFailed": "Não foi possível verificar atualizações dos elencos",
-    "updated": "Elencos atualizados para {{date}}"
+    "updated": "Elencos atualizados para {{date}}",
+    "upToDate": "Os elencos estão atualizados ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Iniciar Carreira",

@@ -1,4 +1,4 @@
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -36,13 +36,30 @@ function openExternal(url: string): void {
 }
 
 /**
+ * What to announce when a check ends with `status`, or "" for nothing. The
+ * announced sentences carry the date so they stand on their own.
+ */
+function outcomeSentence(
+  status: RosterUpdateStatus,
+  date: string | null,
+  t: (key: string, options?: Record<string, string>) => string,
+): string {
+  if (status === "failed") return t("rosterOverlay.checkFailed");
+  if (date === null) return "";
+  if (status === "updated") return t("rosterOverlay.updated", { date });
+  if (status === "upToDate") return t("rosterOverlay.upToDate", { date });
+  return "";
+}
+
+/**
  * Presentational: the roster date a new game will use, the state of the
  * automatic update check, and the licence. Checks run on their own; the only
  * action is Retry, shown after a failed check.
  *
- * The status line is one polite live region rendered from the first paint and
- * only its text changes, so arriving at the screen announces nothing and every
- * later change of the check is announced.
+ * The visible line is not announced. A visually hidden status region, present
+ * from the first paint, speaks only the outcome of a check that was running
+ * while the screen was open: arriving at the screen, a check starting and a
+ * date that loads late all stay silent.
  */
 export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOverlayPanelProps) {
   const { t, i18n } = useTranslation();
@@ -56,6 +73,20 @@ export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOve
       : status === "updated"
         ? t("rosterOverlay.updated", { date })
         : t("rosterOverlay.asOf", { date });
+
+  // The sentence is taken when the status changes and kept until the next
+  // change, so a later date or language change never announces again. It is
+  // cleared while a check runs, so the same outcome twice is spoken twice.
+  const outcome = outcomeSentence(status, date, t);
+  const [announcement, setAnnouncement] = useState("");
+  const announcedStatus = useRef(status);
+  useEffect(() => {
+    const previous = announcedStatus.current;
+    if (previous === status) return;
+    announcedStatus.current = status;
+    if (status === "checking") setAnnouncement("");
+    else if (previous === "checking") setAnnouncement(outcome);
+  }, [status, outcome]);
   const licenseHref = info ? trustedLicenseUrl(info.source.license, info.source.license_url) : null;
 
   const retry = () => {
@@ -74,8 +105,6 @@ export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOve
           <p
             ref={statusLineRef}
             tabIndex={-1}
-            aria-live="polite"
-            aria-atomic="true"
             data-testid="roster-status"
             className="rounded-sm font-heading text-xs font-bold uppercase tracking-wide text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
@@ -107,6 +136,9 @@ export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOve
             </Button>
           )}
         </div>
+        <p role="status" className="sr-only">
+          {announcement}
+        </p>
         {info && (
           <p className="mt-0.5 text-caption text-muted-foreground/80">
             {t("rosterOverlay.attribution", { name: info.source.name })}{" "}

@@ -16,4 +16,12 @@ describe("roster status line texts", () => {
   it.each(Object.entries(LOCALES))("tells 'rosters as of' from 'rosters updated to' in %s", (_locale, tree) => {
     expect(tree.rosterOverlay.updated).not.toBe(tree.rosterOverlay.asOf);
   });
+
+  // Announced after a check: it must not sound like the idle line or an update.
+  it.each(Object.entries(LOCALES))("has an 'up to date' sentence of its own, with the date, in %s", (_locale, tree) => {
+    const upToDate = (tree.rosterOverlay as Record<string, string>).upToDate;
+    expect(upToDate).toContain("{{date}}");
+    expect(upToDate).not.toBe(tree.rosterOverlay.asOf);
+    expect(upToDate).not.toBe(tree.rosterOverlay.updated);
+  });
 });

@@ -230,7 +230,8 @@
     "attribution": "Datos de plantillas: colaboradores de {{name}},",
     "checking": "Buscando actualizaciones de plantillas…",
     "checkFailed": "No se pudo comprobar si hay actualizaciones de plantillas",
-    "updated": "Plantillas actualizadas a {{date}}"
+    "updated": "Plantillas actualizadas a {{date}}",
+    "upToDate": "Las plantillas están al día ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Iniciar Carrera",

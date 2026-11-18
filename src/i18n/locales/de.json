@@ -230,7 +230,8 @@
     "attribution": "Kaderdaten: {{name}}-Mitwirkende,",
     "checking": "Suche nach Kader-Updates…",
     "checkFailed": "Kader-Updates konnten nicht geprüft werden",
-    "updated": "Kader aktualisiert auf {{date}}"
+    "updated": "Kader aktualisiert auf {{date}}",
+    "upToDate": "Kader sind aktuell ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Karriere Starten",

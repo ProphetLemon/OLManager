@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { WorldOverlayInfo } from "@/services/worldOverlayService";
@@ -43,6 +44,25 @@ function renderPanel(
 }
 
 const statusLine = () => screen.getByTestId("roster-status");
+const announcer = () => screen.getByRole("status");
+
+/** Render, then move through `steps` (status, and info when it changes). */
+function renderSteps(
+  first: RosterUpdateStatus,
+  steps: Array<[RosterUpdateStatus, (WorldOverlayInfo | null)?]>,
+  firstInfo: WorldOverlayInfo | null = makeInfo(),
+) {
+  const panel = (status: RosterUpdateStatus, info: WorldOverlayInfo | null) => (
+    <RosterOverlayPanel info={info} status={status} onRetry={() => {}} />
+  );
+  const view = render(panel(first, firstInfo));
+  let info = firstInfo;
+  for (const [status, nextInfo] of steps) {
+    if (nextInfo !== undefined) info = nextInfo;
+    view.rerender(panel(status, info));
+  }
+  return view;
+}
 
 describe("RosterOverlayPanel", () => {
   it.each(STATUSES)("has no Update rosters button when the check is %s", (status) => {
@@ -118,18 +138,98 @@ describe("RosterOverlayPanel", () => {
     expect(statusLine()).not.toContainElement(screen.getByRole("button", { name: "Retry" }));
   });
 
-  it("is one polite live region from the first render, kept across changes, so only changes are announced", () => {
-    const { rerender } = render(<RosterOverlayPanel info={null} status="idle" onRetry={() => {}} />);
-    const region = statusLine();
-    expect(region).toHaveAttribute("aria-live", "polite");
-    expect(region).toHaveAttribute("aria-atomic", "true");
-    expect(region).toBeEmptyDOMElement();
+  describe("announcements", () => {
+    it("keeps the visible line out of the live region", () => {
+      renderPanel("checking");
 
-    rerender(<RosterOverlayPanel info={makeInfo()} status="checking" onRetry={() => {}} />);
-    rerender(<RosterOverlayPanel info={makeInfo()} status="failed" onRetry={() => {}} />);
+      expect(statusLine()).not.toHaveAttribute("aria-live");
+      expect(statusLine()).not.toHaveAttribute("role");
+    });
 
-    expect(statusLine()).toBe(region);
-    expect(region).toHaveTextContent("Couldn't check for roster updates");
+    it("has a visually hidden status region from the first render", () => {
+      renderPanel("idle", null);
+
+      expect(announcer()).toHaveClass("sr-only");
+      expect(announcer()).toBeEmptyDOMElement();
+    });
+
+    it.each(["idle", "upToDate", "updated", "failed"] as const)(
+      "announces nothing on arrival when the check is %s",
+      (status) => {
+        renderPanel(status);
+
+        expect(announcer()).toBeEmptyDOMElement();
+      },
+    );
+
+    it("does not announce that a check started", () => {
+      renderSteps("upToDate", [["checking"]]);
+
+      expect(announcer()).toBeEmptyDOMElement();
+    });
+
+    it("announces that the rosters are up to date, with their date", () => {
+      renderSteps("checking", [["upToDate"]]);
+
+      expect(announcer()).toHaveTextContent(/^Rosters are up to date \(June 22, 2026\)$/);
+    });
+
+    it("announces an update with the new date", () => {
+      renderSteps("checking", [
+        ["updated", makeInfo({ as_of: "2026-11-01", origin: "downloaded", updated: true })],
+      ]);
+
+      expect(announcer()).toHaveTextContent(/^Rosters updated to November 1, 2026$/);
+    });
+
+    it("announces a failed check", () => {
+      renderSteps("failed", [["checking"], ["failed"]]);
+
+      expect(announcer()).toHaveTextContent(/^Couldn't check for roster updates$/);
+    });
+
+    it("clears the last outcome while the next check runs, so a repeated failure is announced again", () => {
+      renderSteps("checking", [["failed"], ["checking"]]);
+
+      expect(announcer()).toBeEmptyDOMElement();
+    });
+
+    it("keeps one region across changes", () => {
+      const { rerender } = render(<RosterOverlayPanel info={makeInfo()} status="checking" onRetry={() => {}} />);
+      const region = announcer();
+
+      rerender(<RosterOverlayPanel info={makeInfo()} status="failed" onRetry={() => {}} />);
+
+      expect(announcer()).toBe(region);
+    });
+
+    it("does not announce a date that arrives late", () => {
+      renderSteps("idle", [["idle", makeInfo()]], null);
+
+      expect(announcer()).toBeEmptyDOMElement();
+    });
+
+    it("does not re-announce when the date changes after the outcome", () => {
+      renderSteps("checking", [["upToDate"], ["upToDate", makeInfo({ as_of: "2026-12-01" })]]);
+
+      expect(announcer()).toHaveTextContent(/^Rosters are up to date \(June 22, 2026\)$/);
+    });
+
+    it("still announces the outcome under StrictMode", () => {
+      const { rerender } = render(
+        <StrictMode>
+          <RosterOverlayPanel info={makeInfo()} status="checking" onRetry={() => {}} />
+        </StrictMode>,
+      );
+
+      rerender(
+        <StrictMode>
+          <RosterOverlayPanel info={makeInfo()} status="upToDate" onRetry={() => {}} />
+        </StrictMode>,
+      );
+
+      expect(announcer()).toHaveTextContent(/^Rosters are up to date \(June 22, 2026\)$/);
+    });
   });
 
   it("says it is checking even before the date is known", () => {

@@ -230,7 +230,8 @@
     "attribution": "Kadro verileri: {{name}} katkıda bulunanlar,",
     "checking": "Kadro güncellemeleri denetleniyor…",
     "checkFailed": "Kadro güncellemeleri denetlenemedi",
-    "updated": "Kadrolar {{date}} tarihine güncellendi"
+    "updated": "Kadrolar {{date}} tarihine güncellendi",
+    "upToDate": "Kadrolar güncel ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Kariyere Başla",

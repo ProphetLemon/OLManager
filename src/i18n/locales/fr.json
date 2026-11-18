@@ -230,7 +230,8 @@
     "attribution": "Données des effectifs : contributeurs de {{name}},",
     "checking": "Recherche de mises à jour des effectifs…",
     "checkFailed": "Impossible de vérifier les mises à jour des effectifs",
-    "updated": "Effectifs mis à jour au {{date}}"
+    "updated": "Effectifs mis à jour au {{date}}",
+    "upToDate": "Les effectifs sont à jour ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Démarrer la Carrière",

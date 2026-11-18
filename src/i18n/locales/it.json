@@ -67,7 +67,8 @@
     "attribution": "Dati delle rose: collaboratori di {{name}},",
     "checking": "Controllo degli aggiornamenti delle rose…",
     "checkFailed": "Impossibile controllare gli aggiornamenti delle rose",
-    "updated": "Rose aggiornate al {{date}}"
+    "updated": "Rose aggiornate al {{date}}",
+    "upToDate": "Le rose sono aggiornate ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Inizia carriera",

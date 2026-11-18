@@ -230,7 +230,8 @@
     "attribution": "Roster data: {{name}} contributors,",
     "checking": "Checking for roster updates…",
     "checkFailed": "Couldn't check for roster updates",
-    "updated": "Rosters updated to {{date}}"
+    "updated": "Rosters updated to {{date}}",
+    "upToDate": "Rosters are up to date ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Start Career",

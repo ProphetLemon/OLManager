@@ -230,7 +230,8 @@
     "attribution": "Dados dos plantéis: colaboradores de {{name}},",
     "checking": "A procurar atualizações dos plantéis…",
     "checkFailed": "Não foi possível verificar atualizações dos plantéis",
-    "updated": "Plantéis atualizados para {{date}}"
+    "updated": "Plantéis atualizados para {{date}}",
+    "upToDate": "Os plantéis estão atualizados ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Iniciar Carreira",
