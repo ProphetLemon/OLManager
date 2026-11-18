@@ -77,6 +77,16 @@ export function routeAnnouncement(loc: DashboardLocation, deps: DescribeLocation
     : deps.t("onAir.route.nowNoGroup", { title: here.title, defaultValue: "Now on {{title}}" });
 }
 
+/**
+ * Name and state of an in-page Back button (R41). It takes the header's label, so
+ * both controls name the same place; a page shown on its own, with no `backTo`,
+ * keeps plain "Back".
+ */
+export function inPageBack(t: TFunction, backTo: string | null | undefined): { label: string; disabled: boolean } {
+  if (backTo === undefined) return { label: t("common.back", { defaultValue: "Back" }), disabled: false };
+  return { label: backControlLabel(t, backTo), disabled: backTo === null };
+}
+
 /** The name of a Back control: "Back to {destination}", or that there is nothing to go back to. */
 export function backControlLabel(t: TFunction, destination: string | null): string {
   return destination === null

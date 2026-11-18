@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Swords, Shield, Crosshair, Zap, TrendingUp, Crown, BarChart3, Activity, ArrowLeft } from "lucide-react";
 import { resolveChampionTile, resolveChampionSplash } from "@/lib/champions/championImages";
 import { championDisplayName } from "@/lib/champions/championNames";
+import { inPageBack } from "@/lib/dashboard/describeLocation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
 import ChampionMatchupsCard from "./championPage/ChampionMatchupsCard";
@@ -11,7 +12,12 @@ import { cn } from "@/ui-v2/lib/utils";
 import { formatNumber } from "@/lib/formatting/valueFormatting";
 import { formatDecimal } from "@/lib/formatting/decimalFormatting";
 
-interface Props { championKey: string; onClose: () => void; }
+interface Props {
+  championKey: string;
+  /** Where Back lands, as the header names it (R41); omitted when the page is shown on its own. */
+  backTo?: string | null;
+  onClose: () => void;
+}
 
 interface Stats {
   champion_key: string; champion_name: string;
@@ -34,8 +40,9 @@ const ROLE_META: Record<string, { icon: typeof Shield; color: string; labelKey: 
   SUPPORT: { icon: Shield, color: "text-purple-400", labelKey: "onAir.roles.SUPPORT" },
 };
 
-export default function ChampionPageV2({ championKey, onClose }: Props) {
+export default function ChampionPageV2({ championKey, backTo, onClose }: Props) {
   const { t, i18n } = useTranslation();
+  const back = inPageBack(t, backTo);
   const [stats, setStats] = useState<Stats | null>(null);
   const [failed, setFailed] = useState(false);
   // A champion nobody has played has nothing to average: the page keeps its dashes for it.
@@ -77,12 +84,15 @@ export default function ChampionPageV2({ championKey, onClose }: Props) {
         <div className="absolute inset-0 bg-gradient-to-r from-background/60 via-transparent to-transparent" />
 
         {/* Back button */}
+        {/* Icon only, so the name comes from aria-label: before R41 it had none. */}
         <button
           type="button"
-          onClick={onClose}
-          className="absolute left-4 top-4 z-20 flex size-9 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition-all hover:bg-black/70 hover:text-white"
+          onClick={back.disabled ? undefined : onClose}
+          aria-label={back.label}
+          aria-disabled={back.disabled || undefined}
+          className="absolute left-4 top-4 z-20 flex size-9 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition-all hover:bg-black/70 hover:text-white aria-disabled:cursor-default aria-disabled:opacity-50"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft aria-hidden="true" className="size-4" />
         </button>
 
         {/* Watermark name */}

@@ -1055,6 +1055,7 @@ export default function DashboardV2() {
             <TeamProfileV2
               gameState={gameState}
               teamId={profileNavigation.selectedTeamId}
+              backTo={backTo}
               onClose={handleInPageBack}
               onSelectPlayer={selectPlayer}
             />
@@ -1064,6 +1065,7 @@ export default function DashboardV2() {
             <StaffProfileV2
               gameState={gameState}
               staffId={profileNavigation.selectedStaffId}
+              backTo={backTo}
               onClose={handleInPageBack}
               onGameUpdate={setGameState}
               onSelectTeam={selectTeam}
@@ -1073,6 +1075,7 @@ export default function DashboardV2() {
           <div className="flex-1 overflow-hidden">
             <ChampionPageV2
               championKey={viewingChampionKey}
+              backTo={backTo}
               onClose={handleChampionBack}
             />
           </div>

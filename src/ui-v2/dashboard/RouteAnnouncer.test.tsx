@@ -69,9 +69,9 @@ vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
   ),
 }));
 vi.mock("@/ui-v2/pages/TeamProfileV2", () => ({
-  default: ({ onClose }: { onClose: () => void }) => (
+  default: ({ onClose, backTo }: { onClose: () => void; backTo?: string | null }) => (
     <div data-testid="team-profile">
-      <button onClick={onClose}>in-page-back</button>
+      <button onClick={onClose}>{`in-page-back to ${String(backTo)}`}</button>
     </div>
   ),
 }));
@@ -198,7 +198,9 @@ describe("the route announcer in the dashboard (R46)", () => {
     fireEvent.click(screen.getByRole("button", { name: "rail-squad" }));
     fireEvent.click(await screen.findByRole("button", { name: "open-p1" }, { timeout: 3000 }));
     fireEvent.click(await screen.findByRole("button", { name: "open-team-1" }, { timeout: 3000 }));
-    const inPage = await screen.findByRole("button", { name: "in-page-back" }, { timeout: 3000 });
+    // The in-page Back names the same place as the header's (R41).
+    expect(screen.getByRole("button", { name: "Back to Faker" })).toBeInTheDocument();
+    const inPage = await screen.findByRole("button", { name: "in-page-back to Faker" }, { timeout: 3000 });
     act(() => inPage.focus());
     fireEvent.click(inPage);
 

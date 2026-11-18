@@ -15,9 +15,10 @@ vi.mock("react-i18next", () => ({
     init: () => {},
   },
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, options?: Record<string, unknown>) => {
       const map: Record<string, string> = {
         "common.back": "Back",
+        "onAir.bar.backTo": "Back to {{destination}}",
         "teams.avgOvr": "Avg OVR",
         "teams.rep": "Rep",
         "teams.squad": "Squad",
@@ -76,7 +77,7 @@ vi.mock("react-i18next", () => ({
         "common.ovr": "OVR",
       };
 
-      return map[key] ?? key;
+      return (map[key] ?? key).replace(/{{(\w+)}}/g, (_m, name: string) => String(options?.[name] ?? ""));
     },
     i18n: { language: "en" },
   }),
@@ -452,6 +453,18 @@ describe("TeamProfileV2", () => {
     render(<TeamProfileV2 teamId="team-2" gameState={gameState} onClose={vi.fn()} />);
 
     expect(screen.queryByText("teams.yourAcademy")).toBeNull();
+  });
+
+  it("names its Back button after where Back lands, keeping the visible word and hiding the icon (R41)", () => {
+    const team = createTeam();
+    const onClose = vi.fn();
+    render(<TeamProfileV2 teamId={team.id} gameState={createGameState(team)} backTo="Squad" onClose={onClose} />);
+
+    const back = screen.getByRole("button", { name: "Back to Squad" });
+    expect(back).toHaveTextContent(/^Back$/);
+    expect(back.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    fireEvent.click(back);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("goes back and opens a player from the roster", () => {
