@@ -66,6 +66,7 @@ import { buildAttentionMap } from "@/ui-v2/shell/attention";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 import { AttentionLaneV2 } from "./AttentionLaneV2";
 import { laneModel } from "@/lib/dashboard/attentionLane";
+import { opensOwnFocus } from "@/lib/dashboard/callAction";
 
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
@@ -543,7 +544,13 @@ export default function DashboardV2() {
 
   // A lane pill goes where its call is fixed, says so, and puts focus on main (R37). When
   // that place is already the current one, nothing moves, but focus still goes to main.
+  // A renewal opens its own dialog, which takes focus and is spoken, so the pill
+  // does neither, even when that profile is already open (R57).
   const handleLaneCall = (intent: NavIntent) => {
+    if (opensOwnFocus(intent)) {
+      runIntent(intent);
+      return;
+    }
     if (!runIntent(intent, { announce: true, focusMain: true })) focusMainContent();
   };
 

@@ -10,6 +10,7 @@ import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
 import type { GameStateData, PlayerData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
 import type { CallState } from "@/lib/dashboard/needsYourCall";
+import { ROUTE_ANNOUNCE_DEBOUNCE_MS } from "./RouteAnnouncer";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
@@ -991,9 +992,10 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
 
   const lane = () => document.querySelector<HTMLElement>('[data-slot="attention-lane"]');
 
-  /** Opens the dashboard on a tab, with a 1280 x `bodyHeight` body and one decision. */
+  /** Opens the dashboard on a tab (keeping what is open over it), with a 1280 x `bodyHeight` body and one decision. */
   async function renderOn(tab: string, bodyHeight = 764) {
-    if (tab !== "Home") useDashboardLocationStore.getState().go({ kind: "tab", tab });
+    const location = useDashboardLocationStore.getState();
+    if (location.nav.activeTab !== tab) location.go({ kind: "tab", tab });
     const DashboardV2 = (await import("./DashboardV2")).default;
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>
@@ -1052,5 +1054,56 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     await renderOn("Youth");
     fireEvent.click(await screen.findByRole("button", { name: /Academy incomplete/ }));
     expect(document.activeElement).toBe(document.getElementById("main-content"));
+  });
+
+  /** One starter whose contract ends in three weeks: the only decision, a renewal. */
+  function withExpiringStarter() {
+    const starter = {
+      id: "p-mid",
+      match_name: "Faker",
+      full_name: "Lee Sang-hyeok",
+      team_id: "team-1",
+      position: "MID",
+      natural_position: "MID",
+      lol_ovr: 80,
+      condition: 100,
+      contract_end: "2025-07-10",
+    } as unknown as PlayerData;
+    const game = {
+      ...minimalGameState(),
+      teams: [{ id: "team-1", name: "Test Team", active_lineup_ids: [starter.id] }],
+      players: [starter],
+    } as unknown as GameStateData;
+    shell.activeGame = game;
+    useGameStore.setState({ gameState: game });
+    shell.checkBlockingActions.mockResolvedValue([]);
+  }
+
+  it("leaves focus and the announcement to the renewal a contract pill opens (R57)", async () => {
+    withExpiringStarter();
+    await renderOn("Training");
+
+    const pill = await screen.findByRole("button", { name: /Faker/ });
+    act(() => pill.focus());
+    fireEvent.click(pill);
+
+    expect((await screen.findByTestId("player-profile")).getAttribute("data-renewal")).toBe("true");
+    expect(document.activeElement).not.toBe(document.getElementById("main-content"));
+    // Past the announcer's quiet spell: nothing was queued for the move.
+    await act(() => new Promise((resolve) => setTimeout(resolve, ROUTE_ANNOUNCE_DEBOUNCE_MS + 50)));
+    expect(document.querySelector('[data-slot="route-announcer"]')?.textContent).toBe("");
+  });
+
+  it("does not pull focus to main when the renewal's profile is already open (R57)", async () => {
+    withExpiringStarter();
+    useDashboardLocationStore.getState().go({ kind: "tab", tab: "Training" });
+    useDashboardLocationStore.getState().go({ kind: "player", id: "p-mid", openRenewal: true });
+    await renderOn("Training");
+
+    const pill = await screen.findByRole("button", { name: /Faker/ });
+    act(() => pill.focus());
+    fireEvent.click(pill);
+
+    expect(document.activeElement).toBe(pill);
   });
 });

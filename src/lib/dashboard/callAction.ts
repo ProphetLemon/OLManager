@@ -17,3 +17,12 @@ export function callAction(item: CallItem): NavIntent {
     context: item.target.context as DashboardNavigateContext | undefined,
   };
 }
+
+/**
+ * Whether a move opens UI that takes focus and speaks for itself: the renewal
+ * dialog. Its caller then skips the focus on main and the route announcement
+ * (R37 for the palette, R57 for the lane), which would pull focus off the dialog.
+ */
+export function opensOwnFocus(intent: NavIntent): boolean {
+  return intent.kind === "player" && intent.openRenewal === true;
+}
