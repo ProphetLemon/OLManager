@@ -418,4 +418,12 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     expect(bars[0]).toHaveClass("bg-club-text");
     expect(bars[0]).not.toHaveClass("bg-club");
   });
+
+  it("keeps a transparent outline on the input, which forced colours paint as its focus indicator (R77)", async () => {
+    await openPalette();
+    // Tailwind 4: outline-none is outline-style none; outline-hidden keeps a transparent
+    // outline that forced-colours mode shows, where the box-shadow ring is dropped.
+    expect(input()).toHaveClass("outline-hidden", "focus-visible:ring-2");
+    expect(input()).not.toHaveClass("outline-none");
+  });
 });

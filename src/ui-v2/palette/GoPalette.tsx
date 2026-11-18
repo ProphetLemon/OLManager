@@ -297,7 +297,8 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
               value={query}
               onChange={(e) => changeQuery(e.target.value)}
               onKeyDown={handleInputKeyDown}
-              className="min-h-[var(--hit)] min-w-0 flex-1 rounded-sm bg-transparent text-entry text-foreground outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              // R77: outline-hidden, not outline-none, so forced colours still show a focus outline.
+              className="min-h-[var(--hit)] min-w-0 flex-1 rounded-sm bg-transparent text-entry text-foreground outline-hidden placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
             />
             <Dialog.Close
               render={<Button type="button" variant="ghost" size="icon-touch" aria-label={t("onAir.palette.close", { defaultValue: "Close" })} />}
