@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { StrictMode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -105,12 +105,99 @@ describe("RosterOverlayPanel", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it("moves focus to the status line when Retry is pressed, since Retry then goes away", () => {
+  describe("Retry during and after the retry", () => {
+    const retryButton = () => screen.getByRole("button", { name: "Retry" });
+    const panel = (status: RosterUpdateStatus, onRetry: () => void = () => {}) => (
+      <RosterOverlayPanel info={makeInfo()} status={status} onRetry={onRetry} />
+    );
+
+    it("leaves focus on Retry when it is pressed", () => {
+      renderPanel("failed");
+      act(() => retryButton().focus());
+
+      fireEvent.click(retryButton());
+
+      expect(retryButton()).toHaveFocus();
+    });
+
+    it("stays in place while the retry runs, marked unavailable but still focusable", () => {
+      const { rerender } = render(panel("failed"));
+      const retry = retryButton();
+
+      rerender(panel("checking"));
+
+      expect(retryButton()).toBe(retry);
+      expect(retry).toHaveAttribute("aria-disabled", "true");
+      expect(retry).not.toBeDisabled();
+    });
+
+    it("keeps focus on Retry while the retry runs", () => {
+      const { rerender } = render(panel("failed"));
+      act(() => retryButton().focus());
+
+      rerender(panel("checking"));
+
+      expect(retryButton()).toHaveFocus();
+    });
+
+    it("ignores presses while the retry runs", () => {
+      const onRetry = vi.fn();
+      const { rerender } = render(panel("failed", onRetry));
+      rerender(panel("checking", onRetry));
+
+      fireEvent.click(retryButton());
+
+      expect(onRetry).not.toHaveBeenCalled();
+    });
+
+    it("is described by the check in progress while the retry runs", () => {
+      const { rerender } = render(panel("failed"));
+
+      rerender(panel("checking"));
+
+      expect(retryButton()).toHaveAccessibleDescription("Checking for roster updates…");
+    });
+
+    it("is offered again when the retry fails too", () => {
+      const { rerender } = render(panel("failed"));
+      rerender(panel("checking"));
+
+      rerender(panel("failed"));
+
+      expect(retryButton()).not.toHaveAttribute("aria-disabled", "true");
+      expect(retryButton()).toHaveAccessibleDescription("Couldn't check for roster updates");
+    });
+
+    it("goes away when the retry succeeds and Retry does not hold focus", () => {
+      const { rerender } = render(panel("failed"));
+      rerender(panel("checking"));
+
+      rerender(panel("upToDate"));
+
+      expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    });
+
+    it("stays while it holds focus after the retry succeeds, then goes once focus leaves", () => {
+      const { rerender } = render(panel("failed"));
+      act(() => retryButton().focus());
+      rerender(panel("checking"));
+
+      rerender(panel("upToDate"));
+
+      expect(retryButton()).toHaveFocus();
+      expect(retryButton()).toHaveAttribute("aria-disabled", "true");
+
+      act(() => retryButton().blur());
+
+      expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("does not make the status line focusable or give it a custom focus ring", () => {
     renderPanel("failed");
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-
-    expect(statusLine()).toHaveFocus();
+    expect(statusLine()).not.toHaveAttribute("tabindex");
+    expect(statusLine().className).not.toMatch(/outline-none|focus-visible:ring/);
   });
 
   it.each(["idle", "checking", "updated", "upToDate"] as const)("offers no Retry when the check is %s", (status) => {
@@ -126,10 +213,18 @@ describe("RosterOverlayPanel", () => {
     expect(classes).toContain("underline");
   });
 
-  it("gives Retry the touch target size", () => {
+  it("gives Retry the touch target size in both directions", () => {
     renderPanel("failed");
 
-    expect(screen.getByRole("button", { name: "Retry" }).className).toContain("min-h-[var(--hit)]");
+    const classes = screen.getByRole("button", { name: "Retry" }).className.split(/\s+/);
+    expect(classes).toContain("min-h-[var(--hit)]");
+    expect(classes).toContain("min-w-[var(--hit)]");
+  });
+
+  it("lets Retry's touch target overhang the line instead of growing the footer", () => {
+    renderPanel("failed");
+
+    expect(screen.getByRole("button", { name: "Retry" }).className.split(/\s+/)).toContain("-my-3");
   });
 
   it("keeps Retry outside the live region", () => {

@@ -345,7 +345,8 @@ describe("TeamSelectionV2", () => {
 
     expect(mocks.updateWorldOverlay).toHaveBeenNthCalledWith(1, { automatic: true });
     expect(mocks.updateWorldOverlay).toHaveBeenLastCalledWith();
-    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    // Retry stays in place, unavailable, while its check runs.
+    expect(screen.getByRole("button", { name: "Retry" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it.each(["upToDate", "updated"] as const)("keeps Confirm enabled when the check ended as %s", async (status) => {

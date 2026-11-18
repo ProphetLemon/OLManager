@@ -56,6 +56,10 @@ function outcomeSentence(
  * automatic update check, and the licence. Checks run on their own; the only
  * action is Retry, shown after a failed check.
  *
+ * Retry never takes focus away. It stays in place, marked unavailable, while
+ * the check it follows runs (so the footer does not jump), and after a success
+ * it only goes once focus has left it, so a keyboard user is never dropped.
+ *
  * The visible line is not announced. A visually hidden status region, present
  * from the first paint, speaks only the outcome of a check that was running
  * while the screen was open: arriving at the screen, a check starting and a
@@ -63,8 +67,7 @@ function outcomeSentence(
  */
 export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOverlayPanelProps) {
   const { t, i18n } = useTranslation();
-  const statusLineRef = useRef<HTMLParagraphElement>(null);
-  const failureId = useId();
+  const detailId = useId();
 
   const date = info ? formatDate(info.as_of, i18n.language) : null;
   const dateText =
@@ -89,11 +92,17 @@ export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOve
   }, [status, outcome]);
   const licenseHref = info ? trustedLicenseUrl(info.source.license, info.source.license_url) : null;
 
-  const retry = () => {
-    onRetry();
-    // Retry disappears while the check runs; keep focus on what it changed.
-    statusLineRef.current?.focus();
-  };
+  // Whether Retry belongs on screen: after a failure, and through the check
+  // that follows it. Adjusted during render, not in an effect, so Retry is
+  // never unmounted for a frame while it may hold focus.
+  const [retryTrack, setRetryTrack] = useState({ status, afterFailure: status === "failed" });
+  if (retryTrack.status !== status) {
+    const afterFailure = status === "failed" || (status === "checking" && retryTrack.afterFailure);
+    setRetryTrack({ status, afterFailure });
+  }
+  const [retryFocused, setRetryFocused] = useState(false);
+  const showRetry = retryTrack.afterFailure || retryFocused;
+  const hasDetail = status === "checking" || status === "failed";
 
   return (
     <div
@@ -103,34 +112,35 @@ export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOve
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2">
           <p
-            ref={statusLineRef}
-            tabIndex={-1}
             data-testid="roster-status"
-            className="rounded-sm font-heading text-xs font-bold uppercase tracking-wide text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="font-heading text-xs font-bold uppercase tracking-wide text-foreground"
           >
             {dateText}
-            {dateText !== null && (status === "checking" || status === "failed") && (
-              <span aria-hidden="true"> · </span>
-            )}
+            {dateText !== null && hasDetail && <span aria-hidden="true"> · </span>}
             {status === "checking" && (
-              <span className="font-normal text-muted-foreground">
+              <span id={detailId} className="font-normal text-muted-foreground">
                 {t("rosterOverlay.checking")}
               </span>
             )}
             {status === "failed" && (
-              <span id={failureId} className="text-foreground">
+              <span id={detailId} className="text-foreground">
                 {t("rosterOverlay.checkFailed")}
               </span>
             )}
           </p>
-          {status === "failed" && (
+          {showRetry && (
             <Button
               type="button"
               variant="link"
               size="xs"
-              className="min-h-[var(--hit)] px-1 text-caption underline underline-offset-2"
-              aria-describedby={failureId}
-              onClick={retry}
+              // -my-3 keeps the 44/48 px hit area without growing the footer row.
+              className="-my-3 min-h-[var(--hit)] min-w-[var(--hit)] px-1 text-caption underline underline-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+              disabled={status !== "failed"}
+              focusableWhenDisabled
+              aria-describedby={hasDetail ? detailId : undefined}
+              onFocus={() => setRetryFocused(true)}
+              onBlur={() => setRetryFocused(false)}
+              onClick={onRetry}
             >
               {t("common.retry")}
             </Button>
