@@ -228,6 +228,35 @@ describe("roles", () => {
   });
 });
 
+describe("the position of a person whose roster roles are only the extremes of a range", () => {
+  // The people query asks for MIN(Role) and MAX(Role) per row, so "Coach".."Support" hides every label in between. The
+  // Players page role settles which of the labels the roster may hold he plays; it never adds a label the roster rules out.
+  it("takes the profile role when it is one of the roster's playing labels", () => {
+    // Nade (cache, Players page role Support; rosters Bot, Support, Coach): the first label alphabetically is not his lane.
+    expect(describePerson(["Bot", "Support", "Coach"], "Support")).toMatchObject({ kind: "player", position: "Support" });
+    expect(describePerson(["Top", "Jungle"], "Top")).toMatchObject({ position: "Top" });
+  });
+
+  it("takes the profile role when it lies inside a MIN..MAX span the roster rows only bound", () => {
+    // SofM (cache, profile Jungle; his 14 LCP rows read MIN "Coach", MAX "Support"): Jungle sits between them.
+    expect(describePerson(["Coach", "Support"], "Jungle", [["Coach", "Support"]])).toMatchObject({ kind: "player", position: "Jungle" });
+  });
+
+  it("keeps the roster's label when the roster rules the profile role out", () => {
+    // Revelate (cache, profile Jungle; every roster row reads Support..Support): an exact row says Support.
+    expect(describePerson(["Support"], "Jungle", [])).toMatchObject({ position: "Support" });
+    // Outside the span "Bot".."Mid" the profile role Support cannot be a roster label.
+    expect(describePerson(["Bot", "Mid"], "Support", [["Bot", "Mid"]])).toMatchObject({ position: "Bot" });
+  });
+
+  it("carries the spans through personFromRow and mergePerson", () => {
+    const sofm = personFromRow({ player: "SofM", ign: "SofM", name: "Lê Quang Duy", prole: "Jungle", rmin: "Coach", rmax: "Support", n: "14" });
+    expect(sofm.position).toBe("Jungle");
+    const merged = mergePerson(personFromRow({ player: "SofM", ign: "SofM", prole: "Jungle", rmin: "Coach", rmax: "Coach", n: "2" }), sofm);
+    expect(merged.position).toBe("Jungle");
+  });
+});
+
 describe("personFromRow and summarizePeople", () => {
   const send0o = {
     player: "Send0o", ign: "Send0o", name: "Rosendo Fuentes Bóveda", country: "Spain", nat: "Spain", birth: "", res: "EMEA", prole: "Top",

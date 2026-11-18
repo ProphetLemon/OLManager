@@ -39,6 +39,8 @@ export interface Person {
   page: string;
   profile: Profile;
   roles: string[];
+  /** The [MIN, MAX] role pairs of the rows that read two different labels. */
+  spans?: Array<[string, string]>;
   kind: "player" | "staff";
   position: string | null;
   staffLabel: string | null;
@@ -98,6 +100,7 @@ export function roleLabels(value: unknown): string[];
 export function describePerson(
   roles: string[],
   profileRole?: string,
+  spans?: Array<[string, string]>,
 ): { kind: "player" | "staff"; position: string | null; staffLabel: string | null };
 export function tierFromAggregates(input: { leagueLevelMin?: string; tournamentLevelMin?: string; tournamentOfficial?: string; leagueOfficial?: string }): 1 | 2 | 3;
 export function personFromRow(row: Record<string, unknown>): Person;

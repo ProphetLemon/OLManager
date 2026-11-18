@@ -192,19 +192,39 @@ export function isStaffLabel(label) {
 /** Every label in a roster role value, which Leaguepedia may join with commas ("Top,Jungle,Mid"). */
 export const roleLabels = (value) => text(value).split(/[,;]/).map((x) => x.trim()).filter(Boolean);
 
+const POSITION_LABELS = Object.freeze({ Top: "top", Jungle: "jungle", Mid: "mid", Bot: "bot", Support: "support" });
+
+/**
+ * Whether the roster can hold `position` as a playing label: it is one of the labels the roster rows name, or it lies strictly
+ * between the MIN and MAX of a row that reads two different labels. The people query only returns those two extremes of each
+ * row's roles, so the labels between them are hidden, not ruled out. `spans` are the [MIN, MAX] pairs of such rows.
+ */
+function rosterMayHold(position, labels, spans) {
+  if (labels.some((label) => playerPosition(label) === position)) return true;
+  const name = POSITION_LABELS[position];
+  return spans.some(([low, high]) => text(low).toLowerCase() < name && name < text(high).toLowerCase());
+}
+
 /**
  * Player or staff, and the position or staff label. `roles` are the roster role values the person has in the filter;
  * `profileRole` is `Players.Role`, used when the roster values name nothing. A person who ever held a playing position
  * is a player; otherwise one who held only staff labels is staff.
+ *
+ * His position is the first playing label of the roster, unless the Players page role is a position the roster may hold
+ * (see `rosterMayHold`): then that one is his, because the roster values are only the alphabetical extremes of what he played
+ * and the first of them says nothing about his lane. The profile role never overrides a roster that rules it out.
  */
-export function describePerson(roles, profileRole) {
+export function describePerson(roles, profileRole, spans = []) {
   const labels = roles.flatMap(roleLabels);
-  const position = labels.map(playerPosition).find(Boolean) ?? null;
+  const rosterPosition = labels.map(playerPosition).find(Boolean) ?? null;
   const staffLabel = labels.find(isStaffLabel) ?? null;
-  if (position) return { kind: "player", position, staffLabel: null };
+  const profilePosition = playerPosition(profileRole);
+  if (rosterPosition) {
+    const position = profilePosition && rosterMayHold(profilePosition, labels, spans) ? profilePosition : rosterPosition;
+    return { kind: "player", position, staffLabel: null };
+  }
   if (staffLabel) return { kind: "staff", position: null, staffLabel };
-  const fromProfile = playerPosition(profileRole);
-  if (fromProfile) return { kind: "player", position: fromProfile, staffLabel: null };
+  if (profilePosition) return { kind: "player", position: profilePosition, staffLabel: null };
   if (isStaffLabel(profileRole)) return { kind: "staff", position: null, staffLabel: text(profileRole) };
   return { kind: "player", position: null, staffLabel: null };
 }
@@ -251,12 +271,14 @@ export function personFromRow(row) {
     residency: text(row.res), role: text(row.prole), team: text(row.team), currentTeams: "",
   };
   const roles = [row.rmin, row.rmax].map(text).filter(Boolean);
+  const spans = text(row.rmin) && text(row.rmax) && text(row.rmin) !== text(row.rmax) ? [[text(row.rmin), text(row.rmax)]] : [];
   const { tournaments, truncated } = parseTournaments(row.tours);
   return {
     page: text(row.player),
     profile,
     roles,
-    ...describePerson(roles, profile.role),
+    spans,
+    ...describePerson(roles, profile.role, spans),
     tier: tierFromAggregates({
       leagueLevelMin: text(row.lmin), tournamentLevelMin: text(row.tmin), tournamentOfficial: text(row.toff), leagueOfficial: text(row.loff),
     }),
@@ -273,10 +295,12 @@ export function personFromRow(row) {
 export function mergePerson(a, b) {
   const profileRole = a.profile.role || b.profile.role;
   const roles = [...new Set([...a.roles, ...b.roles])];
+  const spans = [...(a.spans ?? []), ...(b.spans ?? [])];
   return {
     ...a,
     roles,
-    ...describePerson(roles, profileRole),
+    spans,
+    ...describePerson(roles, profileRole, spans),
     tier: Math.min(a.tier, b.tier),
     bestLevel: bestLevel(a.bestLevel, b.bestLevel),
     lastStart: a.lastStart > b.lastStart ? a.lastStart : b.lastStart,
