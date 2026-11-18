@@ -179,7 +179,7 @@ export default function DashboardV2() {
   const back = useDashboardLocationStore((s) => s.back);
   const closeChampion = useDashboardLocationStore((s) => s.closeChampion);
   const clearOneShots = useDashboardLocationStore((s) => s.clearOneShots);
-  const { message: routeMessage, announce, clearRoute } = useRouteAnnouncer();
+  const { message: routeMessage, announce, clearRoute, clearStatus } = useRouteAnnouncer();
   const viewingChampionKey = profileNavigation.championKey;
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isExitingToMenu, setIsExitingToMenu] = useState(false);
@@ -722,7 +722,11 @@ export default function DashboardV2() {
     const started = isAdvancing && !wasAdvancing.current;
     const ended = !isAdvancing && wasAdvancing.current;
     wasAdvancing.current = isAdvancing;
-    if (started) advanceBaseline.current = { count: callState.count, game: gameState, seq: precheckAnswer.seq };
+    if (started) {
+      // A shown "N to resolve" described the day that is ending (R60).
+      clearStatus();
+      advanceBaseline.current = { count: callState.count, game: gameState, seq: precheckAnswer.seq };
+    }
     const baseline = advanceBaseline.current;
     if (!baseline || isAdvancing) return;
     // Nothing advanced (a blocker stopped it), or the season ended: nothing to say.
@@ -735,7 +739,7 @@ export default function DashboardV2() {
     if (callState.count > baseline.count && !homeShown) {
       announce(t("onAir.bar.toResolve", { count: callState.count, defaultValue: "{{count}} to resolve" }), "status");
     }
-  }, [isAdvancing, precheckAnswer, gameState, callState.count, homeShown, showSeasonSummary, announce, t]);
+  }, [isAdvancing, precheckAnswer, gameState, callState.count, homeShown, showSeasonSummary, announce, clearStatus, t]);
 
   const dashboardTabContentModel = gameState
     ? createDashboardTabContentModel({

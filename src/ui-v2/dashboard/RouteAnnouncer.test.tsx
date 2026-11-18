@@ -265,6 +265,61 @@ describe("useRouteAnnouncer on a silent move (R51)", () => {
   });
 });
 
+describe("useRouteAnnouncer with a status and a route in one burst (R60)", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it.each([
+    ["a status, then a route", ["2 to resolve", "status"], ["Now on Squad, Club", "route"]],
+    ["a route, then a status", ["Now on Squad, Club", "route"], ["2 to resolve", "status"]],
+  ] as const)("posts both as one message for %s", (_name, first, second) => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => {
+      result.current.announce(first[0], first[1]);
+      result.current.announce(second[0], second[1]);
+    });
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("2 to resolve. Now on Squad, Club");
+  });
+
+  it("posts the status alone when a silent move drops the route before the post", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => {
+      result.current.announce("2 to resolve", "status");
+      result.current.announce("Now on Squad, Club");
+      result.current.clearRoute();
+    });
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("2 to resolve");
+  });
+
+  it("empties a shown message that names a place on a silent move, its status included", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => {
+      result.current.announce("2 to resolve", "status");
+      result.current.announce("Now on Squad, Club");
+    });
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    act(() => result.current.clearRoute());
+    expect(result.current.message).toBe("");
+  });
+
+  it("empties a shown status on clearStatus, and leaves a shown route alone", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => result.current.announce("2 to resolve", "status"));
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    act(() => result.current.clearStatus());
+    expect(result.current.message).toBe("");
+    act(() => result.current.announce("Now on Squad, Club"));
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    act(() => result.current.clearStatus());
+    expect(result.current.message).toBe("Now on Squad, Club");
+  });
+});
+
 describe("RouteAnnouncer", () => {
   it("is one polite, atomic, visually hidden status region", () => {
     render(<RouteAnnouncer message="Now on Home" />);
@@ -518,6 +573,17 @@ describe("a new call after an advance off Home (R42)", () => {
     await waitFor(() => expect(chip()).toHaveAccessibleName("3 to resolve"));
     await settleRefresh();
     expect(announcer()).not.toHaveTextContent("3 to resolve");
+  });
+
+  it("empties the last '2 to resolve' when the next advance starts (R60)", async () => {
+    await onSquad();
+    precheck.blockers = [academy, roster];
+    advanceTo("2025-06-20");
+    await waitFor(() => expect(announcer()).toHaveTextContent("2 to resolve"), { timeout: 3000 });
+
+    act(() => advance.set(true));
+    expect(announcer()).toHaveTextContent("");
+    act(() => advance.set(false));
   });
 
   it("says nothing on a refresh with no advance before it", async () => {
