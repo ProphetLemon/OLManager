@@ -12,6 +12,16 @@ import {
 describe("tabUiStore", () => {
   beforeEach(() => useTabUiStore.getState().resetTabUi());
 
+  it("writes several fields of one tab in a single update (R67)", () => {
+    const seen: { view: string; selectedCid: string | null }[] = [];
+    const unsubscribe = useTabUiStore.subscribe((s) => seen.push({ ...s.tabs.competitions }));
+    useTabUiStore.getState().setTabFields("competitions", { view: "teams", selectedCid: "lec" });
+    unsubscribe();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({ view: "teams", selectedCid: "lec" });
+    expect(useTabUiStore.getState().tabs.competitions.teamPage).toBe(DEFAULT_TAB_UI_STATES.competitions.teamPage);
+  });
+
   it("keeps transfers and scouting state across unmount/remount", () => {
     const first = renderHook(() => ({
       view: useTabUiField("transfers", "view"),

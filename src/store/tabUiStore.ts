@@ -209,6 +209,8 @@ interface TabUiStore {
     key: K,
     value: TabUiStates[T][K],
   ) => void;
+  /** Writes several fields of one tab in a single update, so no reader sees half of the change (R67). */
+  setTabFields: <T extends keyof TabUiStates>(tab: T, patch: Partial<TabUiStates[T]>) => void;
   resetTabUi: () => void;
 }
 
@@ -221,6 +223,7 @@ export const useTabUiStore = create<TabUiStore>((set) => ({
   tabs: DEFAULT_TAB_UI_STATES,
   setTabField: (tab, key, value) =>
     set((s) => ({ tabs: { ...s.tabs, [tab]: { ...s.tabs[tab], [key]: value } } })),
+  setTabFields: (tab, patch) => set((s) => ({ tabs: { ...s.tabs, [tab]: { ...s.tabs[tab], ...patch } } })),
   resetTabUi: () => set({ tabs: DEFAULT_TAB_UI_STATES }),
 }));
 

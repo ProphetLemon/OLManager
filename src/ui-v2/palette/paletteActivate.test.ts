@@ -1,11 +1,11 @@
 import type { TFunction } from "i18next";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { CallItem } from "@/lib/dashboard/needsYourCall";
 import type { DashboardLocation } from "@/lib/dashboard/profileNavigation";
 import { translateFromEnglish } from "@/test-i18n";
 
-import { entryToIntent, paletteOpensOwnFocus } from "./paletteActivate";
+import { entryToIntent, paletteOpensOwnFocus, writePaletteView } from "./paletteActivate";
 import { buildPaletteIndex, type PaletteEntry, type PaletteIndexInput } from "./paletteIndex";
 
 const t = translateFromEnglish as unknown as TFunction;
@@ -118,5 +118,30 @@ describe("paletteOpensOwnFocus (R37, R69)", () => {
     expect(paletteOpensOwnFocus({ kind: "tab", tab: "Transfers", view: { slice: "transfers", value: "offers" } })).toBe(false);
     expect(paletteOpensOwnFocus({ kind: "player", id: "p1" })).toBe(false);
     expect(paletteOpensOwnFocus({ kind: "champion", key: "Ahri" })).toBe(false);
+  });
+});
+
+describe("writePaletteView (R67)", () => {
+  it("writes a Competitions view and the league to select in one call", () => {
+    const setTabFields = vi.fn();
+    writePaletteView({ slice: "competitions", value: "standings", selectedCid: "lec" }, setTabFields);
+    expect(setTabFields).toHaveBeenCalledTimes(1);
+    expect(setTabFields).toHaveBeenCalledWith("competitions", { view: "standings", selectedCid: "lec" });
+  });
+
+  it("keeps the selected league when the view carries none", () => {
+    const setTabFields = vi.fn();
+    writePaletteView({ slice: "competitions", value: "teams" }, setTabFields);
+    expect(setTabFields).toHaveBeenCalledWith("competitions", { view: "teams" });
+  });
+
+  it("writes only the view of any other tab", () => {
+    const setTabFields = vi.fn();
+    writePaletteView({ slice: "transfers", value: "offers" }, setTabFields);
+    writePaletteView({ slice: "staff", value: "available" }, setTabFields);
+    expect(setTabFields.mock.calls).toEqual([
+      ["transfers", { view: "offers" }],
+      ["staff", { view: "available" }],
+    ]);
   });
 });
