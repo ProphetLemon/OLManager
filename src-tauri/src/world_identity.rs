@@ -31,7 +31,13 @@ const REVIEW: &str = include_str!("world_identity_review.json");
 
 /// The most deferred pairs the review file may hold. Lower it when pairs are fixed; raising it
 /// needs a reviewed reason in the change that does so.
-const DEFERRED_CEILING: usize = 29;
+/// 28 since the overlay of 2026-11-17 moves Chapters (`player-0aee4cee`) instead of adding a
+/// second record: the Leaguepedia KUMEW page reads Leandro Gabriel Paiano Krenz, born
+/// 2005-01-17, AR, Bot, and the game record has the same name and birth date, so the
+/// deferred pair `0aee4cee`/`4362e7be` no longer occurs. 27 since its pool also leaves out Howl
+/// (`dea22e1c`, Kim Min-jun, born 2009-05-04, KR): the world build hides him as the same person as Eclipse
+/// `d62e9487` (same real name, KR, birth dates six days apart), so the deferred pair `d62e9487`/`dea22e1c` is gone.
+const DEFERRED_CEILING: usize = 27;
 
 /// Main clubs (the user's club apart) missing a lane at day 0, by the lane the club page shows.
 /// Re-measured after each change; a ratchet, so it only moves down.
@@ -349,6 +355,45 @@ fn ai_guard_hidden_free_agents() {
     }
 }
 
+/// Measurement: the pool adds of the bundled overlay that the world build folds away (K2,
+/// `collapse_same_person_records`) before the player sees them, with the records that share a
+/// folded name with each.
+///
+/// ```text
+/// cargo test --lib pool_adds_folded_by_the_world_build -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "measurement harness; run by hand"]
+fn pool_adds_folded_by_the_world_build() {
+    init_message_stores();
+    let overlay = bundled_world_overlay().expect("bundled overlay");
+    let game = &new_game(&overlay, "lec-fnatic").0;
+    let in_world: BTreeSet<&str> = game.players.iter().map(|p| p.id.as_str()).collect();
+    let mut folded = 0;
+    for op in &overlay.players {
+        let olm_core::world_overlay::PlayerOp::Add { player, .. } = op else {
+            continue;
+        };
+        if player.team_id.is_some() || in_world.contains(player.id.as_str()) {
+            continue;
+        }
+        folded += 1;
+        let names = folded_names(player);
+        let twins: Vec<String> = game
+            .players
+            .iter()
+            .filter(|other| folded_names(other).iter().any(|n| names.contains(n)))
+            .map(|other| describe(game, &other.id))
+            .collect();
+        println!(
+            "FOLDED {} {:?}/{:?} dob={:?} nat={} -> {}",
+            player.id, player.match_name, player.full_name, player.date_of_birth,
+            player.nationality, twins.join(" | ")
+        );
+    }
+    println!("FOLDED total {folded}");
+}
+
 #[test]
 fn deferred_pairs_still_occur_and_never_grow() {
     let game = world();
@@ -458,15 +503,9 @@ fn collapsed_same_club_records_are_tombstoned_and_the_moved_survivor_stays_prote
     let retired: BTreeSet<&str> = game.retired_player_ids.iter().map(String::as_str).collect();
     for loser in [
         "player-2ba313af", // Ace, the stub
-        "player-5236c06a", // Ace, the pool add
         "player-e340e76a", // Samkz, the cd stub
         "player-067b9a1f", // Kaii, the les record
         "player-20d7dc63", // Sankaizer, the stub
-        "player-e6070e34", // BetaTwinz, the pool add
-        "player-6f539319", // Pauporter, the pool add
-        "player-988c0230", // Kellie, the pool add
-        "player-723229ff", // Papiteero, the pool add
-        "player-776a86c8", // Lurox, the pool add
     ] {
         assert!(retired.contains(loser), "{loser} is not tombstoned");
         assert!(
@@ -478,6 +517,46 @@ fn collapsed_same_club_records_are_tombstoned_and_the_moved_survivor_stays_prote
         game.moved_player_ids.contains("player-d9d06923"),
         "the moved Samkz keeps its protection"
     );
+}
+
+/// The pool adds of the overlay of 2026-11-14 that the world build folded into a catalog record, and so tombstoned:
+/// Ace `5236c06a`, BetaTwinz `e6070e34`, Pauporter `6f539319`, Kellie `988c0230`, Papiteero `723229ff` and Lurox
+/// `776a86c8`. The overlay of 2026-11-17 no longer adds them: its pool leaves out a person the world build would
+/// fold or hide (`pool-no-duplicates`, same rules as `collapse_same_person_records`), so a new world never holds
+/// them and there is nothing to tombstone. Ace, for one: Leaguepedia's "Ace (Ignacio David Piaggio)" page reads
+/// Uruguay, Bot, Senshi eSports, and the catalog record `cea7803b` has the same real name, UY and ADC. The
+/// tombstoning itself is covered by `a_world_holding_the_old_pool_add_of_ace_keeps_only_the_catalog_record` in
+/// `olm_core::world_catalog`.
+#[test]
+fn pool_adds_the_world_build_used_to_fold_are_no_longer_added() {
+    let game = world();
+    let overlay = bundled_world_overlay().expect("bundled overlay");
+    let added = overlay.teamless_added_player_ids();
+    for id in [
+        "player-5236c06a",
+        "player-e6070e34",
+        "player-6f539319",
+        "player-988c0230",
+        "player-723229ff",
+        "player-776a86c8",
+    ] {
+        assert!(!added.contains(id), "{id} is a pool add of the overlay again");
+        assert!(game.players.iter().all(|p| p.id != id), "{id} is in the world");
+    }
+}
+
+/// Every pool add of the bundled overlay reaches a new world: none is folded into a record on a club.
+#[test]
+fn every_pool_add_of_the_bundled_overlay_survives_the_world_build() {
+    let game = world();
+    let overlay = bundled_world_overlay().expect("bundled overlay");
+    let in_world: BTreeSet<&str> = game.players.iter().map(|p| p.id.as_str()).collect();
+    let folded: Vec<String> = overlay
+        .teamless_added_player_ids()
+        .into_iter()
+        .filter(|id| !in_world.contains(id.as_str()))
+        .collect();
+    assert!(folded.is_empty(), "{} pool add(s) folded away: {folded:?}", folded.len());
 }
 
 /// A player's lane and natural role are one fact: where both name a lane they agree. The

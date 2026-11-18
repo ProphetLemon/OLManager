@@ -2,6 +2,14 @@
   "namesakes": [
     {
       "ids": [
+        "player-7945e6b4",
+        "player-dd5c4974"
+      ],
+      "class": "namesake",
+      "reason": "SofM and Wady: two real players who share the common Vietnamese name Le Quang Duy. Leaguepedia (cache world-2026-11-16, pool query rows): SofM born 1998-02-05, Jungle, MVK Esports (LCP 2025 and 2026, Worlds 2026 Play-In); Wady born 2007-04-18, Top on his Players page, rostered in VCS 2025-2026 and RTV 2026. Nine years apart, different nicks, both teamless pool adds, so the overlay carries both birth dates and the identity test still flags the shared real name."
+    },
+    {
+      "ids": [
         "player-eddde7b7",
         "player-c46f4677"
       ],
@@ -33,14 +41,6 @@
       ],
       "class": "C",
       "reason": "free_agents.json ghost or stub next to the real record. WD2c same person (page+stub): Hibiki Yamane, JP; the ljl record and the free_agents stub both fit the only JP Chico page. Leaguepedia role is Support and has no birth dat"
-    },
-    {
-      "ids": [
-        "player-0aee4cee",
-        "player-4362e7be"
-      ],
-      "class": "U",
-      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
     },
     {
       "ids": [
@@ -238,14 +238,6 @@
       "ids": [
         "player-c3540ab4",
         "player-c60dfae1"
-      ],
-      "class": "U",
-      "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
-    },
-    {
-      "ids": [
-        "player-d62e9487",
-        "player-dea22e1c"
       ],
       "class": "U",
       "reason": "unlabelled. same real name under two nicks or a free-agent ghost; WD2c did not label it, so it is unreviewed"
