@@ -126,6 +126,10 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
 
   // Back (popstate, raised by the Android back gesture) closes the palette. It does not
   // consume the event: DashboardV2's own popstate handler still runs, as intended (spec §5.5).
+  // R79: this is the app's only back path. wry's WryActivity turns the gesture into the
+  // webview's goBack, which raises popstate, and the app pushes no history entry anywhere,
+  // so the palette pushes no sentinel either. With no entry to go back to, the gesture
+  // leaves the app instead; that case is for the device pass.
   useEffect(() => {
     if (!open) return;
     const onPopState = () => {

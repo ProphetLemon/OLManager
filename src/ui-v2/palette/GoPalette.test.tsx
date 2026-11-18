@@ -465,3 +465,41 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     expect(label?.querySelector(".tabular-nums")).toHaveTextContent(/^1$/);
   });
 });
+
+// R79: the app routes the Android back gesture through webview history (wry's
+// WryActivity calls goBack, which raises popstate) and pushes no entry of its own
+// anywhere, so the palette closes on that same popstate and adds no sentinel.
+describe("GoPalette: back and history (R79)", () => {
+  const HISTORY_METHODS = ["pushState", "replaceState", "back", "forward", "go"] as const;
+
+  it("closes on back without consuming it, so DashboardV2's own popstate handler still runs", async () => {
+    const appHandler = vi.fn();
+    window.addEventListener("popstate", appHandler);
+    try {
+      await openPalette();
+      act(() => window.dispatchEvent(new PopStateEvent("popstate")));
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(appHandler).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener("popstate", appHandler);
+    }
+  });
+
+  it.each(["Escape", "Close", "an activation"])("leaves history as it was when it opens and closes by %s", async (how) => {
+    const spies = HISTORY_METHODS.map((method) => vi.spyOn(window.history, method));
+    const { length, state } = window.history;
+    try {
+      await openPalette();
+      if (how === "Escape") press("Escape");
+      else if (how === "Close") fireEvent.click(screen.getByRole("button", { name: "Close" }));
+      else press("Enter");
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      if (how === "an activation") await waitFor(() => expect(onActivate).toHaveBeenCalledTimes(1));
+      for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+      expect(window.history.length).toBe(length);
+      expect(window.history.state).toBe(state);
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+  });
+});
