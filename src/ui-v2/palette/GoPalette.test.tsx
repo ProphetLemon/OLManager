@@ -198,7 +198,7 @@ describe("GoPalette: keys, pointer and activation (spec §5.5, R27, R37)", () =>
 
   it("highlights the row under the pointer", async () => {
     await openPalette();
-    fireEvent.mouseMove(options()[3], { clientX: 24, clientY: 160 });
+    fireEvent.mouseMove(options()[3], { clientX: 24, clientY: 160, movementX: 2, movementY: 3 });
     expect(activeOption()).toBe(options()[3]);
   });
 
@@ -437,7 +437,7 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
 
   it("ignores a mousemove whose pointer has not moved, as a browser sends after a scroll (R78)", async () => {
     await openPalette();
-    fireEvent.mouseMove(options()[1], { clientX: 40, clientY: 120 });
+    fireEvent.mouseMove(options()[1], { clientX: 40, clientY: 120, movementX: 1, movementY: 1 });
     expect(activeOption()).toBe(options()[1]);
     press("ArrowDown");
     expect(activeOption()).toBe(options()[2]);
@@ -445,13 +445,37 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     fireEvent.mouseMove(options()[3], { clientX: 40, clientY: 120 });
     expect(activeOption()).toBe(options()[2]);
     // A move over the active row counts as the last position too.
-    fireEvent.mouseMove(options()[2], { clientX: 40, clientY: 132 });
+    fireEvent.mouseMove(options()[2], { clientX: 40, clientY: 132, movementX: 0, movementY: 12 });
     press("ArrowDown");
     fireEvent.mouseMove(options()[4], { clientX: 40, clientY: 132 });
     expect(activeOption()).toBe(options()[3]);
     // A real move highlights again.
-    fireEvent.mouseMove(options()[4], { clientX: 41, clientY: 140 });
+    fireEvent.mouseMove(options()[4], { clientX: 41, clientY: 140, movementX: 1, movementY: 8 });
     expect(activeOption()).toBe(options()[4]);
+  });
+
+  it("never lets a pointer parked over the list before its first move take the highlight (R87)", async () => {
+    await openPalette();
+    press("ArrowDown");
+    expect(activeOption()).toBe(options()[1]);
+    // A scroll under a pointer that has not moved since the palette opened: the browser's
+    // synthetic mousemove has no movement, and no earlier position to compare with.
+    fireEvent.mouseMove(options()[3], { clientX: 40, clientY: 120, movementX: 0, movementY: 0 });
+    expect(activeOption()).toBe(options()[1]);
+  });
+
+  it("forgets the pointer's last position when it reopens (R87)", async () => {
+    await openPalette();
+    fireEvent.mouseMove(options()[1], { clientX: 40, clientY: 120, movementX: 1, movementY: 1 });
+    expect(activeOption()).toBe(options()[1]);
+    press("Escape");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await screen.findByRole("dialog");
+    expect(activeOption()).toBe(options()[0]);
+    // The pointer left and came back while the palette was closed: a real move at the old point counts.
+    fireEvent.mouseMove(options()[2], { clientX: 40, clientY: 120, movementX: -1, movementY: 0 });
+    expect(activeOption()).toBe(options()[2]);
   });
 
   it("counts the call rows the query keeps, after a pause in the group's name (R81)", async () => {

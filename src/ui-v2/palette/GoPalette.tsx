@@ -163,11 +163,16 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     closePalette();
   };
 
-  // R78: the pointer's last position over the list. WebKit and Chromium send a mousemove
-  // after a scroll with the pointer where it was, so a move that has not moved is ignored,
-  // and a pointer parked over the list never takes the highlight from the keys.
+  // R78, R87: WebKit and Chromium send a mousemove after a scroll with the pointer where it
+  // was. It carries no movement, so it is ignored, and so is a move to the last position
+  // over the list; a pointer parked over the list never takes the highlight from the keys,
+  // even before its first move. The open effect forgets the last position.
   const pointer = useRef({ x: -1, y: -1 });
-  const pointerMove = (index: number, e: { clientX: number; clientY: number }) => {
+  const pointerMove = (
+    index: number,
+    e: { clientX: number; clientY: number; movementX: number; movementY: number },
+  ) => {
+    if (e.movementX === 0 && e.movementY === 0) return;
     if (e.clientX === pointer.current.x && e.clientY === pointer.current.y) return;
     pointer.current = { x: e.clientX, y: e.clientY };
     if (index !== activeIndex) setActive(index);
@@ -226,6 +231,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     if (!open) return;
     closeReason.current = "dismiss";
     pending.current = null;
+    pointer.current = { x: -1, y: -1 };
   }, [open]);
 
   const handleOpenChangeComplete = (isOpen: boolean) => {
