@@ -138,7 +138,7 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/FiredModal", () => ({
 vi.mock("@/ui-v2/dashboard/DashboardHeaderV2", () => ({
   DashboardHeaderV2: (props: Record<string, unknown>) => {
     shell.header = props;
-    return null;
+    return <div data-testid="dashboard-header" />;
   },
 }));
 
@@ -943,5 +943,103 @@ describe("DashboardV2 rail mode", () => {
     measure(1280, 764);
     measure(960, 595);
     expect(shell.sidebar).toMatchObject({ railMode: "split" });
+  });
+});
+
+describe("DashboardV2 attention lane (NR2.6)", () => {
+  class MockResizeObserver {
+    static all: MockResizeObserver[] = [];
+    constructor(private cb: (entries: Array<{ contentRect: { width: number; height: number } }>) => void) {
+      MockResizeObserver.all.push(this);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    emit(width: number, height: number) {
+      this.cb([{ contentRect: { width, height } }]);
+    }
+  }
+
+  const academy = { id: "academy_missing_roles", severity: "warn", text: "Academy incomplete", tab: "YouthAcademy" };
+
+  beforeEach(() => {
+    MockResizeObserver.all = [];
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    document.documentElement.style.fontSize = "16px";
+    Element.prototype.scrollIntoView = vi.fn();
+    shell.header = null;
+    shell.blockerModal = null;
+    shell.scrimResultNotice = null;
+    shell.checkBlockingActions.mockReset();
+    shell.checkBlockingActions.mockResolvedValue([academy]);
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: minimalGameState(),
+      pendingSeasonSummary: null,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+    resetSessionNavigation();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.documentElement.style.fontSize = "";
+  });
+
+  const lane = () => document.querySelector<HTMLElement>('[data-slot="attention-lane"]');
+
+  /** Opens the dashboard on a tab, with a 1280 x `bodyHeight` body and one decision. */
+  async function renderOn(tab: string, bodyHeight = 764) {
+    if (tab !== "Home") useDashboardLocationStore.getState().go({ kind: "tab", tab });
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    act(() => MockResizeObserver.all.forEach((o) => o.emit(1280, bodyHeight)));
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+  }
+
+  it("is absent on Home, whose panel lists the decisions", async () => {
+    await renderOn("Home");
+    expect(lane()).toBeNull();
+  });
+
+  it("shows off Home, after the header and before the scrim notice and the main region", async () => {
+    shell.scrimResultNotice = ["Scrim won 2-1"];
+    await renderOn("Training");
+    await waitFor(() => expect(lane()).not.toBeNull());
+    const header = screen.getByTestId("dashboard-header");
+    const notice = document.querySelector('[data-slot="scrim-result-notice"]')!;
+    const main = document.getElementById("main-content")!;
+    const follows = (a: Node, b: Node) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(notice).not.toBeNull();
+    expect(follows(header, lane()!)).toBe(true);
+    expect(follows(lane()!, notice)).toBe(true);
+    expect(follows(notice, main)).toBe(true);
+  });
+
+  it("gives way below 380 px of body", async () => {
+    await renderOn("Training", 379);
+    expect(lane()).toBeNull();
+  });
+
+  it("acting on a pill goes to the call's tab and puts focus on the main region", async () => {
+    await renderOn("Training");
+    const pill = await screen.findByRole("button", { name: /Academy incomplete/ });
+    fireEvent.click(pill);
+    // The academy rule sends the call to the Youth tab.
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Youth"));
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
+  });
+
+  it("focuses the main region even when the call's place is the current one", async () => {
+    await renderOn("Youth");
+    fireEvent.click(await screen.findByRole("button", { name: /Academy incomplete/ }));
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
   });
 });

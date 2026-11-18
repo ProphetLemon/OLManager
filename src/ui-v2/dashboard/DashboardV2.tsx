@@ -64,6 +64,8 @@ import { DashboardHeaderV2 } from "./DashboardHeaderV2";
 import { useRailMode } from "@/ui-v2/shell/useRailMode";
 import { buildAttentionMap } from "@/ui-v2/shell/attention";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
+import { AttentionLaneV2 } from "./AttentionLaneV2";
+import { laneModel } from "@/lib/dashboard/attentionLane";
 
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
@@ -488,22 +490,23 @@ export default function DashboardV2() {
    * row does neither: its aria-current already says where the user is. A move
    * that says nothing clears a route message still queued or shown, so the region
    * never names a place the user has left (R51). A move that goes nowhere does
-   * nothing at all.
+   * nothing at all, and says so by returning false.
    */
   const runIntent = (
     move: NavIntent | { kind: "back" } | { kind: "closeChampion" },
     { announce: speak = false, focusMain = false }: { announce?: boolean; focusMain?: boolean } = {},
-  ) => {
+  ): boolean => {
     const before = currentLocation(useDashboardLocationStore.getState().nav);
     if (move.kind === "back") back(isValidLocation);
     else if (move.kind === "closeChampion") closeChampion(isValidLocation);
     else go(move);
     const after = currentLocation(useDashboardLocationStore.getState().nav);
-    if (sameLocation(before, after)) return;
+    if (sameLocation(before, after)) return false;
     if (focusMain) focusMainContent();
     const text = speak && gameState ? routeAnnouncement(after, { t, game: gameState }) : null;
     if (text) announce(text);
     else clearRoute();
+    return true;
   };
 
   const handleNavClick = (tab: string) => runIntent({ kind: "tab", tab });
@@ -526,6 +529,12 @@ export default function DashboardV2() {
       focusCallsTimer.current = attempts > 0 ? setTimeout(tryFocus, FOCUS_CALLS_INTERVAL_MS) : null;
     };
     focusCallsTimer.current = setTimeout(tryFocus, 0);
+  };
+
+  // A lane pill goes where its call is fixed, says so, and puts focus on main (R37). When
+  // that place is already the current one, nothing moves, but focus still goes to main.
+  const handleLaneCall = (intent: NavIntent) => {
+    if (!runIntent(intent, { announce: true, focusMain: true })) focusMainContent();
   };
 
   const handleSkipToMain = (event: { preventDefault: () => void }) => {
@@ -664,6 +673,14 @@ export default function DashboardV2() {
     [currentGameDate, dashboardAlerts, lastBlockers, startingFive, t],
   );
   const attention = useMemo(() => buildAttentionMap(callState.items), [callState.items]);
+  // "Before you continue" (R24): the decisions off Home, outside the end-of-season shell,
+  // while the body under the title bar is at least 380 px high.
+  const lane = laneModel({
+    callState,
+    activeTab: profileNavigation.activeTab,
+    compact: showSeasonSummary,
+    bodyHeight: rail.slotH,
+  });
 
   // A tab's own content shows only while no profile or champion page is open over it.
   const profileOpen = Boolean(
@@ -791,6 +808,15 @@ export default function DashboardV2() {
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
         />
+
+        {lane.visible && (
+          <AttentionLaneV2
+            pills={lane.pills}
+            platform={rail.platform}
+            onNavigate={handleLaneCall}
+            onShowAll={handleShowCalls}
+          />
+        )}
 
         <ScrimResultNoticeV2
           lines={scrimResultNotice}
