@@ -1094,7 +1094,7 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     shell.checkBlockingActions.mockResolvedValue([]);
   }
 
-  it("leaves focus and the announcement to the renewal a contract pill opens (R57)", async () => {
+  it("moves focus to main and says where for the renewal a contract pill opens (R69)", async () => {
     withExpiringStarter();
     await renderOn("Training");
 
@@ -1103,10 +1103,10 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     fireEvent.click(pill);
 
     expect((await screen.findByTestId("player-profile")).getAttribute("data-renewal")).toBe("true");
-    expect(document.activeElement).not.toBe(document.getElementById("main-content"));
-    // Past the announcer's quiet spell: nothing was queued for the move.
+    // The legacy renewal frame takes no focus and says nothing, so the pill hands off as any other does.
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
     await act(() => new Promise((resolve) => setTimeout(resolve, ROUTE_ANNOUNCE_DEBOUNCE_MS + 50)));
-    expect(document.querySelector('[data-slot="route-announcer"]')?.textContent).toBe("");
+    expect(document.querySelector('[data-slot="route-announcer"]')?.textContent).not.toBe("");
   });
 
   it("shows over a profile opened from Home, and its pinned pill still lands on Home's panel (R58)", async () => {
@@ -1124,7 +1124,7 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
   });
 
-  it("asks the open profile for the renewal again, without pulling focus to main (R57)", async () => {
+  it("asks the open profile for the renewal again, and hands focus to main (R57, R69)", async () => {
     withExpiringStarter();
     useDashboardLocationStore.getState().go({ kind: "tab", tab: "Training" });
     useDashboardLocationStore.getState().go({ kind: "player", id: "p-mid", openRenewal: true });
@@ -1139,6 +1139,6 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
 
     // A dialog closed since then opens again: the press is a new request, not a no-op.
     await waitFor(() => expect(profile.getAttribute("data-request")).not.toBe(first));
-    expect(document.activeElement).toBe(pill);
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
   });
 });

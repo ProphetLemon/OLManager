@@ -107,13 +107,13 @@ describe("entryToIntent", () => {
   });
 });
 
-describe("paletteOpensOwnFocus (R37)", () => {
-  it("is true for the renewal and for Settings, which take focus themselves", () => {
-    expect(paletteOpensOwnFocus({ kind: "player", id: "p1", openRenewal: true })).toBe(true);
+describe("paletteOpensOwnFocus (R37, R69)", () => {
+  it("is true for Settings, a page that takes focus itself", () => {
     expect(paletteOpensOwnFocus({ kind: "route", path: "/settings" })).toBe(true);
   });
 
-  it("is false for a tab, a view, a profile or a champion, which focus main and announce", () => {
+  it("is false for a renewal, a tab, a view, a profile or a champion, which focus main and announce (R69)", () => {
+    expect(paletteOpensOwnFocus({ kind: "player", id: "p1", openRenewal: true })).toBe(false);
     expect(paletteOpensOwnFocus({ kind: "tab", tab: "Squad" })).toBe(false);
     expect(paletteOpensOwnFocus({ kind: "tab", tab: "Transfers", view: { slice: "transfers", value: "offers" } })).toBe(false);
     expect(paletteOpensOwnFocus({ kind: "player", id: "p1" })).toBe(false);

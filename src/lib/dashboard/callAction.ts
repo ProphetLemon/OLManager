@@ -19,10 +19,19 @@ export function callAction(item: CallItem): NavIntent {
 }
 
 /**
- * Whether a move opens UI that takes focus and speaks for itself: the renewal
- * dialog. Its caller then skips the focus on main and the route announcement
- * (R37 for the palette, R57 for the lane), which would pull focus off the dialog.
+ * Whether the renewal dialog takes focus and speaks for itself. The legacy modal
+ * frame (`DashboardModalFrame`) has no dialog role, initial focus, trap or focus
+ * return, so it does not, and a renewal hands off like any other move (R69).
+ * Porting the frame to a Base UI Dialog turns this on again.
+ */
+const RENEWAL_DIALOG_TAKES_FOCUS = false;
+
+/**
+ * Whether a move opens UI that takes focus and speaks for itself. Its caller then
+ * skips the focus on main and the route announcement (R37 for the palette, R57
+ * for the lane), which would pull focus off that UI. No move does while the
+ * renewal dialog is the legacy frame (R69).
  */
 export function opensOwnFocus(intent: NavIntent): boolean {
-  return intent.kind === "player" && intent.openRenewal === true;
+  return RENEWAL_DIALOG_TAKES_FOCUS && intent.kind === "player" && intent.openRenewal === true;
 }

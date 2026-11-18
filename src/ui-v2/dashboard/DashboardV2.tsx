@@ -545,9 +545,9 @@ export default function DashboardV2() {
   // A lane pill goes where its call is fixed, says so, and puts focus on main (R37). When
   // that place is already the current one, nothing moves, but focus still goes to main
   // and the place is still named (R64).
-  // A renewal opens its own dialog, which takes focus and is spoken, so the pill
-  // does neither, even when that profile is already open: each press is a new
-  // request, so a dialog closed since then opens again (R57).
+  // A move whose UI takes focus and speaks for itself skips both (R57); none does
+  // while the renewal dialog is the legacy frame (R69). A renewal pressed on its
+  // open profile is a new request, so a dialog closed since then opens again.
   const handleLaneCall = (intent: NavIntent) => {
     if (opensOwnFocus(intent)) {
       runIntent(intent);

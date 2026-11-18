@@ -51,9 +51,9 @@ describe("callAction", () => {
   });
 });
 
-describe("opensOwnFocus (R37, R57)", () => {
-  it("is true for a renewal, whose dialog takes focus and speaks for itself", () => {
-    expect(opensOwnFocus({ kind: "player", id: "p1", openRenewal: true })).toBe(true);
+describe("opensOwnFocus (R37, R57, R69)", () => {
+  it("is false for a renewal: its legacy dialog takes no focus and says nothing (R69)", () => {
+    expect(opensOwnFocus({ kind: "player", id: "p1", openRenewal: true })).toBe(false);
   });
 
   it("is false for every other move, which leaves focus and the announcement to the caller", () => {

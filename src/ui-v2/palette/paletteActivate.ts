@@ -41,9 +41,10 @@ export function entryToIntent(entry: PaletteEntry): PaletteIntent {
 }
 
 /**
- * Whether the intent's own UI takes focus and is spoken: the renewal dialog, or
- * the Settings page. The palette then skips its focus on main and its
- * announcement for that row (R37).
+ * Whether the intent's own UI takes focus and is spoken: the Settings page, and
+ * whatever `opensOwnFocus` names (no move, while the renewal dialog is the legacy
+ * frame, R69). The palette then skips its focus on main and its announcement for
+ * that row (R37).
  */
 export function paletteOpensOwnFocus(intent: PaletteIntent): boolean {
   if (intent.kind === "route") return true;
