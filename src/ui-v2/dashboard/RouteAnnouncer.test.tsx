@@ -306,6 +306,23 @@ describe("useRouteAnnouncer with a status and a route in one burst (R60)", () =>
     expect(result.current.message).toBe("");
   });
 
+  it("never posts a status queued just before an advance starts, and lets a queued route post alone", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRouteAnnouncer());
+    act(() => result.current.announce("2 to resolve", "status"));
+    act(() => result.current.clearStatus());
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("");
+
+    act(() => {
+      result.current.announce("2 to resolve", "status");
+      result.current.announce("Now on Squad, Club");
+      result.current.clearStatus();
+    });
+    act(() => vi.advanceTimersByTime(ROUTE_ANNOUNCE_DEBOUNCE_MS));
+    expect(result.current.message).toBe("Now on Squad, Club");
+  });
+
   it("empties a shown status on clearStatus, and leaves a shown route alone", () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => useRouteAnnouncer());

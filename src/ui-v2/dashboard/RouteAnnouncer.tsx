@@ -17,8 +17,9 @@ export type AnnouncementKind = "route" | "status";
  * `clearRoute` is for a move that says nothing (R51): it drops a queued route
  * message, letting a queued status post alone, and empties a shown message that
  * names a place, a combined one included, so the region never names a place the
- * user has left. `clearStatus` empties a shown status alone, which describes a
- * day that is over once the next advance starts.
+ * user has left. `clearStatus` drops a queued status and empties a shown status
+ * alone, which describe a day that is over once the next advance starts; a
+ * queued route still posts.
  */
 export function useRouteAnnouncer() {
   const [message, setMessage] = useState("");
@@ -54,6 +55,8 @@ export function useRouteAnnouncer() {
   }, []);
 
   const clearStatus = useCallback(() => {
+    delete pending.current.status;
+    if (pending.current.route === undefined) window.clearTimeout(timer.current);
     if (shownKind.current === "status") setMessage("");
   }, []);
 
