@@ -183,7 +183,9 @@ export async function runRefresh(options) {
   }
   const asOf = options.asOf ?? oldestFetch ?? todayUtc();
   const overlay = buildOverlay({ asOf, license, coverage, players: ops.players, staff: ops.staff });
-  let gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions, gateExceptions: options.gateExceptions });
+  // The page of every add this run made (roster adds by their team page row, pool adds by their own page), for the twin gate.
+  const pages = new Map([...ops.players, ...ops.staff].map((entry) => [entry.id, entry.page ?? entry.op.pool?.page]).filter(([, page]) => page));
+  let gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions, gateExceptions: options.gateExceptions, pages });
   let poolReport = null;
   if (poolRun) {
     const bytes = Buffer.byteLength(serializeOverlay(overlay));

@@ -251,5 +251,15 @@
       "reason": "same person in two live competition files. WD2c same person (dob-and-name): Victor Satoru Noguchi, BR, Jungle, 2005-01-21 matches the cblol record; cd stub (BR, Jungle) fits the only Sarolu page."
     }
   ],
-  "rated_one": []
+  "rated_one": [],
+  "dual_roles": [
+    {
+      "ids": [
+        "player-6498e762",
+        "staff-6498e762"
+      ],
+      "class": "player-coach",
+      "reason": "Leaky (Chang Tsu-Chia), CTBC Flying Oyster Academy (PCS). The Leaguepedia team page of the 2026-11-17 run lists him twice: a starting Jungler (joined 2026-07-15, contract end 2026-11-17) and, in its staff table, the Head Coach (not inactive). One person in two roles on one team, both records on pcs-team-94671303."
+    }
+  ]
 }

@@ -10,6 +10,9 @@
 //!   occur (a fixed pair has to leave the list) and the list may never grow past
 //!   `DEFERRED_CEILING`, so the count can only go down.
 //! - `rated_one`: a record allowed at OVR 1 or with every attribute at 0.
+//! - `dual_roles`: one person who is both a player and a staff member (ids: player, then staff),
+//!   allowed only when Leaguepedia lists him in both roles on one team. Each must still occur.
+//!   `DUAL_ROLES` in scripts/world/lib/gates.mjs holds the same pairs for the refresh gate.
 //!
 //! Set `OLM_WI_PRINT=1` to print every suspect pair as ready-to-paste JSON entries.
 
@@ -17,6 +20,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use chrono::NaiveDate;
 use olm_core::domain::player::Player;
+use olm_core::domain::staff::Staff;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::TeamKind;
 use olm_core::game::Game;
@@ -50,6 +54,7 @@ struct Review {
     namesakes: Vec<PairEntry>,
     deferred: Vec<PairEntry>,
     rated_one: Vec<RatedEntry>,
+    dual_roles: Vec<PairEntry>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,7 +82,12 @@ fn pair(a: &str, b: &str) -> Pair {
 
 fn review() -> Review {
     let review: Review = serde_json::from_str(REVIEW).expect("world_identity_review.json parses");
-    for entry in review.namesakes.iter().chain(&review.deferred) {
+    for entry in review
+        .namesakes
+        .iter()
+        .chain(&review.deferred)
+        .chain(&review.dual_roles)
+    {
         assert!(
             !entry.reason.trim().is_empty() && !entry.class.trim().is_empty(),
             "review entry {:?} needs a class and a reason",
@@ -392,6 +402,153 @@ fn pool_adds_folded_by_the_world_build() {
         );
     }
     println!("FOLDED total {folded}");
+}
+
+/// The day the staff generator writes when it has no birth date (a guess, flagged `dob_approx`).
+const STAFF_PLACEHOLDER_DOB: &str = "1990-01-01";
+
+/// A birth date that tells people apart: readable, and not a day a generator writes for an unknown one.
+fn identifying_dob(raw: &str) -> Option<NaiveDate> {
+    let placeholders = [parse_dob(PLACEHOLDER_DOB), parse_dob(STAFF_PLACEHOLDER_DOB)];
+    parse_dob(raw).filter(|day| !placeholders.contains(&Some(*day)))
+}
+
+/// The page hash of an id made from a Leaguepedia page: `player-` or `staff-` and 8 hex digits.
+/// A player and a staff member with the same hash were made from the same page.
+fn page_hash(id: &str) -> Option<&str> {
+    let hash = id
+        .strip_prefix("player-")
+        .or_else(|| id.strip_prefix("staff-"))?;
+    (hash.len() == 8 && hash.bytes().all(|b| b.is_ascii_hexdigit())).then_some(hash)
+}
+
+/// A staff member's folded names: the nick, the real name and first plus last name.
+fn staff_names(staff: &Staff) -> Vec<String> {
+    let full = format!("{} {}", staff.first_name, staff.last_name);
+    let mut names = Vec::with_capacity(3);
+    for raw in [
+        staff.nickname.as_str(),
+        staff.first_name.as_str(),
+        full.as_str(),
+    ] {
+        let folded = fold_name(raw);
+        if !folded.is_empty() && !names.contains(&folded) {
+            names.push(folded);
+        }
+    }
+    names
+}
+
+/// Every (player id, staff id) of one person held both as a player and as a staff member: ids
+/// made from the same page, or a shared folded name and the same identifying birth date. The
+/// refresh gate `no-player-staff-twins` (scripts/world/lib/gates.mjs) uses the same keys.
+fn player_staff_twins(game: &Game) -> BTreeSet<Pair> {
+    let mut by_hash: HashMap<&str, Vec<&str>> = HashMap::new();
+    let mut by_name_and_birth: HashMap<(String, NaiveDate), Vec<&str>> = HashMap::new();
+    for staff in &game.staff {
+        if let Some(hash) = page_hash(&staff.id) {
+            by_hash.entry(hash).or_default().push(&staff.id);
+        }
+        if let Some(born) = identifying_dob(&staff.date_of_birth) {
+            for name in staff_names(staff) {
+                by_name_and_birth
+                    .entry((name, born))
+                    .or_default()
+                    .push(&staff.id);
+            }
+        }
+    }
+    let mut found = BTreeSet::new();
+    let mut note = |player: &Player, staff_ids: Option<&Vec<&str>>| {
+        for staff_id in staff_ids.into_iter().flatten() {
+            found.insert((player.id.clone(), (*staff_id).to_string()));
+        }
+    };
+    for player in &game.players {
+        note(
+            player,
+            page_hash(&player.id).and_then(|hash| by_hash.get(hash)),
+        );
+        if let Some(born) = identifying_dob(&player.date_of_birth) {
+            for name in folded_names(player) {
+                note(player, by_name_and_birth.get(&(name, born)));
+            }
+        }
+    }
+    found
+}
+
+fn describe_staff(game: &Game, id: &str) -> String {
+    game.staff
+        .iter()
+        .find(|staff| staff.id == id)
+        .map(|s| {
+            format!(
+                "{id} {:?}/{:?} dob={:?} nat={} role={:?} team={}",
+                s.nickname,
+                s.first_name,
+                s.date_of_birth,
+                s.nationality,
+                s.role,
+                s.team_id.as_deref().unwrap_or("FA"),
+            )
+        })
+        .unwrap_or_else(|| format!("{id} (absent)"))
+}
+
+fn report_player_staff(game: &Game, pairs: &BTreeSet<Pair>) -> String {
+    pairs
+        .iter()
+        .map(|(player, staff)| {
+            format!(
+                "\n  {}\n  {}\n",
+                describe(game, player),
+                describe_staff(game, staff)
+            )
+        })
+        .collect()
+}
+
+/// (player id, staff id) of each reviewed dual role.
+fn dual_roles(review: &Review) -> BTreeSet<Pair> {
+    review
+        .dual_roles
+        .iter()
+        .map(|entry| (entry.ids[0].clone(), entry.ids[1].clone()))
+        .collect()
+}
+
+/// One person, one record: the pool used to add, as a free agent player, a coach the roster
+/// overlay adds to a club's staff (and a pool coach could be a player the overlay adds).
+#[test]
+fn no_person_is_both_a_player_and_a_staff_member() {
+    let game = world();
+    let allowed = dual_roles(&review());
+    let twins: BTreeSet<Pair> = player_staff_twins(game)
+        .difference(&allowed)
+        .cloned()
+        .collect();
+    assert!(
+        twins.is_empty(),
+        "{} person(s) both a player and a staff member:{}",
+        twins.len(),
+        report_player_staff(game, &twins)
+    );
+}
+
+#[test]
+fn reviewed_dual_roles_still_occur() {
+    let game = world();
+    let stale: BTreeSet<Pair> = dual_roles(&review())
+        .difference(&player_staff_twins(game))
+        .cloned()
+        .collect();
+    assert!(
+        stale.is_empty(),
+        "{} reviewed dual role(s) no longer occur; remove them from the review file:{}",
+        stale.len(),
+        report_player_staff(game, &stale)
+    );
 }
 
 #[test]

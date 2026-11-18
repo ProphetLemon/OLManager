@@ -42,7 +42,14 @@ Fix problems in the reviewed inputs, not in the overlay:
 
 Gates (a failed gate exits non-zero and the overlay is not written unless `--allow-gate-failures`): schema and references
 valid, no id used twice, no team left under its floor by a release, at most 8 new players per team, at most 60% of a
-competition's players moved or retired unless it has a reviewed exception.
+competition's players moved or retired unless it has a reviewed exception, and nobody both a player and a staff member.
+
+- **`no-player-staff-twins` gate.** After the operations, no player and staff member of the new world may be one person:
+  ids made from the same page (the same 8-hex page hash), the same page title of this run (case and spacing aside), or a
+  shared folded name and the same real birth date (placeholders and `dob_approx` dates do not count). A player-coach
+  Leaguepedia lists in both tables of one team is allowed through `DUAL_ROLES` in `lib/gates.mjs`, with the evidence in a
+  comment, and through `dual_roles` in `src-tauri/src/world_identity_review.json` (the app's identity test runs the same check).
+  `src/lib/world/overlay-ship-twins.test.ts` runs it on the shipped overlay.
 
 - **Roster floor.** `floor(team) = min(5, the team's starting player count in the bundled world)`. In the off-season
   Leaguepedia rosters are empty or partial, but the game starts on 1 January with playable rosters. After the operations
