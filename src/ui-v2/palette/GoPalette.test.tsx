@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CallItem } from "@/lib/dashboard/needsYourCall";
 import type { DashboardLocation } from "@/lib/dashboard/profileNavigation";
 import { usePaletteStore } from "@/store/paletteStore";
+import { resetSessionNavigation } from "@/store/sessionReset";
 import { translateFromEnglish } from "@/test-i18n";
 
 import { GoPalette } from "./GoPalette";
@@ -176,6 +177,19 @@ describe("GoPalette: keys, pointer and activation (spec §5.5, R27, R37)", () =>
     expect(within(recent).getAllByRole("option")[0]).toBe(activeOption());
   });
 
+  it("jumps back to the first row of the previous group with PageUp, and stays put in the first group", async () => {
+    await openPalette();
+    press("PageDown");
+    press("PageDown");
+    expect(activeOption()).toBe(within(screen.getByRole("group", { name: "Sections" })).getAllByRole("option")[0]);
+    press("PageUp");
+    expect(activeOption()).toBe(within(screen.getByRole("group", { name: "Recent" })).getAllByRole("option")[0]);
+    press("PageUp");
+    expect(activeOption()).toBe(options()[0]);
+    press("PageUp");
+    expect(activeOption()).toBe(options()[0]);
+  });
+
   it("highlights the row under the pointer", async () => {
     await openPalette();
     fireEvent.mouseMove(options()[3]);
@@ -217,15 +231,46 @@ describe("GoPalette: keys, pointer and activation (spec §5.5, R27, R37)", () =>
     expect(onActivate).not.toHaveBeenCalled();
   });
 
-  it("keeps Tab between the input and Close", async () => {
+  it("has two Tab stops, the input then Close, and no option among them", async () => {
     const dialog = await openPalette();
     const close = screen.getByRole("button", { name: "Close" });
-    const guards = document.querySelectorAll<HTMLElement>("[data-base-ui-focus-guard]");
-    const inside = Array.from(guards).filter((g) => !dialog.contains(g) && g.compareDocumentPosition(dialog) & Node.DOCUMENT_POSITION_PRECEDING);
-    // Tab past the last control lands on the guard after the popup, which sends focus back to the first.
-    act(() => (inside[0] ?? guards[guards.length - 1]).focus());
-    await waitFor(() => expect([input(), close]).toContain(document.activeElement));
+    const stops = dialog.querySelectorAll('input, button, a[href], [tabindex]:not([tabindex="-1"])');
+    expect(Array.from(stops)).toEqual([input(), close]);
     expect(screen.getAllByRole("option").every((o) => !o.hasAttribute("tabindex"))).toBe(true);
+  });
+
+  // jsdom has no sequential focus navigation, so these focus the guard that Tab or
+  // Shift+Tab reaches past the last or first stop; Base UI's trap sends focus round.
+  it("wraps Tab from Close round to the input", async () => {
+    const dialog = await openPalette();
+    act(() => screen.getByRole("button", { name: "Close" }).focus());
+    const after = dialog.nextElementSibling as HTMLElement;
+    expect(after).toHaveAttribute("data-base-ui-focus-guard");
+    act(() => after.focus());
+    await waitFor(() => expect(document.activeElement).toBe(input()));
+  });
+
+  it("wraps Shift+Tab from the input round to Close", async () => {
+    const dialog = await openPalette();
+    expect(document.activeElement).toBe(input());
+    const before = dialog.previousElementSibling as HTMLElement;
+    expect(before).toHaveAttribute("data-base-ui-focus-guard");
+    act(() => before.focus());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close" })));
+  });
+
+  it("keeps the query and the palette on an Escape that belongs to an IME composition (R48)", async () => {
+    await openPalette();
+    type("sq");
+    press("Escape", { isComposing: true });
+    expect(input().value).toBe("sq");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("closes when the session resets, on a new game, a load or an exit (R22)", async () => {
+    await openPalette();
+    act(() => resetSessionNavigation());
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
   it("closes from the Close button and returns focus to Go", async () => {
