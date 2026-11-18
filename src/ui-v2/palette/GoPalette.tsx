@@ -106,7 +106,10 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   }, [results]);
   const optionGroups = useMemo(() => results.map((e) => e.group), [results]);
   const activeIndex = results.length === 0 ? -1 : Math.min(active, results.length - 1);
-  const optionId = (index: number) => `${listId}-option-${index}`;
+  // R74: an option's id comes from its row, so a re-filter that puts another row first
+  // changes `aria-activedescendant` too. The escape is one-to-one, so ids stay unique.
+  const optionId = (entry: PaletteEntry) =>
+    `${listId}-opt-${entry.id.replace(/[^A-Za-z0-9-]/g, (c) => `_${c.codePointAt(0)?.toString(16)}_`)}`;
 
   // One status region (R45): the count once typing pauses, or the empty text; nothing on open.
   useEffect(() => {
@@ -157,7 +160,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
 
   const move = (index: number) => {
     setActive(index);
-    document.getElementById(optionId(index))?.scrollIntoView({ block: "nearest" });
+    document.getElementById(optionId(results[index]))?.scrollIntoView({ block: "nearest" });
   };
 
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -283,7 +286,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
               aria-expanded={hasResults}
               aria-controls={hasResults ? listId : undefined}
               aria-autocomplete="list"
-              aria-activedescendant={hasResults ? optionId(activeIndex) : undefined}
+              aria-activedescendant={hasResults ? optionId(results[activeIndex]) : undefined}
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="none"
@@ -328,7 +331,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
                           <PaletteOption
                             key={entry.id}
                             entry={entry}
-                            id={optionId(index)}
+                            id={optionId(entry)}
                             active={index === activeIndex}
                             onHighlight={() => setActive(index)}
                             onActivate={() => activate(entry)}

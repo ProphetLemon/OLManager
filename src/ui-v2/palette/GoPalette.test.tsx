@@ -387,3 +387,16 @@ describe("GoPalette: one activation per close (code review)", () => {
     expect(document.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
   });
 });
+
+describe("GoPalette: accessibility audit (R74-R84)", () => {
+  it("names each option after its row, so a re-filter that changes the active row changes aria-activedescendant (R74)", async () => {
+    await openPalette();
+    type("inbox");
+    const inbox = input().getAttribute("aria-activedescendant");
+    expect(activeOption()).toHaveTextContent(/inbox/i);
+    type("scrims");
+    expect(activeOption()).toHaveTextContent(/scrims/i);
+    expect(input().getAttribute("aria-activedescendant")).not.toBe(inbox);
+    expect(activeOption()).toBe(options()[0]);
+  });
+});
