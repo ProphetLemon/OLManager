@@ -888,7 +888,9 @@ export default function DashboardV2() {
           !profileNavigation.selectedTeamId &&
           !profileNavigation.selectedStaffId ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
+            {/* Keyed by mode: the club tab and World › Staff keep separate view state. */}
             <StaffTabV2
+              key="staff-club"
               gameState={gameState}
               onGameUpdate={setGameState}
               onSelectStaff={selectStaff}
@@ -901,6 +903,7 @@ export default function DashboardV2() {
           !profileNavigation.selectedStaffId ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <StaffTabV2
+              key="staff-world"
               gameState={gameState}
               onGameUpdate={setGameState}
               mode="world"

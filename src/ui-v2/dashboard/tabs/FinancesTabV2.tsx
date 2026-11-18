@@ -37,6 +37,7 @@ import {
   getSeasonNetSummary,
 } from "@/lib/finances/finance";
 import type { FinancialTransactionData, FinancialTransactionKind } from "@/store/types";
+import { useTabUiField, type FinancesTabUiState } from "@/store/tabUiStore";
 import { resolveLedgerDescription } from "@/lib/i18n/backendI18n";
 import type { FacilityUpgradeId } from "@/lib/finances/lolFinanceContracts";
 import {
@@ -79,7 +80,7 @@ function getMainHubExpansionCost(level: number): number {
   return (level + 1) * 500_000;
 }
 
-type SortKey = "name" | "position" | "wage" | "value" | "contract";
+type SortKey = FinancesTabUiState["sortKey"];
 
 /** English fallbacks of the ledger kinds; the labels shown come from `finances.ledgerKinds.<kind>`. */
 const LEDGER_KIND_LABELS: Record<FinancialTransactionKind, string> = {
@@ -132,15 +133,16 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
     ? gameState.staff.filter((s) => s.team_id === myTeam.id)
     : [];
 
-  const [activeTab, setActiveTab] = useState("overview");
+  // The view, sort and ledger filters survive a profile visit (R23).
+  const [activeTab, setActiveTab] = useTabUiField("finances", "view");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [delegatedRenewalsSummary, setDelegatedRenewalsSummary] = useState<string | null>(null);
   const [selectedRiskPlayerIds, setSelectedRiskPlayerIds] = useState<string[]>([]);
-  const [sortKey, setSortKey] = useState<SortKey>("wage");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [ledgerSearch, setLedgerSearch] = useState("");
-  const [ledgerKindFilter, setLedgerKindFilter] = useState<FinancialTransactionKind | "all">("all");
-  const [ledgerSourceFilter, setLedgerSourceFilter] = useState("all");
+  const [sortKey, setSortKey] = useTabUiField("finances", "sortKey");
+  const [sortDir, setSortDir] = useTabUiField("finances", "sortDir");
+  const [ledgerSearch, setLedgerSearch] = useTabUiField("finances", "ledgerSearch");
+  const [ledgerKindFilter, setLedgerKindFilter] = useTabUiField("finances", "ledgerKind");
+  const [ledgerSourceFilter, setLedgerSourceFilter] = useTabUiField("finances", "ledgerSource");
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -304,7 +306,11 @@ export function FinancesTabV2({ gameState, onGameUpdate, onSelectPlayer }: Finan
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as FinancesTabUiState["view"])}
+        className="flex flex-col flex-1 min-h-0"
+      >
         <TabsList variant="line">
           <TabsTrigger value="overview">{t("finances.overviewTab", "Resumen")}</TabsTrigger>
           <TabsTrigger value="facilities">{t("finances.facilitiesTab", "Instalaciones")}</TabsTrigger>

@@ -50,7 +50,9 @@ src/
 │       ├── DashboardSidebarV2.tsx  # rail: Tree o Split, una sola `nav`, sobre navModel y treeRows
 │       ├── DashboardHeaderV2.tsx   # barra: Back, miga (equipo · grupo) sobre el h1, reloj, Continuar
 │       ├── RouteAnnouncer.tsx      # la única región viva de cambios de ruta ("Now on {título}, {grupo}")
-│       └── tabs/              # tabs nativos v2 (home/, squad/ = On Air panels)
+│       └── tabs/              # tabs nativos v2 (home/, squad/ = On Air panels); vista, filtros, orden, página y
+│                              # selección de cada pestaña en store/tabUiStore (R23: sobreviven a un perfil; ids
+│                              # por useValidTabUiField; la página vuelve a 1 con hooks/useResetOnChange, nunca al montar)
 └── store/, services/, hooks/, api/  # compartidos (hooks/useRovingFocus, useClubTheme)
 ```
 
