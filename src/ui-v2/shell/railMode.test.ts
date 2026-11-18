@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   decideRailMode,
+  goReserve,
+  goRow,
   navCell,
   navRow,
   RAIL_CLUSTER_CELLS,
@@ -34,8 +36,20 @@ function modeFor(w: number, h: number, rootPx: number, current: RailMode = "tree
     slotH: h - TITLE_BAR_REM * rootPx,
     rootPx,
     current,
+    reservedTop: goReserve(rootPx),
   });
 }
+
+describe("the Go row's reserve (NR2.9, R30)", () => {
+  it("is --go-row plus 5 px above and below: 50 / 50 / 50 / 55 / 60", () => {
+    expect(SCALES.map(([, r]) => goReserve(r))).toEqual([50, 50, 50, 55, 60]);
+    expect([9, 12, 16, 18, 20].map(goRow)).toEqual([40, 40, 40, 45, 50]);
+  });
+
+  it("raises the tree thresholds to 672 / 672 / 672 / 748.5 / 825 (spec section 7.2)", () => {
+    expect(SCALES.map(([, r]) => railNeed(r, goReserve(r)))).toEqual([672, 672, 672, 748.5, 825]);
+  });
+});
 
 describe("size helpers", () => {
   it("hold their px floors at small roots and scale with the root above", () => {
@@ -81,7 +95,7 @@ describe("the structural allowance", () => {
   });
 });
 
-describe("decideRailMode against the prediction table", () => {
+describe("decideRailMode against the prediction table, with the Go row (spec section 7.2)", () => {
   const expected: Record<string, RailMode[]> = {
     "1920x1080": ["tree", "tree", "tree", "tree", "tree"],
     "1280x800": ["tree", "tree", "tree", "tree", "split"],
@@ -96,6 +110,16 @@ describe("decideRailMode against the prediction table", () => {
       });
     });
   }
+
+  it("keeps L at 1280x800 in Tree on a fresh measurement, and in Split after a shrink (759.5 < 764.5)", () => {
+    expect(modeFor(1280, 800, 18, "tree")).toBe("tree");
+    expect(modeFor(1280, 800, 18, "split")).toBe("split");
+    // The slot has to reach 748.5 + 16 to re-enter the tree.
+    const at = (slotH: number) =>
+      decideRailMode({ platform: "desktop", slotW: 1280, slotH, rootPx: 18, current: "split", reservedTop: goReserve(18) });
+    expect(at(764.4)).toBe("split");
+    expect(at(764.5)).toBe("tree");
+  });
 
   it("never lets the 960x640 window into the tree, whatever the height margin", () => {
     expect(
@@ -184,7 +208,7 @@ describe("splitLabelsFit (R13)", () => {
   // Window height 640 and 800 at XS, M, L and XL; slot = window minus the rem title bar.
   const table: Array<[string, number, number, "labels" | "icons", "labels" | "icons"]> = [
     // scale, root, window height, one-line labels, two-line labels
-    ["XS", 12, 640, "labels", "labels"],
+    ["XS", 12, 640, "labels", "icons"],
     ["M", 16, 640, "labels", "icons"],
     ["L", 18, 640, "icons", "icons"],
     ["XL", 20, 640, "icons", "icons"],
@@ -198,10 +222,11 @@ describe("splitLabelsFit (R13)", () => {
     expect(fit(root, h, 2)).toBe(two);
   });
 
-  it("derives the need from the same tokens as railMode (helpers, cluster, separator)", () => {
-    // M, one line: 8 stops of 50, separator 13, four stacked cells and the cluster chrome.
-    expect(splitNeed(16, "labels", 1)).toBe(8 * 50 + 13 + 4 * 36 + 9);
-    expect(splitNeed(20, "icons", 2)).toBe(8 * navCell(20) + 16 + 4 * navCell(20) + 9);
+  it("derives the need from the same tokens as railMode (Go cell, helpers, cluster, separator)", () => {
+    // M, one line: the Go cell, 8 stops of 50, separator 13, four stacked cells and the cluster chrome.
+    expect(splitNeed(16, "labels", 1)).toBe(36 + 8 * 50 + 13 + 4 * 36 + 9);
+    expect(splitNeed(16, "labels", 1)).toBe(602);
+    expect(splitNeed(20, "icons", 2)).toBe(navCell(20) + 8 * navCell(20) + 16 + 4 * navCell(20) + 9);
     expect(splitNeed(16, "labels", 2)).toBeGreaterThan(splitNeed(16, "labels", 1));
     expect(splitNeed(16, "icons", 2)).toBeLessThan(splitNeed(16, "labels", 1));
   });
@@ -215,6 +240,23 @@ describe("splitLabelsFit (R13)", () => {
     expect(at(need, "icons")).toBe("icons");
     expect(at(need + 15.9, "icons")).toBe("icons");
     expect(at(need + 16, "icons")).toBe("labels");
+  });
+
+  it("adds the Go cell to the desktop need (spec section 7.3): 523 / 619 at XS, 602 / 730 at M, 676 / 820 at L, 750 / 910 at XL", () => {
+    const pairs = [12, 16, 18, 20].map((r) => [splitNeed(r, "labels", 1), splitNeed(r, "labels", 2)]);
+    expect(pairs).toEqual([
+      [523, 619],
+      [602, 730],
+      [676, 820],
+      [750, 910],
+    ]);
+  });
+
+  it("decides the labels at 960x640 as section 7.3 says: M keeps one-line labels by 2 px, a two-line XS goes to icons", () => {
+    expect(fit(16, 640, 1)).toBe("labels");
+    expect(640 - 2.25 * 16 - splitNeed(16, "labels", 1)).toBe(2);
+    expect(fit(12, 640, 2)).toBe("icons");
+    expect(fit(20, 800, 1)).toBe("labels");
   });
 
   it("counts a shorter list when a group is hidden", () => {
@@ -255,6 +297,6 @@ describe("the Android hit in the Split helpers", () => {
   });
 
   it("keeps the desktop numbers when no platform is given", () => {
-    expect(splitNeed(16, "labels", 1)).toBe(8 * 50 + 13 + 4 * 36 + 9);
+    expect(splitNeed(16, "labels", 1)).toBe(36 + 8 * 50 + 13 + 4 * 36 + 9);
   });
 });

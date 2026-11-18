@@ -14,6 +14,12 @@ export const navRowChild = (r: number): number => Math.max(1.75 * r, 28);
 export const navCell = (r: number): number => Math.max(2.25 * r, 36);
 /** Tree rail width: `--rail-w-tree` = max(14rem, 192px). */
 export const railWTree = (r: number): number => Math.max(14 * r, 192);
+/** The Tree's Go row: `--go-row` = max(2.5rem, 40px). */
+export const goRow = (r: number): number => Math.max(2.5 * r, 40);
+/** The Go row's margin: 5 px above it and 5 below. */
+export const GO_ROW_MARGIN_PX = 10;
+/** What the Tree's Go row takes from the rail's height (R30): 50 at roots 12 to 16, 55 at 18, 60 at 20. */
+export const goReserve = (r: number): number => goRow(r) + GO_ROW_MARGIN_PX;
 
 /** Rail padding 20, divider 17, Market gap 4, utility cluster border and padding 9. */
 export const RAIL_STRUCTURAL_PX = 50;
@@ -63,7 +69,7 @@ export interface RailModeInput {
   /** Computed root font size in px. */
   rootPx: number;
   current: RailMode;
-  /** Height taken from the rail by something pinned above the tree (phase 2 Go button). */
+  /** Height taken from the rail by something pinned above the tree: the Go row, `goReserve`. */
   reservedTop?: number;
 }
 
@@ -104,8 +110,9 @@ export function splitStopHeight(r: number, lines: number, platform: RailPlatform
 }
 
 /**
- * What the Split rail spends on its stops. Desktop adds a divider and the stacked utility
- * cluster; Android has neither (the utilities are in the More menu) and pads 16 px.
+ * What the Split rail spends on its stops. Desktop adds the Go cell at the top of the stops
+ * column (R31), a divider and the stacked utility cluster; Android has neither the cell nor
+ * the cluster (Go is a stop there, the utilities are in the More menu) and only pads.
  */
 export function splitNeed(
   r: number,
@@ -118,7 +125,8 @@ export function splitNeed(
   if (platform === "android") return stops * perStop + ANDROID_RAIL_PADDING_PX;
   const divider = 0.75 * r + 1;
   const cluster = RAIL_CLUSTER_CELLS * navCell(r) + RAIL_STRUCTURAL_PARTS.clusterChrome;
-  return stops * perStop + divider + cluster;
+  const goCell = navCell(r);
+  return goCell + stops * perStop + divider + cluster;
 }
 
 export interface SplitLabelsInput {
