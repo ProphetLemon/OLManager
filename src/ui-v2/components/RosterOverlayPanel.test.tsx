@@ -341,6 +341,14 @@ describe("RosterOverlayPanel", () => {
     expect(link).toHaveAttribute("href", "https://www.fandom.com/licensing");
   });
 
+  it("draws the licence attribution in the dim token at full opacity", () => {
+    renderPanel("upToDate");
+
+    const classes = screen.getByText(/Roster data: Leaguepedia contributors,/).className.split(/\s+/);
+    expect(classes).toContain("text-dim");
+    expect(classes.filter((name) => name.startsWith("text-") && name.includes("/"))).toEqual([]);
+  });
+
   it("does not link a licence URL that the overlay supplies", () => {
     renderPanel(
       "upToDate",

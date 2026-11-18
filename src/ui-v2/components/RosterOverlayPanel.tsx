@@ -150,7 +150,7 @@ export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOve
           {announcement}
         </p>
         {info && (
-          <p className="mt-0.5 text-caption text-muted-foreground/80">
+          <p className="mt-0.5 text-caption text-dim">
             {t("rosterOverlay.attribution", { name: info.source.name })}{" "}
             {licenseHref ? (
               <a
