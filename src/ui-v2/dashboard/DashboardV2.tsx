@@ -44,7 +44,7 @@ import {
   type DashboardNavigateContext,
   type NavIntent,
 } from "@/lib/dashboard/profileNavigation";
-import { describeLocation, routeAnnouncement, tabTitle } from "@/lib/dashboard/describeLocation";
+import { backTitle, describeLocation, routeAnnouncement, tabTitle } from "@/lib/dashboard/describeLocation";
 import { RouteAnnouncer, useRouteAnnouncer } from "./RouteAnnouncer";
 import { createDashboardTabContentModel } from "@/lib/dashboard/tabContentModel";
 import {
@@ -602,7 +602,7 @@ export default function DashboardV2() {
   const title = (describeDeps && describeLocation(here, describeDeps)?.title) ?? tabTitle(here.tab, t);
   // Back is named after where it lands, found by the same function Back runs (R20).
   const backTarget = backDestination(profileNavigation, isValidLocation);
-  const backTo = backTarget && describeDeps ? (describeLocation(backTarget, describeDeps)?.title ?? null) : null;
+  const backTo = backTitle(backTarget, describeDeps, t);
 
   const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
     if (!gameState) return [];

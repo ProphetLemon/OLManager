@@ -3,13 +3,22 @@ import { describe, expect, it } from "vitest";
 
 import type { GameStateData } from "@/store/gameStore";
 import { translateFromEnglish } from "@/test-i18n";
-import { backControlLabel, describeLocation, routeAnnouncement, tabTitle } from "./describeLocation";
+import { backControlLabel, backTitle, describeLocation, routeAnnouncement, tabTitle } from "./describeLocation";
 import type { DashboardLocation } from "./profileNavigation";
 
 const game = {
-  players: [{ id: "p1", match_name: "Faker" }],
-  teams: [{ id: "t1", name: "Night Owls" }],
-  staff: [{ id: "s1", first_name: "Ana", last_name: "Ruiz" }],
+  players: [
+    { id: "p1", match_name: "Faker" },
+    { id: "p-blank", match_name: "  " },
+  ],
+  teams: [
+    { id: "t1", name: "Night Owls" },
+    { id: "t-blank", name: "" },
+  ],
+  staff: [
+    { id: "s1", first_name: "Ana", last_name: "Ruiz" },
+    { id: "s-blank", first_name: " ", last_name: "" },
+  ],
 } as unknown as Pick<GameStateData, "players" | "teams" | "staff">;
 
 const at = (tab: string, over: Partial<DashboardLocation> = {}): DashboardLocation => ({
@@ -53,6 +62,32 @@ describe("describeLocation", () => {
     expect(describeLocation(at("Squad", { playerId: "released" }), deps)).toBeNull();
     expect(describeLocation(at("Teams", { teamId: "gone" }), deps)).toBeNull();
     expect(describeLocation(at("Staff", { staffId: "gone" }), deps)).toBeNull();
+  });
+});
+
+describe("describeLocation for an entity with an empty name (R55)", () => {
+  it("names it after its tab, keeping its kind, so no h1, Back or arrival is empty", () => {
+    expect(describeLocation(at("Staff", { staffId: "s-blank" }), deps)).toEqual({ title: "Staff", kind: "staff" });
+    expect(describeLocation(at("Squad", { playerId: "p-blank" }), deps)).toEqual({ title: "Squad", kind: "player" });
+    expect(describeLocation(at("Teams", { teamId: "t-blank" }), deps)).toEqual({ title: "Teams", kind: "team" });
+  });
+});
+
+describe("backTitle (R55, CR3)", () => {
+  it("is null only with nowhere to go", () => {
+    expect(backTitle(null, deps, t)).toBeNull();
+  });
+
+  it("names the place Back lands", () => {
+    expect(backTitle(at("Squad", { playerId: "p1" }), deps, t)).toBe("Faker");
+  });
+
+  it("names the tab when the entity's name is empty, so Back still reads 'Back to Staff'", () => {
+    expect(backTitle(at("Staff", { staffId: "s-blank" }), deps, t)).toBe("Staff");
+  });
+
+  it("names the tab without game data, so a working Back is never dimmed", () => {
+    expect(backTitle(at("Squad", { playerId: "p1" }), null, t)).toBe("Squad");
   });
 });
 

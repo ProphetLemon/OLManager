@@ -39,28 +39,47 @@ export function groupTitle(tab: string, t: TFunction): string | null {
  * The one naming source for a location (R21): the h1, Back, the announcer and,
  * later, the palette and Recent. The champion page is checked first because it
  * keeps the profile it was opened from under it. A player, team or staff member
- * that is gone gives null, and the caller skips the entry.
+ * that is gone gives null, and the caller skips the entry. One whose name is
+ * empty is named after its tab (R55): never an empty h1, "Back to " or "Now on , Club".
  */
 export function describeLocation(
   loc: DashboardLocation,
   { t, game }: DescribeLocationDeps,
 ): LocationDescription | null {
+  const named = (name: string | null | undefined, kind: LocationKind): LocationDescription => ({
+    title: name?.trim() || tabTitle(loc.tab, t),
+    kind,
+  });
   if (loc.championKey !== null) {
-    return { title: championDisplayName(loc.championKey), kind: "champion" };
+    return named(championDisplayName(loc.championKey), "champion");
   }
   if (loc.playerId !== null) {
     const player = game.players.find((p) => p.id === loc.playerId);
-    return player ? { title: player.match_name, kind: "player" } : null;
+    return player ? named(player.match_name, "player") : null;
   }
   if (loc.teamId !== null) {
     const team = game.teams.find((x) => x.id === loc.teamId);
-    return team ? { title: team.name, kind: "team" } : null;
+    return team ? named(team.name, "team") : null;
   }
   if (loc.staffId !== null) {
     const member = game.staff.find((s) => s.id === loc.staffId);
-    return member ? { title: `${member.first_name} ${member.last_name}`.trim(), kind: "staff" } : null;
+    return member ? named(`${member.first_name} ${member.last_name}`, "staff") : null;
   }
   return { title: tabTitle(loc.tab, t), kind: "tab" };
+}
+
+/**
+ * What a Back control is named after: the place it lands, or null only when
+ * there is nowhere to go, so a working Back is never dimmed. Without game data
+ * it names the target's tab (CR3).
+ */
+export function backTitle(
+  target: DashboardLocation | null,
+  deps: DescribeLocationDeps | null,
+  t: TFunction,
+): string | null {
+  if (target === null) return null;
+  return (deps && describeLocation(target, deps)?.title) || tabTitle(target.tab, t);
 }
 
 /**
