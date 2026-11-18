@@ -138,6 +138,11 @@ describe("buildPaletteIndex: browse mode (R26)", () => {
     expect(tabs).toContain("Transfers");
   });
 
+  it("keeps a recent profile opened from a Club tab when the manager has no club", () => {
+    const entries = buildPaletteIndex(input({ unemployed: true, recent: [at("Squad", { playerId: "p1" })] }));
+    expect(ofKind(entries, "recent").map((r) => r.label)).toEqual(["Upset"]);
+  });
+
   it("has no Continue, Save or Exit entries, nor actions of any kind", () => {
     const entries = buildPaletteIndex(input());
     expect(new Set(entries.map((e) => e.kind))).toEqual(new Set(["call", "recent", "section", "settings", "view"]));

@@ -162,10 +162,11 @@ function recentEntries(input: PaletteIndexInput, isHidden: (tab: string) => bool
   for (const location of input.recent) {
     if (rows.length === RECENT_CAP) break;
     const key = locationKey(location);
-    if (seen.has(key) || sameLocation(location, input.current) || isHidden(location.tab)) continue;
+    if (seen.has(key) || sameLocation(location, input.current)) continue;
     seen.add(key);
     const here = describeLocation(location, { t, game });
-    if (!here) continue;
+    // A hidden Club tab goes, but a profile opened over it is a place of its own and stays.
+    if (!here || (here.kind === "tab" && isHidden(location.tab))) continue;
     const zone = here.kind === "tab" ? groupTitle(location.tab, t) : null;
     rows.push({
       kind: "recent",
