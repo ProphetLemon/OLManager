@@ -4,8 +4,8 @@ import {
   applyNavIntent,
   createDashboardProfileNavigationState,
   currentLocation,
+  backDestination,
   goBackDashboardProfile,
-  hasDashboardProfileHistory,
   HISTORY_CAP,
   isLocationInGame,
   locationKey,
@@ -157,13 +157,31 @@ describe("the back stack (R19)", () => {
   });
 });
 
-describe("hasDashboardProfileHistory", () => {
-  it("is true while a profile is open and false on a tab, whatever the stack holds", () => {
-    const home = createDashboardProfileNavigationState("Home");
-    const onTab = run(home, tab("Squad"), tab("Training"));
-    expect(onTab.navHistory.length).toBeGreaterThan(0);
-    expect(hasDashboardProfileHistory(onTab)).toBe(false);
-    expect(hasDashboardProfileHistory(applyNavIntent(onTab, { kind: "staff", id: "s1" }))).toBe(true);
+describe("backDestination (R20)", () => {
+  const home = createDashboardProfileNavigationState("Home");
+  const all = () => true;
+
+  it("is the location left last, on a tab as on a profile", () => {
+    expect(backDestination(run(home, tab("Squad"), tab("Training")), all)).toEqual(at("Squad"));
+    expect(backDestination(run(home, tab("Squad"), { kind: "player", id: "p1" }), all)).toEqual(at("Squad"));
+  });
+
+  it("is null on a tab with an empty stack, where Back does nothing", () => {
+    expect(backDestination(home, all)).toBeNull();
+  });
+
+  it("is the profile's own tab when the stack is empty, because Back still closes the profile", () => {
+    const profile = run(createDashboardProfileNavigationState("Squad"), { kind: "player", id: "p1" });
+    expect(backDestination({ ...profile, navHistory: [] }, all)).toEqual(at("Squad"));
+  });
+
+  it("skips the entries Back skips, so it names where Back lands", () => {
+    const state = run(home, tab("Squad"), { kind: "player", id: "released" }, { kind: "team", id: "t1" });
+    expect(backDestination(state, (loc) => loc.playerId !== "released")).toEqual(at("Squad"));
+  });
+
+  it("is null on a tab whose every entry is invalid", () => {
+    expect(backDestination(run(home, tab("Squad")), () => false)).toBeNull();
   });
 });
 

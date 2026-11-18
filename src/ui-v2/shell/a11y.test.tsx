@@ -37,9 +37,9 @@ function renderShell() {
         onExitClick={vi.fn()}
       />
       <DashboardHeaderV2
-        activeTabLabel="Squad"
+        title="Squad"
         currentDate="12 Jan"
-        hasProfileHistory={false}
+        backTo={null}
         isAdvancing={false}
         isSaving={false}
         saveFlash={false}

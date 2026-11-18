@@ -36,11 +36,13 @@ import {
 import DashboardOverlays from "@/ui-v2/_legacy/components/dashboard/DashboardOverlays";
 import FiredModal from "@/ui-v2/_legacy/components/dashboard/FiredModal";
 import {
-  hasDashboardProfileHistory,
+  backDestination,
+  currentLocation,
   isLocationInGame,
   type DashboardLocation,
   type DashboardNavigateContext,
 } from "@/lib/dashboard/profileNavigation";
+import { describeLocation, tabTitle } from "@/lib/dashboard/describeLocation";
 import { createDashboardTabContentModel } from "@/lib/dashboard/tabContentModel";
 import {
   getDashboardAlerts,
@@ -90,34 +92,6 @@ const PlayerProfileV2 = lazy(() => import("@/ui-v2/pages/PlayerProfileV2"));
 const StaffProfileV2 = lazy(() => import("@/ui-v2/pages/StaffProfileV2"));
 const TeamProfileV2 = lazy(() => import("@/ui-v2/pages/TeamProfileV2"));
 const DashboardWorkspaceContent = lazy(() => import("@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent"));
-
-const TAB_TRANSLATION_KEYS: Record<string, string> = {
-  Home: "dashboard.home",
-  Inbox: "dashboard.inbox",
-  Manager: "dashboard.manager",
-  Squad: "dashboard.squad",
-  Tactics: "dashboard.tactics",
-  Training: "dashboard.training",
-  Scrims: "dashboard.scrims",
-  Soloq: "dashboard.soloq",
-  Meta: "dashboard.meta",
-  Staff: "dashboard.staff",
-  Finances: "dashboard.finances",
-  Competitions: "dashboard.competitions",
-  Tournaments: "dashboard.tournaments",
-  Market: "dashboard.market",
-  Transfers: "dashboard.transfers",
-  Players: "dashboard.players",
-  Teams: "dashboard.teams",
-  WorldStaff: "dashboard.worldStaff",
-
-  ChampionsWorld: "dashboard.champions_world",
-  Schedule: "dashboard.schedule",
-  News: "dashboard.news",
-  Social: "dashboard.social",
-  Scouting: "dashboard.scouting",
-  Youth: "dashboard.youthAcademy",
-};
 
 const PATH_TAB_MAP: Record<string, string> = {
   "/finanzas": "Finances",
@@ -583,10 +557,14 @@ export default function DashboardV2() {
     : managerName;
   const managerAvatar = useMemo(() => gameState?.manager?.avatar_path ? assetUrl(gameState.manager.avatar_path) : assetUrl(DEFAULT_MANAGER_ICON_PATH), [gameState?.manager?.avatar_path]);
   const teamLogo = useMemo(() => resolveTeamLogo(myTeamName, myTeam?.logo_url), [myTeamName, myTeam?.logo_url]);
-  const hasProfileHistory = hasDashboardProfileHistory(profileNavigation);
-  const activeTabLabel = TAB_TRANSLATION_KEYS[profileNavigation.activeTab]
-    ? t(TAB_TRANSLATION_KEYS[profileNavigation.activeTab], { defaultValue: profileNavigation.activeTab })
-    : profileNavigation.activeTab;
+  // One naming source (R21): the h1 names the location itself, so a profile shows the
+  // entity's name. An entity that is gone falls back to its tab's label.
+  const here = currentLocation(profileNavigation);
+  const describeDeps = gameState ? { t, game: gameState } : null;
+  const title = (describeDeps && describeLocation(here, describeDeps)?.title) ?? tabTitle(here.tab, t);
+  // Back is named after where it lands, found by the same function Back runs (R20).
+  const backTarget = backDestination(profileNavigation, isValidLocation);
+  const backTo = backTarget && describeDeps ? (describeLocation(backTarget, describeDeps)?.title ?? null) : null;
 
   const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
     if (!gameState) return [];
@@ -741,10 +719,10 @@ export default function DashboardV2() {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <DashboardHeaderV2
-          activeTabLabel={activeTabLabel}
+          title={title}
           currentDate={currentDate}
           currentDateShort={currentDateShort}
-          hasProfileHistory={hasProfileHistory}
+          backTo={backTo}
           isAdvancing={isAdvancing}
           seasonComplete={showSeasonSummary}
           endsSplit={endsSplit}

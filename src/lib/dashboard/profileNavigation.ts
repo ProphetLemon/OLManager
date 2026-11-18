@@ -250,15 +250,15 @@ export function isLocationInGame(
 }
 
 /**
- * Whether a profile is open. The header's current Back button follows this
- * until NR2.3 replaces it, so it still shows only over a profile.
+ * Where Back would land (R20), or null when it would stay put. It runs the same
+ * `goBackDashboardProfile` Back runs, so the name Back shows is where Back goes.
  */
-export function hasDashboardProfileHistory(state: DashboardProfileNavigationState): boolean {
-  return (
-    state.selectedPlayerId !== null ||
-    state.selectedTeamId !== null ||
-    state.selectedStaffId !== null
-  );
+export function backDestination(
+  state: DashboardProfileNavigationState,
+  isValid: (loc: DashboardLocation) => boolean,
+): DashboardLocation | null {
+  const there = currentLocation(goBackDashboardProfile(state, isValid));
+  return sameLocation(there, currentLocation(state)) ? null : there;
 }
 
 /**

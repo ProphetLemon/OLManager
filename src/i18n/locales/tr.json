@@ -3712,7 +3712,13 @@
       "matchDay": "Maç günü",
       "skipToMatchDay": "Sonraki maça kadar simüle et",
       "skipToNextDay": "Sonraki güne atla",
-      "clock": "Oyun tarihi ve aşaması"
+      "clock": "Oyun tarihi ve aşaması",
+      "backTo": "Geri: {{destination}}",
+      "backNone": "Geri dönülecek yer yok"
+    },
+    "route": {
+      "now": "Şimdi: {{title}}, {{group}}",
+      "nowNoGroup": "Şimdi: {{title}}"
     },
     "tags": {
       "blocker": "Engel",

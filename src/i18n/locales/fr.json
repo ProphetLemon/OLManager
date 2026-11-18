@@ -3712,7 +3712,13 @@
       "matchDay": "Jour de match",
       "skipToMatchDay": "Simuler jusqu'au prochain match",
       "skipToNextDay": "Passer au jour suivant",
-      "clock": "Date et phase du jeu"
+      "clock": "Date et phase du jeu",
+      "backTo": "Retour : {{destination}}",
+      "backNone": "Aucun retour possible"
+    },
+    "route": {
+      "now": "Maintenant : {{title}}, {{group}}",
+      "nowNoGroup": "Maintenant : {{title}}"
     },
     "tags": {
       "blocker": "Blocage",

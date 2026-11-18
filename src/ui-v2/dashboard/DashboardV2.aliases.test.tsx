@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -207,6 +207,31 @@ describe("DashboardV2 backend tab aliases", () => {
     await screen.findByRole("navigation", { name: "Main navigation" });
     expect(screen.queryByTestId("youth-tab-v2")).toBeNull();
     expect(useDashboardLocationStore.getState().nav.activeTab).toBe("Finances");
+  });
+
+  it("names the header Back after where it lands, skipping a released player, and keeps focus on it", async () => {
+    await renderAt("/dashboard");
+    fireEvent.click(await screen.findByRole("button", { name: "go-youth-academy" }));
+    // p1 is not among the game's players: it was released or retired since.
+    fireEvent.click(await screen.findByRole("button", { name: "renew-p1" }, { timeout: 3000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "open-team-1" }));
+    await screen.findByTestId("team-profile", {}, { timeout: 3000 });
+    // R21: the title is the team's name, not the tab's.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Test Team");
+
+    const back = screen.getByRole("button", { name: "Back to Academy" });
+    act(() => back.focus());
+    fireEvent.click(back);
+
+    expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Academy");
+    expect(back).toHaveFocus();
+    expect(back).toHaveAccessibleName("Back to Home");
+
+    fireEvent.click(back);
+    expect(back).toHaveAccessibleName("Nothing to go back to");
+    expect(back).toHaveAttribute("aria-disabled", "true");
+    expect(back).toHaveFocus();
   });
 
   it("never commits the remembered tab on an alias mount, so its effects never run", async () => {

@@ -3746,7 +3746,13 @@
       "matchDay": "Match day",
       "skipToMatchDay": "Simulate to next match",
       "skipToNextDay": "Skip to next day",
-      "clock": "Game date and phase"
+      "clock": "Game date and phase",
+      "backTo": "Back to {{destination}}",
+      "backNone": "Nothing to go back to"
+    },
+    "route": {
+      "now": "Now on {{title}}, {{group}}",
+      "nowNoGroup": "Now on {{title}}"
     },
     "tags": {
       "blocker": "Blocker",

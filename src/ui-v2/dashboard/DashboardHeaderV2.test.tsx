@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardHeaderV2 } from "@/ui-v2/dashboard/DashboardHeaderV2";
@@ -7,8 +7,8 @@ const requestedKeys = vi.hoisted(() => [] as string[]);
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (_k: string, o?: { defaultValue?: string; count?: number; group?: string }) =>
-      (requestedKeys.push(_k), o?.defaultValue ?? _k).replace("{{count}}", String(o?.count ?? "")).replace("{{group}}", o?.group ?? ""),
+    t: (_k: string, o?: Record<string, unknown> & { defaultValue?: string }) =>
+      (requestedKeys.push(_k), o?.defaultValue ?? _k).replace(/{{(\w+)}}/g, (_m, name: string) => String(o?.[name] ?? "")),
   }),
 }));
 
@@ -16,7 +16,23 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-function setup(extra: Partial<React.ComponentProps<typeof DashboardHeaderV2>> = {}) {
+const baseProps = {
+  title: "Squad",
+  currentDate: "12 Jan",
+  backTo: null,
+  isAdvancing: false,
+  isSaving: false,
+  saveFlash: false,
+  hasMatchToday: false,
+  dayPhase: "Morning",
+  alerts: [],
+  teamName: "Night Owls",
+  activeTab: "Squad",
+  isUnemployed: false,
+  callCount: 0,
+} satisfies Partial<HeaderProps>;
+
+function setup(extra: Partial<HeaderProps> = {}) {
   const fns = {
     onBack: vi.fn(),
     onSave: vi.fn(),
@@ -25,27 +41,13 @@ function setup(extra: Partial<React.ComponentProps<typeof DashboardHeaderV2>> = 
     onSkipToNextDay: vi.fn(),
     onShowCalls: vi.fn(),
   };
-  render(
-    <DashboardHeaderV2
-      activeTabLabel="Squad"
-      currentDate="12 Jan"
-      hasProfileHistory={false}
-      isAdvancing={false}
-      isSaving={false}
-      saveFlash={false}
-      hasMatchToday={false}
-      dayPhase="Morning"
-      alerts={[]}
-      teamName="Night Owls"
-      activeTab="Squad"
-      isUnemployed={false}
-      callCount={0}
-      {...fns}
-      {...extra}
-    />,
-  );
+  const view = render(<DashboardHeaderV2 {...baseProps} {...fns} {...extra} />);
+  rerenderHeader = (props) => view.rerender(<DashboardHeaderV2 {...baseProps} {...fns} {...extra} {...props} />);
   return fns;
 }
+
+type HeaderProps = React.ComponentProps<typeof DashboardHeaderV2>;
+let rerenderHeader: (props: Partial<HeaderProps>) => void = () => {};
 
 describe("DashboardHeaderV2", () => {
   it("renders the team caption over the page title h1", () => {
@@ -130,10 +132,53 @@ describe("DashboardHeaderV2", () => {
     expect(onContinue).not.toHaveBeenCalled();
   });
 
-  it("shows the Back button only with profile history", () => {
-    const { onBack } = setup({ hasProfileHistory: true });
-    fireEvent.click(screen.getByRole("button", { name: "common.back" }));
-    expect(onBack).toHaveBeenCalledTimes(1);
+  describe("Back (R20)", () => {
+    it("is always rendered, and aria-disabled but focusable with nothing to go back to", () => {
+      const { onBack } = setup({ backTo: null });
+      const back = screen.getByRole("button", { name: "Nothing to go back to" });
+      expect(back).toHaveAttribute("aria-disabled", "true");
+      expect(back).not.toBeDisabled();
+      back.focus();
+      expect(back).toHaveFocus();
+      fireEvent.click(back);
+      expect(onBack).not.toHaveBeenCalled();
+      // Drawn dim, and not only by colour: the name says it does nothing.
+      expect(back.className).toContain("text-dim");
+    });
+
+    it("is named after its destination and goes back when pressed", () => {
+      const { onBack } = setup({ backTo: "Squad" });
+      const back = screen.getByRole("button", { name: "Back to Squad" });
+      expect(back).not.toHaveAttribute("aria-disabled");
+      fireEvent.click(back);
+      expect(onBack).toHaveBeenCalledTimes(1);
+    });
+
+    it("is the first control of the title group, an icon with a tip that follows focus", () => {
+      setup({ backTo: "Squad" });
+      const titleGroup = document.querySelector<HTMLElement>('[data-slot="bar-title"]')!;
+      const back = screen.getByRole("button", { name: "Back to Squad" });
+      expect(titleGroup.querySelector("button")).toBe(back);
+      expect(back.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      act(() => back.focus());
+      expect(screen.getByRole("tooltip")).toHaveTextContent("Back to Squad");
+    });
+
+    it("keeps focus while its name changes to the next destination", () => {
+      setup({ backTo: "Inbox" });
+      const back = screen.getByRole("button", { name: "Back to Inbox" });
+      back.focus();
+      fireEvent.click(back);
+      rerenderHeader({ backTo: "Squad" });
+      expect(screen.getByRole("button", { name: "Back to Squad" })).toHaveFocus();
+      rerenderHeader({ backTo: null });
+      expect(screen.getByRole("button", { name: "Nothing to go back to" })).toHaveFocus();
+    });
+  });
+
+  it("shows the location's own title in the h1, such as a player's name on a profile (R21)", () => {
+    setup({ title: "Faker", activeTab: "Squad" });
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Faker");
   });
 
   describe("crumb above the title", () => {
@@ -157,7 +202,7 @@ describe("DashboardHeaderV2", () => {
     });
 
     it("shows only the team on a direct stop", () => {
-      setup({ activeTab: "Inbox", activeTabLabel: "Inbox" });
+      setup({ activeTab: "Inbox", title: "Inbox" });
       expect(crumb()).toHaveTextContent(/^Night Owls$/);
     });
 
@@ -300,7 +345,7 @@ describe("DashboardHeaderV2 adapts to its own width (R17)", () => {
   });
 
   it("lets the title and the crumb shrink to an ellipsis, with the full text in title", () => {
-    setup({ activeTabLabel: "A very long section name", activeTab: "Squad" });
+    setup({ title: "A very long section name", activeTab: "Squad" });
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.className).toContain("truncate");
     expect(h1).toHaveAttribute("title", "A very long section name");
