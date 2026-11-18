@@ -248,6 +248,8 @@ describe("AttentionLaneV2 (R24, R47)", () => {
     render(<Frame />);
     for (const pill of pillButtons()) expect(pill).toHaveClass("focus-visible:ring-inset");
     expect(document.querySelector('[data-slot="lane-scroller"]')).toHaveClass("scroll-px-6");
+    // overflow-x-auto turns overflow-y to auto, which would clip a pill by its 1 px and scroll it (R62).
+    expect(document.querySelector('[data-slot="lane-scroller"]')).toHaveClass("overflow-y-hidden");
   });
 
   it("sets headlines in text-entry and the action in the club text colour (R35)", () => {

@@ -320,7 +320,8 @@
    Touch targets reach 48px at least; desktop keeps its 24px floor. */
 :root[data-platform="android"] {
   --hit: max(2.75rem, 48px);
-  --lane-h: var(--hit);
+  /* The band's 1 px bottom border sits inside its height: 49 px keeps a 48 px pill whole (R62). */
+  --lane-h: calc(var(--hit) + 1px);
   --lane-pill-h: var(--hit);
 }
 

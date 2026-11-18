@@ -182,7 +182,7 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
           tabIndex={-1}
           data-overflow-start={fade["data-overflow-start"]}
           data-overflow-end={fade["data-overflow-end"]}
-          className="flex h-full min-w-0 flex-1 items-center gap-2 overflow-x-auto overscroll-x-contain scroll-px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex h-full min-w-0 flex-1 items-center gap-2 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {callPills.map((pill) => {
             const index = pills.indexOf(pill);

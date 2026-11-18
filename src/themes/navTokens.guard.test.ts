@@ -87,9 +87,9 @@ describe("the active row tint", () => {
 });
 
 describe("attention lane tokens (NR2.6, R24, R35)", () => {
-  it("sizes the band at max(2.875rem, 46px) on desktop and at the touch hit on Android", () => {
+  it("sizes the band at max(2.875rem, 46px) on desktop and at the touch hit plus the band's border on Android (R62)", () => {
     expect(ruleBody(":root")).toContain("--lane-h: max(2.875rem, 46px);");
-    expect(ruleBody(':root[data-platform="android"]')).toContain("--lane-h: var(--hit);");
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--lane-h: calc(var(--hit) + 1px);");
   });
 
   it("sizes the pills as a rail row on desktop and at the touch hit on Android", () => {
