@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { paletteKeyAction } from "./paletteKeys";
 import {
   groupPaletteResults,
   normalize,
@@ -68,14 +69,35 @@ describe("searchPalette", () => {
     expect(ids(searchPalette(rows, "market", "en"))).toEqual(["a", "b"]);
   });
 
-  it("keeps the results grouped in group order, a group's best match first", () => {
+  it("lists the groups by their best entry's rank, a tie in the fixed order (R66)", () => {
     const rows = [
       row("section", { group: "sections", label: "Squad" }),
       row("recent", { group: "recent", label: "Squad" }),
       row("call", { group: "calls", label: "Fix lineup", headline: "Your squad has four starters" }),
       row("view", { group: "views", label: "Squad list" }),
     ];
-    expect(ids(searchPalette(rows, "squad", "en"))).toEqual(["call", "recent", "section", "view"]);
+    expect(ids(searchPalette(rows, "squad", "en"))).toEqual(["recent", "section", "view", "call"]);
+  });
+
+  it("puts an exact Sections match above a call whose headline only contains the query, as Enter's target and as a group (R66)", () => {
+    const rows = [
+      row("call", { group: "calls", label: "Fix lineup", headline: "Your squad has four starters" }),
+      row("section", { group: "sections", label: "Squad", order: 5 }),
+    ];
+    const results = searchPalette(rows, "squad", "en");
+    expect(groupPaletteResults(results).map((g) => g.group)).toEqual<PaletteGroupId[]>(["sections", "calls"]);
+    // The highlighted entry is the first result: Enter there activates the section.
+    const enter = paletteKeyAction({ optionGroups: results.map((r) => r.group), activeIndex: 0, query: "squad" }, { key: "Enter" });
+    expect(enter).toEqual({ type: "activate", index: 0 });
+    expect(results[0].id).toBe("section");
+  });
+
+  it("orders the entries of a group by rank, then rail order (R66)", () => {
+    const rows = [
+      row("call-contains", { group: "calls", order: 0, label: "Fix lineup", headline: "Your squad has four starters" }),
+      row("call-prefix", { group: "calls", order: 1, label: "Squad depth" }),
+    ];
+    expect(ids(searchPalette(rows, "squad", "en"))).toEqual(["call-prefix", "call-contains"]);
   });
 
   it('finds the fr "Effectif" from "squad" through its English alias', () => {
@@ -120,7 +142,13 @@ describe("searchPalette", () => {
 });
 
 describe("groupPaletteResults", () => {
-  it("groups the results in group order and leaves out the groups with no row", () => {
+  it("keeps the groups in the order the results give them (R66)", () => {
+    const rows = [row("section", { group: "sections" }), row("call", { group: "calls" })];
+    expect(groupPaletteResults(rows).map((g) => g.group)).toEqual<PaletteGroupId[]>(["sections", "calls"]);
+  });
+
+
+  it("groups the results and leaves out the groups with no row", () => {
     const rows = [row("call", { group: "calls" }), row("section-1", { group: "sections" }), row("section-2", { group: "sections" })];
     const groups = groupPaletteResults(rows);
     expect(groups.map((g) => g.group)).toEqual<PaletteGroupId[]>(["calls", "sections"]);

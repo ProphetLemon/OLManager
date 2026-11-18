@@ -86,10 +86,13 @@ const groupIndex = (group: PaletteGroupId) => PALETTE_GROUP_ORDER.indexOf(group)
 
 /**
  * The palette's results. An empty query is browse mode: every row but the
- * Views, which appear only while typing (R26). With a query, the rows that
- * match stay grouped in the fixed group order, so PageUp and PageDown and the
- * listbox's groups follow it; inside a group they go by match rank (exact,
- * prefix, word start, substring), then rail order.
+ * Views, which appear only while typing (R26), in the fixed group order. With a
+ * query, the match rank (exact, prefix, word start, substring) orders everything
+ * (R66): the groups go by the rank of their best row, a tie in the fixed order,
+ * and inside a group the rows go by rank, then rail order. The first result is
+ * so the best row overall, a tie broken by group order and then rail order: the
+ * highlighted row, which Enter activates. The rows of a group stay together, so
+ * PageUp and PageDown and the listbox's groups follow the result order.
  */
 export function searchPalette<T extends PaletteSearchable>(entries: readonly T[], query: string, lang: string): T[] {
   const q = normalize(query, lang);
@@ -97,20 +100,36 @@ export function searchPalette<T extends PaletteSearchable>(entries: readonly T[]
   if (!q) {
     return entries.filter((e) => e.group !== "views").sort((a, b) => byGroup(a, b) || a.order - b.order);
   }
-  return entries
-    .flatMap((entry) => {
-      const rank = rankNormalized(fieldsOf(entry, lang), q);
-      return rank === null ? [] : [{ entry, rank }];
-    })
-    .sort((a, b) => byGroup(a.entry, b.entry) || a.rank - b.rank || a.entry.order - b.entry.order)
+  const ranked = entries.flatMap((entry) => {
+    const rank = rankNormalized(fieldsOf(entry, lang), q);
+    return rank === null ? [] : [{ entry, rank }];
+  });
+  const bestOf = new Map<PaletteGroupId, MatchRank>();
+  for (const { entry, rank } of ranked) {
+    const best = bestOf.get(entry.group);
+    if (best === undefined || rank < best) bestOf.set(entry.group, rank);
+  }
+  const groupRank = (entry: T) => bestOf.get(entry.group) ?? 3;
+  return ranked
+    .sort(
+      (a, b) =>
+        groupRank(a.entry) - groupRank(b.entry) ||
+        byGroup(a.entry, b.entry) ||
+        a.rank - b.rank ||
+        a.entry.order - b.entry.order,
+    )
     .map(({ entry }) => entry);
 }
 
-/** Results split by group, in group order; a group with no row is left out. */
+/** Results split by group, in the order the results give the groups; a group with no row is left out. */
 export function groupPaletteResults<T extends PaletteSearchable>(
   results: readonly T[],
 ): { group: PaletteGroupId; entries: T[] }[] {
-  return PALETTE_GROUP_ORDER.map((group) => ({ group, entries: results.filter((r) => r.group === group) })).filter(
-    (g) => g.entries.length > 0,
-  );
+  const groups = new Map<PaletteGroupId, T[]>();
+  for (const entry of results) {
+    const rows = groups.get(entry.group);
+    if (rows) rows.push(entry);
+    else groups.set(entry.group, [entry]);
+  }
+  return Array.from(groups, ([group, entries]) => ({ group, entries }));
 }
