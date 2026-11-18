@@ -271,7 +271,9 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
 800 pool staff, and the game's own limit of 5,000 ops per list), `pool-complete` (every person has a name and a game role),
 `pool-ids` (derived from the page, unique, none of the game's), `pool-no-duplicates` (no pool person matches a game record or another
 pool person) and `pool-overlay-size` (the app rejects an overlay over 4 MiB: `MAX_OVERLAY_BYTES`). The roster refresh's
-`max-adds-per-team` gate ignores teamless adds.
+`max-adds-per-team` gate ignores teamless adds, and its `no-player-staff-twins` gate covers the pool too: the pool leaves out a person
+the roster overlay of the run adds or moves in either role (a coach on a staff table is not also a free agent player), and refuses
+both pages when a page read as a player and one read as staff are the same person (same IGN, name, country and birth date).
 
 **Report.** A new "Active-pros pool" section: the funnel (who was left out and why), counts by position, region, level, tier and staff
 kind, the effect of the qualifier cap (tournaments and roster entries kept and left out), a sample per region, the probe (is

@@ -166,8 +166,40 @@ describe("selectPool", () => {
     expect(select(accented).players).toHaveLength(1);
     expect(select(accented, { rosterTitles: { player: new Set(["Mur\u00edlo"]) } }).players).toHaveLength(0);
     expect(select(rows, { rosterTitles: { player: new Set(["Revenge (Another Person)"]) } }).players).toHaveLength(1);
-    // Kinds stay apart: a page the roster adds as a head coach does not remove the same page from the pool's players.
-    expect(select(rows, { rosterTitles: { staff: new Set(["Revenge (Yoon Jeong-bin)"]) } }).players).toHaveLength(1);
+    // Kinds do not stay apart: a page the roster adds as a head coach is that coach, so the pool does not add him as a player too.
+    expect(select(rows, { rosterTitles: { staff: new Set(["Revenge (Yoon Jeong-bin)"]) } }).players).toHaveLength(0);
+  });
+
+  it("leaves out a pool player the roster overlay of this run handles as staff, and a pool coach it handles as a player", () => {
+    // SofM: Players page team MVK Esports (a game team), on no playing roster, and MVK's staff table lists him as a coach.
+    const player = [row({ player: "SofM", ign: "SofM", name: "Le Quang Duy", country: "Vietnam", team: "Fnatic", rmin: "Jungle", rmax: "Jungle", prole: "Jungle" })];
+    expect(select(player).players).toHaveLength(1);
+    const coached = select(player, { rosterIds: new Set([poolId("staff", "SofM")]) });
+    expect(coached.players).toHaveLength(0);
+    expect(coached.statuses.get("SofM")).toMatchObject({ state: "excluded", code: "on-game-team" });
+    const byTitle = select([{ ...player[0], team: "" }], { rosterTitles: { staff: new Set(["sofm"]) } });
+    expect(byTitle.players).toHaveLength(0);
+    expect(byTitle.statuses.get("SofM")).toMatchObject({ state: "excluded", code: "roster-overlay", reason: expect.stringContaining("as staff") });
+    // The reverse: a coach the roster overlay adds as a player is that player.
+    const coach = [row({ player: "Coachy", ign: "Coachy", name: "Coach Person", rmin: "Head Coach", rmax: "Head Coach", prole: "" })];
+    expect(select(coach).staff).toHaveLength(1);
+    const playing = select(coach, { rosterIds: new Set([poolId("player", "Coachy")]) });
+    expect(playing.staff).toHaveLength(0);
+    expect(playing.statuses.get("Coachy")).toMatchObject({ state: "excluded", code: "roster-overlay", reason: expect.stringContaining("as a player") });
+  });
+
+  it("refuses both pages when one person reads as a player under one spelling and as staff under another", () => {
+    // AkaRyu and Akaryu: one Players page, found once in playing rosters and once in staff tables.
+    const asPlayer = row({ player: "AkaRyu", ign: "AkaRyu", name: "Bourekda Abdelhai", country: "Algeria", birth: "1999-11-11", rmin: "Support", rmax: "Support", prole: "Support" });
+    const asCoach = row({ player: "Akaryu", ign: "AkaRyu", name: "Bourekda Abdelhai", country: "Algeria", birth: "1999-11-11", rmin: "Head Coach", rmax: "Head Coach", prole: "" });
+    expect(select([asPlayer]).players).toHaveLength(1);
+    expect(select([asCoach]).staff).toHaveLength(1);
+    for (const rows of [[asPlayer, asCoach], [asCoach, asPlayer]]) {
+      const out = select(rows);
+      expect(out.players).toHaveLength(0);
+      expect(out.staff).toHaveLength(0);
+      expect(out.refused.map((r) => `${r.page}:${r.code}`).sort()).toEqual(["AkaRyu:duplicate-in-pool", "Akaryu:duplicate-in-pool"]);
+    }
   });
 
   it("honours the reviewed id-map: a pinned page is the game's person, a rejected pair is not", () => {

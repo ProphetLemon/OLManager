@@ -78,9 +78,10 @@ export function poolTournaments(tournaments, classes, entryCount, cap = DEFAULT_
 // --- Selection --------------------------------------------------------------------------------------
 
 /** Keys for the within-pool duplicate check: kind, IGN, real name, country, birth date. */
+/** Who a pool page is, whatever its kind: a page read as a player and another read as staff can be one person (AkaRyu, Akaryu). */
 function identityKey(person) {
   const profile = person.profile;
-  return [person.kind, compactKey(profile.ign), compactKey(profile.name), countryToIso2(countryOf(person)), isoDate(profile.birthDate) ?? ""].join("|");
+  return [compactKey(profile.ign), compactKey(profile.name), countryToIso2(countryOf(person)), isoDate(profile.birthDate) ?? ""].join("|");
 }
 
 /**
@@ -95,8 +96,9 @@ function identityKey(person) {
  * @param {Map<string, {position: string, games: number, last: string}>|null} [input.recentRoles] where each player has played lately
  *   (`recentRolesFromRows`); his role is the one he played most when those games are not older than his latest roster row
  * @param {{player?: Set<string>, staff?: Set<string>}} [input.rosterTitles] page titles of the players and of the staff the
- *   roster overlay adds in this run; a pool person of the same kind whose page has the same `titleKey` is the same person,
- *   whatever id his spelling hashes to. Kinds stay apart: a head coach is not also a pool player.
+ *   roster overlay adds in this run; a pool person whose page has the same `titleKey` is the same person, whatever id his
+ *   spelling hashes to. Kinds do not stay apart: a head coach the roster overlay adds is not also a pool player, and a player
+ *   it adds is not also a pool coach (one person, one record).
  */
 export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {}, recentRoles = null }) {
   const rosterKeys = { player: new Set([...(rosterTitles.player ?? [])].map(titleKey)), staff: new Set([...(rosterTitles.staff ?? [])].map(titleKey)) };
@@ -127,8 +129,11 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
       continue;
     }
     const id = poolId(person.kind, person.page);
+    const other = person.kind === "staff" ? "player" : "staff";
     const sameTitle = rosterKeys[person.kind === "staff" ? "staff" : "player"].has(titleKey(person.page));
-    const handledByOverlay = rosterIds.has(id) || sameTitle;
+    // The other kind too: a coach the roster overlay adds to a staff table is that person, not a free agent player as well.
+    const otherRole = rosterIds.has(poolId(other, person.page)) || rosterKeys[other].has(titleKey(person.page));
+    const handledByOverlay = rosterIds.has(id) || sameTitle || otherRole;
     // A current team the game has excludes a person only when the roster overlay of this run really handles him. A player
     // whose Players page names a game team but who is on none of its playing rosters (a co-streamer, say) is nobody's
     // business but the pool's, so he falls through to the same checks as any other candidate.
@@ -145,7 +150,9 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
     }
     if (handledByOverlay) {
       counts.handledByRoster += 1;
-      const why = sameTitle && !rosterIds.has(id) ? `already adds the page "${person.page}" under another spelling` : `already adds or moves ${id}`;
+      const why = rosterIds.has(id) ? `already adds or moves ${id}`
+        : sameTitle ? `already adds the page "${person.page}" under another spelling`
+        : `already handles the page "${person.page}" ${other === "staff" ? "as staff" : "as a player"}`;
       statuses.set(person.page, { state: "excluded", code: "roster-overlay", reason: `the roster overlay of this run ${why}`, id });
       continue;
     }
@@ -184,7 +191,7 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
     if (group.length < 2) continue;
     for (const entry of group) {
       duplicates.add(entry);
-      refuse(entry.person, "duplicate-in-pool", `same kind, IGN, name, country and birth date as ${group.filter((e) => e !== entry).map((e) => e.page).join(", ")}`, "duplicates");
+      refuse(entry.person, "duplicate-in-pool", `same IGN, name, country and birth date as ${group.filter((e) => e !== entry).map((e) => `${e.page}${e.kind === entry.kind ? "" : ` (${e.kind})`}`).join(", ")}`, "duplicates");
     }
   }
 
