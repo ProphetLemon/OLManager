@@ -221,10 +221,30 @@ describe("RosterOverlayPanel", () => {
     expect(classes).toContain("min-w-[var(--hit)]");
   });
 
-  it("lets Retry's touch target overhang the line instead of growing the footer", () => {
-    renderPanel("failed");
+  describe("Retry's hit area", () => {
+    // jsdom has no layout, so these pin the class and structure contract that
+    // keeps the whole --hit area Retry's own without growing the footer.
+    const retryButton = () => screen.getByRole("button", { name: "Retry" });
+    const textColumn = () => screen.getByText(/Roster data: Leaguepedia contributors,/).parentElement as HTMLElement;
 
-    expect(screen.getByRole("button", { name: "Retry" }).className.split(/\s+/)).toContain("-my-3");
+    it("sits beside the text, not stacked above the licence row", () => {
+      renderPanel("failed");
+
+      expect(textColumn()).not.toContainElement(retryButton());
+      expect(retryButton().parentElement).toBe(screen.getByTestId("roster-overlay-panel"));
+    });
+
+    it("has no negative margin, so nothing else lies inside it", () => {
+      renderPanel("failed");
+
+      expect(retryButton().className.split(/\s+/).filter((name) => name.startsWith("-m"))).toEqual([]);
+    });
+
+    it("never grows the footer: the text column already reserves the hit height", () => {
+      renderPanel("idle");
+
+      expect(textColumn().className.split(/\s+/)).toContain("min-h-[var(--hit)]");
+    });
   });
 
   it("keeps Retry outside the live region", () => {

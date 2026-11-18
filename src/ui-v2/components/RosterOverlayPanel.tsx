@@ -57,8 +57,13 @@ function outcomeSentence(
  * action is Retry, shown after a failed check.
  *
  * Retry never takes focus away. It stays in place, marked unavailable, while
- * the check it follows runs (so the footer does not jump), and after a success
- * it only goes once focus has left it, so a keyboard user is never dropped.
+ * the check it follows runs, and after a success it only goes once focus has
+ * left it, so a keyboard user is never dropped.
+ *
+ * Retry sits in the panel row beside the text, not under the status line: its
+ * whole --hit box is its own (no other target, such as the licence link, lies
+ * inside it), and since the text column already reserves the --hit height,
+ * showing it never changes the footer's height.
  *
  * The visible line is not announced. A visually hidden status region, present
  * from the first paint, speaks only the outcome of a check that was running
@@ -109,43 +114,24 @@ export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOve
       className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-t border-border bg-card/40 px-6 py-2 text-xs text-muted-foreground"
       data-testid="roster-overlay-panel"
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2">
-          <p
-            data-testid="roster-status"
-            className="font-heading text-xs font-bold uppercase tracking-wide text-foreground"
-          >
-            {dateText}
-            {dateText !== null && hasDetail && <span aria-hidden="true"> · </span>}
-            {status === "checking" && (
-              <span id={detailId} className="font-normal text-muted-foreground">
-                {t("rosterOverlay.checking")}
-              </span>
-            )}
-            {status === "failed" && (
-              <span id={detailId} className="text-foreground">
-                {t("rosterOverlay.checkFailed")}
-              </span>
-            )}
-          </p>
-          {showRetry && (
-            <Button
-              type="button"
-              variant="link"
-              size="xs"
-              // -my-3 keeps the 44/48 px hit area without growing the footer row.
-              className="-my-3 min-h-[var(--hit)] min-w-[var(--hit)] px-1 text-caption underline underline-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-              disabled={status !== "failed"}
-              focusableWhenDisabled
-              aria-describedby={hasDetail ? detailId : undefined}
-              onFocus={() => setRetryFocused(true)}
-              onBlur={() => setRetryFocused(false)}
-              onClick={onRetry}
-            >
-              {t("common.retry")}
-            </Button>
+      <div className="flex min-h-[var(--hit)] min-w-0 flex-1 flex-col justify-center">
+        <p
+          data-testid="roster-status"
+          className="font-heading text-xs font-bold uppercase tracking-wide text-foreground"
+        >
+          {dateText}
+          {dateText !== null && hasDetail && <span aria-hidden="true"> · </span>}
+          {status === "checking" && (
+            <span id={detailId} className="font-normal text-muted-foreground">
+              {t("rosterOverlay.checking")}
+            </span>
           )}
-        </div>
+          {status === "failed" && (
+            <span id={detailId} className="text-foreground">
+              {t("rosterOverlay.checkFailed")}
+            </span>
+          )}
+        </p>
         <p role="status" className="sr-only">
           {announcement}
         </p>
@@ -172,6 +158,23 @@ export function RosterOverlayPanel({ info, status, onRetry, actions }: RosterOve
           </p>
         )}
       </div>
+
+      {showRetry && (
+        <Button
+          type="button"
+          variant="link"
+          size="xs"
+          className="min-h-[var(--hit)] min-w-[var(--hit)] px-1 text-caption underline underline-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+          disabled={status !== "failed"}
+          focusableWhenDisabled
+          aria-describedby={hasDetail ? detailId : undefined}
+          onFocus={() => setRetryFocused(true)}
+          onBlur={() => setRetryFocused(false)}
+          onClick={onRetry}
+        >
+          {t("common.retry")}
+        </Button>
+      )}
 
       {actions && (
         <div className="flex items-center gap-3" data-testid="roster-overlay-actions">
