@@ -13,6 +13,7 @@ vi.mock("@/services/worldOverlayService", () => ({
 }));
 
 import {
+  ROSTER_CHECK_TIMEOUT_MS,
   ROSTER_RECHECK_AFTER_MS,
   checkForRosterUpdates,
   recheckRostersIfStale,
@@ -235,6 +236,62 @@ describe("rosterUpdateStore", () => {
 
       await vi.waitFor(() => expect(state().info?.as_of).toBe("2026-06-22"));
       expect(mocks.updateWorldOverlay).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("an answer that never comes", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      mocks.updateWorldOverlay.mockReturnValue(deferred<WorldOverlayInfo>().promise);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("outlasts the backend's longest (15 s manual) timeout", () => {
+      expect(ROSTER_CHECK_TIMEOUT_MS).toBeGreaterThan(15_000);
+    });
+
+    it("keeps checking until the timeout", async () => {
+      void checkForRosterUpdates();
+
+      await vi.advanceTimersByTimeAsync(ROSTER_CHECK_TIMEOUT_MS - 1);
+
+      expect(state().status).toBe("checking");
+    });
+
+    it("settles as failed at the timeout", async () => {
+      const check = checkForRosterUpdates({ manual: true });
+
+      await vi.advanceTimersByTimeAsync(ROSTER_CHECK_TIMEOUT_MS);
+      await check;
+
+      expect(state().status).toBe("failed");
+      expect(state().lastCheckedAt).not.toBeNull();
+    });
+
+    it("lets a retry start after the timeout", async () => {
+      void checkForRosterUpdates();
+      await vi.advanceTimersByTimeAsync(ROSTER_CHECK_TIMEOUT_MS);
+
+      void retryRosterCheck();
+
+      expect(mocks.updateWorldOverlay).toHaveBeenCalledTimes(2);
+      expect(state().status).toBe("checking");
+    });
+
+    it("ignores an answer that arrives after the timeout", async () => {
+      const late = deferred<WorldOverlayInfo>();
+      mocks.updateWorldOverlay.mockReturnValue(late.promise);
+      void checkForRosterUpdates();
+      await vi.advanceTimersByTimeAsync(ROSTER_CHECK_TIMEOUT_MS);
+
+      late.resolve(makeInfo({ as_of: "2026-11-18", updated: true }));
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(state().status).toBe("failed");
+      expect(state().info).toBeNull();
     });
   });
 });

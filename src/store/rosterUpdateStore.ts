@@ -15,6 +15,14 @@ export type RosterUpdateStatus = "idle" | "checking" | "updated" | "upToDate" | 
 /** A successful check older than this is repeated when the new-game screen opens. */
 export const ROSTER_RECHECK_AFTER_MS = 60 * 60 * 1000;
 
+/**
+ * How long a check may wait for the backend's answer before it counts as
+ * failed. Longer than the backend's own timeouts (5 s automatic, 15 s manual),
+ * so it only fires when the IPC call itself hangs; the new-game screen holds
+ * its Confirm button back while a check runs, so it must always settle.
+ */
+export const ROSTER_CHECK_TIMEOUT_MS = 20_000;
+
 interface RosterUpdateState {
   status: RosterUpdateStatus;
   /** The overlay a new game would use: its `as_of` date and its licence. */
@@ -35,11 +43,22 @@ export const useRosterUpdateStore = create<RosterUpdateState>(() => ({ ...INITIA
 let inFlight: Promise<void> | null = null;
 let launchCheckStarted = false;
 
+/** `answer`, or a rejection once `ms` have passed without one. */
+function withTimeout<T>(answer: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expiry = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer after ${ms} ms`)), ms);
+  });
+  return Promise.race([answer, expiry]).finally(() => clearTimeout(timer));
+}
+
 async function runCheck(manual: boolean): Promise<void> {
   useRosterUpdateStore.setState({ status: "checking" });
   try {
     // The automatic path has a short backend timeout; a manual retry gets the long one.
-    const info = manual ? await updateWorldOverlay() : await updateWorldOverlay({ automatic: true });
+    const request = manual ? updateWorldOverlay() : updateWorldOverlay({ automatic: true });
+    // An answer that comes after the timeout is dropped: the check already failed.
+    const info = await withTimeout(request, ROSTER_CHECK_TIMEOUT_MS);
     if (!info) throw new Error("no roster overlay info returned");
     useRosterUpdateStore.setState({
       status: info.updated ? "updated" : "upToDate",
