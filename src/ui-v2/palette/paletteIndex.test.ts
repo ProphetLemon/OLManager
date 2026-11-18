@@ -155,6 +155,21 @@ describe("buildPaletteIndex: browse mode (R26)", () => {
   });
 });
 
+describe("buildPaletteIndex: English aliases", () => {
+  it("keeps every row's English name as its alias in another language, so 'squad' finds it", () => {
+    const foreign = ((key: string) => `xx:${key}`) as unknown as TFunction;
+    const entries = buildPaletteIndex(input({ t: foreign, recent: [at("Transfers")] }));
+    const alias = (id: string) => entries.find((e) => e.id === id)?.alias;
+    expect(alias("call:blocker:scrims")).toBe("Open scrims");
+    expect(alias("section:Squad")).toBe("Squad");
+    expect(alias("section:Manager")).toBe("Head Coach");
+    expect(alias("settings")).toBe("Settings");
+    expect(ofKind(entries, "recent").map((r) => r.alias)).toEqual(["Transfers"]);
+    expect(alias("view:Transfers:offers")).toBe("Offers");
+    expect(searchPalette(entries, "squad", "fr").map((e) => e.id)).toContain("section:Squad");
+  });
+});
+
 describe("buildPaletteIndex: Views (R26)", () => {
   it("adds the 17 fixed sub-views, shown only while typing", () => {
     const entries = buildPaletteIndex(input());

@@ -19,7 +19,7 @@ export interface DescribeLocationDeps {
 
 /** Tabs the dashboard can show that the rail does not list. */
 const OFF_RAIL_TABS: Record<string, { labelKey: string; defaultLabel: string }> = {
-  Manager: { labelKey: "dashboard.manager", defaultLabel: "Manager" },
+  Manager: { labelKey: "dashboard.manager", defaultLabel: "Head Coach" },
   Tournaments: { labelKey: "dashboard.tournaments", defaultLabel: "Tournaments" },
 };
 
