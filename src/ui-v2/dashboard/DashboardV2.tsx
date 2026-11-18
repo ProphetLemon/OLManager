@@ -368,9 +368,17 @@ export default function DashboardV2() {
   // question the advance command will answer.
   const refreshMode = resolveAdvanceMode(isUnemployed ?? false, matchMode);
   const assistantResolvesScrims = settings.scrim_review_mode === "assistant";
+  // Which game state the pre-check last answered for, and how many answers so far:
+  // a call an advance brought is judged once the answer for the new state is in (R42).
+  const [precheckAnswer, setPrecheckAnswer] = useState<{ game: GameStateData | null | undefined; seq: number }>({
+    game: undefined,
+    seq: 0,
+  });
   useEffect(() => {
     if (!hasGame || blockerModalOpen || showSeasonSummary) return;
     let cancelled = false;
+    const askedFor = gameState;
+    const answered = () => setPrecheckAnswer((prev) => ({ game: askedFor, seq: prev.seq + 1 }));
     const timer = setTimeout(() => {
       // A failed check is not "everything resolved": rethrow and keep the list of this day.
       collectAdvanceBlockers("dashboard-refresh", {
@@ -402,11 +410,13 @@ export default function DashboardV2() {
               date: currentIsoDate,
             };
           });
+          answered();
         },
         () => {
           // Keep this day's list; a list from another day is no longer trustworthy.
           if (cancelled) return;
           setLastBlockers((prev) => (prev && prev.date !== currentIsoDate ? null : prev));
+          answered();
         },
       );
     }, BLOCKER_REFRESH_DEBOUNCE_MS);
@@ -689,6 +699,33 @@ export default function DashboardV2() {
       profileNavigation.selectedStaffId ||
       viewingChampionKey,
   );
+
+  // R42: a call an advance brings while Home's panel is not on screen is a status
+  // message nothing else speaks. The count is taken as the advance starts (Continue,
+  // a skip, or the confirmed match day) and compared once the pre-check has answered
+  // for the state the advance left. On Home the panel's own status speaks; a refresh
+  // with no advance before it, or a fresh mount, says nothing.
+  const homeShown = profileNavigation.activeTab === "Home" && !profileOpen && !showSeasonSummary;
+  const advanceBaseline = useRef<{ count: number; game: GameStateData | null | undefined; seq: number } | null>(null);
+  const wasAdvancing = useRef(isAdvancing);
+  useEffect(() => {
+    const started = isAdvancing && !wasAdvancing.current;
+    const ended = !isAdvancing && wasAdvancing.current;
+    wasAdvancing.current = isAdvancing;
+    if (started) advanceBaseline.current = { count: callState.count, game: gameState, seq: precheckAnswer.seq };
+    const baseline = advanceBaseline.current;
+    if (!baseline || isAdvancing) return;
+    // Nothing advanced (a blocker stopped it), or the season ended: nothing to say.
+    if (showSeasonSummary || (ended && gameState === baseline.game)) {
+      advanceBaseline.current = null;
+      return;
+    }
+    if (precheckAnswer.seq === baseline.seq || precheckAnswer.game !== gameState) return;
+    advanceBaseline.current = null;
+    if (callState.count > baseline.count && !homeShown) {
+      announce(t("onAir.bar.toResolve", { count: callState.count, defaultValue: "{{count}} to resolve" }), "status");
+    }
+  }, [isAdvancing, precheckAnswer, gameState, callState.count, homeShown, showSeasonSummary, announce, t]);
 
   const dashboardTabContentModel = gameState
     ? createDashboardTabContentModel({

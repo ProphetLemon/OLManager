@@ -24,9 +24,32 @@ vi.mock("react-i18next", async (importOriginal) => {
   return { ...actual, useTranslation: () => ({ t: translateFromEnglish, i18n: { language: "en" } }) };
 });
 
-vi.mock("@/hooks/useAdvanceTime", () => ({
+/** The advance in flight, as useAdvanceTime reports it; a test flips it around a day change (R42). */
+const advance = vi.hoisted(() => {
+  let value = false;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => value,
+    set(next: boolean) {
+      value = next;
+      listeners.forEach((listener) => listener());
+    },
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+});
+/** What the backend pre-check reports. */
+const precheck = vi.hoisted(() => ({ blockers: [] as { id: string; severity: string; text: string; tab: string }[] }));
+
+vi.mock("@/hooks/useAdvanceTime", async () => {
+  const { useSyncExternalStore } = await import("react");
+  return {
   useAdvanceTime: () => ({
-    isAdvancing: false,
+    isAdvancing: useSyncExternalStore(advance.subscribe, advance.get),
     showMatchConfirm: false,
     setShowMatchConfirm: vi.fn(),
     matchMode: "live",
@@ -41,10 +64,11 @@ vi.mock("@/hooks/useAdvanceTime", () => ({
     handleSkipToMatchDay: vi.fn(),
     handleSkipToNextDay: vi.fn(),
   }),
-}));
+  };
+});
 
 vi.mock("@/services/advanceTimeService", () => ({
-  checkBlockingActions: vi.fn().mockResolvedValue([]),
+  checkBlockingActions: vi.fn(() => Promise.resolve(precheck.blockers)),
 }));
 
 // The rail: a plain button per move, so a rail click is one onNavClick.
@@ -254,6 +278,8 @@ describe("RouteAnnouncer", () => {
 
 function setupDashboard() {
   Element.prototype.scrollIntoView = vi.fn();
+  advance.set(false);
+  precheck.blockers = [];
   useGameStore.setState({
     hasActiveGame: true,
     managerName: "Coach",
@@ -448,4 +474,85 @@ describe("one level-1 heading per view (R52)", () => {
     expect(h1s).toHaveLength(1);
     expect(h1s[0]).toHaveTextContent("Ahri");
   });
+});
+
+describe("a new call after an advance off Home (R42)", () => {
+  beforeEach(setupDashboard);
+
+  const academy = { id: "academy_missing_roles", severity: "warn", text: "Academy incomplete", tab: "YouthAcademy" };
+  const roster = { id: "main_roster_minimum", severity: "warn", text: "Roster too small", tab: "Squad" };
+  const chip = () => document.querySelector('[data-slot="resolve-chip"]');
+  /** The 400 ms pre-check after a game update, then the announcer's quiet spell. */
+  const settleRefresh = () => act(() => new Promise((resolve) => setTimeout(resolve, 400 + ROUTE_ANNOUNCE_DEBOUNCE_MS + 100)));
+
+  function nextDay(date: string) {
+    const next = game();
+    next.clock = { ...next.clock, current_date: date };
+    return next;
+  }
+
+  /** Continue as useAdvanceTime runs it: in flight, the new day lands, then it settles. */
+  function advanceTo(date: string) {
+    act(() => advance.set(true));
+    act(() => useGameStore.setState({ gameState: nextDay(date) }));
+    act(() => advance.set(false));
+  }
+
+  async function onSquad() {
+    await renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "rail-squad" }));
+    await screen.findByTestId("squad-tab", {}, { timeout: 3000 });
+    await settleRefresh();
+    expect(chip()).toBeNull();
+  }
+
+  it("says '2 to resolve' once when an advance on Squad brings two calls", async () => {
+    await onSquad();
+    precheck.blockers = [academy, roster];
+    advanceTo("2025-06-20");
+    await waitFor(() => expect(announcer()).toHaveTextContent("2 to resolve"), { timeout: 3000 });
+
+    // A later refresh with no advance before it says nothing new.
+    precheck.blockers = [academy, roster, { ...roster, id: "academy_roster_minimum", text: "Academy roster too small" }];
+    act(() => useGameStore.setState({ gameState: { ...nextDay("2025-06-20") } }));
+    await waitFor(() => expect(chip()).toHaveAccessibleName("3 to resolve"));
+    await settleRefresh();
+    expect(announcer()).not.toHaveTextContent("3 to resolve");
+  });
+
+  it("says nothing on a refresh with no advance before it", async () => {
+    await onSquad();
+    precheck.blockers = [academy, roster];
+    act(() => useGameStore.setState({ gameState: nextDay("2025-06-20") }));
+    await waitFor(() => expect(chip()).not.toBeNull());
+    await settleRefresh();
+    expect(announcer()).toHaveTextContent("");
+  });
+
+  it("leaves the same advance on Home to the panel's own status", async () => {
+    await renderDashboard();
+    await settleRefresh();
+    precheck.blockers = [academy, roster];
+    advanceTo("2025-06-20");
+    await waitFor(() => expect(chip()).not.toBeNull());
+    await settleRefresh();
+    expect(announcer()).toHaveTextContent("");
+  });
+
+  it("says nothing when the advance leaves the count as it was", async () => {
+    precheck.blockers = [academy];
+    await onSquadWithCalls();
+    advanceTo("2025-06-20");
+    await settleRefresh();
+    await settleRefresh();
+    expect(announcer()).toHaveTextContent("");
+  });
+
+  async function onSquadWithCalls() {
+    await renderDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "rail-squad" }));
+    await screen.findByTestId("squad-tab", {}, { timeout: 3000 });
+    await waitFor(() => expect(chip()).not.toBeNull());
+    await settleRefresh();
+  }
 });
