@@ -82,6 +82,30 @@ describe("pool gates", () => {
     expect(gates(dupPool)["pool-no-duplicates"]).toMatchObject({ ok: false, detail: expect.stringContaining("repeated inside the pool") });
   });
 
+  it("fail for a pool person the world build folds into a record on a club or hides from the AI", () => {
+    const aiming = world.players.find((p) => p.match_name === "Aiming")!;
+    // Same nick and birth date, the real name misspelt by one letter: K2 folds a free agent that shares a name and a real birth date.
+    const sameDate = clone();
+    Object.assign(sameDate.players[0].player, { match_name: aiming.match_name, full_name: `${aiming.full_name}z`, nationality: aiming.nationality, date_of_birth: aiming.date_of_birth });
+    expect(gates(sameDate)["pool-no-duplicates"]).toMatchObject({ ok: false, detail: expect.stringContaining("K2-name-and-birth-date") });
+    // Both names shared: K2 folds a pool add that shares two names with a record on a club, whatever the date says.
+    const twoNames = clone();
+    Object.assign(twoNames.players[0].player, { match_name: aiming.match_name, full_name: aiming.full_name, nationality: "FR", date_of_birth: "1990-01-01" });
+    expect(gates(twoNames)["pool-no-duplicates"]).toMatchObject({ ok: false, detail: expect.stringContaining("K2-two-names") });
+    // A date six days off and no other difference: only the AI guard (loose key) hides him.
+    const sixDays = clone();
+    Object.assign(sixDays.players[0].player, { match_name: "Other Nick", full_name: aiming.full_name, nationality: aiming.nationality, date_of_birth: "2000-07-26" });
+    expect(gates(sixDays)["pool-no-duplicates"]).toMatchObject({ ok: false, detail: expect.stringContaining("AI-loose") });
+  });
+
+  it("let a person through whose twin the roster overlay retires", () => {
+    const aiming = world.players.find((p) => p.match_name === "Aiming")!;
+    const retired = clone();
+    Object.assign(retired.players[0].player, { match_name: aiming.match_name, full_name: aiming.full_name, nationality: "FR", date_of_birth: "1990-01-01" });
+    retired.players.push({ op: "retire", id: aiming.id, evidence: "https://lol.fandom.com/wiki/Aiming" });
+    expect(gates(retired)["pool-no-duplicates"].detail).not.toContain("K2-two-names");
+  });
+
   it("fail when the overlay is bigger than the app accepts", () => {
     expect(gates(overlay, { bytes: POOL_LIMITS.overlayBytes })["pool-overlay-size"].ok).toBe(true);
     expect(gates(overlay, { bytes: POOL_LIMITS.overlayBytes + 1 })["pool-overlay-size"].ok).toBe(false);
