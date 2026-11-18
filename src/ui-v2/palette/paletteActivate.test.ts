@@ -44,8 +44,11 @@ const entries = buildPaletteIndex({
   current: at("Home"),
   unemployed: false,
   scheduleCalendar: true,
+  selectedCompetitionId: null,
   game: {
     manager: { team_id: "team-1" },
+    user_competition_id: "lec",
+    leagues: [{ id: "league-lec", competition_id: "lec" }],
     players: [{ id: "p1", match_name: "Upset", team_id: "team-1", position: "ADC", lol_ovr: 86 }],
     teams: [{ id: "team-1", name: "Fnatic" }],
     staff: [],
@@ -72,6 +75,15 @@ describe("entryToIntent", () => {
   it("gives a Views row its tab and the view to write in tabUiStore", () => {
     const offers = find((e) => e.kind === "view" && e.tab === "Transfers" && e.label === "Offers");
     expect(entryToIntent(offers)).toEqual({ kind: "tab", tab: "Transfers", view: { slice: "transfers", value: "offers" } });
+  });
+
+  it("gives a Competitions view with no league selected the manager's league to select (R67)", () => {
+    const teams = find((e) => e.kind === "view" && e.id === "view:Competitions:teams");
+    expect(entryToIntent(teams)).toEqual({
+      kind: "tab",
+      tab: "Competitions",
+      view: { slice: "competitions", value: "teams", selectedCid: "lec" },
+    });
   });
 
   it("gives the Settings row the route to /settings", () => {

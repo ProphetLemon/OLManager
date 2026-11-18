@@ -50,6 +50,11 @@ const at = (tab: string, over: Partial<DashboardLocation> = {}): DashboardLocati
 
 const game = {
   manager: { team_id: "team-1" },
+  user_competition_id: "lec",
+  leagues: [
+    { id: "league-lec", competition_id: "lec" },
+    { id: "league-lck", competition_id: "lck" },
+  ],
   players: [{ id: "p1", match_name: "Upset", team_id: "team-1", position: "ADC", lol_ovr: 86 }],
   teams: [{ id: "team-1", name: "Fnatic" }],
   staff: [
@@ -66,6 +71,7 @@ function input(over: Partial<PaletteIndexInput> = {}): PaletteIndexInput {
     current: at("Home"),
     unemployed: false,
     scheduleCalendar: true,
+    selectedCompetitionId: null,
     game,
     t,
     ...over,
@@ -184,6 +190,34 @@ describe("buildPaletteIndex: Views (R26)", () => {
     const views = ofKind(buildPaletteIndex(input({ scheduleCalendar: false })), "view");
     expect(views).toHaveLength(16);
     expect(views.filter((v) => v.tab === "Schedule").map((v) => v.label)).toEqual(["Matches"]);
+  });
+
+  const competitionViews = (entries: PaletteEntry[]) => ofKind(entries, "view").filter((v) => v.tab === "Competitions");
+
+  it("opens the manager's own league at a Competitions view when none is selected (R67)", () => {
+    const views = competitionViews(buildPaletteIndex(input()));
+    expect(views.map((v) => v.view)).toEqual([
+      { slice: "competitions", value: "standings", selectedCid: "lec" },
+      { slice: "competitions", value: "calendar", selectedCid: "lec" },
+      { slice: "competitions", value: "teams", selectedCid: "lec" },
+      { slice: "competitions", value: "players", selectedCid: "lec" },
+    ]);
+  });
+
+  it("keeps the selected league, and treats a league that is gone as none (R67)", () => {
+    const kept = competitionViews(buildPaletteIndex(input({ selectedCompetitionId: "lck" })));
+    expect(kept.map((v) => v.view)).toContainEqual({ slice: "competitions", value: "teams" });
+    expect(kept.every((v) => !("selectedCid" in v.view))).toBe(true);
+    const gone = competitionViews(buildPaletteIndex(input({ selectedCompetitionId: "old-league" })));
+    expect(gone.every((v) => "selectedCid" in v.view && v.view.selectedCid === "lec")).toBe(true);
+  });
+
+  it("hides the Competitions views when no league is selected and the manager has none (R67)", () => {
+    const noLeague = { ...game, user_competition_id: null } as typeof game;
+    const entries = buildPaletteIndex(input({ game: noLeague }));
+    expect(competitionViews(entries)).toEqual([]);
+    expect(ofKind(entries, "view")).toHaveLength(13);
+    expect(competitionViews(buildPaletteIndex(input({ game: noLeague, selectedCompetitionId: "lck" })))).toHaveLength(4);
   });
 
   it("labels Staff's views with the tab's counts", () => {

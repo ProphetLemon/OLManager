@@ -22,8 +22,17 @@ type ViewSlice = {
   [K in keyof TabUiStates]: TabUiStates[K] extends { view: unknown } ? K : never;
 }[keyof TabUiStates];
 
-/** The sub-view a Views row opens: the value to write in a tabUiStore slice's `view`. */
-export type PaletteViewTarget = { [K in ViewSlice]: { slice: K; value: TabUiStates[K]["view"] } }[ViewSlice];
+type SliceTarget<K extends ViewSlice> = { slice: K; value: TabUiStates[K]["view"] };
+type OtherViewSlice = Exclude<ViewSlice, "competitions">;
+
+/**
+ * The sub-view a Views row opens: the value to write in a tabUiStore slice's `view`.
+ * A Competitions view opened with no league selected also carries the league to
+ * select, the manager's own (R67).
+ */
+export type PaletteViewTarget =
+  | { [K in OtherViewSlice]: SliceTarget<K> }[OtherViewSlice]
+  | (SliceTarget<"competitions"> & { selectedCid?: string });
 
 /** One part of a row's secondary text and the sign before it; the UI hides the sign from screen readers (R48). */
 export interface PaletteDetail {
@@ -54,7 +63,9 @@ export interface PaletteIndexInput {
   unemployed: boolean;
   /** Schedule's Calendar exists only on a wide enough window, as in the tab. */
   scheduleCalendar: boolean;
-  game: Pick<GameStateData, "players" | "teams" | "staff" | "manager">;
+  /** The Competitions tab's selected league (tabUiStore `competitions.selectedCid`). */
+  selectedCompetitionId: string | null;
+  game: Pick<GameStateData, "players" | "teams" | "staff" | "manager" | "leagues" | "user_competition_id">;
   t: TFunction;
 }
 
@@ -240,21 +251,41 @@ function sectionEntries(t: TFunction, hiddenGroups: Set<string>): PaletteEntry[]
   return rows;
 }
 
+/**
+ * The league a Competitions view needs selected: none when one already is, the
+ * manager's own when none is, and null when the manager has none either, which
+ * hides the rows rather than land on the "select a competition" prompt (R67).
+ */
+function competitionToSelect({ game, selectedCompetitionId }: PaletteIndexInput): { select: string | null } | null {
+  const leagues = game.leagues ?? [];
+  // The Competitions tab keys a league as `competition_id ?? id`.
+  if (leagues.some((league) => (league.competition_id ?? league.id) === selectedCompetitionId)) return { select: null };
+  const own = game.user_competition_id;
+  return own && leagues.some((league) => league.competition_id === own) ? { select: own } : null;
+}
+
 function viewEntries(input: PaletteIndexInput, isHidden: (tab: string) => boolean): PaletteEntry[] {
   const { t, game } = input;
   const counts = {
     club: () => clubStaff(game.staff, game.manager.team_id).length,
     available: () => availableStaff(game.staff).length,
   };
-  return VIEWS.filter((def) => !isHidden(def.tab) && (!def.wideOnly || input.scheduleCalendar)).map((def, order) => {
+  const league = competitionToSelect(input);
+  const shown = (def: ViewDef) =>
+    !isHidden(def.tab) &&
+    (!def.wideOnly || input.scheduleCalendar) &&
+    (def.view.slice !== "competitions" || league !== null);
+  return VIEWS.filter(shown).map((def, order) => {
     const zone = groupTitle(def.tab, t);
+    const view: PaletteViewTarget =
+      def.view.slice === "competitions" && league?.select ? { ...def.view, selectedCid: league.select } : def.view;
     return {
       kind: "view",
       id: `view:${def.tab}:${def.view.value}`,
       group: "views",
       order,
       tab: def.tab,
-      view: def.view,
+      view,
       label: def.count
         ? t(def.labelKey, { defaultValue: def.defaultLabel, count: counts[def.count]() })
         : t(def.labelKey, { defaultValue: def.defaultLabel }),
