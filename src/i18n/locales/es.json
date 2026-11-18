@@ -3725,6 +3725,20 @@
       "now": "Ahora en {{title}}, {{group}}",
       "nowNoGroup": "Ahora en {{title}}"
     },
+    "palette": {
+      "title": "Ir a",
+      "placeholder": "Buscar secciones y lugares",
+      "close": "Cerrar",
+      "escKey": "Esc",
+      "groups": {
+        "recent": "Recientes",
+        "sections": "Secciones",
+        "views": "Vistas"
+      },
+      "results_one": "{{count}} resultado",
+      "results_other": "{{count}} resultados",
+      "empty": "Sin resultados para «{{query}}»"
+    },
     "tags": {
       "blocker": "Bloqueo",
       "contract": "Contrato",

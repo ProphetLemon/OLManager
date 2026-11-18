@@ -214,6 +214,12 @@
   /* The "Before you continue" lane (R24): the band and its pills. Android raises both to --hit. */
   --lane-h: max(2.875rem, 46px);
   --lane-pill-h: var(--nav-row);
+  /* The Go palette (NR2.8, spec §5.7): the desktop panel fits the window, its input row and
+     options are a rail row high, and the Android sheet covers the rail and its panel. */
+  --palette-w: min(36rem, calc(100vw - 2rem));
+  --palette-h: min(32rem, calc(100dvh - 6rem));
+  --palette-row: max(2.5rem, 40px);
+  --palette-sheet-w: max(22rem, 320px);
   /* Display-cutout and system-bar insets. 0px wherever the webview reports none
      (every desktop window), so applying them never moves anything there. */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -323,6 +329,7 @@
   /* The band's 1 px bottom border sits inside its height: 49 px keeps a 48 px pill whole (R62). */
   --lane-h: calc(var(--hit) + 1px);
   --lane-pill-h: var(--hit);
+  --palette-row: var(--hit);
 }
 
 /* ── High contrast (data-contrast set on <html> by AppV2) ───────

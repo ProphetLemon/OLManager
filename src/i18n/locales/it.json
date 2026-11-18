@@ -3725,6 +3725,20 @@
       "now": "Ora: {{title}}, {{group}}",
       "nowNoGroup": "Ora: {{title}}"
     },
+    "palette": {
+      "title": "Vai a",
+      "placeholder": "Cerca sezioni e luoghi",
+      "close": "Chiudi",
+      "escKey": "Esc",
+      "groups": {
+        "recent": "Recenti",
+        "sections": "Sezioni",
+        "views": "Viste"
+      },
+      "results_one": "{{count}} risultato",
+      "results_other": "{{count}} risultati",
+      "empty": "Nessun risultato per «{{query}}»"
+    },
     "tags": {
       "blocker": "Blocco",
       "contract": "Contratto",

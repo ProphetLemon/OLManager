@@ -1,0 +1,285 @@
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { TFunction } from "i18next";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { CallItem } from "@/lib/dashboard/needsYourCall";
+import type { DashboardLocation } from "@/lib/dashboard/profileNavigation";
+import { usePaletteStore } from "@/store/paletteStore";
+import { translateFromEnglish } from "@/test-i18n";
+
+import { GoPalette } from "./GoPalette";
+import { buildPaletteIndex, type PaletteEntry, type PaletteIndexInput } from "./paletteIndex";
+import { searchPalette } from "./paletteSearch";
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: translateFromEnglish, i18n: { language: "en" } }),
+}));
+
+const t = translateFromEnglish as unknown as TFunction;
+
+const scrims: CallItem = {
+  id: "blocker:scrims",
+  kind: "blocker",
+  severity: "hard",
+  tagKey: "onAir.tags.blocker",
+  tagTone: "negative",
+  headline: "No scrims planned for Thursday",
+  actionLabelKey: "onAir.calls.actions.openScrims",
+  target: { tab: "Scrims" },
+};
+const renewal: CallItem = {
+  id: "contract:p1",
+  kind: "contract",
+  severity: "soft",
+  tagKey: "onAir.tags.contract",
+  tagTone: "warning",
+  headline: "Upset",
+  actionLabelKey: "onAir.calls.actions.renew",
+  target: { tab: "Squad", context: { playerId: "p1" } },
+};
+const at = (tab: string, over: Partial<DashboardLocation> = {}): DashboardLocation => ({
+  tab,
+  playerId: null,
+  teamId: null,
+  staffId: null,
+  championKey: null,
+  ...over,
+});
+
+const entries = buildPaletteIndex({
+  callState: { decisionItems: [scrims, renewal] },
+  recent: [at("Squad", { playerId: "p1" }), at("Inbox")],
+  current: at("Home"),
+  unemployed: false,
+  scheduleCalendar: true,
+  selectedCompetitionId: null,
+  game: {
+    manager: { team_id: "team-1" },
+    user_competition_id: "lec",
+    leagues: [{ id: "league-lec", competition_id: "lec" }],
+    players: [{ id: "p1", match_name: "Upset", team_id: "team-1", position: "ADC", lol_ovr: 86 }],
+    teams: [{ id: "team-1", name: "Fnatic" }],
+    staff: [],
+  } as unknown as PaletteIndexInput["game"],
+  t,
+});
+
+const onActivate = vi.fn<(entry: PaletteEntry) => void>();
+
+function Harness({ platform = "desktop" }: { platform?: "android" | "desktop" }) {
+  return (
+    <>
+      <button id="util:go" type="button">
+        Go
+      </button>
+      <main id="main-content" tabIndex={-1}>
+        content
+      </main>
+      <GoPalette entries={entries} callCount={2} platform={platform} onActivate={onActivate} />
+    </>
+  );
+}
+
+async function openPalette(platform: "android" | "desktop" = "desktop") {
+  render(<Harness platform={platform} />);
+  const go = screen.getByRole("button", { name: "Go" });
+  act(() => go.focus());
+  act(() => usePaletteStore.getState().openPalette("util:go"));
+  return screen.findByRole("dialog");
+}
+
+const input = () => screen.getByRole("combobox") as HTMLInputElement;
+const options = () => screen.getAllByRole("option");
+const activeOption = () => document.getElementById(input().getAttribute("aria-activedescendant") ?? "");
+const type = (value: string) => fireEvent.change(input(), { target: { value } });
+const press = (key: string, init: Record<string, unknown> = {}) => fireEvent.keyDown(input(), { key, ...init });
+const status = () => screen.getByRole("status");
+
+beforeEach(() => {
+  usePaletteStore.getState().reset();
+  onActivate.mockReset();
+  Element.prototype.scrollIntoView = vi.fn();
+});
+
+afterEach(() => vi.useRealTimers());
+
+describe("GoPalette: the decisive ARIA tests (R25)", () => {
+  it("is a modal dialog named Go to", async () => {
+    const dialog = await openPalette();
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).toHaveAccessibleName("Go to");
+  });
+
+  it("has a combobox named Go to, expanded, that controls the listbox (R44)", async () => {
+    await openPalette();
+    expect(input()).toHaveAccessibleName("Go to");
+    expect(input()).toHaveAttribute("aria-expanded", "true");
+    expect(input()).toHaveAttribute("aria-autocomplete", "list");
+    expect(input().getAttribute("aria-controls")).toBe(screen.getByRole("listbox").id);
+  });
+
+  it("makes the first decision the active option on open, with focus in the input", async () => {
+    await openPalette();
+    expect(document.activeElement).toBe(input());
+    expect(activeOption()).toBe(options()[0]);
+    expect(options()[0]).toHaveAttribute("aria-selected", "true");
+    expect(options()[0]).toHaveTextContent("Open scrims");
+  });
+
+  it("clears the query on Escape and stays open", async () => {
+    await openPalette();
+    type("sq");
+    press("Escape");
+    expect(input().value).toBe("");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("closes on Escape with an empty query and returns focus to the Go control", async () => {
+    await openPalette();
+    press("Escape");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(usePaletteStore.getState().open).toBe(false);
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Go" })));
+    expect(onActivate).not.toHaveBeenCalled();
+  });
+});
+
+describe("GoPalette: keys, pointer and activation (spec §5.5, R27, R37)", () => {
+  it("moves the active option with ArrowDown and ArrowUp, wrapping", async () => {
+    await openPalette();
+    press("ArrowDown");
+    expect(activeOption()).toBe(options()[1]);
+    expect(options()[0]).toHaveAttribute("aria-selected", "false");
+    press("ArrowUp");
+    press("ArrowUp");
+    expect(activeOption()).toBe(options()[options().length - 1]);
+  });
+
+  it("jumps to the first Recent row with PageDown", async () => {
+    await openPalette();
+    press("PageDown");
+    const recent = screen.getByRole("group", { name: "Recent" });
+    expect(within(recent).getAllByRole("option")[0]).toBe(activeOption());
+  });
+
+  it("highlights the row under the pointer", async () => {
+    await openPalette();
+    fireEvent.mouseMove(options()[3]);
+    expect(activeOption()).toBe(options()[3]);
+  });
+
+  it("hands the active row to onActivate on Enter once it has closed, without returning focus to Go", async () => {
+    await openPalette();
+    type("competitions");
+    const best = searchPalette(entries, "competitions", "en")[0];
+    press("Enter");
+    await waitFor(() => expect(onActivate).toHaveBeenCalledTimes(1));
+    expect(onActivate).toHaveBeenCalledWith(best);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).not.toBe(screen.getByRole("button", { name: "Go" }));
+  });
+
+  it("activates a row on click", async () => {
+    await openPalette();
+    fireEvent.click(options()[1]);
+    await waitFor(() => expect(onActivate).toHaveBeenCalledWith(entries.find((e) => e.id === "call:contract:p1")));
+  });
+
+  it("does nothing on Enter with no option", async () => {
+    await openPalette();
+    type("zzzz");
+    press("Enter");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it("ignores Enter and Escape while an IME composes (R48)", async () => {
+    await openPalette();
+    type("sq");
+    press("Enter", { isComposing: true });
+    press("Escape", { keyCode: 229 });
+    expect(input().value).toBe("sq");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it("keeps Tab between the input and Close", async () => {
+    const dialog = await openPalette();
+    const close = screen.getByRole("button", { name: "Close" });
+    const guards = document.querySelectorAll<HTMLElement>("[data-base-ui-focus-guard]");
+    const inside = Array.from(guards).filter((g) => !dialog.contains(g) && g.compareDocumentPosition(dialog) & Node.DOCUMENT_POSITION_PRECEDING);
+    // Tab past the last control lands on the guard after the popup, which sends focus back to the first.
+    act(() => (inside[0] ?? guards[guards.length - 1]).focus());
+    await waitFor(() => expect([input(), close]).toContain(document.activeElement));
+    expect(screen.getAllByRole("option").every((o) => !o.hasAttribute("tabindex"))).toBe(true);
+  });
+
+  it("closes from the Close button and returns focus to Go", async () => {
+    await openPalette();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Go" })));
+  });
+
+  it("closes on popstate, the Android back gesture", async () => {
+    await openPalette();
+    act(() => window.dispatchEvent(new PopStateEvent("popstate")));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
+
+describe("GoPalette: status, empty state and rows (R45, R48)", () => {
+  it("says nothing on open, and the results count 300 ms after typing", async () => {
+    await openPalette();
+    expect(status()).toHaveTextContent("");
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    type("s");
+    const count = searchPalette(entries, "s", "en").length;
+    expect(count).toBeGreaterThan(1);
+    act(() => vi.advanceTimersByTime(299));
+    expect(status()).toHaveTextContent("");
+    act(() => vi.advanceTimersByTime(1));
+    expect(status()).toHaveTextContent(`${count} results`);
+  });
+
+  it("shows and says the empty state, collapsed, with no active option (R45)", async () => {
+    await openPalette();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    type("zzzz");
+    expect(screen.getByText("No matches for “zzzz”")).toBeInTheDocument();
+    expect(input()).toHaveAttribute("aria-expanded", "false");
+    expect(input()).not.toHaveAttribute("aria-activedescendant");
+    expect(input()).not.toHaveAttribute("aria-controls");
+    act(() => vi.advanceTimersByTime(300));
+    expect(status()).toHaveTextContent("No matches for “zzzz”");
+  });
+
+  it("groups the rows under named groups, Needs your call with its count", async () => {
+    await openPalette();
+    const names = screen.getAllByRole("group").map((g) => g.getAttribute("aria-labelledby") && document.getElementById(g.getAttribute("aria-labelledby")!)?.textContent);
+    expect(names).toEqual(["Needs your call 2", "Recent", "Sections"]);
+  });
+
+  it("hides the separators from screen readers and gives rows no title (R48)", async () => {
+    await openPalette();
+    const call = options()[0];
+    const seps = Array.from(call.querySelectorAll('[aria-hidden="true"]')).map((s) => s.textContent);
+    expect(seps).toEqual(expect.arrayContaining(["›", "·"]));
+    expect(call).not.toHaveAttribute("title");
+    expect(within(call).getByText("Blocker")).toBeInTheDocument();
+  });
+});
+
+describe("GoPalette on Android (R29, R39)", () => {
+  it("puts focus on the title, not the input, so no keyboard rises", async () => {
+    await openPalette("android");
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Go to" })));
+    expect(input()).toHaveAttribute("inputmode", "search");
+    expect(input()).toHaveAttribute("enterkeyhint", "go");
+  });
+
+  it("sizes the options with the palette row token, var(--hit) on Android", async () => {
+    await openPalette("android");
+    expect(options()[0]).toHaveClass("min-h-[var(--palette-row)]");
+  });
+});

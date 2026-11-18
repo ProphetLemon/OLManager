@@ -3725,6 +3725,20 @@
       "now": "Şimdi: {{title}}, {{group}}",
       "nowNoGroup": "Şimdi: {{title}}"
     },
+    "palette": {
+      "title": "Şuraya git",
+      "placeholder": "Bölüm ve yer ara",
+      "close": "Kapat",
+      "escKey": "Esc",
+      "groups": {
+        "recent": "Son gezilenler",
+        "sections": "Bölümler",
+        "views": "Görünümler"
+      },
+      "results_one": "{{count}} sonuç",
+      "results_other": "{{count}} sonuç",
+      "empty": "“{{query}}” için sonuç yok"
+    },
     "tags": {
       "blocker": "Engel",
       "contract": "Sözleşme",

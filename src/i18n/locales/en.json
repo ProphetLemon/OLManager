@@ -3759,6 +3759,20 @@
       "now": "Now on {{title}}, {{group}}",
       "nowNoGroup": "Now on {{title}}"
     },
+    "palette": {
+      "title": "Go to",
+      "placeholder": "Search sections and places",
+      "close": "Close",
+      "escKey": "Esc",
+      "groups": {
+        "recent": "Recent",
+        "sections": "Sections",
+        "views": "Views"
+      },
+      "results_one": "{{count}} result",
+      "results_other": "{{count}} results",
+      "empty": "No matches for “{{query}}”"
+    },
     "tags": {
       "blocker": "Blocker",
       "contract": "Contract",
