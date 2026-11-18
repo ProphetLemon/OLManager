@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, type WheelEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, type KeyboardEvent, type WheelEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useRovingFocus } from "@/hooks/useRovingFocus";
@@ -111,6 +111,14 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
     };
   }, []);
 
+  // Enter and Space act only on a pill; from the scroller they would run the Tab stop's
+  // pill unseen. The arrows still work from there (R61).
+  const handleToolbarKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const isActivation = event.key === "Enter" || event.key === " ";
+    if (isActivation && !(event.target as HTMLElement).closest('[data-slot="lane-pill"]')) return;
+    handleKeyDown(event);
+  };
+
   // A plain wheel scrolls the row: its scrollbar is hidden behind the fades.
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     const el = event.currentTarget;
@@ -161,7 +169,7 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
         ref={toolbarRef}
         role="toolbar"
         aria-orientation="horizontal"
-        onKeyDown={handleKeyDown}
+        onKeyDown={handleToolbarKeyDown}
         className="flex h-full min-w-0 flex-1 items-center gap-2"
       >
         <div
@@ -170,6 +178,8 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
           onWheel={handleWheel}
           style={fade.style}
           data-slot="lane-scroller"
+          // Chromium makes a scrolling box a Tab stop; the toolbar stays one stop (R61).
+          tabIndex={-1}
           data-overflow-start={fade["data-overflow-start"]}
           data-overflow-end={fade["data-overflow-end"]}
           className="flex h-full min-w-0 flex-1 items-center gap-2 overflow-x-auto overscroll-x-contain scroll-px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

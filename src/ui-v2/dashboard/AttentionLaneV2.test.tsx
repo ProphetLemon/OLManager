@@ -233,6 +233,17 @@ describe("AttentionLaneV2 (R24, R47)", () => {
     expect(focused()).toBe(main);
   });
 
+  it("never makes the scroller a Tab stop, and Enter on it activates nothing (R61)", () => {
+    render(<Frame />);
+    const scroller = document.querySelector<HTMLElement>('[data-slot="lane-scroller"]')!;
+    expect(scroller).toHaveAttribute("tabindex", "-1");
+    act(() => scroller.focus());
+    fireEvent.keyDown(scroller, { key: "Enter" });
+    fireEvent.keyDown(scroller, { key: " " });
+    expect(handlers.onNavigate).not.toHaveBeenCalled();
+    expect(handlers.onShowAll).not.toHaveBeenCalled();
+  });
+
   it("keeps the whole focus ring inside a pill and clear of the fades (R47)", () => {
     render(<Frame />);
     for (const pill of pillButtons()) expect(pill).toHaveClass("focus-visible:ring-inset");
