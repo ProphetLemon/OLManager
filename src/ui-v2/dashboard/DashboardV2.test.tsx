@@ -6,6 +6,7 @@ import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { resetSessionNavigation } from "@/store/sessionReset";
+import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
 import type { GameStateData, PlayerData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
 import type { CallState } from "@/lib/dashboard/needsYourCall";
@@ -198,7 +199,9 @@ vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
     <div data-testid="player-profile" data-renewal={String(startWithRenewalModal)} />
   ),
 }));
-vi.mock("@/ui-v2/pages/StaffProfileV2", () => ({ default: () => null }));
+vi.mock("@/ui-v2/pages/StaffProfileV2", () => ({
+  default: ({ staffId }: { staffId: string }) => <div data-testid="staff-profile" data-staff={staffId} />,
+}));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -300,6 +303,19 @@ describe("DashboardV2 tab sync", () => {
 
     const profile = await screen.findByTestId("player-profile");
     expect(profile.getAttribute("data-renewal")).toBe("true");
+  });
+  it("shows a staff profile opened while on Home, not the Home tab", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useDashboardLocationStore.getState().go({ kind: "staff", id: "staff-1" });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+
+    expect((await screen.findByTestId("staff-profile")).getAttribute("data-staff")).toBe("staff-1");
+    expect(screen.queryByTestId("home-tab-v2")).toBeNull();
   });
 });
 

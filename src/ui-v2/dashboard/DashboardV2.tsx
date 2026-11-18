@@ -665,6 +665,14 @@ export default function DashboardV2() {
   );
   const attention = useMemo(() => buildAttentionMap(callState.items), [callState.items]);
 
+  // A tab's own content shows only while no profile or champion page is open over it.
+  const profileOpen = Boolean(
+    profileNavigation.selectedPlayerId ||
+      profileNavigation.selectedTeamId ||
+      profileNavigation.selectedStaffId ||
+      viewingChampionKey,
+  );
+
   const dashboardTabContentModel = gameState
     ? createDashboardTabContentModel({
         activeTab: profileNavigation.activeTab,
@@ -800,10 +808,7 @@ export default function DashboardV2() {
           className="flex min-h-0 flex-1 flex-col overflow-hidden outline-none scrollbar-v2"
         >
         <Suspense fallback={<LazyFallback />}>
-        {profileNavigation.activeTab === "Home" &&
-        !viewingChampionKey &&
-        !profileNavigation.selectedPlayerId &&
-        !profileNavigation.selectedTeamId &&
+        {profileNavigation.activeTab === "Home" && !profileOpen &&
         !showSeasonSummary ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-v2">
             <HomeTabV2
@@ -814,10 +819,7 @@ export default function DashboardV2() {
               unreadCount={unreadMessagesCount}
             />
           </div>
-        ) : profileNavigation.activeTab === "Inbox" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Inbox" && !profileOpen ? (
           <div className="flex-1 overflow-hidden">
             <InboxTabV2
               gameState={gameState}
@@ -826,17 +828,11 @@ export default function DashboardV2() {
               onNavigate={handleNavigate}
             />
           </div>
-        ) : profileNavigation.activeTab === "Schedule" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Schedule" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ScheduleTabV2 gameState={gameState} onSelectTeam={selectTeam} />
           </div>
-        ) : profileNavigation.activeTab === "Squad" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Squad" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <SquadTabV2
               gameState={gameState}
@@ -845,10 +841,7 @@ export default function DashboardV2() {
               onNavigate={handleNavigate}
             />
           </div>
-        ) : profileNavigation.activeTab === "Training" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Training" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <TrainingTabV2
               gameState={gameState}
@@ -856,20 +849,14 @@ export default function DashboardV2() {
               onSelectPlayer={selectPlayer}
             />
           </div>
-        ) : profileNavigation.activeTab === "Tactics" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Tactics" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <TacticsTabV2
               gameState={gameState}
               onGameUpdate={setGameState}
             />
           </div>
-        ) : profileNavigation.activeTab === "Players" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Players" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <PlayersTabV2
               gameState={gameState}
@@ -877,21 +864,14 @@ export default function DashboardV2() {
               onSelectTeam={selectTeam}
             />
           </div>
-        ) : profileNavigation.activeTab === "Teams" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Teams" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <TeamsTabV2
               gameState={gameState}
               onSelectTeam={selectTeam}
             />
           </div>
-        ) : profileNavigation.activeTab === "Staff" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId &&
-          !profileNavigation.selectedStaffId ? (
+        ) : profileNavigation.activeTab === "Staff" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             {/* Keyed by mode: the club tab and World › Staff keep separate view state. */}
             <StaffTabV2
@@ -901,11 +881,7 @@ export default function DashboardV2() {
               onSelectStaff={selectStaff}
             />
           </div>
-        ) : profileNavigation.activeTab === "WorldStaff" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId &&
-          !profileNavigation.selectedStaffId ? (
+        ) : profileNavigation.activeTab === "WorldStaff" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <StaffTabV2
               key="staff-world"
@@ -915,10 +891,7 @@ export default function DashboardV2() {
               onSelectStaff={selectStaff}
             />
           </div>
-        ) : profileNavigation.activeTab === "Finances" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Finances" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <FinancesTabV2
               gameState={gameState}
@@ -926,20 +899,14 @@ export default function DashboardV2() {
               onSelectPlayer={selectPlayer}
             />
           </div>
-        ) : profileNavigation.activeTab === "Scrims" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Scrims" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ScrimsTabV2
               gameState={gameState}
               onGameUpdate={setGameState}
             />
           </div>
-        ) : profileNavigation.activeTab === "Soloq" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Soloq" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <SoloqTabV2
               gameState={gameState}
@@ -947,10 +914,7 @@ export default function DashboardV2() {
               onSelectPlayer={selectPlayer}
             />
           </div>
-        ) : profileNavigation.activeTab === "Scouting" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Scouting" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ScoutingTabV2
               gameState={gameState}
@@ -959,10 +923,7 @@ export default function DashboardV2() {
               onNavigate={handleNavigate}
             />
           </div>
-        ) : profileNavigation.activeTab === "Transfers" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Transfers" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <TransfersTabV2
               gameState={gameState}
@@ -971,34 +932,22 @@ export default function DashboardV2() {
               onSelectTeam={selectTeam}
             />
           </div>
-        ) : profileNavigation.activeTab === "News" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "News" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <NewsTabV2 gameState={gameState} />
           </div>
-        ) : profileNavigation.activeTab === "Social" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Social" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <SocialTabV2
               gameState={gameState}
               onGameUpdate={setGameState}
             />
           </div>
-        ) : profileNavigation.activeTab === "Manager" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Manager" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ManagerTabV2 gameState={gameState} />
           </div>
-        ) : profileNavigation.activeTab === "Youth" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Youth" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <YouthTabV2
               gameState={gameState}
@@ -1007,10 +956,7 @@ export default function DashboardV2() {
               onGameUpdate={setGameState}
             />
           </div>
-        ) : profileNavigation.activeTab === "Competitions" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Competitions" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <CompetitionsTabV2
               gameState={gameState}
@@ -1018,27 +964,18 @@ export default function DashboardV2() {
               initialCompetitionId={profileNavigation.initialCompetitionId}
             />
           </div>
-        ) : profileNavigation.activeTab === "Market" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Market" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <MarketTabV2 gameState={gameState} />
           </div>
-        ) : profileNavigation.activeTab === "ChampionsWorld" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "ChampionsWorld" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ChampionsWorldTabV2
               champions={gameState.champions}
               onViewChampion={viewChampion}
             />
           </div>
-        ) : profileNavigation.activeTab === "Meta" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Meta" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <MetaTabV2
               gameState={gameState}
