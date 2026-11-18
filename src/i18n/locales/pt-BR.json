@@ -3717,8 +3717,8 @@
       "backNone": "Não há para onde voltar"
     },
     "route": {
-      "now": "Agora em {{title}}, {{group}}",
-      "nowNoGroup": "Agora em {{title}}"
+      "now": "Agora: {{title}}, {{group}}",
+      "nowNoGroup": "Agora: {{title}}"
     },
     "tags": {
       "blocker": "Bloqueio",

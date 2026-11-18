@@ -477,7 +477,8 @@ export default function DashboardV2() {
     gameState ? isLocationInGame(loc, gameState) : true;
 
   /**
-   * Every move enters here. With `focusMain`, focus goes to the main region; an
+   * Every user move enters here (the alias route and its first-render write call
+   * `go` directly). With `focusMain`, focus goes to the main region; an
    * in-page Back asks for it because its own button unmounts with the page. With
    * `announce`, the arrival is spoken as "Now on {title}, {group}" (R46). A rail
    * row does neither: its aria-current already says where the user is. A move that
