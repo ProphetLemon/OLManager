@@ -54,6 +54,24 @@ describe("useFadeMask", () => {
     expect(el.dataset.overflowEnd).toBe("true");
   });
 
+  it("stops observing and listening when it unmounts", () => {
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect = disconnect;
+      },
+    );
+    const removeListener = vi.spyOn(window, "removeEventListener");
+    const view = render(<Scroller axis="x" />);
+    view.unmount();
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(removeListener).toHaveBeenCalledWith("resize", expect.any(Function));
+    removeListener.mockRestore();
+  });
+
   it("fades the bottom edge of a vertical list by default", () => {
     render(<Scroller />);
     const el = screen.getByTestId("scroller");
