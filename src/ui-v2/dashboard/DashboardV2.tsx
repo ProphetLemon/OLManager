@@ -39,10 +39,13 @@ import {
   backDestination,
   currentLocation,
   isLocationInGame,
+  sameLocation,
   type DashboardLocation,
   type DashboardNavigateContext,
+  type NavIntent,
 } from "@/lib/dashboard/profileNavigation";
-import { describeLocation, tabTitle } from "@/lib/dashboard/describeLocation";
+import { describeLocation, routeAnnouncement, tabTitle } from "@/lib/dashboard/describeLocation";
+import { RouteAnnouncer, useRouteAnnouncer } from "./RouteAnnouncer";
 import { createDashboardTabContentModel } from "@/lib/dashboard/tabContentModel";
 import {
   getDashboardAlerts,
@@ -173,6 +176,7 @@ export default function DashboardV2() {
   const back = useDashboardLocationStore((s) => s.back);
   const closeChampion = useDashboardLocationStore((s) => s.closeChampion);
   const clearOneShots = useDashboardLocationStore((s) => s.clearOneShots);
+  const { message: routeMessage, announce } = useRouteAnnouncer();
   const viewingChampionKey = profileNavigation.championKey;
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isExitingToMenu, setIsExitingToMenu] = useState(false);
@@ -468,7 +472,35 @@ export default function DashboardV2() {
     }
   };
 
-  const handleNavClick = (tab: string) => go({ kind: "tab", tab });
+  // Back skips the entries whose player, team or staff member has left the game.
+  const isValidLocation = (loc: DashboardLocation) =>
+    gameState ? isLocationInGame(loc, gameState) : true;
+
+  /**
+   * Every move enters here. With `focusMain`, focus goes to the main region; an
+   * in-page Back asks for it because its own button unmounts with the page. With
+   * `announce`, the arrival is spoken as "Now on {title}, {group}" (R46). A rail
+   * row does neither: its aria-current already says where the user is. A move that
+   * goes nowhere does nothing at all.
+   */
+  const runIntent = (
+    move: NavIntent | { kind: "back" } | { kind: "closeChampion" },
+    { announce: speak = false, focusMain = false }: { announce?: boolean; focusMain?: boolean } = {},
+  ) => {
+    const before = currentLocation(useDashboardLocationStore.getState().nav);
+    if (move.kind === "back") back(isValidLocation);
+    else if (move.kind === "closeChampion") closeChampion(isValidLocation);
+    else go(move);
+    const after = currentLocation(useDashboardLocationStore.getState().nav);
+    if (sameLocation(before, after)) return;
+    if (focusMain) document.getElementById(MAIN_CONTENT_ID)?.focus();
+    if (speak && gameState) {
+      const text = routeAnnouncement(after, { t, game: gameState });
+      if (text) announce(text);
+    }
+  };
+
+  const handleNavClick = (tab: string) => runIntent({ kind: "tab", tab });
 
   // Header chip: go Home and move focus to the "Needs your call" panel. Home
   // is lazy, so poll briefly until the panel exists.
@@ -496,22 +528,22 @@ export default function DashboardV2() {
   };
 
   const handleNavigate = (tab: string, context?: DashboardNavigateContext) =>
-    go({ kind: "tab", tab, context });
+    runIntent({ kind: "tab", tab, context });
 
-  // Back skips the entries whose player, team or staff member has left the game.
-  const isValidLocation = (loc: DashboardLocation) =>
-    gameState ? isLocationInGame(loc, gameState) : true;
-
-  const handleBack = () => back(isValidLocation);
+  // The header Back stays where it is and takes the next destination's name, so focus
+  // stays on it (R20); an in-page Back goes away with its page, so focus moves to main.
+  const handleBack = () => runIntent({ kind: "back" }, { announce: true });
+  const handleInPageBack = () => runIntent({ kind: "back" }, { announce: true, focusMain: true });
+  const handleChampionBack = () => runIntent({ kind: "closeChampion" }, { announce: true, focusMain: true });
 
   const selectPlayer = (id: string, options?: PlayerSelectionOptions) =>
-    go({ kind: "player", id, openRenewal: options?.openRenewal });
+    runIntent({ kind: "player", id, openRenewal: options?.openRenewal });
 
-  const selectTeam = (id: string) => go({ kind: "team", id });
+  const selectTeam = (id: string) => runIntent({ kind: "team", id });
 
-  const selectStaff = (id: string) => go({ kind: "staff", id });
+  const selectStaff = (id: string) => runIntent({ kind: "staff", id });
 
-  const viewChampion = (key: string) => go({ kind: "champion", key });
+  const viewChampion = (key: string) => runIntent({ kind: "champion", key });
 
   const MODE_META: Record<MatchModeType, DashboardMatchModeMeta> = useMemo(
     () => ({
@@ -672,6 +704,7 @@ export default function DashboardV2() {
       >
         {t("onAir.nav.skip", { defaultValue: "Skip to main content" })}
       </a>
+      <RouteAnnouncer message={routeMessage} />
       <DashboardSidebarV2
         activeTab={profileNavigation.activeTab}
         onNavClick={handleNavClick}
@@ -1010,7 +1043,7 @@ export default function DashboardV2() {
               gameState={gameState}
               playerId={profileNavigation.selectedPlayerId}
               startWithRenewalModal={profileNavigation.selectedPlayerOptions?.openRenewal === true}
-              onClose={handleBack}
+              onClose={handleInPageBack}
               onGameUpdate={setGameState}
               onSelectPlayer={selectPlayer}
               onSelectTeam={selectTeam}
@@ -1022,7 +1055,7 @@ export default function DashboardV2() {
             <TeamProfileV2
               gameState={gameState}
               teamId={profileNavigation.selectedTeamId}
-              onClose={handleBack}
+              onClose={handleInPageBack}
               onSelectPlayer={selectPlayer}
             />
           </div>
@@ -1031,7 +1064,7 @@ export default function DashboardV2() {
             <StaffProfileV2
               gameState={gameState}
               staffId={profileNavigation.selectedStaffId}
-              onClose={handleBack}
+              onClose={handleInPageBack}
               onGameUpdate={setGameState}
               onSelectTeam={selectTeam}
             />
@@ -1040,7 +1073,7 @@ export default function DashboardV2() {
           <div className="flex-1 overflow-hidden">
             <ChampionPageV2
               championKey={viewingChampionKey}
-              onClose={() => closeChampion(isValidLocation)}
+              onClose={handleChampionBack}
             />
           </div>
         ) : (
