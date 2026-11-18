@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import axe from "axe-core";
 import type { TFunction } from "i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -274,6 +275,32 @@ describe.each(["off", "high"])("the Go palette, open, contrast %s (NR2.8, R25, R
     expect(options.every((o) => o.hasAttribute("aria-selected"))).toBe(true);
     expect(options.filter((o) => o.getAttribute("aria-selected") === "true")).toHaveLength(1);
   });
+
+  // jsdom computes no layout or colour, so axe cannot measure contrast; the hand-written
+  // contrast checks above stay (R71).
+  const AXE_OPTIONS: axe.RunOptions = { rules: { "color-contrast": { enabled: false } } };
+  // Base UI's focus guards are left out. When navigator.vendor names Apple, Base UI gives
+  // these visually hidden spans role="button" for VoiceOver, with no name, so axe reports
+  // aria-command-name. jsdom's vendor is "Apple Computer, Inc.", so it happens here; the
+  // Linux WebKitGTK webview reports the same vendor, so it is not jsdom-only (reported to
+  // the a11y audit). The guards belong to Base UI and take no props.
+  const AXE_CONTEXT: axe.ElementContext = { include: [document.body], exclude: [["[data-base-ui-focus-guard]"]] };
+
+  it("passes axe over the shell and the open palette, and R44's required combobox attributes", async () => {
+    const { dialog } = await renderOpen();
+    let results: axe.AxeResults | undefined;
+    await act(async () => {
+      results = await axe.run(AXE_CONTEXT, AXE_OPTIONS);
+    });
+    if (!results) throw new Error("axe did not run");
+    const violations = results.violations.map(
+      (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`,
+    );
+    expect(violations).toEqual([]);
+    const combobox = within(dialog).getByRole("combobox");
+    const required = results.passes.find((rule) => rule.id === "aria-required-attr");
+    expect(required?.nodes.some((node) => document.querySelector(String(node.target[0])) === combobox)).toBe(true);
+  }, 20_000);
 
   it("has one live region, no title, no positive or option tabindex, and no duplicate id", async () => {
     const { dialog } = await renderOpen();
