@@ -130,6 +130,7 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
     ["no usable position", counts.noPosition],
     ["ambiguous inside the pool", counts.duplicates],
     ["id collision", counts.collisions],
+    ["the same person as a game record the world build folds or hides", counts.sameAsGameRecord ?? 0],
     ["added", summary.players + summary.staff],
   ], ["step", "people"]), "");
 

@@ -55,6 +55,7 @@ export interface PoolSelection {
     noPosition: number;
     duplicates: number;
     collisions: number;
+    sameAsGameRecord: number;
   };
   refused: Array<{ page: string; kind: "player" | "staff"; code: string; reason: string }>;
   collisions: Array<{ page: string; kind: "player" | "staff"; id: string; with: string }>;
@@ -86,4 +87,10 @@ export function buildPoolOps(input: {
   baselines: Baselines;
   /** The game's league levels and defaults: ratings anchor to them instead of to the tier baseline. */
   anchors?: import("./pool-rating.mjs").PoolAnchors | null;
+}): { players: PoolOpEntry[]; staff: PoolOpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };
+/** Leave out the pool players the world build would fold into a record on a club or hide from the AI; updates `selection` with why. */
+export function dropWorldBuildTwins(input: {
+  selection: PoolSelection;
+  ops: { players: PoolOpEntry[]; staff: PoolOpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };
+  contracted: Array<Record<string, any>>;
 }): { players: PoolOpEntry[]; staff: PoolOpEntry[]; skipped: Array<{ kind: string; subject: string; detail: string }> };

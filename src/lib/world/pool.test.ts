@@ -8,7 +8,7 @@ import { PEOPLE_FILTER, fetchPoolInputs, type PoolInputs } from "../../../script
 import {
   bestLevel, classifyTournaments, mergePerson, normalizeTournament, parseTournaments, personFromRow, qualifierSplit, TOURS_MAX_CHARS,
 } from "../../../scripts/world/lib/pool-scope.mjs";
-import { RATING_TIER_DEFAULT, TIER_OFFSETS, buildPoolOps, isoDate, poolId, poolTournaments, selectPool, tierBaselines } from "../../../scripts/world/lib/pool.mjs";
+import { RATING_TIER_DEFAULT, TIER_OFFSETS, buildPoolOps, dropWorldBuildTwins, isoDate, poolId, poolTournaments, selectPool, tierBaselines } from "../../../scripts/world/lib/pool.mjs";
 import { baselines, context, entryRows, overlayOf, peopleOf, row, select, stubClient, tournamentRows, world } from "./poolFixtures";
 
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -255,6 +255,35 @@ describe("ids", () => {
     const gameStaff = new Set(world.staff.map((s) => s.id));
     expect(players.some((id) => gamePlayers.has(id))).toBe(false);
     expect(staff.some((id) => gameStaff.has(id))).toBe(false);
+  });
+});
+
+describe("dropWorldBuildTwins", () => {
+  it("leaves out a pool player the world build would fold into a record on a club, and says why", async () => {
+    const inputs = await fetchPoolInputs({ client: stubClient() });
+    const selected = selectPool({ people: inputs.people, context, world });
+    const ops = buildPoolOps({ selection: selected, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])), games: inputs.games, baselines });
+    const victim = ops.players[0];
+    const twin = { ...victim.op.player, id: "player-feedbeef", team_id: "lck-team-61bd92d5", full_name: `${victim.op.player.full_name}x` };
+    const before = ops.players.length;
+    const kept = dropWorldBuildTwins({ selection: selected, ops, contracted: [twin] });
+    expect(kept.players).toHaveLength(before - 1);
+    expect(kept.players.some((e) => e.id === victim.id)).toBe(false);
+    expect(kept.staff).toHaveLength(ops.staff.length);
+    const status = selected.statuses.get(victim.op.pool.page);
+    expect(status).toMatchObject({ state: "refused", code: "same-person-as-game-record" });
+    expect(status).toMatchObject({ reason: expect.stringContaining("player-feedbeef") });
+    expect(selected.refused[selected.refused.length - 1]).toMatchObject({ page: victim.op.pool.page, code: "same-person-as-game-record" });
+    expect(selected.counts.sameAsGameRecord).toBe(1);
+  });
+
+  it("changes nothing when no record on a club is a twin", async () => {
+    const inputs = await fetchPoolInputs({ client: stubClient() });
+    const selected = selectPool({ people: inputs.people, context, world });
+    const ops = buildPoolOps({ selection: selected, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])), games: inputs.games, baselines });
+    const kept = dropWorldBuildTwins({ selection: selected, ops, contracted: [] });
+    expect(kept.players).toHaveLength(ops.players.length);
+    expect(selected.counts.sameAsGameRecord).toBe(0);
   });
 });
 

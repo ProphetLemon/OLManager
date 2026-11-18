@@ -21,7 +21,8 @@ import { fetchPoolInputs } from "./pool-fetch.mjs";
 import { runPoolGates } from "./pool-gates.mjs";
 import { explainProbe } from "./pool-report.mjs";
 import { gameTeamKeys } from "./pool-scope.mjs";
-import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, selectPool } from "./pool.mjs";
+import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, dropWorldBuildTwins, selectPool } from "./pool.mjs";
+import { contractedPlayers } from "./same-person.mjs";
 import { poolSkillFromRows } from "./pool-rating.mjs";
 import { poolOfLevels } from "../../stats/lib/levels.mjs";
 import { loadTeamMap } from "./team-map.mjs";
@@ -153,9 +154,11 @@ export async function runRefresh(options) {
     const anchors = options.pool.anchors ?? null;
     const poolOf = anchors ? poolOfLevels(anchors.levels) : undefined;
     const skill = options.pool.skill ?? (options.pool.statsRows ? poolSkillFromRows(options.pool.statsRows, positions, { poolOf }) : null);
-    const poolOps = buildPoolOps({
+    const builtPoolOps = buildPoolOps({
       selection, baselines, games: inputs.games, skill, anchors, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
     });
+    // The game folds a pool player into a record it already has on a club, or hides him from the AI, so he is left out here.
+    const poolOps = dropWorldBuildTwins({ selection, ops: builtPoolOps, contracted: contractedPlayers(world.players, ops.players.map((entry) => entry.op)) });
     ops = { players: [...ops.players, ...poolOps.players], staff: [...ops.staff, ...poolOps.staff], skipped: [...ops.skipped, ...poolOps.skipped] };
     poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff } };
     log(`pool: ${poolOps.players.length} players, ${poolOps.staff.length} staff as free agents`);

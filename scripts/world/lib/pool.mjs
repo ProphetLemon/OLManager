@@ -7,6 +7,7 @@
 //  - qualifier-flagged tournaments count only up to `cap` roster entries (open qualifiers hold thousands of names);
 //  - nobody the game already has, nobody on a team the roster overlay handles.
 import { IdCollisionError, deterministicId, generatePlayer, generateStaff } from "./generate.mjs";
+import { foldedByWorldBuild } from "./same-person.mjs";
 import { pageUrl } from "./leaguepedia-parse.mjs";
 import { OPEN_QUALIFIER_ENTRIES, gameStatus, qualifierSplit } from "./pool-scope.mjs";
 import { GAME_POSITION, RATING_STATS, RATING_TIER_DEFAULT, latestMappedCompetition, ratePoolPlayer, shapeBaselines, tierBaselines } from "./pool-rating.mjs";
@@ -97,7 +98,7 @@ function identityKey(person) {
  */
 export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {} }) {
   const rosterKeys = { player: new Set([...(rosterTitles.player ?? [])].map(titleKey)), staff: new Set([...(rosterTitles.staff ?? [])].map(titleKey)) };
-  const counts = { considered: 0, noPage: 0, inGame: 0, onGameTeam: 0, handledByRoster: 0, uncertain: 0, nonSportingStaff: 0, noPosition: 0, duplicates: 0, collisions: 0 };
+  const counts = { considered: 0, noPage: 0, inGame: 0, onGameTeam: 0, handledByRoster: 0, uncertain: 0, nonSportingStaff: 0, noPosition: 0, duplicates: 0, collisions: 0, sameAsGameRecord: 0 };
   const statuses = new Map();
   const refused = [];
   const collisions = [];
@@ -303,4 +304,30 @@ export function buildPoolOps({ selection, tournamentIndex, games = null, skill =
     }
   }
   return { players, staff, skipped };
+}
+
+/**
+ * Leave out the pool players the world build would fold into a record on a club (K2) or hide from the AI signing guard: they are
+ * a person the game already has under another record, and nobody would ever see them. The rules are the game's own (same-person.mjs).
+ * Mutates `selection` so the report says why each of them is out, and returns the ops without them.
+ * @param {object} input
+ * @param {ReturnType<typeof selectPool>} input.selection
+ * @param {ReturnType<typeof buildPoolOps>} input.ops
+ * @param {object[]} input.contracted the players on a club once the roster overlay is applied (`contractedPlayers`)
+ */
+export function dropWorldBuildTwins({ selection, ops, contracted }) {
+  const players = [];
+  for (const entry of ops.players) {
+    const hit = foldedByWorldBuild(entry.op.player, contracted);
+    if (!hit) {
+      players.push(entry);
+      continue;
+    }
+    const page = entry.op.pool.page;
+    const reason = `the world build would fold or hide him as the same person as ${hit.with} (${hit.rule}), so the game would show one record`;
+    selection.counts.sameAsGameRecord += 1;
+    selection.refused.push({ page, kind: "player", code: "same-person-as-game-record", reason });
+    selection.statuses.set(page, { state: "refused", code: "same-person-as-game-record", reason });
+  }
+  return { ...ops, players };
 }
