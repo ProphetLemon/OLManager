@@ -239,6 +239,32 @@ describe("rosterUpdateStore", () => {
     });
   });
 
+  describe("the answer timer", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("is cleared once a fast answer arrives, leaving no timer behind", async () => {
+      await checkForRosterUpdates();
+
+      expect(state().status).toBe("upToDate");
+      expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it("is cleared once a fast failure arrives, leaving no timer behind", async () => {
+      mocks.updateWorldOverlay.mockRejectedValueOnce(new Error("offline"));
+
+      await checkForRosterUpdates();
+
+      expect(state().status).toBe("failed");
+      expect(vi.getTimerCount()).toBe(0);
+    });
+  });
+
   describe("an answer that never comes", () => {
     beforeEach(() => {
       vi.useFakeTimers();
