@@ -96,10 +96,13 @@ export const navIcon = (r: number): number => Math.max(1.25 * r, 18);
 
 /** The direct stops plus the group launchers of the Split rail (the eight, employed). */
 export const SPLIT_STOPS = 8;
-/** Android: Home, Inbox, Schedule, Club, Market, World and More (News, Social and the utilities live in More). */
-export const ANDROID_STOPS = 7;
-/** Android rail padding, top and bottom: 7 x 48 + 16 = 352. */
-export const ANDROID_RAIL_PADDING_PX = 16;
+/**
+ * Android: Go, Home, Inbox, Schedule, Club, Market, World and More (News, Social and the
+ * utilities live in More). Go is the first labelled stop (R32).
+ */
+export const ANDROID_STOPS = 8;
+/** Android rail padding, 4 px top and bottom: 8 x 48 + 8 = 392 (R32). */
+export const ANDROID_RAIL_PADDING_PX = 8;
 
 /**
  * Height of one labelled Split stop: the rem padding (0.375rem twice), the icon, the 0.125rem

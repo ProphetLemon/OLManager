@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useNavMemoryStore } from "@/store/navMemoryStore";
+import { usePaletteStore } from "@/store/paletteStore";
 
 vi.mock("@/ui-v2/_legacy/components/dashboard/ReportBugModal", () => ({
   default: ({ onClose }: { onClose: () => void }) => (
@@ -58,7 +59,10 @@ const navId = (id: string) => document.querySelector<HTMLElement>(`[data-nav-id=
 // By id: the Market header and its child share one label.
 const header = (name: string) => navId(`group:${name.toLowerCase()}`);
 
-beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
+beforeEach(() => {
+  useNavMemoryStore.getState().resetNavMemory();
+  usePaletteStore.getState().reset();
+});
 
 describe("Tree rail structure", () => {
   it("renders one navigation landmark and exposes the mode on the aside", () => {
@@ -283,7 +287,7 @@ describe("Tree rail keyboard", () => {
     press(row(/^Home/), "End");
     expect(navId("util:manager")).toHaveFocus();
     press(navId("util:manager"), "Home");
-    expect(navId("tab:Home")).toHaveFocus();
+    expect(navId("util:go")).toHaveFocus();
     press(navId("tab:Schedule"), "ArrowDown");
     expect(header("Club")).toHaveFocus();
     press(header("Club"), "ArrowUp");
@@ -473,5 +477,48 @@ describe("Tree attention marker", () => {
       expect(b.className).toContain("text-nav");
       expect(b.className).not.toContain("text-xs");
     }
+  });
+});
+
+describe("Tree: the Go row (NR2.9, spec section 7.1)", () => {
+  it("is the first row, above the scroller: a dialog button named “Go to…”, never current", () => {
+    setup();
+    const nav = screen.getByRole("navigation");
+    const go = within(nav).getAllByRole("button")[0];
+    expect(go).toBe(navId("util:go"));
+    expect(go).toHaveAccessibleName("Go to…");
+    expect(go).toHaveAttribute("aria-haspopup", "dialog");
+    expect(go).not.toHaveAttribute("aria-current");
+    const scroller = document.querySelector('[data-slot="rail-stops"]')!;
+    expect(scroller.contains(go)).toBe(false);
+    expect(go.compareDocumentPosition(scroller) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is reached by Up from Home, and by the Home key", () => {
+    setup();
+    focus(navId("tab:Home"));
+    fireEvent.keyDown(navId("tab:Home"), { key: "ArrowUp" });
+    expect(navId("util:go")).toHaveFocus();
+    focus(navId("tab:Inbox"));
+    fireEvent.keyDown(navId("tab:Inbox"), { key: "Home" });
+    expect(navId("util:go")).toHaveFocus();
+  });
+
+  it("opens the palette with util:go as its opener, by click and by Enter", () => {
+    setup();
+    fireEvent.click(navId("util:go"));
+    expect(usePaletteStore.getState()).toMatchObject({ open: true, openerId: "util:go" });
+    act(() => usePaletteStore.getState().reset());
+    focus(navId("util:go"));
+    fireEvent.keyDown(navId("util:go"), { key: "Enter" });
+    expect(usePaletteStore.getState()).toMatchObject({ open: true, openerId: "util:go" });
+  });
+
+  it("keeps focus on Go when the rail flips to Split", () => {
+    const { rerender } = setup();
+    focus(navId("util:go"));
+    rerender({ railMode: "split" });
+    expect(navId("util:go")).toHaveFocus();
+    expect(navId("util:go")).toHaveAttribute("data-variant", "cell");
   });
 });

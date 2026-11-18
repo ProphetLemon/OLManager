@@ -67,11 +67,11 @@ describe("DashboardSidebarV2 rail", () => {
     expect(tabbable[1]).toHaveAccessibleName("Squad");
   });
 
-  it("keeps the first stop tabbable when no stop owns the tab", () => {
+  it("keeps the first stop, Go, tabbable when no stop owns the tab", () => {
     setup({ activeTab: "Tournaments" });
     const tabbable = screen.getAllByRole("button").filter((b) => b.getAttribute("tabindex") === "0");
     expect(tabbable).toHaveLength(1);
-    expect(tabbable[0]).toHaveAccessibleName("Home");
+    expect(tabbable[0]).toHaveAccessibleName("Go to…");
   });
 
   it("marks the group launcher current for any tab inside the group", () => {
@@ -102,13 +102,13 @@ describe("DashboardSidebarV2 rail", () => {
     expect(props.onNavClick).toHaveBeenCalledWith("Inbox");
   });
 
-  it("Home and End jump to the first and last stop", () => {
+  it("Home and End jump to the first and last stop: Go and the manager", () => {
     setup({ activeTab: "Home" });
     stop(/^Home/).focus();
     fireEvent.keyDown(stop(/^Home/), { key: "End" });
     expect(stop(/^Boss|Manager profile/)).toHaveFocus();
     fireEvent.keyDown(document.activeElement as Element, { key: "Home" });
-    expect(stop(/^Home/)).toHaveFocus();
+    expect(document.activeElement).toHaveAttribute("data-nav-id", "util:go");
   });
 
   it("remembers the last visited tab of a group when its launcher is used", () => {

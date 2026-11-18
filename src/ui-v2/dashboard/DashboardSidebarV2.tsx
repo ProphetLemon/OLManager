@@ -1,10 +1,12 @@
 import { useNavMemoryStore } from "@/store/navMemoryStore";
+import { usePaletteStore } from "@/store/paletteStore";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bug, LogOut, Newspaper, MessageCircle, Settings, UserRound } from "lucide-react";
 
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
+import { GO_ID, GoButton } from "@/ui-v2/shell/GoButton";
 import { ANDROID_DIRECT, RailSplitPanel, RailSplitStops } from "@/ui-v2/shell/RailSplit";
 import { RailMore } from "@/ui-v2/shell/RailMore";
 import { RAIL_LABEL_CLASS, RAIL_STOP_INSET_REM } from "@/ui-v2/shell/RailItem";
@@ -105,6 +107,7 @@ export function DashboardSidebarV2({
   // The bug report is opened from the roving widget (Enter on its cell), so its modal is controlled here.
   const [bugOpen, setBugOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const openPalette = usePaletteStore((s) => s.openPalette);
   const openGroups = useNavMemoryStore((s) => s.openGroups);
   const toggleGroup = useNavMemoryStore((s) => s.toggleGroup);
 
@@ -124,6 +127,8 @@ export function DashboardSidebarV2({
   const rows: TreeRow[] = useMemo(() => {
     const out: TreeRow[] = [];
     const rail = tree ? undefined : ("rail" as const);
+    // Go is the first row in every mode (spec section 7.1): Up from Home and the Home key reach it.
+    out.push({ id: GO_ID, kind: "utility", level: 0, parentId: null, column: rail });
     for (const i of RAIL_DIRECT) {
       if (android && !ANDROID_DIRECT.includes(i.tab)) continue;
       out.push({ id: `tab:${i.tab}`, kind: "leaf", level: 0, parentId: null, column: rail });
@@ -177,6 +182,7 @@ export function DashboardSidebarV2({
             activate: tree ? () => toggleGroup(id) : () => onNavClick(resolveGroupLanding(id, lastVisited)),
           };
         }
+        if (r.id === GO_ID) return { id: r.id, activate: () => openPalette(GO_ID) };
         if (r.id === "util:more") return { id: r.id, activate: () => setMoreOpen(true) };
         if (r.id === "util:bug") return { id: r.id, activate: () => setBugOpen(true) };
         if (r.id === "util:settings") return { id: r.id, activate: onNavigateSettings };
@@ -184,7 +190,7 @@ export function DashboardSidebarV2({
         if (r.id === "util:manager") return { id: r.id, activate: () => onNavClick("Manager") };
         return { id: r.id, activate: () => onNavClick(r.id.slice("tab:".length)) };
       }),
-    [rows, tree, toggleGroup, lastVisited, onNavClick, onNavigateSettings, onExitClick],
+    [rows, tree, toggleGroup, lastVisited, onNavClick, onNavigateSettings, onExitClick, openPalette],
   );
 
   // The row the user last moved to wins until the active tab changes; else the active tab's
@@ -482,6 +488,10 @@ export function DashboardSidebarV2({
     { id: "exit", label: t("dashboard.exitToMenu", { defaultValue: "Exit" }), icon: LogOut, tone: "danger" as const, onSelect: onExitClick },
     { id: "manager", label: managerLabel, icon: UserRound, onSelect: () => onNavClick("Manager") },
   ];
+  // The palette returns focus to Go by its id (util:go) when it closes by Escape, Close or Back.
+  const go = (variant: "row" | "cell" | "stop") => (
+    <GoButton variant={variant} onClick={() => openPalette(GO_ID)} {...itemProps(GO_ID)} />
+  );
   const more = (
     <RailMore
       label={t("onAir.nav.more", { defaultValue: "More" })}
@@ -590,6 +600,7 @@ export function DashboardSidebarV2({
       >
         {tree ? (
           <>
+            {go("row")}
             {scroller(
               <RailTree
                 activeTab={activeTab}
@@ -613,7 +624,7 @@ export function DashboardSidebarV2({
               data-slot="rail-column"
               className={cn(
                 "flex min-h-0 shrink-0 flex-col",
-                android && "py-[8px]",
+                android && "py-[4px]",
                 compact ? "w-[var(--rail-w-compact)]" : "w-[var(--rail-w-split)]",
               )}
             >
@@ -626,6 +637,7 @@ export function DashboardSidebarV2({
                   compact={compact}
                   iconOnly={iconOnlyStops}
                   android={android}
+                  leading={android ? go("stop") : <div className="px-[6px]">{go("cell")}</div>}
                   trailing={android ? more : undefined}
                   lastVisited={lastVisited}
                   onNavClick={onNavClick}

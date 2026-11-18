@@ -28,6 +28,8 @@ interface StopsProps {
   lastVisited: Partial<Record<RailGroupId, string>>;
   /** Android: only Home, Inbox and Schedule are direct stops; the rest live in `trailing` (More). */
   android?: boolean;
+  /** Rendered before the direct stops: Go, a cell on desktop and a stop on Android (spec section 7.1). */
+  leading?: ReactNode;
   /** Rendered after the group launchers (Android's More stop). */
   trailing?: ReactNode;
   onNavClick: (tab: string) => void;
@@ -38,7 +40,7 @@ interface StopsProps {
  * The icon-over-label stops of the Split rail: the direct stops, then one launcher per group.
  * A launcher navigates to its group's last tab; the panel beside the rail lists the rest.
  */
-export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, iconOnly = false, lastVisited, android = false, trailing, onNavClick, handle }: StopsProps) {
+export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, iconOnly = false, lastVisited, android = false, leading, trailing, onNavClick, handle }: StopsProps) {
   const badgeOf = (item: NavItem) => (item.badge ? badges[item.badge] : undefined);
   const hintOf = (g: RailGroup) => g.items.map(labelOf).join(", ");
   const stop = (item: NavItem) => (
@@ -58,6 +60,7 @@ export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, ic
   );
   return (
     <ul className="m-0 list-none p-0">
+      {leading && <li>{leading}</li>}
       {RAIL_DIRECT.filter((item) => !android || ANDROID_DIRECT.includes(item.tab)).map(stop)}
       {!android && (
         <li role="presentation" className="mx-3 my-1.5">

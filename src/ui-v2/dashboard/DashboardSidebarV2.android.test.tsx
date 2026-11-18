@@ -69,10 +69,14 @@ describe("Android rail", () => {
     expect(screen.getAllByRole("navigation")).toHaveLength(1);
   });
 
-  it("has seven stops: Home, Inbox, Schedule, Club, Market, World and More", () => {
+  it("has eight stops: Go, Home, Inbox, Schedule, Club, Market, World and More (R32)", () => {
     setup();
-    const ids = [...document.querySelectorAll<HTMLElement>('[data-slot="rail-item"]')].map((e) => e.dataset.navId);
-    expect(ids).toEqual(["tab:Home", "tab:Inbox", "tab:Schedule", "group:club", "group:market", "group:world", "util:more"]);
+    const ids = [...document.querySelectorAll<HTMLElement>('[data-slot="rail-item"], [data-slot="go-button"]')].map(
+      (e) => e.dataset.navId,
+    );
+    expect(ids).toEqual([
+      "util:go", "tab:Home", "tab:Inbox", "tab:Schedule", "group:club", "group:market", "group:world", "util:more",
+    ]);
     expect(navId("tab:News")).toBeNull();
     expect(document.querySelector('[data-slot="rail-cluster"]')).toBeNull();
   });
@@ -109,9 +113,18 @@ describe("Android rail", () => {
     expect(panel.className).toContain("w-[var(--nav-panel-w)]");
   });
 
-  it("pads the rail 8 px top and bottom so seven 48 px stops need exactly 352 px", () => {
+  it("pads the rail 4 px top and bottom so eight 48 px stops need exactly 392 px (R32)", () => {
     setup();
-    expect(document.querySelector('[data-slot="rail-column"]')!.className).toContain("py-[8px]");
+    expect(document.querySelector('[data-slot="rail-column"]')!.className).toContain("py-[4px]");
+  });
+
+  it("shows Go as a labelled stop at the touch hit, named by its visible “Go” (R40)", () => {
+    setup();
+    const go = navId("util:go");
+    expect(go).toHaveAttribute("data-variant", "stop");
+    expect(go).toHaveAccessibleName("Go");
+    expect(go).not.toHaveAttribute("aria-label");
+    expect(go.className).toContain("min-h-[var(--hit)]");
   });
 
   it("keeps the desktop panel rows at --nav-row-child, not --hit", () => {
@@ -223,7 +236,8 @@ describe("Android More menu", () => {
     focus(navId("group:world"));
     press(navId("group:world"), "ArrowDown");
     expect(navId("util:more")).toHaveFocus();
+    // Go is the first stop (R32), so Down from More wraps to it.
     press(navId("util:more"), "ArrowDown");
-    expect(navId("tab:Home")).toHaveFocus();
+    expect(navId("util:go")).toHaveFocus();
   });
 });
