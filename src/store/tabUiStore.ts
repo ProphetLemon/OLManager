@@ -282,9 +282,12 @@ export function useOneShotOverride<V>(
   apply: (linked: V) => void,
 ): V | null {
   const consumed = useRef<V | null>(null);
-  // Once the link is gone, the same id carried again later is a new navigation.
-  if (oneShot == null) consumed.current = null;
   const pending = oneShot != null && consumed.current !== oneShot ? oneShot : null;
+  // Once the link is gone, the same id carried again later is a new navigation. Reset on
+  // commit, not during render, so a render React throws away cannot reset it.
+  useLayoutEffect(() => {
+    if (oneShot == null) consumed.current = null;
+  }, [oneShot]);
   useLayoutEffect(() => {
     if (pending == null) return;
     consumed.current = pending;
