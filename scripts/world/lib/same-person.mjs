@@ -159,33 +159,73 @@ export function contractedPlayers(worldPlayers, ops) {
 }
 
 /**
- * Why the world build folds a free agent into a record on a club, or hides him from the AI; null when it does neither.
- * @returns {{rule: "K2-two-names"|"K2-name-and-birth-date"|"AI-loose", with: string}|null}
+ * A check for the pool adds the world build folds into a record on a club (K2) or hides from the AI signing guard, built once
+ * from the records on a club and every pool add, because K2 counts the persons a free agent fits as union-find roots:
+ * records on one club that share a name are one person, and a pool add that shares two names with two records makes them one.
+ * @param {PersonRecord[]} contracted the players on a club once the roster overlay is applied (`contractedPlayers`)
+ * @param {PersonRecord[]} poolRecords every pool add (teamless), the candidates included
+ * @returns {(candidate: PersonRecord) => {rule: "K2-two-names"|"K2-name-and-birth-date"|"AI-loose", with: string}|null}
  */
-export function foldedByWorldBuild(candidate, contracted) {
-  const names = foldedNames(candidate);
-  const byName = new Map();
-  for (const other of contracted) {
-    if (other.id === candidate.id) continue;
-    for (const name of foldedNames(other)) {
-      if (!byName.has(name)) byName.set(name, []);
-      byName.get(name).push(other);
+export function worldBuildChecker(contracted, poolRecords) {
+  const size = contracted.length + poolRecords.length;
+  const parent = Array.from({ length: size }, (_, i) => i);
+  const find = (i) => {
+    let node = i;
+    while (parent[node] !== node) {
+      parent[node] = parent[parent[node]];
+      node = parent[node];
     }
-  }
-  // K2: a pool add and a club record that share two folded names.
-  const shared = new Map();
-  for (const name of names) for (const other of byName.get(name) ?? []) shared.set(other.id, (shared.get(other.id) ?? 0) + 1);
-  for (const [id, count] of shared) if (count >= 2) return { rule: "K2-two-names", with: id };
-  // K2: a free agent and one contracted record that share a name and the same real birth date.
-  const born = realBirthDate(candidate.date_of_birth);
-  if (born) {
-    const same = new Map();
-    for (const name of names) for (const other of byName.get(name) ?? []) if (realBirthDate(other.date_of_birth)?.days === born.days) same.set(other.id, other);
-    if (same.size === 1) return { rule: "K2-name-and-birth-date", with: [...same.keys()][0] };
-  }
-  // The AI signing guard: could be the same person under the loose rule.
-  for (const name of names) {
-    for (const other of byName.get(name) ?? []) if (couldBeSamePerson(candidate, other, "loose")) return { rule: "AI-loose", with: other.id };
-  }
-  return null;
+    return node;
+  };
+  const union = (a, b) => {
+    parent[find(b)] = find(a);
+  };
+  const names = contracted.map(foldedNames);
+  const byName = new Map();
+  const byClubName = new Map();
+  contracted.forEach((record, index) => {
+    for (const name of names[index]) {
+      if (!byName.has(name)) byName.set(name, []);
+      byName.get(name).push(index);
+      // Records on one club that share a folded name are one person written twice.
+      const clubKey = `${record.team_id}\u0000${name}`;
+      if (byClubName.has(clubKey)) union(byClubName.get(clubKey), index);
+      else byClubName.set(clubKey, index);
+    }
+  });
+  // A pool add and a record on a club that share two folded names are one person.
+  poolRecords.forEach((record, k) => {
+    const shared = new Map();
+    for (const name of foldedNames(record)) for (const other of byName.get(name) ?? []) shared.set(other, (shared.get(other) ?? 0) + 1);
+    for (const [other, count] of shared) if (count >= 2) union(other, contracted.length + k);
+  });
+
+  return (candidate) => {
+    const candidateNames = foldedNames(candidate);
+    const at = (name) => byName.get(name) ?? [];
+    const shared = new Map();
+    for (const name of candidateNames) for (const other of at(name)) if (contracted[other].id !== candidate.id) shared.set(other, (shared.get(other) ?? 0) + 1);
+    for (const [other, count] of shared) if (count >= 2) return { rule: "K2-two-names", with: contracted[other].id };
+    // A free agent and the one person on a club that shares a name and the same real birth date.
+    const born = realBirthDate(candidate.date_of_birth);
+    if (born) {
+      const roots = new Map();
+      for (const name of candidateNames) {
+        for (const other of at(name)) {
+          if (contracted[other].id !== candidate.id && realBirthDate(contracted[other].date_of_birth)?.days === born.days) roots.set(find(other), other);
+        }
+      }
+      if (roots.size === 1) return { rule: "K2-name-and-birth-date", with: contracted[[...roots.values()][0]].id };
+    }
+    // The AI signing guard: could be the same person under the loose rule.
+    for (const name of candidateNames) {
+      for (const other of at(name)) if (contracted[other].id !== candidate.id && couldBeSamePerson(candidate, contracted[other], "loose")) return { rule: "AI-loose", with: contracted[other].id };
+    }
+    return null;
+  };
+}
+
+/** One check, for a single candidate: `worldBuildChecker` with the candidate as the only pool add unless `poolRecords` says more. */
+export function foldedByWorldBuild(candidate, contracted, poolRecords = [candidate]) {
+  return worldBuildChecker(contracted, poolRecords)(candidate);
 }

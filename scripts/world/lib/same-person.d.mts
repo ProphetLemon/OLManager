@@ -7,4 +7,6 @@ export function nationalityKey(raw: string): string;
 export function realBirthDate(raw: string | null | undefined): { days: number; iso: string } | null;
 export function couldBeSamePerson(a: PersonRecord, b: PersonRecord, rule: "strict" | "loose"): boolean;
 export function contractedPlayers(worldPlayers: PersonRecord[], ops: object[]): PersonRecord[];
-export function foldedByWorldBuild(candidate: PersonRecord, contracted: PersonRecord[]): { rule: "K2-two-names" | "K2-name-and-birth-date" | "AI-loose"; with: string } | null;
+export type WorldBuildHit = { rule: "K2-two-names" | "K2-name-and-birth-date" | "AI-loose"; with: string } | null;
+export function worldBuildChecker(contracted: PersonRecord[], poolRecords: PersonRecord[]): (candidate: PersonRecord) => WorldBuildHit;
+export function foldedByWorldBuild(candidate: PersonRecord, contracted: PersonRecord[], poolRecords?: PersonRecord[]): WorldBuildHit;

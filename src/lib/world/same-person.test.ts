@@ -78,6 +78,32 @@ describe("what the world build does with a pool add", () => {
     expect(foldedByWorldBuild(rec("Nisqy", "Yasin Dinçer", "1998-07-28", "BE", "player-pool"), twoClubs)?.rule).toBe("AI-loose");
   });
 
+  it("counts the records already merged on one club once, as the world build counts roots (K2)", () => {
+    // Two records of Nisqy on one club that share a name collapse into one person first, so a free agent with the same
+    // name and birth date fits one person, not two.
+    const sameClub = [
+      rec("Nisqy", "Yasin Dinçe", "1998-07-28", "BE", "player-a", "lfl-team"),
+      rec("Nisqy", "Y Dincer Alt", "1998-07-28", "BE", "player-b", "lfl-team"),
+    ];
+    expect(foldedByWorldBuild(rec("Nisqy", "Yasin Dinçer", "1998-07-28", "BE", "player-pool"), sameClub)?.rule).toBe("K2-name-and-birth-date");
+    // On two clubs they stay two persons: K2 leaves the free agent alone.
+    const twoClubs = [sameClub[0], { ...sameClub[1], team_id: "lec-team" }];
+    expect(foldedByWorldBuild(rec("Nisqy", "Yasin Dinçer", "1998-07-28", "BE", "player-pool"), twoClubs)?.rule).toBe("AI-loose");
+  });
+
+  it("merges two records on different clubs when another pool add shares two names with both (K2)", () => {
+    const twoClubs = [
+      rec("Nisqy", "Yasin Dinçe", "1998-07-28", "BE", "player-a", "lfl-team"),
+      rec("Nisqy", "Yasin Dinçe", "1998-07-28", "BE", "player-b", "lec-team"),
+    ];
+    const candidate = rec("Nisqy", "Other Name", "1998-07-28", "BE", "player-pool");
+    // Alone, the two records are two persons: K2 leaves the free agent alone and only the AI guard hides him.
+    expect(foldedByWorldBuild(candidate, twoClubs)?.rule).toBe("AI-loose");
+    // A pool add that shares two names with both is folded into both, so they are one person and the candidate fits one root.
+    const bridge = rec("Nisqy", "Yasin Dinçe", null, "BE", "player-bridge");
+    expect(foldedByWorldBuild(candidate, twoClubs, [candidate, bridge])?.rule).toBe("K2-name-and-birth-date");
+  });
+
   it("hides from the AI a pool add that could be a contracted record under the loose rule", () => {
     expect(foldedByWorldBuild(rec("Howl", "Kim Min-jun", "2009-05-04", "KR", "player-pool"), club)).toEqual({ rule: "AI-loose", with: "player-ecl" });
   });
