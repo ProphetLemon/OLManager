@@ -24,10 +24,11 @@ interface DashboardLocationStore {
   /**
    * Pops to the newest valid entry. The store cannot see the game, so the caller
    * passes `isValid` to skip entries whose player, team, staff or champion is gone.
+   * It is required: a Back that forgot it would land on a released player's blank page.
    */
-  back: (isValid?: LocationValidator) => void;
+  back: (isValid: LocationValidator) => void;
   /** back() while the champion page is open; elsewhere it does nothing. */
-  closeChampion: (isValid?: LocationValidator) => void;
+  closeChampion: (isValid: LocationValidator) => void;
   /** Drops the renewal, message and competition intents, keeping the location. */
   clearOneShots: () => void;
   reset: () => void;

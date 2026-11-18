@@ -1,5 +1,5 @@
 import { renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, expectTypeOf, it } from "vitest";
 
 import { currentLocation, type DashboardLocation } from "@/lib/dashboard/profileNavigation";
 import { useDashboardLocationStore } from "./dashboardLocationStore";
@@ -49,9 +49,16 @@ describe("dashboardLocationStore", () => {
   it("pops on back() and puts the location left on Recent", () => {
     store().go({ kind: "tab", tab: "Squad" });
     store().go({ kind: "tab", tab: "Training" });
-    store().back();
+    store().back(() => true);
     expect(here()).toEqual(at("Squad"));
     expect(store().recent).toEqual([at("Training"), at("Home")]);
+  });
+
+  it("makes every caller of back() and closeChampion() pass the validator", () => {
+    // A Back that forgot it would stop skipping released players without a sound.
+    type Validator = (loc: DashboardLocation) => boolean;
+    expectTypeOf(store().back).parameters.toEqualTypeOf<[isValid: Validator]>();
+    expectTypeOf(store().closeChampion).parameters.toEqualTypeOf<[isValid: Validator]>();
   });
 
   it("skips entries the validator rejects", () => {
@@ -65,11 +72,11 @@ describe("dashboardLocationStore", () => {
   it("closeChampion() goes back from the champion page and leaves other pages alone", () => {
     store().go({ kind: "tab", tab: "Squad" });
     store().go({ kind: "player", id: "p1" });
-    store().closeChampion();
+    store().closeChampion(() => true);
     expect(here()).toEqual(at("Squad", { playerId: "p1" }));
 
     store().go({ kind: "champion", key: "ahri" });
-    store().closeChampion();
+    store().closeChampion(() => true);
     expect(here()).toEqual(at("Squad", { playerId: "p1" }));
   });
 
