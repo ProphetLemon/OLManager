@@ -209,6 +209,18 @@ describe("DashboardV2 backend tab aliases", () => {
     expect(useDashboardLocationStore.getState().nav.activeTab).toBe("Finances");
   });
 
+  it("never commits the remembered tab on an alias mount, so its effects never run", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockClear();
+    useDashboardLocationStore.getState().go({ kind: "tab", tab: "Youth" });
+    await renderAt("/finanzas");
+
+    await screen.findByRole("navigation", { name: "Main navigation" });
+    const presence = vi.mocked(invoke).mock.calls.filter(([command]) => command === "update_discord_presence");
+    expect(presence.length).toBeGreaterThan(0);
+    expect(presence.map(([, args]) => args)).not.toContainEqual({ stateKey: "youth" });
+  });
+
   it("keeps the alias route when the backend probe activates the game after mount", async () => {
     useGameStore.setState({ hasActiveGame: false, gameState: null });
     await renderAt("/finanzas");

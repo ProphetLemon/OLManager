@@ -183,6 +183,11 @@ export default function DashboardV2() {
   // An alias route wins over the remembered location from the first render, so the
   // remembered tab never paints (and never stays mounted, hidden, behind Suspense).
   // Moving to the location it is already on is a no-op, so a second call is harmless.
+  // This writes the store during render. It is safe only because nothing that reads
+  // the location store renders before DashboardV2 in this tree; a subscriber placed
+  // above it would get React's update-while-rendering warning. A layout effect is not
+  // a substitute: it commits the remembered tab first, which mounts it and runs its
+  // effects ("never commits the remembered tab" in DashboardV2.aliases.test.tsx).
   useState(() => {
     const tab = PATH_TAB_MAP[location.pathname];
     if (tab) useDashboardLocationStore.getState().go({ kind: "tab", tab });
