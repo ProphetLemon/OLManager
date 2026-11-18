@@ -36,8 +36,9 @@ const DEFAULT_SOURCE: &str =
 const MAX_OVERLAY_BYTES: usize = 4 * 1024 * 1024;
 /// Timeout of a manual "Update rosters" press.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
-/// Timeout of the automatic check made when the new-game screen opens; it
-/// holds the Confirm button back, so it must stay short.
+/// Timeout of the automatic checks (at app launch, and the new-game screen's
+/// re-check when the last one failed or is old); the new-game screen holds its
+/// Confirm button back while one runs, so it must stay short.
 const AUTOMATIC_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_REDIRECTS: usize = 5;
 const CACHE_DIR: &str = "world";
@@ -704,9 +705,9 @@ fn request_timeout(automatic: bool) -> Duration {
 
 /// Download a newer roster overlay (if any) and cache it for future new games.
 ///
-/// `automatic` marks the background check made when the new-game screen opens:
-/// it uses a shorter timeout than a manual update. Everything else (https
-/// only, size cap, validation, atomic write) is identical.
+/// `automatic` marks the background checks (at app launch and the new-game
+/// screen's re-check): they use a shorter timeout than a manual one. Everything
+/// else (https only, size cap, validation, atomic write) is identical.
 #[tauri::command]
 pub async fn update_world_overlay(
     app_handle: tauri::AppHandle,

@@ -2,6 +2,12 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+  ROSTER_RECHECK_AFTER_MS,
+  resetRosterUpdatesForTests,
+  useRosterUpdateStore,
+  type RosterUpdateStatus,
+} from "@/store/rosterUpdateStore";
 import { previewInvoke } from "@/ui-v2/pages/customTeam/founders/foundersTestKit";
 import type { PreviewCall } from "@/ui-v2/pages/customTeam/founders/foundersTestKit";
 
@@ -12,21 +18,14 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
   setGameState: vi.fn(),
   setGameActive: vi.fn(),
-  rosterStatus: "idle" as string,
-  useRosterOverlay: vi.fn(),
+  getWorldOverlayInfo: vi.fn(),
+  updateWorldOverlay: vi.fn(),
   invoke: vi.fn(),
 }));
 
-vi.mock("@/hooks/useRosterOverlay", () => ({
-  useRosterOverlay: (options?: unknown) => {
-    mocks.useRosterOverlay(options);
-    return {
-      info: null,
-      status: mocks.rosterStatus,
-      error: null,
-      update: vi.fn(),
-    };
-  },
+vi.mock("@/services/worldOverlayService", () => ({
+  getWorldOverlayInfo: mocks.getWorldOverlayInfo,
+  updateWorldOverlay: mocks.updateWorldOverlay,
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -130,6 +129,11 @@ async function walkWizard(mode: "join" | "replace" = "replace") {
 
 let previewCalls: PreviewCall[] = [];
 
+/** The roster check as the screen finds it: `status`, finished `ageMs` ago. */
+function setRosterCheck(status: RosterUpdateStatus, ageMs = 0) {
+  useRosterUpdateStore.setState({ status, lastCheckedAt: Date.now() - ageMs });
+}
+
 describe("TeamSelectionV2", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -138,7 +142,12 @@ describe("TeamSelectionV2", () => {
     mocks.invoke.mockImplementation(async (command: string, args?: unknown) =>
       command === "preview_founding_squad" ? preview(command, args) : customGame(),
     );
-    mocks.rosterStatus = "idle";
+    resetRosterUpdatesForTests();
+    // A started check never settles, so it stays visible; most tests open the
+    // screen right after a successful one.
+    mocks.getWorldOverlayInfo.mockReturnValue(new Promise(() => {}));
+    mocks.updateWorldOverlay.mockReturnValue(new Promise(() => {}));
+    setRosterCheck("upToDate");
     mocks.loadLeagueSelectionData.mockResolvedValue({
       competitions: [
         {
@@ -237,8 +246,8 @@ describe("TeamSelectionV2", () => {
     expect(mocks.navigate).not.toHaveBeenCalledWith("/dashboard");
   });
 
-  it("disables Confirm while the roster update is in flight", async () => {
-    mocks.rosterStatus = "updating";
+  it("disables Confirm while a roster check runs", async () => {
+    setRosterCheck("checking");
     const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
 
     render(
@@ -254,9 +263,11 @@ describe("TeamSelectionV2", () => {
     expect(confirm).toBeDisabled();
     fireEvent.click(confirm);
     expect(mocks.selectTeam).not.toHaveBeenCalled();
+    expect(mocks.updateWorldOverlay).not.toHaveBeenCalled();
   });
 
-  it("asks the roster hook for the automatic check when the screen opens", async () => {
+  it("does not re-check the rosters when the last check succeeded under an hour ago", async () => {
+    setRosterCheck("upToDate", ROSTER_RECHECK_AFTER_MS - 60_000);
     const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
 
     render(
@@ -266,11 +277,14 @@ describe("TeamSelectionV2", () => {
     );
     await screen.findByRole("button", { name: /LEC/i });
 
-    expect(mocks.useRosterOverlay).toHaveBeenCalledWith({ autoCheck: true });
+    expect(mocks.updateWorldOverlay).not.toHaveBeenCalled();
   });
 
-  it("disables Confirm while the automatic roster check runs", async () => {
-    mocks.rosterStatus = "checking";
+  it.each([
+    ["failed", 0],
+    ["upToDate", ROSTER_RECHECK_AFTER_MS + 60_000],
+  ] as const)("re-checks the rosters automatically when the last check %s (%i ms ago)", async (status, age) => {
+    setRosterCheck(status, age);
     const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
 
     render(
@@ -278,18 +292,14 @@ describe("TeamSelectionV2", () => {
         <TeamSelectionV2 />
       </MemoryRouter>,
     );
+    await screen.findByRole("button", { name: /LEC/i });
 
-    fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
-    const confirm = screen.getByRole("button", { name: /^Confirm$/ });
-
-    expect(confirm).toBeDisabled();
-    fireEvent.click(confirm);
-    expect(mocks.selectTeam).not.toHaveBeenCalled();
+    expect(mocks.updateWorldOverlay).toHaveBeenCalledTimes(1);
+    expect(mocks.updateWorldOverlay).toHaveBeenCalledWith({ automatic: true });
   });
 
-  it.each(["checkFailed", "idle", "updated"])("keeps Confirm enabled when the check ended as %s", async (status) => {
-    mocks.rosterStatus = status;
+  it.each(["upToDate", "updated"] as const)("keeps Confirm enabled when the check ended as %s", async (status) => {
+    setRosterCheck(status);
     const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
 
     render(
@@ -434,8 +444,8 @@ describe("TeamSelectionV2", () => {
       expect(screen.queryByLabelText("Club name")).not.toBeInTheDocument();
     });
 
-    it("disables Create club while the roster overlay is updating", async () => {
-      mocks.rosterStatus = "updating";
+    it("disables Create club while a roster check runs", async () => {
+      setRosterCheck("checking");
       await openWizard();
       await walkWizard();
       expect(screen.getByRole("button", { name: "Create club" })).toBeDisabled();

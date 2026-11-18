@@ -15,7 +15,11 @@ import {
 } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
-import { useRosterOverlay } from "@/hooks/useRosterOverlay";
+import {
+  recheckRostersIfStale,
+  retryRosterCheck,
+  useRosterUpdateStore,
+} from "@/store/rosterUpdateStore";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { RosterOverlayPanel } from "@/ui-v2/components/RosterOverlayPanel";
 import CustomTeamWizardV2 from "@/ui-v2/pages/customTeam/CustomTeamWizardV2";
@@ -51,7 +55,13 @@ export default function TeamSelectionV2() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-  const rosterOverlay = useRosterOverlay({ autoCheck: true });
+  const rosterStatus = useRosterUpdateStore((state) => state.status);
+  const rosterInfo = useRosterUpdateStore((state) => state.info);
+
+  // The launch check usually answered already; repeat it only if it failed or is old.
+  useEffect(() => {
+    recheckRostersIfStale();
+  }, []);
 
   useEffect(() => {
     loadLeagueSelectionData()
@@ -186,7 +196,8 @@ export default function TeamSelectionV2() {
   const isLeagueScreen = screen === "league" && leagueData;
 
   const isCustomScreen = screen === "custom" && !!selectedCompetition;
-  const overlayBusy = rosterOverlay.status === "updating" || rosterOverlay.status === "checking";
+  // A new game reads the overlay when it starts: hold Confirm while a check may still replace it.
+  const overlayBusy = rosterStatus === "checking";
 
   const handleRootKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -274,10 +285,10 @@ export default function TeamSelectionV2() {
       )}
 
       <RosterOverlayPanel
-        info={rosterOverlay.info}
-        status={rosterOverlay.status}
-        error={rosterOverlay.error}
-        onUpdate={rosterOverlay.update}
+        info={rosterInfo}
+        status={rosterStatus === "failed" ? "checkFailed" : rosterStatus}
+        error={null}
+        onUpdate={() => void retryRosterCheck()}
         actions={<FloatingBugButton />}
       />
     </div>

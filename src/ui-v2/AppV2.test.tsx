@@ -4,6 +4,7 @@ import { MemoryRouter, useNavigate } from "react-router-dom";
 
 import i18n from "@/i18n";
 import { useBugReportStore } from "@/store/bugReportStore";
+import { resetRosterUpdatesForTests, useRosterUpdateStore } from "@/store/rosterUpdateStore";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData } from "@/store/types";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -13,6 +14,16 @@ import AppV2, { AppContent } from "./AppV2";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(() => Promise.resolve()),
+}));
+
+const overlay = vi.hoisted(() => ({
+  getWorldOverlayInfo: vi.fn(() => new Promise(() => {})),
+  updateWorldOverlay: vi.fn(() => new Promise(() => {})),
+}));
+
+vi.mock("@/services/worldOverlayService", () => ({
+  getWorldOverlayInfo: overlay.getWorldOverlayInfo,
+  updateWorldOverlay: overlay.updateWorldOverlay,
 }));
 
 vi.mock("@/hooks/useUpdater", () => ({
@@ -196,6 +207,28 @@ describe("AppV2 platform", () => {
     render(<AppV2 />);
     expect(document.documentElement.dataset.platform).toBeUndefined();
     expect(screen.getByTestId("title-bar")).toBeInTheDocument();
+  });
+});
+
+describe("AppV2 roster launch check", () => {
+  beforeEach(() => {
+    resetRosterUpdatesForTests();
+    overlay.updateWorldOverlay.mockClear();
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  it("starts one automatic roster check per session without waiting for it", () => {
+    const first = render(<AppV2 />);
+
+    expect(overlay.updateWorldOverlay).toHaveBeenCalledTimes(1);
+    expect(overlay.updateWorldOverlay).toHaveBeenCalledWith({ automatic: true });
+    expect(useRosterUpdateStore.getState().status).toBe("checking");
+    expect(screen.getByTestId("app-root")).toBeInTheDocument();
+
+    first.unmount();
+    render(<AppV2 />);
+
+    expect(overlay.updateWorldOverlay).toHaveBeenCalledTimes(1);
   });
 });
 
