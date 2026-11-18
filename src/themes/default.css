@@ -19,8 +19,13 @@
      --text-nav below). */
   --text-map: max(0.75rem, 10px);
   /* Navigation labels (rail, later the Club tree): the second px-floored size,
-     for the same reason as --text-map. Never use it outside src/ui-v2/shell. */
+     for the same reason as --text-map. Never use it outside src/ui-v2/shell,
+     the bar (DashboardHeaderV2), the attention lane (AttentionLaneV2) and the
+     palette (src/ui-v2/palette), R35. */
   --text-nav: max(0.75rem, 10px);
+  /* Option labels and lane pill headlines (R35): rem text would fall to 7.9 px
+     on Android's 9 px root, so it is floored at 12px like --text-nav. */
+  --text-entry: max(0.875rem, 12px);
 
   /* P1 type scale (rem only) */
   --text-section: 1.375rem;
@@ -206,6 +211,9 @@
   --rail-w-split: max(4.75rem, 64px); /* the icon rail beside a docked panel */
   --rail-w-compact: max(3.5rem, 56px); /* the icon rail on the end-of-season screen */
   --nav-panel-w: max(9rem, 136px); /* the docked panel of the active group (Split) */
+  /* The "Before you continue" lane (R24): the band and its pills. Android raises both to --hit. */
+  --lane-h: max(2.875rem, 46px);
+  --lane-pill-h: var(--nav-row);
   /* Display-cutout and system-bar insets. 0px wherever the webview reports none
      (every desktop window), so applying them never moves anything there. */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -312,6 +320,8 @@
    Touch targets reach 48px at least; desktop keeps its 24px floor. */
 :root[data-platform="android"] {
   --hit: max(2.75rem, 48px);
+  --lane-h: var(--hit);
+  --lane-pill-h: var(--hit);
 }
 
 /* ── High contrast (data-contrast set on <html> by AppV2) ───────

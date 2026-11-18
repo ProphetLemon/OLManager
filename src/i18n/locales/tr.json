@@ -3698,6 +3698,11 @@
       "needsCall_other": "{{label}}, {{count}} öğe kararını bekliyor",
       "more": "Daha fazla"
     },
+    "lane": {
+      "title": "Devam etmeden önce",
+      "allOnHome_one": "Ana Sayfa'da gör",
+      "allOnHome_other": "{{count}} kararın tümü Ana Sayfa'da"
+    },
     "bar": {
       "phase": {
         "morning": "Sabah",

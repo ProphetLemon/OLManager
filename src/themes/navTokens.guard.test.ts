@@ -85,3 +85,26 @@ describe("the active row tint", () => {
     expect(ruleBody(":root")).toContain("--row-wash: color-mix(in srgb, var(--club) 16%, transparent);");
   });
 });
+
+describe("attention lane tokens (NR2.6, R24, R35)", () => {
+  it("sizes the band at max(2.875rem, 46px) on desktop and at the touch hit on Android", () => {
+    expect(ruleBody(":root")).toContain("--lane-h: max(2.875rem, 46px);");
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--lane-h: var(--hit);");
+  });
+
+  it("sizes the pills as a rail row on desktop and at the touch hit on Android", () => {
+    expect(ruleBody(":root")).toContain("--lane-pill-h: var(--nav-row);");
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--lane-pill-h: var(--hit);");
+  });
+
+  it("floors --text-entry at 12px, so pill headlines never fall to 7.9 px on Android", () => {
+    expect(css).toMatch(/--text-entry:\s*max\(0\.875rem,\s*12px\);/);
+  });
+
+  it("gives --text-entry and the lane tokens no --color-* or --text-* twin", () => {
+    const colours = new Set([...css.matchAll(/^\s*--color-([a-z0-9-]+):/gm)].map((m) => m[1]));
+    expect(colours.has("entry")).toBe(false);
+    const taken = new Set([...css.matchAll(/^\s*--(?:color|text)-([a-z0-9-]+):/gm)].map((m) => m[1]));
+    expect(["lane-h", "lane-pill-h"].filter((name) => taken.has(name))).toEqual([]);
+  });
+});

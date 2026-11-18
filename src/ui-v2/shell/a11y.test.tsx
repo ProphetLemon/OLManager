@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardHeaderV2 } from "@/ui-v2/dashboard/DashboardHeaderV2";
 import { DashboardSidebarV2 } from "@/ui-v2/dashboard/DashboardSidebarV2";
+import { AttentionLaneV2 } from "@/ui-v2/dashboard/AttentionLaneV2";
+import type { LanePill } from "@/lib/dashboard/attentionLane";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
@@ -20,6 +22,39 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
     </button>
   ),
 }));
+
+/** Two decisions in the lane, then its pinned "All 2 on Home". */
+const LANE_PILLS: LanePill[] = [
+  {
+    kind: "call",
+    id: "blocker:incomplete_lineup",
+    item: {
+      id: "blocker:incomplete_lineup",
+      kind: "blocker",
+      severity: "hard",
+      tagKey: "onAir.tags.blocker",
+      tagTone: "negative",
+      headline: "Starting five is incomplete",
+      actionLabelKey: "onAir.calls.actions.fixLineup",
+      target: { tab: "Squad" },
+    },
+  },
+  {
+    kind: "call",
+    id: "contract:p1",
+    item: {
+      id: "contract:p1",
+      kind: "contract",
+      severity: "soft",
+      tagKey: "onAir.tags.contract",
+      tagTone: "warning",
+      headline: "Faker's contract ends in 20 days",
+      actionLabelKey: "onAir.calls.actions.renew",
+      target: { tab: "Squad", context: { playerId: "p1" } },
+    },
+  },
+  { kind: "home", id: "lane:home", count: 2 },
+];
 
 function renderShell() {
   return render(
@@ -56,6 +91,7 @@ function renderShell() {
         callCount={2}
         onShowCalls={vi.fn()}
       />
+      <AttentionLaneV2 pills={LANE_PILLS} platform="desktop" onNavigate={vi.fn()} onShowAll={vi.fn()} />
     </div>,
   );
 }
@@ -122,6 +158,19 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
     expect(stops).toHaveLength(2);
     const panel = within(rail).getByRole("group", { name: /Club/i });
     expect([...stops].filter((s) => panel.contains(s))).toHaveLength(1);
+  });
+
+  it("adds the lane as one named region and one Tab stop, with no live region of its own (R24, R47)", () => {
+    renderShell();
+    const region = screen.getByRole("region", { name: "Before you continue" });
+    // Spoken once: the toolbar inside takes no name of its own.
+    expect(within(region).getByRole("toolbar")).not.toHaveAttribute("aria-labelledby");
+    expect(region.querySelectorAll('button[tabindex="0"]')).toHaveLength(1);
+    expect(region.querySelectorAll("button")).toHaveLength(3);
+    expect(region.querySelector('[aria-live], [role="status"], [role="alert"]')).toBeNull();
+    // It is not a second navigation landmark.
+    expect(region.closest("nav")).toBeNull();
+    for (const pill of region.querySelectorAll("button")) expect(pill).toHaveAccessibleName();
   });
 
   it("has no duplicate ids and no hidden focusable controls", () => {

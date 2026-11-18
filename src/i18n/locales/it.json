@@ -3698,6 +3698,11 @@
       "needsCall_other": "{{label}}, {{count}} richiedono una tua decisione",
       "more": "Altro"
     },
+    "lane": {
+      "title": "Prima di continuare",
+      "allOnHome_one": "Vedila in Casa",
+      "allOnHome_other": "Tutte e {{count}} in Casa"
+    },
     "bar": {
       "phase": {
         "morning": "Mattina",

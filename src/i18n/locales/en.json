@@ -3732,6 +3732,11 @@
       "needsCall_other": "{{label}}, {{count}} need your call",
       "more": "More"
     },
+    "lane": {
+      "title": "Before you continue",
+      "allOnHome_one": "See it on Home",
+      "allOnHome_other": "All {{count}} on Home"
+    },
     "bar": {
       "phase": {
         "morning": "Morning",
