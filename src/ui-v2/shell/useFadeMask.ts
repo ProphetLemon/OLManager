@@ -8,7 +8,9 @@ const FADE = "1.5rem";
 
 /**
  * Fade cues for a scrolling list: the edge fades only while there is more content past it.
- * `key` re-measures when the list's content changes.
+ * `key` re-measures when the list's content changes; the scroller's children are observed
+ * too, so a child that grows or shrinks without the scroller resizing (a lane pill whose
+ * text changed) refreshes the fades.
  */
 export function useFadeMask<T extends HTMLElement>(key: string | number, { axis = "y" }: { axis?: FadeAxis } = {}) {
   const ref = useRef<T | null>(null);
@@ -28,7 +30,10 @@ export function useFadeMask<T extends HTMLElement>(key: string | number, { axis 
     const el = ref.current;
     window.addEventListener("resize", measure);
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    if (el) observer?.observe(el);
+    if (el && observer) {
+      observer.observe(el);
+      for (const child of Array.from(el.children)) observer.observe(child);
+    }
     return () => {
       window.removeEventListener("resize", measure);
       observer?.disconnect();
