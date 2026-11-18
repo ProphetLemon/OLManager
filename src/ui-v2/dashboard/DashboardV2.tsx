@@ -545,7 +545,8 @@ export default function DashboardV2() {
   // A lane pill goes where its call is fixed, says so, and puts focus on main (R37). When
   // that place is already the current one, nothing moves, but focus still goes to main.
   // A renewal opens its own dialog, which takes focus and is spoken, so the pill
-  // does neither, even when that profile is already open (R57).
+  // does neither, even when that profile is already open: each press is a new
+  // request, so a dialog closed since then opens again (R57).
   const handleLaneCall = (intent: NavIntent) => {
     if (opensOwnFocus(intent)) {
       runIntent(intent);
@@ -1061,6 +1062,7 @@ export default function DashboardV2() {
               gameState={gameState}
               playerId={profileNavigation.selectedPlayerId}
               startWithRenewalModal={profileNavigation.selectedPlayerOptions?.openRenewal === true}
+              renewalRequest={profileNavigation.selectedPlayerOptions}
               onClose={handleInPageBack}
               onGameUpdate={setGameState}
               onSelectPlayer={selectPlayer}

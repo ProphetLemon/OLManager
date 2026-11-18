@@ -23,6 +23,8 @@ interface UsePlayerRenewalOptions {
   player: PlayerData;
   canRenew: boolean;
   startWithRenewalModal: boolean;
+  /** A new identity is a new request: the dialog opens again for the same player. */
+  renewalRequest?: object | null;
   onGameUpdate?: (state: GameStateData) => void;
   t: TranslateFn;
 }
@@ -31,6 +33,7 @@ export function usePlayerRenewal({
   player,
   canRenew,
   startWithRenewalModal,
+  renewalRequest,
   onGameUpdate,
   t,
 }: UsePlayerRenewalOptions) {
@@ -99,7 +102,7 @@ export function usePlayerRenewal({
 
   useEffect(() => {
     setHasConsumedInitialRenewalIntent(false);
-  }, [player.id, startWithRenewalModal]);
+  }, [player.id, startWithRenewalModal, renewalRequest]);
 
   useEffect(() => {
     if (!canRenew || !startWithRenewalModal || showRenewalModal || hasConsumedInitialRenewalIntent) {

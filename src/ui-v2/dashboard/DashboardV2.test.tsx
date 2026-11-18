@@ -195,9 +195,20 @@ vi.mock("@/ui-v2/dashboard/tabs/MetaTabV2", () => ({ MetaTabV2: () => null }));
 
 vi.mock("@/ui-v2/pages/TeamProfileV2", () => ({ default: () => null }));
 vi.mock("@/ui-v2/pages/ChampionPageV2", () => ({ default: () => null }));
+/** Numbers each renewal request the profile receives, so a test can tell a new one from the last. */
+const renewalRequests = vi.hoisted(() => ({ ids: new WeakMap<object, number>(), next: 0 }));
+function renewalRequestId(request: object | null | undefined): string {
+  if (!request) return "none";
+  if (!renewalRequests.ids.has(request)) renewalRequests.ids.set(request, ++renewalRequests.next);
+  return String(renewalRequests.ids.get(request));
+}
 vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
-  default: ({ startWithRenewalModal }: { startWithRenewalModal?: boolean }) => (
-    <div data-testid="player-profile" data-renewal={String(startWithRenewalModal)} />
+  default: ({ startWithRenewalModal, renewalRequest }: { startWithRenewalModal?: boolean; renewalRequest?: object | null }) => (
+    <div
+      data-testid="player-profile"
+      data-renewal={String(startWithRenewalModal)}
+      data-request={renewalRequestId(renewalRequest)}
+    />
   ),
 }));
 vi.mock("@/ui-v2/pages/StaffProfileV2", () => ({
@@ -1109,16 +1120,21 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
   });
 
-  it("does not pull focus to main when the renewal's profile is already open (R57)", async () => {
+  it("asks the open profile for the renewal again, without pulling focus to main (R57)", async () => {
     withExpiringStarter();
     useDashboardLocationStore.getState().go({ kind: "tab", tab: "Training" });
     useDashboardLocationStore.getState().go({ kind: "player", id: "p-mid", openRenewal: true });
     await renderOn("Training");
+    const profile = screen.getByTestId("player-profile");
+    const first = profile.getAttribute("data-request");
+    expect(first).not.toBe("none");
 
     const pill = await screen.findByRole("button", { name: /Faker/ });
     act(() => pill.focus());
     fireEvent.click(pill);
 
+    // A dialog closed since then opens again: the press is a new request, not a no-op.
+    await waitFor(() => expect(profile.getAttribute("data-request")).not.toBe(first));
     expect(document.activeElement).toBe(pill);
   });
 });

@@ -128,6 +128,18 @@ describe("PlayerProfileV2 actions", () => {
     expect(await screen.findByLabelText("playerProfile.renewalWage")).toHaveValue(12000);
   });
 
+  it("opens the renewal modal again on a new request for the same player (R57)", async () => {
+    const props = { gameState: gameState("team-1"), playerId: "player-1", onClose: vi.fn(), onGameUpdate: vi.fn() };
+    const { rerender } = render(<PlayerProfileV2 {...props} startWithRenewalModal renewalRequest={{}} />);
+    await screen.findByLabelText("playerProfile.renewalWage");
+    fireEvent.click(screen.getByRole("button", { name: "common.cancel" }));
+    await waitFor(() => expect(screen.queryByLabelText("playerProfile.renewalWage")).toBeNull());
+
+    rerender(<PlayerProfileV2 {...props} startWithRenewalModal renewalRequest={{}} />);
+
+    expect(await screen.findByLabelText("playerProfile.renewalWage")).toBeInTheDocument();
+  });
+
   describe("renewal contract length", () => {
     function openRenewal() {
       render(
