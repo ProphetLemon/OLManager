@@ -483,6 +483,10 @@ describe("Stored tab state never hides what a link or the current data shows", (
 
     expect(screen.getByText("2 / 2")).toBeInTheDocument();
     expect(screen.getAllByText(/^(Top|Mid)\d\d$/)).toHaveLength(10);
+    // The pager steps from the page shown, not from the stored one. Its icon buttons have no
+    // name, so Previous is found next to the page count.
+    fireEvent.click(screen.getByText("2 / 2").previousElementSibling!);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
   });
 
   it("Competitions shows its last team page when the stored page is past the end", () => {
