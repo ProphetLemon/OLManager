@@ -956,12 +956,13 @@ describe("DashboardV2 rail mode", () => {
     }
   });
 
-  it("passes Tree to the sidebar when the body fits the tree", async () => {
+  it("passes Tree to the sidebar when the body fits the tree, with the Go row's reserve in the need (R30)", async () => {
     await renderDashboard();
     measure(1280, 764);
+    // Root 16: 622 for the tree plus 50 for the Go row.
     expect(shell.sidebar).toMatchObject({
       railMode: "tree",
-      railSlot: { slotW: 1280, slotH: 764, need: 622 },
+      railSlot: { slotW: 1280, slotH: 764, need: 672 },
     });
   });
 

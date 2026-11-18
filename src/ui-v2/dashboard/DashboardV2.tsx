@@ -61,6 +61,7 @@ import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { goReserve } from "@/ui-v2/shell/railMode";
 import { useRailMode } from "@/ui-v2/shell/useRailMode";
 import { buildAttentionMap } from "@/ui-v2/shell/attention";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
@@ -203,7 +204,8 @@ export default function DashboardV2() {
   const setLastBlockers = useCallCacheStore((s) => s.setLastBlockers);
   // The dashboard body (everything under the title bar) decides Tree or Split for the rail.
   const [railBody, setRailBody] = useState<HTMLDivElement | null>(null);
-  const rail = useRailMode(railBody);
+  // The Tree's Go row is pinned above the tree, so the rail reserves its height (R30).
+  const rail = useRailMode(railBody, { reservedTop: goReserve });
   const focusCallsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
