@@ -15,6 +15,15 @@ import { focusMainContent } from "./focusMainContent";
 
 const LANE_TITLE_ID = "lane-title";
 
+/** A headline that already ends a sentence (".", "!", "?", "…", "。"…) takes no second full stop. */
+const ENDS_SENTENCE = /[.!?…。！？]$/u;
+
+/** A pill's name: "Blocker: {headline}. {action}", without ".." after a headline's own stop (R63). */
+function pillName(tag: string, headline: string, action: string): string {
+  const trimmed = headline.trim();
+  return `${tag}: ${trimmed}${ENDS_SENTENCE.test(trimmed) ? "" : "."} ${action}`;
+}
+
 /**
  * A pill: the whole pill is the target. The ring is inset (R47) so a 48 px pill in
  * a 48 px band keeps all of it, and the transparent outline shows in forced colours,
@@ -192,7 +201,7 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
               <button
                 key={pill.id}
                 {...pillProps(index, pill.id)}
-                aria-label={`${tag}: ${pill.item.headline}. ${action}`}
+                aria-label={pillName(tag, pill.item.headline, action)}
                 className={PILL_CLASS}
               >
                 <TagBlock tone={pill.item.tagTone} size="sm" className="text-nav">

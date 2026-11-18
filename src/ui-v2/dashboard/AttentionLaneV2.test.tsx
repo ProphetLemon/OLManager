@@ -145,6 +145,14 @@ describe("AttentionLaneV2 (R24, R47)", () => {
     expect(pillButtons()[2]).toHaveAccessibleName("Contract: Faker's contract ends in 20 days. Renew");
   });
 
+  it("adds no second full stop after a headline that ends in punctuation (R63)", () => {
+    const decide = { ...scrims, id: "blocker:decide", headline: "Make a scrim decision before continuing." };
+    const ask = { ...lineup, id: "blocker:ask", headline: "Who starts?" };
+    render(<Frame pills={pillsOf([decide, ask])} />);
+    expect(pillButtons()[0]).toHaveAccessibleName("Blocker: Make a scrim decision before continuing. Open scrims");
+    expect(pillButtons()[1]).toHaveAccessibleName("Blocker: Who starts? Fix lineup");
+  });
+
   it("runs the call's action on Enter, once", () => {
     render(<Frame />);
     const pills = pillButtons();
