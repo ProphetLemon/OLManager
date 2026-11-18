@@ -129,6 +129,23 @@ async function walkWizard(mode: "join" | "replace" = "replace") {
 
 let previewCalls: PreviewCall[] = [];
 
+function rosterInfo(asOf: string) {
+  return {
+    as_of: asOf,
+    origin: "bundled" as const,
+    source: {
+      name: "Leaguepedia",
+      url: "https://lol.fandom.com",
+      license: "CC BY-SA 3.0",
+      license_url: "https://www.fandom.com/licensing",
+      attribution: "Roster data from Leaguepedia, available under CC BY-SA 3.0.",
+    },
+    player_ops: 0,
+    staff_ops: 0,
+    updated: false,
+  };
+}
+
 /** The roster check as the screen finds it: `status`, finished `ageMs` ago. */
 function setRosterCheck(status: RosterUpdateStatus, ageMs = 0) {
   useRosterUpdateStore.setState({ status, lastCheckedAt: Date.now() - ageMs });
@@ -296,6 +313,39 @@ describe("TeamSelectionV2", () => {
 
     expect(mocks.updateWorldOverlay).toHaveBeenCalledTimes(1);
     expect(mocks.updateWorldOverlay).toHaveBeenCalledWith({ automatic: true });
+  });
+
+  it("shows the roster date from the store, with no Update rosters button", async () => {
+    useRosterUpdateStore.setState({ info: rosterInfo("2026-06-22") });
+    const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+
+    render(
+      <MemoryRouter>
+        <TeamSelectionV2 />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Rosters as of June 22, 2026")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /update rosters/i })).not.toBeInTheDocument();
+  });
+
+  it("retries on the manual path after the automatic re-check fails", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    useRosterUpdateStore.setState({ info: rosterInfo("2026-06-22") });
+    setRosterCheck("failed");
+    mocks.updateWorldOverlay.mockRejectedValueOnce("offline");
+    const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+
+    render(
+      <MemoryRouter>
+        <TeamSelectionV2 />
+      </MemoryRouter>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+
+    expect(mocks.updateWorldOverlay).toHaveBeenNthCalledWith(1, { automatic: true });
+    expect(mocks.updateWorldOverlay).toHaveBeenLastCalledWith();
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 
   it.each(["upToDate", "updated"] as const)("keeps Confirm enabled when the check ended as %s", async (status) => {

@@ -34,7 +34,7 @@ const DEFAULT_SOURCE: &str =
     "https://raw.githubusercontent.com/ProphetLemon/OLManager/develop/assets/world/roster-overlay.json";
 /// Hard cap on the overlay size, enforced while streaming.
 const MAX_OVERLAY_BYTES: usize = 4 * 1024 * 1024;
-/// Timeout of a manual "Update rosters" press.
+/// Timeout of a manual Retry after a failed check.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 /// Timeout of the automatic checks (at app launch, and the new-game screen's
 /// re-check when the last one failed or is old); the new-game screen holds its

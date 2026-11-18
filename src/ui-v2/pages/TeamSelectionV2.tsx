@@ -286,9 +286,8 @@ export default function TeamSelectionV2() {
 
       <RosterOverlayPanel
         info={rosterInfo}
-        status={rosterStatus === "failed" ? "checkFailed" : rosterStatus}
-        error={null}
-        onUpdate={() => void retryRosterCheck()}
+        status={rosterStatus}
+        onRetry={() => void retryRosterCheck()}
         actions={<FloatingBugButton />}
       />
     </div>
