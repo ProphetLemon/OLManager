@@ -266,9 +266,11 @@ describe("dropWorldBuildTwins", () => {
     const victim = ops.players[0];
     const twin = { ...victim.op.player, id: "player-feedbeef", team_id: "lck-team-61bd92d5", full_name: `${victim.op.player.full_name}x` };
     const before = ops.players.length;
+    const selectedBefore = selected.players.length;
     const kept = dropWorldBuildTwins({ selection: selected, ops, contracted: [twin] });
     expect(kept.players).toHaveLength(before - 1);
     expect(kept.players.some((e) => e.id === victim.id)).toBe(false);
+    expect(selected.players).toHaveLength(selectedBefore - 1);
     expect(kept.staff).toHaveLength(ops.staff.length);
     const status = selected.statuses.get(victim.op.pool.page);
     expect(status).toMatchObject({ state: "refused", code: "same-person-as-game-record" });

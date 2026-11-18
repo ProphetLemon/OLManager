@@ -317,6 +317,7 @@ export function buildPoolOps({ selection, tournamentIndex, games = null, skill =
  */
 export function dropWorldBuildTwins({ selection, ops, contracted }) {
   const players = [];
+  const dropped = new Set();
   for (const entry of ops.players) {
     const hit = foldedByWorldBuild(entry.op.player, contracted);
     if (!hit) {
@@ -325,9 +326,11 @@ export function dropWorldBuildTwins({ selection, ops, contracted }) {
     }
     const page = entry.op.pool.page;
     const reason = `the world build would fold or hide him as the same person as ${hit.with} (${hit.rule}), so the game would show one record`;
+    dropped.add(entry.id);
     selection.counts.sameAsGameRecord += 1;
     selection.refused.push({ page, kind: "player", code: "same-person-as-game-record", reason });
     selection.statuses.set(page, { state: "refused", code: "same-person-as-game-record", reason });
   }
+  selection.players = selection.players.filter((entry) => !dropped.has(entry.id));
   return { ...ops, players };
 }
