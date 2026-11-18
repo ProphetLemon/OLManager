@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { EMPTY_CALL_STATE, type CallItem, type CallState } from "./needsYourCall";
-import { LANE_MIN_BODY_PX, laneModel } from "./attentionLane";
+import { LANE_MIN_BODY_PX, isHomeOnScreen, laneModel } from "./attentionLane";
 
 function call(id: string, severity: CallItem["severity"]): CallItem {
   return {
@@ -30,7 +30,7 @@ function calls(): CallState {
   };
 }
 
-const shown = { callState: calls(), activeTab: "Squad", compact: false, bodyHeight: 640 };
+const shown = { callState: calls(), activeTab: "Squad", profileOpen: false, compact: false, bodyHeight: 640 };
 
 describe("laneModel (R24)", () => {
   it("shows the decisions off Home, outside compact, with enough body", () => {
@@ -43,6 +43,10 @@ describe("laneModel (R24)", () => {
 
   it("is hidden on Home, whose panel is the full list", () => {
     expect(laneModel({ ...shown, activeTab: "Home" }).visible).toBe(false);
+  });
+
+  it("shows over a profile opened from Home, which hides the panel (R58)", () => {
+    expect(laneModel({ ...shown, activeTab: "Home", profileOpen: true }).visible).toBe(true);
   });
 
   it("is hidden on the end-of-season screen", () => {
@@ -66,5 +70,13 @@ describe("laneModel (R24)", () => {
 
   it("has no pills when it is hidden", () => {
     expect(laneModel({ ...shown, activeTab: "Home" }).pills).toEqual([]);
+  });
+});
+
+describe("isHomeOnScreen (R42, R58)", () => {
+  it("is true only on Home with nothing open over it", () => {
+    expect(isHomeOnScreen({ activeTab: "Home", profileOpen: false })).toBe(true);
+    expect(isHomeOnScreen({ activeTab: "Home", profileOpen: true })).toBe(false);
+    expect(isHomeOnScreen({ activeTab: "Squad", profileOpen: false })).toBe(false);
   });
 });

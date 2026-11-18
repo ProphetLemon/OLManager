@@ -35,7 +35,7 @@ export interface AttentionLaneV2Props {
 
 /**
  * "Before you continue" (R24): the decisions as one row of pills under the bar,
- * off Home. A single Tab stop; Left, Right, Home and End move inside. It adds no
+ * while Home's panel is not on screen (R58). A single Tab stop; Left, Right, Home and End move inside. It adds no
  * live region: a new call after an advance is spoken by the RouteAnnouncer (R42).
  */
 export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: AttentionLaneV2Props) {

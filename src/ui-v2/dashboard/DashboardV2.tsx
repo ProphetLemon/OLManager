@@ -65,7 +65,7 @@ import { useRailMode } from "@/ui-v2/shell/useRailMode";
 import { buildAttentionMap } from "@/ui-v2/shell/attention";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
 import { AttentionLaneV2 } from "./AttentionLaneV2";
-import { laneModel } from "@/lib/dashboard/attentionLane";
+import { isHomeOnScreen, laneModel } from "@/lib/dashboard/attentionLane";
 import { opensOwnFocus } from "@/lib/dashboard/callAction";
 
 
@@ -690,15 +690,6 @@ export default function DashboardV2() {
     [currentGameDate, dashboardAlerts, lastBlockers, startingFive, t],
   );
   const attention = useMemo(() => buildAttentionMap(callState.items), [callState.items]);
-  // "Before you continue" (R24): the decisions off Home, outside the end-of-season shell,
-  // while the body under the title bar is at least 380 px high.
-  const lane = laneModel({
-    callState,
-    activeTab: profileNavigation.activeTab,
-    compact: showSeasonSummary,
-    bodyHeight: rail.slotH,
-  });
-
   // A tab's own content shows only while no profile or champion page is open over it.
   const profileOpen = Boolean(
     profileNavigation.selectedPlayerId ||
@@ -707,12 +698,23 @@ export default function DashboardV2() {
       viewingChampionKey,
   );
 
+  // "Before you continue" (R24): the decisions while Home's panel is not on screen, a
+  // profile opened from Home included (R58), outside the end-of-season shell, while the
+  // body under the title bar is at least 380 px high.
+  const lane = laneModel({
+    callState,
+    activeTab: profileNavigation.activeTab,
+    profileOpen,
+    compact: showSeasonSummary,
+    bodyHeight: rail.slotH,
+  });
+
   // R42: a call an advance brings while Home's panel is not on screen is a status
   // message nothing else speaks. The count is taken as the advance starts (Continue,
   // a skip, or the confirmed match day) and compared once the pre-check has answered
   // for the state the advance left. On Home the panel's own status speaks; a refresh
   // with no advance before it, or a fresh mount, says nothing.
-  const homeShown = profileNavigation.activeTab === "Home" && !profileOpen && !showSeasonSummary;
+  const homeShown = isHomeOnScreen({ activeTab: profileNavigation.activeTab, profileOpen }) && !showSeasonSummary;
   const advanceBaseline = useRef<{ count: number; game: GameStateData | null | undefined; seq: number } | null>(null);
   const wasAdvancing = useRef(isAdvancing);
   useEffect(() => {

@@ -1094,6 +1094,21 @@ describe("DashboardV2 attention lane (NR2.6)", () => {
     expect(document.querySelector('[data-slot="route-announcer"]')?.textContent).toBe("");
   });
 
+  it("shows over a profile opened from Home, and its pinned pill still lands on Home's panel (R58)", async () => {
+    withExpiringStarter();
+    useDashboardLocationStore.getState().go({ kind: "player", id: "p-mid" });
+    await renderOn("Home");
+    expect(screen.getByTestId("player-profile")).toBeInTheDocument();
+    await waitFor(() => expect(lane()).not.toBeNull());
+
+    const pin = lane()!.querySelector<HTMLButtonElement>('[data-pill-id="lane:home"]')!;
+    act(() => pin.focus());
+    fireEvent.click(pin);
+    await screen.findByTestId("home-tab-v2");
+    expect(lane()).toBeNull();
+    await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
+  });
+
   it("does not pull focus to main when the renewal's profile is already open (R57)", async () => {
     withExpiringStarter();
     useDashboardLocationStore.getState().go({ kind: "tab", tab: "Training" });
