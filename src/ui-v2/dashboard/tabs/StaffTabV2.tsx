@@ -29,6 +29,7 @@ import { resolveStaffPhoto } from "@/lib/players/playerPhotos";
 import { staffDisplayName } from "@/lib/staff/staffName";
 import { staffAge } from "@/lib/staff/staffAge";
 import { staffErrorKey } from "@/lib/staff/staffErrors";
+import { availableStaff, clubStaff } from "@/lib/staff/staffLists";
 import { ATTR_LABEL_KEYS, bestAttr, ovrRating, getStaffImpactRows } from "@/lib/staff/staffStats";
 import { getTeamName } from "@/lib/common/helpers";
 import { countryName } from "@/lib/common/countries";
@@ -75,14 +76,13 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
   const cancelReleaseRef = useRef<HTMLButtonElement | null>(null);
   const PAGE_SIZE = 12;
 
-  const myStaff = gameState.staff.filter((s) => s.team_id === userTeamId);
-  // Club owners belong to their club and are never offered in the market.
-  const availableStaff = gameState.staff.filter((s) => !s.team_id && s.role !== "Owner");
+  const myStaff = clubStaff(gameState.staff, userTeamId);
+  const freeStaff = availableStaff(gameState.staff);
   const displayStaff = isWorldMode
     ? gameState.staff
     : view === "mystaff"
       ? myStaff
-      : availableStaff;
+      : freeStaff;
 
   const competitionTeamIds = useMemo(() => {
     if (!competitionFilter) return null;
@@ -185,7 +185,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
               }`}
             >
               <UserPlus className="mr-1 inline size-3.5" />
-              {t("staff.available", { count: availableStaff.length })}
+              {t("staff.available", { count: freeStaff.length })}
             </button>
           </div>
         )}
