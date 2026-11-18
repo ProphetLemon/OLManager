@@ -187,6 +187,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "In attesa del controllo delle rose…",
     "searchLeague": "Cerca campionati...",
     "regionalLeagues": "Leghe regionali",
     "confirming": "Conferma in corso...",

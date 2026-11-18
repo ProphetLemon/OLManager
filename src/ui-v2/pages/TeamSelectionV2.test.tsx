@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -263,24 +263,59 @@ describe("TeamSelectionV2", () => {
     expect(mocks.navigate).not.toHaveBeenCalledWith("/dashboard");
   });
 
-  it("disables Confirm while a roster check runs", async () => {
-    setRosterCheck("checking");
-    const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+  describe("Confirm while a roster check runs", () => {
+    async function openTeamWithConfirm() {
+      const TeamSelectionV2 = (await import("./TeamSelectionV2")).default;
+      render(
+        <MemoryRouter>
+          <TeamSelectionV2 />
+        </MemoryRouter>,
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
+      fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
+      return screen.getByRole("button", { name: /^Confirm$/ });
+    }
 
-    render(
-      <MemoryRouter>
-        <TeamSelectionV2 />
-      </MemoryRouter>,
-    );
+    it("stays in the tab order, marked unavailable", async () => {
+      setRosterCheck("checking");
 
-    fireEvent.click(await screen.findByRole("button", { name: /LEC/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /G2 Esports/i }));
-    const confirm = screen.getByRole("button", { name: /^Confirm$/ });
+      const confirm = await openTeamWithConfirm();
 
-    expect(confirm).toBeDisabled();
-    fireEvent.click(confirm);
-    expect(mocks.selectTeam).not.toHaveBeenCalled();
-    expect(mocks.updateWorldOverlay).not.toHaveBeenCalled();
+      expect(confirm).not.toBeDisabled();
+      expect(confirm).toHaveAttribute("aria-disabled", "true");
+    });
+
+    it("does nothing when pressed", async () => {
+      setRosterCheck("checking");
+      const confirm = await openTeamWithConfirm();
+
+      fireEvent.click(confirm);
+
+      expect(mocks.selectTeam).not.toHaveBeenCalled();
+      expect(mocks.updateWorldOverlay).not.toHaveBeenCalled();
+    });
+
+    it("says why it waits, in a visible hint that describes it", async () => {
+      setRosterCheck("checking");
+
+      const confirm = await openTeamWithConfirm();
+
+      expect(screen.getByText("Waiting for the roster check…")).toBeVisible();
+      expect(confirm).toHaveAccessibleDescription("Waiting for the roster check…");
+    });
+
+    it("becomes available, without the hint, when the check ends", async () => {
+      setRosterCheck("checking");
+      const confirm = await openTeamWithConfirm();
+
+      act(() => setRosterCheck("upToDate"));
+
+      expect(confirm).not.toHaveAttribute("aria-disabled");
+      expect(confirm).not.toHaveAccessibleDescription();
+      expect(screen.queryByText("Waiting for the roster check…")).not.toBeInTheDocument();
+      fireEvent.click(confirm);
+      await waitFor(() => expect(mocks.selectTeam).toHaveBeenCalled());
+    });
   });
 
   it("does not re-check the rosters when the last check succeeded under an hour ago", async () => {

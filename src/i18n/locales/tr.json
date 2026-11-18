@@ -350,6 +350,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Kadro denetimi bekleniyor…",
     "searchLeague": "Lig ara...",
     "regionalLeagues": "Bölgesel ligler",
     "confirming": "Onaylanıyor...",

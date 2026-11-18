@@ -350,6 +350,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Warte auf die Kaderprüfung…",
     "searchLeague": "Ligen suchen...",
     "regionalLeagues": "Regionale Ligen",
     "confirming": "Bestätige...",
