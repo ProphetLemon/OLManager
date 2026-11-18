@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, type FocusEvent, type WheelEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, type WheelEvent } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useRovingFocus } from "@/hooks/useRovingFocus";
@@ -42,8 +42,9 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
   const { t } = useTranslation();
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
-  // The pill that last held focus, until focus moves somewhere else on purpose.
-  const lastFocusedId = useRef<string | null>(null);
+  // The pill that had focus when React took it out (R59): its ref is detached before
+  // the node leaves the document, so `document.activeElement` still names it then.
+  const lostWithFocus = useRef<string | null>(null);
   const callPills = pills.filter((pill) => pill.kind === "call");
   const homeIndex = pills.findIndex((pill) => pill.kind === "home");
   const idsKey = pills.map((pill) => pill.id).join("|");
@@ -81,19 +82,22 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
 
   // When the pills change: keep the Tab stop on the pill that has focus, and when the
   // focused pill itself went (its call resolved) and the lane stays, focus the pill now
-  // at its place, else the last one (R47).
+  // at its place, else the last one (R47). Only a pill that held focus as it went
+  // hands it on: focus the user had already moved, even to the page, stays (R59).
   useLayoutEffect(() => {
     const focusedIndex = pills.findIndex((pill) => buttons.current.get(pill.id) === document.activeElement);
     if (focusedIndex >= 0) {
       if (focusedIndex !== activeIndex) setActiveIndex(focusedIndex);
       return;
     }
-    const lost = lastFocusedId.current;
+    const lost = lostWithFocus.current;
+    lostWithFocus.current = null;
     if (!lost || pills.some((pill) => pill.id === lost)) return;
-    // Focus that went somewhere on purpose stays there.
-    if (document.activeElement && document.activeElement !== document.body) return;
     const next = pills[Math.min(Math.max(activeIndex, 0), pills.length - 1)];
-    if (next) buttons.current.get(next.id)?.focus({ preventScroll: true });
+    const el = next ? buttons.current.get(next.id) : undefined;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    el.scrollIntoView?.({ block: "nearest", inline: "nearest" });
     // Only the pill set matters here; the index is read as it stands.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
@@ -107,11 +111,6 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
     };
   }, []);
 
-  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
-    const next = event.relatedTarget as Node | null;
-    if (next && !event.currentTarget.contains(next)) lastFocusedId.current = null;
-  };
-
   // A plain wheel scrolls the row: its scrollbar is hidden behind the fades.
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     const el = event.currentTarget;
@@ -124,12 +123,17 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
     "data-slot": "lane-pill",
     "data-pill-id": id,
     tabIndex: getTabIndex(index),
+    // An inline ref detaches and reattaches on every render, so reattaching clears the mark.
     ref: (el: HTMLButtonElement | null) => {
-      if (el) buttons.current.set(id, el);
-      else buttons.current.delete(id);
+      if (el) {
+        buttons.current.set(id, el);
+        if (lostWithFocus.current === id) lostWithFocus.current = null;
+        return;
+      }
+      if (buttons.current.get(id) === document.activeElement) lostWithFocus.current = id;
+      buttons.current.delete(id);
     },
     onFocus: () => {
-      lastFocusedId.current = id;
       if (index !== activeIndex) setActiveIndex(index);
     },
     onClick: () => activate(index),
@@ -158,7 +162,6 @@ export function AttentionLaneV2({ pills, platform, onNavigate, onShowAll }: Atte
         role="toolbar"
         aria-orientation="horizontal"
         onKeyDown={handleKeyDown}
-        onBlur={handleBlur}
         className="flex h-full min-w-0 flex-1 items-center gap-2"
       >
         <div

@@ -198,6 +198,23 @@ describe("AttentionLaneV2 (R24, R47)", () => {
     expect(pillButtons().filter((b) => b.tabIndex === 0)).toEqual([focused()]);
   });
 
+  it("scrolls the pill it moves focus to into view (R59)", () => {
+    const view = render(<Frame />);
+    act(() => pillButtons()[1].focus());
+    vi.mocked(Element.prototype.scrollIntoView).mockClear();
+    view.rerender(<Frame pills={pillsOf([scrims, renewal])} />);
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+    expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts.at(-1)).toBe(focused());
+  });
+
+  it("leaves focus on the page when the user had already left the pill that goes (R59)", () => {
+    const view = render(<Frame />);
+    act(() => pillButtons()[1].focus());
+    act(() => (document.activeElement as HTMLElement).blur());
+    view.rerender(<Frame pills={pillsOf([scrims, renewal])} />);
+    expect(focused()).toBe(document.body);
+  });
+
   it("keeps the Tab stop on the focused pill when an earlier pill goes", () => {
     const view = render(<Frame />);
     act(() => pillButtons()[2].focus());
