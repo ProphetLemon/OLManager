@@ -121,7 +121,8 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     return () => clearTimeout(timer);
   }, [open, typed, query, results.length, t]);
 
-  // The Android back gesture raises popstate: close first, before DashboardV2's handler (spec §5.5).
+  // Back (popstate, raised by the Android back gesture) closes the palette. It does not
+  // consume the event: DashboardV2's own popstate handler still runs, as intended (spec §5.5).
   useEffect(() => {
     if (!open) return;
     const onPopState = () => {
