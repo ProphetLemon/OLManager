@@ -6,12 +6,14 @@ import type { GameStateData } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { resetSessionNavigation } from "@/store/sessionReset";
+import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
 import { ROUTE_ANNOUNCE_DEBOUNCE_MS, RouteAnnouncer, useRouteAnnouncer } from "./RouteAnnouncer";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((command: string) => {
     if (command === "get_active_game") return Promise.resolve(game());
     if (command === "get_champions") return Promise.resolve([]);
+    if (command === "get_champion_stats") return Promise.resolve({ total_games: 0 });
     return Promise.resolve();
   }),
 }));
@@ -89,7 +91,22 @@ function game(): GameStateData {
     day_phase: "Morning",
     teams: [{ id: "team-1", name: "Test Team", logo_url: null }],
     players: [{ id: "p1", match_name: "Faker", team_id: "team-1", transfer_offers: [] }],
-    staff: [],
+    staff: [
+      {
+        id: "s1",
+        first_name: "Ana",
+        last_name: "Ruiz",
+        nickname: null,
+        role: "Coach",
+        nationality: "ES",
+        team_id: "team-1",
+        specialization: null,
+        wage: 0,
+        contract_end: null,
+        profile_image_url: null,
+        attributes: { coaching: 50, judging_ability: 50, judging_potential: 50, physiotherapy: 50 },
+      },
+    ],
     messages: [],
     news: [],
     leagues: [],
@@ -142,30 +159,32 @@ describe("RouteAnnouncer", () => {
   });
 });
 
-describe("the route announcer in the dashboard (R46)", () => {
-  beforeEach(() => {
-    Element.prototype.scrollIntoView = vi.fn();
-    useGameStore.setState({
-      hasActiveGame: true,
-      managerName: "Coach",
-      gameState: game(),
-      pendingSeasonSummary: null,
-      isDirty: false,
-      showFiredModal: false,
-    });
-    useSettingsStore.setState({ loaded: true });
-    resetSessionNavigation();
+function setupDashboard() {
+  Element.prototype.scrollIntoView = vi.fn();
+  useGameStore.setState({
+    hasActiveGame: true,
+    managerName: "Coach",
+    gameState: game(),
+    pendingSeasonSummary: null,
+    isDirty: false,
+    showFiredModal: false,
   });
+  useSettingsStore.setState({ loaded: true });
+  resetSessionNavigation();
+}
 
-  const renderDashboard = async () => {
-    const DashboardV2 = (await import("./DashboardV2")).default;
-    render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
-        <DashboardV2 />
-      </MemoryRouter>,
-    );
-    await screen.findByTestId("home-tab", {}, { timeout: 3000 });
-  };
+async function renderDashboard() {
+  const DashboardV2 = (await import("./DashboardV2")).default;
+  render(
+    <MemoryRouter initialEntries={["/dashboard"]}>
+      <DashboardV2 />
+    </MemoryRouter>,
+  );
+  await screen.findByTestId("home-tab", {}, { timeout: 3000 });
+}
+
+describe("the route announcer in the dashboard (R46)", () => {
+  beforeEach(setupDashboard);
 
   it("is mounted once and says nothing on mount or after a rail move", async () => {
     await renderDashboard();
@@ -214,5 +233,34 @@ describe("the route announcer in the dashboard (R46)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Nothing to go back to" }));
     await settle();
     expect(announcer()).toHaveTextContent("");
+  });
+});
+
+describe("one level-1 heading per view (R52)", () => {
+  beforeEach(setupDashboard);
+
+  type Move = Parameters<ReturnType<typeof useDashboardLocationStore.getState>["go"]>[0];
+  /** Opens a page from its tab; it has mounted once its name shows besides the bar's h1. */
+  const openAndWaitFor = async (tab: string, move: Move, name: string) => {
+    await renderDashboard();
+    act(() => {
+      useDashboardLocationStore.getState().go({ kind: "tab", tab });
+      useDashboardLocationStore.getState().go(move);
+    });
+    await waitFor(() => expect(screen.getAllByText(name).length).toBeGreaterThan(1), { timeout: 3000 });
+  };
+
+  it("a staff profile has one h1, the bar's, and it names the staff member", async () => {
+    await openAndWaitFor("Staff", { kind: "staff", id: "s1" }, "Ana Ruiz");
+    const h1s = screen.getAllByRole("heading", { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]).toHaveTextContent("Ana Ruiz");
+  });
+
+  it("a champion page has one h1, the bar's, and it names the champion", async () => {
+    await openAndWaitFor("ChampionsWorld", { kind: "champion", key: "Ahri" }, "Ahri");
+    const h1s = screen.getAllByRole("heading", { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]).toHaveTextContent("Ahri");
   });
 });

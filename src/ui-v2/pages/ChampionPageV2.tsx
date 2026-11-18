@@ -108,9 +108,10 @@ export default function ChampionPageV2({ championKey, backTo, onClose }: Props) 
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="font-heading text-3xl font-black uppercase tracking-wide text-white drop-shadow-lg md:text-4xl">
+                {/* h2: the bar's h1 already names this champion (R52). */}
+                <h2 className="font-heading text-3xl font-black uppercase tracking-wide text-white drop-shadow-lg md:text-4xl">
                   {displayName}
-                </h1>
+                </h2>
                 {s && <Badge className="bg-white/20 text-white backdrop-blur">{t("championPage.gamesShort", { count: s.total_games })}</Badge>}
               </div>
               <p className="mt-1 flex items-center gap-2 text-sm text-white/70">

@@ -144,9 +144,10 @@ export default function StaffProfileV2({
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-heading text-2xl font-bold uppercase tracking-wide text-foreground">
+              {/* h2: the bar's h1 already names this staff member (R52). */}
+              <h2 className="font-heading text-2xl font-bold uppercase tracking-wide text-foreground">
                 {staffDisplayName(staff)}
-              </h1>
+              </h2>
               <Badge
                 variant={ovr >= 65 ? "default" : ovr >= 45 ? "secondary" : "outline"}
                 className="text-xs"
