@@ -525,8 +525,9 @@ fn collapsed_same_club_records_are_tombstoned_and_the_moved_survivor_stays_prote
 /// fold or hide (`pool-no-duplicates`, same rules as `collapse_same_person_records`), so a new world never holds
 /// them and there is nothing to tombstone. Ace, for one: Leaguepedia's "Ace (Ignacio David Piaggio)" page reads
 /// Uruguay, Bot, Senshi eSports, and the catalog record `cea7803b` has the same real name, UY and ADC. The
-/// tombstoning itself is covered by `a_world_holding_the_old_pool_add_of_ace_keeps_only_the_catalog_record` in
-/// `olm_core::world_catalog`.
+/// collapse that tombstones them when an overlay does add them is covered by
+/// `a_world_holding_the_old_pool_add_of_ace_keeps_only_the_catalog_record` in `olm_core::world_catalog`; a save that
+/// already holds them is not repaired (`commands::import`).
 #[test]
 fn pool_adds_the_world_build_used_to_fold_are_no_longer_added() {
     let game = world();
