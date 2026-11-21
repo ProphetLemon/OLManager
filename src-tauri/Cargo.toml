@@ -32,6 +32,8 @@ serde_json = "1"
 serde = { version = "1", features = ["derive"] }
 olm_core = { path = "crates/olm_core" }
 chrono = "0.4.44"
+# Already in the lock file (ed25519-dalek uses it); fingerprints the roster overlay seen remotely.
+sha2 = "0.10"
 rand = "0.10"
 base64 = "0.22"
 zip = "2"

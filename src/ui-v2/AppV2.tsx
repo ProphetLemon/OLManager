@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
+import { startRosterLaunchCheck } from "@/store/rosterUpdateStore";
 import { useUpdater } from "@/hooks/useUpdater";
 import { useClubTheme } from "@/hooks/useClubTheme";
 import { invoke } from "@tauri-apps/api/core";
@@ -116,6 +117,11 @@ export default function AppV2() {
       delete document.documentElement.dataset.platform;
     };
   }, [isAndroid]);
+
+  // One background roster check per session; the new-game screen shows its outcome.
+  useEffect(() => {
+    startRosterLaunchCheck();
+  }, []);
 
   useEffect(() => {
     if (!loaded) loadSettings();

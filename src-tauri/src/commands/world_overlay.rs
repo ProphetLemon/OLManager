@@ -9,6 +9,14 @@
 //! Every downloaded overlay needs a detached Ed25519 signature (`<source>.sig`) that verifies against
 //! the public key embedded in the app. The signature is checked before the overlay is parsed or
 //! cached, and again whenever the cache is read; anything unsigned or badly signed is ignored.
+//!
+//! A check is a conditional download. After a remote overlay verifies, a small record of it (the
+//! source it came from, its ETag, `as_of` and SHA-256) is kept next to the cache
+//! (`<name>.seen.json`), whether or not it was newer than the overlay in use. The next check from
+//! the same source sends that ETag as `If-None-Match` when a 304 would change nothing, and a 304
+//! then means "the same file, already judged": up to date, with neither the overlay nor its
+//! signature downloaded again. A server without ETags, a local file source, a changed source, or a
+//! missing or unreadable record gets a full download every time.
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -19,7 +27,7 @@ use olm_core::world_overlay::{bundled_world_overlay, OverlayError, OverlaySource
 use olm_core::world_overlay_signature::{
     verify_overlay_signature, OverlayPublicKey, SignatureError,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::Manager as TauriManager;
 
 /// Environment variable overriding where the overlay is downloaded from. Either
@@ -29,10 +37,11 @@ const DEFAULT_SOURCE: &str =
     "https://raw.githubusercontent.com/ProphetLemon/OLManager/develop/assets/world/roster-overlay.json";
 /// Hard cap on the overlay size, enforced while streaming.
 const MAX_OVERLAY_BYTES: usize = 4 * 1024 * 1024;
-/// Timeout of a manual "Update rosters" press.
+/// Timeout of a manual Retry after a failed check.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
-/// Timeout of the automatic check made when the new-game screen opens; it
-/// holds the Confirm button back, so it must stay short.
+/// Timeout of the automatic checks (at app launch, and the new-game screen's
+/// re-check when the last one failed or is old); the new-game screen holds its
+/// Confirm button back while one runs, so it must stay short.
 const AUTOMATIC_REQUEST_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_REDIRECTS: usize = 5;
 const CACHE_DIR: &str = "world";
@@ -40,6 +49,12 @@ const CACHE_FILE: &str = "roster-overlay.json";
 const SIGNATURE_SUFFIX: &str = ".sig";
 /// A base64 Ed25519 signature is 88 bytes; the cap only bounds a hostile response.
 const MAX_SIGNATURE_BYTES: usize = 1024;
+/// The record of the last verified remote overlay lives next to the cache.
+const REMOTE_SEEN_SUFFIX: &str = ".seen.json";
+/// A record holds a bounded ETag, a date and a hash; the cap only bounds a corrupt file.
+const MAX_REMOTE_SEEN_BYTES: usize = 1024;
+/// Real ETags are well under 100 bytes; a longer one is not worth remembering.
+const MAX_ETAG_BYTES: usize = 256;
 
 #[derive(Debug, thiserror::Error)]
 pub enum WorldOverlayError {
@@ -173,11 +188,21 @@ pub fn read_cached_overlay(path: &Path, key: &OverlayPublicKey) -> Option<WorldO
     }
 }
 
+/// `path` with `suffix` appended to its file name.
+fn sibling_path(path: &Path, suffix: &str) -> PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(suffix);
+    PathBuf::from(name)
+}
+
 /// Cache signature file: next to the cache file, `<name>.sig`.
 fn signature_path(path: &Path) -> PathBuf {
-    let mut name = path.as_os_str().to_owned();
-    name.push(SIGNATURE_SUFFIX);
-    PathBuf::from(name)
+    sibling_path(path, SIGNATURE_SUFFIX)
+}
+
+/// Record of the last verified remote overlay: next to the cache file, `<name>.seen.json`.
+fn remote_seen_path(path: &Path) -> PathBuf {
+    sibling_path(path, REMOTE_SEEN_SUFFIX)
 }
 
 /// The key the shipped app trusts. Only the tests use another one, by passing it explicitly.
@@ -265,16 +290,39 @@ fn read_local_capped(path: &Path, limit: usize) -> Result<Vec<u8>, WorldOverlayE
     Ok(bytes)
 }
 
-async fn download_capped(
-    url: &str,
-    user_agent: &str,
-    limit: usize,
-    timeout: Duration,
-) -> Result<Vec<u8>, WorldOverlayError> {
-    if !url.to_ascii_lowercase().starts_with("https://") {
-        return Err(WorldOverlayError::InsecureSource(describe_source(url)));
+/// What fetching the overlay produced.
+#[derive(Debug, PartialEq, Eq)]
+enum OverlayFetch {
+    /// HTTP 304 to a conditional request: the cached overlay is still the
+    /// server's. Nothing was downloaded.
+    NotModified,
+    /// The whole document, with the server's ETag when it sent a usable one.
+    Fresh {
+        bytes: Vec<u8>,
+        etag: Option<String>,
+    },
+}
+
+impl OverlayFetch {
+    /// The body of an unconditional fetch, which a 304 cannot answer.
+    fn into_bytes(self) -> Result<Vec<u8>, WorldOverlayError> {
+        match self {
+            Self::Fresh { bytes, .. } => Ok(bytes),
+            Self::NotModified => Err(WorldOverlayError::HttpStatus(304)),
+        }
     }
-    let client = reqwest::Client::builder()
+}
+
+/// An ETag worth storing and sending back: visible ASCII only, so it is always
+/// a valid header value, and short.
+fn usable_etag(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= MAX_ETAG_BYTES
+        && value.bytes().all(|byte| byte.is_ascii_graphic())
+}
+
+fn overlay_client_builder(user_agent: &str, timeout: Duration) -> reqwest::ClientBuilder {
+    reqwest::Client::builder()
         .user_agent(user_agent)
         .timeout(timeout)
         .redirect(reqwest::redirect::Policy::custom(|attempt| {
@@ -286,16 +334,55 @@ async fn download_capped(
                 attempt.follow()
             }
         }))
+}
+
+async fn download_capped(
+    url: &str,
+    user_agent: &str,
+    limit: usize,
+    timeout: Duration,
+    if_none_match: Option<&str>,
+) -> Result<OverlayFetch, WorldOverlayError> {
+    if !url.to_ascii_lowercase().starts_with("https://") {
+        return Err(WorldOverlayError::InsecureSource(describe_source(url)));
+    }
+    let client = overlay_client_builder(user_agent, timeout)
         .build()
         .map_err(|err| WorldOverlayError::Network(err.without_url().to_string()))?;
-    let mut response = client
-        .get(url)
+    send_capped(&client, url, limit, if_none_match).await
+}
+
+/// The request itself, sent with `If-None-Match` when there is an ETag to
+/// revalidate. Only [`download_capped`], which enforces https, calls it in the
+/// app; the tests call it directly against a loopback server.
+async fn send_capped(
+    client: &reqwest::Client,
+    url: &str,
+    limit: usize,
+    if_none_match: Option<&str>,
+) -> Result<OverlayFetch, WorldOverlayError> {
+    let mut request = client.get(url);
+    if let Some(etag) = if_none_match {
+        request = request.header(reqwest::header::IF_NONE_MATCH, etag);
+    }
+    let mut response = request
         .send()
         .await
         .map_err(|err| WorldOverlayError::Network(err.without_url().to_string()))?;
+    // A 304 has no body, and the cached signature still covers the cached
+    // overlay, so stop here. It only counts as an answer to a conditional request.
+    if if_none_match.is_some() && response.status() == reqwest::StatusCode::NOT_MODIFIED {
+        return Ok(OverlayFetch::NotModified);
+    }
     if !response.status().is_success() {
         return Err(WorldOverlayError::HttpStatus(response.status().as_u16()));
     }
+    let etag = response
+        .headers()
+        .get(reqwest::header::ETAG)
+        .and_then(|value| value.to_str().ok())
+        .filter(|value| usable_etag(value))
+        .map(str::to_owned);
     if response
         .content_length()
         .is_some_and(|length| length > limit as u64)
@@ -313,7 +400,24 @@ async fn download_capped(
         }
         bytes.extend_from_slice(&chunk);
     }
-    Ok(bytes)
+    Ok(OverlayFetch::Fresh { bytes, etag })
+}
+
+/// Fetch the overlay at `source`, revalidating `if_none_match` when it is a URL.
+/// A local file has no validator: it is always read in full.
+async fn fetch_overlay(
+    source: &str,
+    user_agent: &str,
+    limit: usize,
+    timeout: Duration,
+    if_none_match: Option<&str>,
+) -> Result<OverlayFetch, WorldOverlayError> {
+    if is_remote(source) {
+        download_capped(source, user_agent, limit, timeout, if_none_match).await
+    } else {
+        read_local_capped(Path::new(source), limit)
+            .map(|bytes| OverlayFetch::Fresh { bytes, etag: None })
+    }
 }
 
 async fn fetch_overlay_bytes(
@@ -322,11 +426,9 @@ async fn fetch_overlay_bytes(
     limit: usize,
     timeout: Duration,
 ) -> Result<Vec<u8>, WorldOverlayError> {
-    if is_remote(source) {
-        download_capped(source, user_agent, limit, timeout).await
-    } else {
-        read_local_capped(Path::new(source), limit)
-    }
+    fetch_overlay(source, user_agent, limit, timeout, None)
+        .await?
+        .into_bytes()
 }
 
 /// Where the detached signature of the overlay at `source` lives.
@@ -397,36 +499,152 @@ pub fn write_atomically(path: &Path, bytes: &[u8]) -> Result<(), WorldOverlayErr
     Ok(())
 }
 
+/// What fetching the overlay together with its signature produced.
+#[derive(Debug, PartialEq, Eq)]
+enum PairFetch {
+    /// The cached overlay is still current; the signature was not fetched.
+    NotModified,
+    Fresh {
+        bytes: Vec<u8>,
+        signature: Vec<u8>,
+        etag: Option<String>,
+    },
+}
+
 /// Fetch the overlay and then its signature under ONE total deadline: each fetch
 /// gets only the time the previous one left, so the pair never takes longer than
 /// `timeout` (an automatic check must not hold the new-game screen for twice that).
+/// A 304 ends the pair early: the cached signature still covers the cached overlay.
 async fn fetch_pair_with<A, B>(
     timeout: Duration,
     fetch_overlay: impl FnOnce(Duration) -> A,
     fetch_signature: impl FnOnce(Duration) -> B,
-) -> Result<(Vec<u8>, Vec<u8>), WorldOverlayError>
+) -> Result<PairFetch, WorldOverlayError>
 where
-    A: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+    A: std::future::Future<Output = Result<OverlayFetch, WorldOverlayError>>,
     B: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
 {
     let deadline = tokio::time::Instant::now() + timeout;
-    let bytes = within_deadline(deadline, fetch_overlay).await?;
+    let (bytes, etag) = match within_deadline(deadline, fetch_overlay).await? {
+        OverlayFetch::NotModified => return Ok(PairFetch::NotModified),
+        OverlayFetch::Fresh { bytes, etag } => (bytes, etag),
+    };
     let signature = within_deadline(deadline, fetch_signature).await?;
-    Ok((bytes, signature))
+    Ok(PairFetch::Fresh {
+        bytes,
+        signature,
+        etag,
+    })
 }
 
-async fn within_deadline<F, Fut>(
+async fn within_deadline<T, F, Fut>(
     deadline: tokio::time::Instant,
     fetch: F,
-) -> Result<Vec<u8>, WorldOverlayError>
+) -> Result<T, WorldOverlayError>
 where
     F: FnOnce(Duration) -> Fut,
-    Fut: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+    Fut: std::future::Future<Output = Result<T, WorldOverlayError>>,
 {
     let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
     tokio::time::timeout_at(deadline, fetch(remaining))
         .await
         .unwrap_or_else(|_| Err(WorldOverlayError::Network("request timed out".to_string())))
+}
+
+/// The last remote overlay that verified: the SHA-256 of the source it came
+/// from, the ETag that source gave it, its `as_of` and the SHA-256 of its bytes.
+///
+/// An ETag only names a file on the server that issued it, so the record keeps
+/// its source (hashed, which bounds the size and keeps the URL out of the file).
+#[derive(Debug, Serialize, Deserialize)]
+struct RemoteSeen {
+    source_sha256: String,
+    etag: String,
+    as_of: String,
+    sha256: String,
+}
+
+impl RemoteSeen {
+    /// Only a record whose every field looks right is trusted.
+    fn is_well_formed(&self) -> bool {
+        is_sha256_hex(&self.source_sha256)
+            && usable_etag(&self.etag)
+            && self.as_of.len() == 10
+            && chrono::NaiveDate::parse_from_str(&self.as_of, "%Y-%m-%d").is_ok()
+            && is_sha256_hex(&self.sha256)
+    }
+}
+
+fn is_sha256_hex(value: &str) -> bool {
+    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+/// The `as_of` a download must reach to be stored: the cache's, or without a
+/// cache the bundled overlay's. Downloads below it never go back in time.
+fn store_floor<'a>(cached: Option<&'a WorldOverlay>, bundled: &'a WorldOverlay) -> &'a str {
+    cached.map_or(bundled.as_of.as_str(), |cached| cached.as_of.as_str())
+}
+
+/// The ETag to revalidate `source` with, if a 304 to it is safe to call "up to date".
+///
+/// A 304 means the remote is still the file recorded last time. That changes
+/// nothing when the file was older than the store floor (which never goes
+/// down) or is the very file in the cache. Otherwise, as with an unreadable or
+/// malformed record or one from another source, there is no ETag and the check
+/// downloads in full; a 304 must never keep a missing or broken cache that way.
+fn revalidation_etag(
+    cache_path: &Path,
+    source: &str,
+    cached: Option<&WorldOverlay>,
+    bundled: &WorldOverlay,
+) -> Option<String> {
+    let bytes = read_local_capped(&remote_seen_path(cache_path), MAX_REMOTE_SEEN_BYTES).ok()?;
+    let seen: RemoteSeen = serde_json::from_slice(&bytes).ok()?;
+    if !seen.is_well_formed() || seen.source_sha256 != sha256_hex(source.as_bytes()) {
+        return None;
+    }
+    let older_than_floor = seen.as_of.as_str() < store_floor(cached, bundled);
+    let is_the_cache = || {
+        cached.is_some()
+            && read_local_capped(cache_path, MAX_OVERLAY_BYTES)
+                .is_ok_and(|cache| sha256_hex(&cache) == seen.sha256)
+    };
+    (older_than_floor || is_the_cache()).then_some(seen.etag)
+}
+
+/// Record the remote overlay that just verified, or drop a stale record when the
+/// server sent no usable ETag. A failure only costs a full download next time,
+/// so it is logged and the check still succeeds.
+fn remember_remote(cache_path: &Path, source: &str, etag: Option<&str>, as_of: &str, bytes: &[u8]) {
+    let path = remote_seen_path(cache_path);
+    let result = match etag.filter(|etag| usable_etag(etag)) {
+        Some(etag) => {
+            let record = RemoteSeen {
+                source_sha256: sha256_hex(source.as_bytes()),
+                etag: etag.to_owned(),
+                as_of: as_of.to_owned(),
+                sha256: sha256_hex(bytes),
+            };
+            serde_json::to_vec(&record)
+                .map_err(|err| WorldOverlayError::Io(std::io::Error::other(err)))
+                .and_then(|json| write_atomically(&path, &json))
+        }
+        None => match std::fs::remove_file(&path) {
+            Err(err) if err.kind() != std::io::ErrorKind::NotFound => Err(err.into()),
+            _ => Ok(()),
+        },
+    };
+    if let Err(err) = result {
+        warn!("[world_overlay] could not update the remote overlay record: {err}");
+    }
 }
 
 /// Store the downloaded pair: the overlay first, the signature last. A crash in
@@ -453,16 +671,63 @@ async fn refresh_cache(
     timeout: Duration,
     key: &OverlayPublicKey,
 ) -> Result<WorldOverlayInfo, WorldOverlayError> {
+    refresh_cache_with(
+        cache_path,
+        source,
+        timeout,
+        key,
+        |if_none_match, remaining| async move {
+            fetch_overlay(
+                source,
+                user_agent,
+                limit,
+                remaining,
+                if_none_match.as_deref(),
+            )
+            .await
+        },
+        |remaining| fetch_signature_bytes(source, user_agent, remaining),
+    )
+    .await
+}
+
+/// [`refresh_cache`] with the two fetches passed in. `source` only keys the
+/// record of what it served; `fetch_overlay` receives the stored ETag to
+/// revalidate, if any, and the time left.
+async fn refresh_cache_with<A, B>(
+    cache_path: &Path,
+    source: &str,
+    timeout: Duration,
+    key: &OverlayPublicKey,
+    fetch_overlay: impl FnOnce(Option<String>, Duration) -> A,
+    fetch_signature: impl FnOnce(Duration) -> B,
+) -> Result<WorldOverlayInfo, WorldOverlayError>
+where
+    A: std::future::Future<Output = Result<OverlayFetch, WorldOverlayError>>,
+    B: std::future::Future<Output = Result<Vec<u8>, WorldOverlayError>>,
+{
     let bundled = bundled_world_overlay().map_err(WorldOverlayError::BundledInvalid)?;
     let cached = read_cached_overlay(cache_path, key);
     let before = select_overlay(bundled.clone(), cached.clone());
+    let if_none_match = revalidation_etag(cache_path, source, cached.as_ref(), &bundled);
 
-    let (bytes, signature) = fetch_pair_with(
+    let fetched = fetch_pair_with(
         timeout,
-        |remaining| fetch_overlay_bytes(source, user_agent, limit, remaining),
-        |remaining| fetch_signature_bytes(source, user_agent, remaining),
+        |remaining| fetch_overlay(if_none_match, remaining),
+        fetch_signature,
     )
     .await?;
+    let (bytes, signature, etag) = match fetched {
+        PairFetch::NotModified => {
+            info!("[world_overlay] the published overlay has not changed since the last check");
+            return Ok(before.info(false));
+        }
+        PairFetch::Fresh {
+            bytes,
+            signature,
+            etag,
+        } => (bytes, signature, etag),
+    };
     verify_overlay_signature(&bytes, &signature, key).map_err(WorldOverlayError::BadSignature)?;
     let text = std::str::from_utf8(&bytes).map_err(|_| {
         WorldOverlayError::Invalid(OverlayError::InvalidField {
@@ -474,11 +739,7 @@ async fn refresh_cache(
 
     // Never go back in time relative to the cache; without a cache the download
     // must at least match the bundled overlay to be worth keeping.
-    let acceptable = match &cached {
-        Some(cached) => downloaded.as_of >= cached.as_of,
-        None => downloaded.as_of >= bundled.as_of,
-    };
-    if acceptable {
+    if downloaded.as_of.as_str() >= store_floor(cached.as_ref(), &bundled) {
         store_pair_with(cache_path, &bytes, &signature, write_atomically)?;
     } else {
         info!(
@@ -486,6 +747,14 @@ async fn refresh_cache(
             downloaded.as_of
         );
     }
+    // Verified (and stored when newer): an unchanged remote now costs only a 304.
+    remember_remote(
+        cache_path,
+        source,
+        etag.as_deref(),
+        &downloaded.as_of,
+        &bytes,
+    );
     let after = resolve_from(Some(cache_path), key)?;
     let updated = after.overlay.as_of > before.overlay.as_of;
     Ok(after.info(updated))
@@ -506,9 +775,9 @@ fn request_timeout(automatic: bool) -> Duration {
 
 /// Download a newer roster overlay (if any) and cache it for future new games.
 ///
-/// `automatic` marks the background check made when the new-game screen opens:
-/// it uses a shorter timeout than a manual update. Everything else (https
-/// only, size cap, validation, atomic write) is identical.
+/// `automatic` marks the background checks (at app launch and the new-game
+/// screen's re-check): they use a shorter timeout than a manual one. Everything
+/// else (https only, size cap, validation, atomic write) is identical.
 #[tauri::command]
 pub async fn update_world_overlay(
     app_handle: tauri::AppHandle,
@@ -678,8 +947,13 @@ mod tests {
             tokio::time::sleep(Duration::from_millis(200)).await;
             Ok::<_, WorldOverlayError>(vec![1u8])
         };
+        let slow_overlay = |remaining: Duration| async move {
+            slow(remaining)
+                .await
+                .map(|bytes| OverlayFetch::Fresh { bytes, etag: None })
+        };
         let started = std::time::Instant::now();
-        let result = run(fetch_pair_with(timeout, slow, slow));
+        let result = run(fetch_pair_with(timeout, slow_overlay, slow));
         assert!(
             matches!(result, Err(WorldOverlayError::Network(_))),
             "{result:?}"
@@ -699,7 +973,10 @@ mod tests {
             timeout,
             |_| async {
                 tokio::time::sleep(Duration::from_millis(150)).await;
-                Ok(vec![1u8])
+                Ok(OverlayFetch::Fresh {
+                    bytes: vec![1u8],
+                    etag: None,
+                })
             },
             |remaining| {
                 seen.set(remaining);
@@ -707,7 +984,14 @@ mod tests {
             },
         ))
         .expect("pair");
-        assert_eq!(result, (vec![1u8], vec![2u8]));
+        assert_eq!(
+            result,
+            PairFetch::Fresh {
+                bytes: vec![1u8],
+                signature: vec![2u8],
+                etag: None
+            }
+        );
         assert!(seen.get() <= Duration::from_millis(360), "{:?}", seen.get());
     }
 
@@ -1339,5 +1623,531 @@ mod tests {
         assert_eq!(value["staff_ops"], 0);
         assert_eq!(value["source"]["license"], "CC BY-SA 3.0");
         assert_eq!(value["updated"], false);
+    }
+
+    // -- Conditional download (ETag / If-None-Match) ------------------------
+
+    /// What a faked refresh did: its result, the ETag it sent, and whether it
+    /// asked for the signature.
+    struct FakeRefresh {
+        result: Result<WorldOverlayInfo, WorldOverlayError>,
+        sent_etag: Option<String>,
+        fetched_signature: bool,
+    }
+
+    /// The source the faked refreshes download from, unless a test names another.
+    const FAKE_SOURCE: &str = "https://overlay.example.test/roster-overlay.json";
+
+    /// Refresh `cache` against a fake server that answers the overlay request
+    /// with `answer` and the signature request with `signature`.
+    fn refresh_faked(cache: &Path, answer: OverlayFetch, signature: &str) -> FakeRefresh {
+        refresh_faked_from(cache, FAKE_SOURCE, answer, signature)
+    }
+
+    /// [`refresh_faked`] downloading from `source`.
+    fn refresh_faked_from(
+        cache: &Path,
+        source: &str,
+        answer: OverlayFetch,
+        signature: &str,
+    ) -> FakeRefresh {
+        let sent_etag = std::cell::RefCell::new(None);
+        let fetched_signature = std::cell::Cell::new(false);
+        let result = run(refresh_cache_with(
+            cache,
+            source,
+            REQUEST_TIMEOUT,
+            &test_key(),
+            |if_none_match, _| {
+                *sent_etag.borrow_mut() = if_none_match;
+                async { Ok(answer) }
+            },
+            |_| {
+                fetched_signature.set(true);
+                let signature = signature.as_bytes().to_vec();
+                async move { Ok(signature) }
+            },
+        ));
+        FakeRefresh {
+            result,
+            sent_etag: sent_etag.into_inner(),
+            fetched_signature: fetched_signature.get(),
+        }
+    }
+
+    /// A fresh answer carrying `doc`, its valid signature and `etag`.
+    fn fresh(doc: &str, etag: Option<&str>) -> (OverlayFetch, String) {
+        (
+            OverlayFetch::Fresh {
+                bytes: doc.as_bytes().to_vec(),
+                etag: etag.map(str::to_owned),
+            },
+            signature_for(&signing_key(9), doc.as_bytes()),
+        )
+    }
+
+    /// The record of the last verified remote overlay, next to the cache.
+    fn seen_file(cache: &Path) -> PathBuf {
+        sibling_path(cache, ".seen.json")
+    }
+
+    fn sha256_of(bytes: &[u8]) -> String {
+        use sha2::{Digest, Sha256};
+        Sha256::digest(bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect()
+    }
+
+    /// Records that [`FAKE_SOURCE`] answered `etag` for `content`, dated `as_of`.
+    fn seed_seen(cache: &Path, etag: &str, as_of: &str, content: &[u8]) {
+        let record = serde_json::json!({
+            "source_sha256": sha256_of(FAKE_SOURCE.as_bytes()),
+            "etag": etag,
+            "as_of": as_of,
+            "sha256": sha256_of(content),
+        });
+        std::fs::write(seen_file(cache), record.to_string()).expect("seed record");
+    }
+
+    fn seen_record(cache: &Path) -> Option<serde_json::Value> {
+        let text = std::fs::read_to_string(seen_file(cache)).ok()?;
+        serde_json::from_str(&text).ok()
+    }
+
+    fn seen_etag(cache: &Path) -> Option<String> {
+        seen_record(cache)?["etag"].as_str().map(str::to_owned)
+    }
+
+    #[test]
+    fn a_stored_download_records_the_remotes_etag_date_and_hash() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join("world").join(CACHE_FILE);
+        let doc = overlay_json(&offset_date(2), 1);
+        let (answer, signature) = fresh(&doc, Some("\"v1\""));
+
+        let run = refresh_faked(&cache, answer, &signature);
+
+        assert!(run.result.expect("refresh").updated);
+        let record = seen_record(&cache).expect("record");
+        assert_eq!(record["source_sha256"], sha256_of(FAKE_SOURCE.as_bytes()));
+        assert_eq!(record["etag"], "\"v1\"");
+        assert_eq!(record["as_of"], offset_date(2));
+        assert_eq!(record["sha256"], sha256_of(doc.as_bytes()));
+    }
+
+    #[test]
+    fn a_record_from_another_source_is_not_sent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join("world").join(CACHE_FILE);
+        let doc = overlay_json(&offset_date(-30), 1);
+        let (answer, signature) = fresh(&doc, Some("\"old\""));
+        refresh_faked(&cache, answer, &signature)
+            .result
+            .expect("first check");
+        let (answer, signature) = fresh(&doc, Some("\"old\""));
+
+        // The same ETag from another server names a different file.
+        let run = refresh_faked_from(
+            &cache,
+            "https://mirror.example.test/roster-overlay.json",
+            answer,
+            &signature,
+        );
+
+        assert_eq!(run.sent_etag, None);
+        assert!(run.fetched_signature);
+    }
+
+    #[test]
+    fn a_record_without_a_source_is_not_sent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        // The record's shape before it named its source.
+        let legacy = serde_json::json!({
+            "etag": "\"old\"",
+            "as_of": offset_date(-30),
+            "sha256": sha256_of(b"the old remote"),
+        });
+        std::fs::write(seen_file(&cache), legacy.to_string()).expect("seed record");
+        let (answer, signature) = fresh(&overlay_json(&offset_date(-30), 1), Some("\"old\""));
+
+        assert_eq!(refresh_faked(&cache, answer, &signature).sent_etag, None);
+    }
+
+    #[test]
+    fn a_record_with_a_malformed_source_hash_is_not_sent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        let record = serde_json::json!({
+            "source_sha256": "not a hash",
+            "etag": "\"old\"",
+            "as_of": offset_date(-30),
+            "sha256": sha256_of(b"the old remote"),
+        });
+        std::fs::write(seen_file(&cache), record.to_string()).expect("seed record");
+        let (answer, signature) = fresh(&overlay_json(&offset_date(-30), 1), Some("\"old\""));
+
+        assert_eq!(refresh_faked(&cache, answer, &signature).sent_etag, None);
+    }
+
+    #[test]
+    fn a_corrupt_cache_with_a_record_older_than_the_bundled_overlay_keeps_the_bundled_one_on_a_304()
+    {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        std::fs::write(&cache, "{ not an overlay").expect("corrupt cache");
+        seed_seen(&cache, "\"old\"", &offset_date(-30), b"the old remote");
+
+        let run = refresh_faked(&cache, OverlayFetch::NotModified, "unused");
+
+        assert_eq!(run.sent_etag.as_deref(), Some("\"old\""));
+        assert!(!run.fetched_signature);
+        let info = run.result.expect("not modified");
+        assert!(!info.updated);
+        assert_eq!(info.origin, OverlayOrigin::Bundled);
+        assert_eq!(
+            std::fs::read(&cache).expect("read cache"),
+            b"{ not an overlay"
+        );
+    }
+
+    #[test]
+    fn a_cache_holding_the_recorded_remote_sends_its_etag() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, bytes) = seeded_cache(dir.path());
+        seed_seen(&cache, "\"v1\"", &offset_date(1), &bytes);
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), Some("\"v2\""));
+
+        let run = refresh_faked(&cache, answer, &signature);
+
+        assert_eq!(run.sent_etag.as_deref(), Some("\"v1\""));
+    }
+
+    #[test]
+    fn not_modified_is_up_to_date_without_fetching_the_signature() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, before) = seeded_cache(dir.path());
+        seed_seen(&cache, "\"v1\"", &offset_date(1), &before);
+
+        let run = refresh_faked(&cache, OverlayFetch::NotModified, "unused");
+
+        let info = run.result.expect("not modified is a success");
+        assert!(!info.updated);
+        assert_eq!(info.as_of, offset_date(1));
+        assert_eq!(info.origin, OverlayOrigin::Downloaded);
+        assert!(!run.fetched_signature);
+        assert_eq!(std::fs::read(&cache).expect("read cache"), before);
+        assert_eq!(seen_etag(&cache).as_deref(), Some("\"v1\""));
+    }
+
+    #[test]
+    fn a_remote_older_than_the_bundled_overlay_is_answered_by_a_304_next_time() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join("world").join(CACHE_FILE);
+        let (answer, signature) = fresh(&overlay_json(&offset_date(-30), 1), Some("\"old\""));
+
+        let first = refresh_faked(&cache, answer, &signature);
+        let info = first.result.expect("first check");
+        assert!(!info.updated);
+        assert_eq!(info.origin, OverlayOrigin::Bundled);
+        assert!(!cache.exists());
+
+        let second = refresh_faked(&cache, OverlayFetch::NotModified, "unused");
+
+        assert_eq!(second.sent_etag.as_deref(), Some("\"old\""));
+        assert!(!second.fetched_signature);
+        let info = second.result.expect("not modified");
+        assert!(!info.updated);
+        assert_eq!(info.origin, OverlayOrigin::Bundled);
+        assert!(!cache.exists());
+    }
+
+    #[test]
+    fn a_remote_older_than_the_cache_is_recorded_and_the_cache_kept() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, before) = seeded_cache(dir.path());
+        let (answer, signature) = fresh(&overlay_json(&offset_date(0), 1), Some("\"v0\""));
+
+        let first = refresh_faked(&cache, answer, &signature);
+        assert!(!first.result.expect("first check").updated);
+        assert_eq!(std::fs::read(&cache).expect("read cache"), before);
+
+        let second = refresh_faked(&cache, OverlayFetch::NotModified, "unused");
+
+        assert_eq!(second.sent_etag.as_deref(), Some("\"v0\""));
+        assert_eq!(std::fs::read(&cache).expect("read cache"), before);
+    }
+
+    #[test]
+    fn a_weak_etag_round_trips_verbatim() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join("world").join(CACHE_FILE);
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), Some("W/\"abc\""));
+        refresh_faked(&cache, answer, &signature)
+            .result
+            .expect("first check");
+
+        let second = refresh_faked(&cache, OverlayFetch::NotModified, "unused");
+
+        assert_eq!(seen_etag(&cache).as_deref(), Some("W/\"abc\""));
+        assert_eq!(second.sent_etag.as_deref(), Some("W/\"abc\""));
+    }
+
+    #[test]
+    fn a_corrupt_record_falls_back_to_a_full_download() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, _) = seeded_cache(dir.path());
+        std::fs::write(seen_file(&cache), "{ not a record").expect("corrupt record");
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), Some("\"v2\""));
+
+        let run = refresh_faked(&cache, answer, &signature);
+
+        assert_eq!(run.sent_etag, None);
+        assert!(run.fetched_signature);
+        assert!(run.result.expect("refresh").updated);
+        assert_eq!(seen_etag(&cache).as_deref(), Some("\"v2\""));
+    }
+
+    #[test]
+    fn a_record_with_a_bad_date_is_not_sent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        // "0" sorts before any real date, so it would pass for an old remote.
+        seed_seen(&cache, "\"v1\"", "0", b"anything");
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), None);
+
+        assert_eq!(refresh_faked(&cache, answer, &signature).sent_etag, None);
+    }
+
+    #[test]
+    fn a_record_with_a_malformed_etag_is_not_sent() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, bytes) = seeded_cache(dir.path());
+        seed_seen(&cache, "\"v1\"\r\nX-Injected: 1", &offset_date(1), &bytes);
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), None);
+
+        assert_eq!(refresh_faked(&cache, answer, &signature).sent_etag, None);
+    }
+
+    #[test]
+    fn a_record_for_another_file_is_not_sent_for_the_cache() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, _) = seeded_cache(dir.path());
+        seed_seen(&cache, "\"v1\"", &offset_date(1), b"a different overlay");
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), None);
+
+        assert_eq!(refresh_faked(&cache, answer, &signature).sent_etag, None);
+    }
+
+    #[test]
+    fn a_record_is_not_sent_once_the_cache_it_matched_is_gone() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        // A 304 here would keep the broken cache forever.
+        std::fs::write(&cache, "{ not an overlay").expect("corrupt cache");
+        seed_seen(&cache, "\"v1\"", &offset_date(1), b"{ not an overlay");
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), Some("\"v2\""));
+
+        let run = refresh_faked(&cache, answer, &signature);
+
+        assert_eq!(run.sent_etag, None);
+        assert!(run.result.expect("refresh").updated);
+        assert_eq!(seen_etag(&cache).as_deref(), Some("\"v2\""));
+    }
+
+    #[test]
+    fn a_rejected_download_keeps_the_record() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, bytes) = seeded_cache(dir.path());
+        seed_seen(&cache, "\"v1\"", &offset_date(1), &bytes);
+        let (answer, _) = fresh(&overlay_json(&offset_date(2), 1), Some("\"v2\""));
+        let foreign = signature_for(&signing_key(3), b"something else");
+
+        let run = refresh_faked(&cache, answer, &foreign);
+
+        assert!(matches!(
+            run.result,
+            Err(WorldOverlayError::BadSignature(_))
+        ));
+        assert_eq!(seen_etag(&cache).as_deref(), Some("\"v1\""));
+    }
+
+    #[test]
+    fn a_download_without_an_etag_drops_the_record() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, bytes) = seeded_cache(dir.path());
+        seed_seen(&cache, "\"v1\"", &offset_date(1), &bytes);
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), None);
+
+        let run = refresh_faked(&cache, answer, &signature);
+
+        assert!(run.result.expect("refresh").updated);
+        assert!(!seen_file(&cache).exists());
+    }
+
+    #[test]
+    fn an_unusable_server_etag_is_not_recorded() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let cache = dir.path().join(CACHE_FILE);
+        let long = format!("\"{}\"", "a".repeat(MAX_ETAG_BYTES));
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), Some(&long));
+
+        refresh_faked(&cache, answer, &signature)
+            .result
+            .expect("refresh");
+
+        assert!(!seen_file(&cache).exists());
+    }
+
+    #[test]
+    fn a_file_source_never_records_an_etag() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let source = write_signed_source(dir.path(), "src.json", &overlay_json(&offset_date(2), 1));
+        let cache = dir.path().join("world").join(CACHE_FILE);
+
+        refresh_with(&cache, &source, &test_key()).expect("refresh");
+
+        assert!(!seen_file(&cache).exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_failed_cache_write_keeps_the_record() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().expect("tempdir");
+        let (cache, bytes) = seeded_cache(dir.path());
+        seed_seen(&cache, "\"v1\"", &offset_date(1), &bytes);
+        let (answer, signature) = fresh(&overlay_json(&offset_date(2), 1), Some("\"v2\""));
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o555))
+            .expect("chmod");
+
+        let run = refresh_faked(&cache, answer, &signature);
+
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o755))
+            .expect("restore");
+        // Root ignores directory permissions, so only assert when the write failed.
+        if run.result.is_err() {
+            assert_eq!(seen_etag(&cache).as_deref(), Some("\"v1\""));
+        }
+    }
+
+    /// Serves one canned HTTP response on 127.0.0.1 and returns the URL plus a
+    /// handle yielding the request head the server read.
+    fn serve_once(response: &'static str) -> (String, std::thread::JoinHandle<String>) {
+        use std::io::{BufRead, BufReader, Write};
+
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind loopback");
+        let url = format!(
+            "http://{}/roster-overlay.json",
+            listener.local_addr().expect("local addr")
+        );
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept");
+            let mut reader = BufReader::new(stream.try_clone().expect("clone stream"));
+            let mut head = String::new();
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).expect("read request") == 0 || line == "\r\n" {
+                    break;
+                }
+                head.push_str(&line);
+            }
+            stream
+                .write_all(response.as_bytes())
+                .expect("write response");
+            head
+        });
+        (url, server)
+    }
+
+    fn loopback_client() -> reqwest::Client {
+        overlay_client_builder(UA, Duration::from_secs(5))
+            .no_proxy()
+            .build()
+            .expect("client")
+    }
+
+    #[test]
+    fn the_request_carries_if_none_match_and_a_304_means_not_modified() {
+        let (url, server) =
+            serve_once("HTTP/1.1 304 Not Modified\r\nETag: \"v1\"\r\nConnection: close\r\n\r\n");
+
+        let fetched = run(send_capped(
+            &loopback_client(),
+            &url,
+            MAX_OVERLAY_BYTES,
+            Some("\"v1\""),
+        ))
+        .expect("conditional request");
+
+        assert_eq!(fetched, OverlayFetch::NotModified);
+        let head = server.join().expect("server").to_ascii_lowercase();
+        assert!(head.contains("if-none-match: \"v1\""), "{head}");
+    }
+
+    #[test]
+    fn a_weak_etag_goes_out_verbatim() {
+        let (url, server) =
+            serve_once("HTTP/1.1 304 Not Modified\r\nETag: W/\"v1\"\r\nConnection: close\r\n\r\n");
+
+        let fetched = run(send_capped(
+            &loopback_client(),
+            &url,
+            MAX_OVERLAY_BYTES,
+            Some("W/\"v1\""),
+        ))
+        .expect("conditional request");
+
+        assert_eq!(fetched, OverlayFetch::NotModified);
+        let head = server.join().expect("server");
+        assert!(
+            head.lines()
+                .any(|line| line.eq_ignore_ascii_case("if-none-match: W/\"v1\"")
+                    && line.ends_with("W/\"v1\"")),
+            "{head}"
+        );
+    }
+
+    #[test]
+    fn a_200_returns_the_body_and_the_servers_etag() {
+        let (url, server) = serve_once(
+            "HTTP/1.1 200 OK\r\nETag: W/\"v2\"\r\nContent-Length: 4\r\nConnection: close\r\n\r\nbody",
+        );
+
+        let fetched = run(send_capped(
+            &loopback_client(),
+            &url,
+            MAX_OVERLAY_BYTES,
+            None,
+        ))
+        .expect("request");
+
+        assert_eq!(
+            fetched,
+            OverlayFetch::Fresh {
+                bytes: b"body".to_vec(),
+                etag: Some("W/\"v2\"".to_string())
+            }
+        );
+        let head = server.join().expect("server").to_ascii_lowercase();
+        assert!(!head.contains("if-none-match"), "{head}");
+    }
+
+    #[test]
+    fn a_304_to_an_unconditional_request_stays_an_error() {
+        let (url, server) = serve_once("HTTP/1.1 304 Not Modified\r\nConnection: close\r\n\r\n");
+
+        let err = run(send_capped(
+            &loopback_client(),
+            &url,
+            MAX_OVERLAY_BYTES,
+            None,
+        ))
+        .expect_err("unexpected 304");
+
+        assert!(matches!(err, WorldOverlayError::HttpStatus(304)), "{err:?}");
+        server.join().expect("server");
     }
 }

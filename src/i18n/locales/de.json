@@ -228,13 +228,10 @@
   "rosterOverlay": {
     "asOf": "Kader Stand {{date}}",
     "attribution": "Kaderdaten: {{name}}-Mitwirkende,",
-    "update": "Kader aktualisieren",
-    "updating": "Aktualisiere...",
     "checking": "Suche nach Kader-Updates…",
-    "checkFailed": "Kader-Updates konnten nicht geprüft werden. Die angezeigten Kader werden verwendet.",
+    "checkFailed": "Kader-Updates konnten nicht geprüft werden",
     "updated": "Kader aktualisiert auf {{date}}",
-    "upToDate": "Kader sind bereits aktuell",
-    "error": "Kader konnten nicht aktualisiert werden: {{message}}. Du kannst mit den aktuellen Kadern starten."
+    "upToDate": "Kader sind aktuell ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Karriere Starten",
@@ -353,6 +350,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Warte auf die Kaderprüfung…",
     "searchLeague": "Ligen suchen...",
     "regionalLeagues": "Regionale Ligen",
     "confirming": "Bestätige...",

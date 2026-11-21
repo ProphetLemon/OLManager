@@ -228,13 +228,10 @@
   "rosterOverlay": {
     "asOf": "Kadrolar {{date}} tarihi itibarıyla",
     "attribution": "Kadro verileri: {{name}} katkıda bulunanlar,",
-    "update": "Kadroları güncelle",
-    "updating": "Güncelleniyor...",
     "checking": "Kadro güncellemeleri denetleniyor…",
-    "checkFailed": "Kadro güncellemeleri denetlenemedi. Gösterilen kadrolar kullanılıyor.",
+    "checkFailed": "Kadro güncellemeleri denetlenemedi",
     "updated": "Kadrolar {{date}} tarihine güncellendi",
-    "upToDate": "Kadrolar zaten güncel",
-    "error": "Kadrolar güncellenemedi: {{message}}. Mevcut kadrolarla başlayabilirsiniz."
+    "upToDate": "Kadrolar güncel ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Kariyere Başla",
@@ -353,6 +350,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Kadro denetimi bekleniyor…",
     "searchLeague": "Lig ara...",
     "regionalLeagues": "Bölgesel ligler",
     "confirming": "Onaylanıyor...",

@@ -228,13 +228,10 @@
   "rosterOverlay": {
     "asOf": "Rosters as of {{date}}",
     "attribution": "Roster data: {{name}} contributors,",
-    "update": "Update rosters",
-    "updating": "Updating...",
     "checking": "Checking for roster updates…",
-    "checkFailed": "Couldn't check for roster updates. Using the rosters shown.",
+    "checkFailed": "Couldn't check for roster updates",
     "updated": "Rosters updated to {{date}}",
-    "upToDate": "Rosters already up to date",
-    "error": "Could not update rosters: {{message}}. You can still start with the current rosters."
+    "upToDate": "Rosters are up to date ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Start Career",
@@ -525,6 +522,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Waiting for the roster check…",
     "searchLeague": "Search leagues...",
     "regionalLeagues": "Regional leagues",
     "confirming": "Confirming...",

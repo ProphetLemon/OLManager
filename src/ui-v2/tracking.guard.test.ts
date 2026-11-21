@@ -53,7 +53,6 @@ const BASELINE: Record<string, number> = {
   "ui-v2/components/DraftResultScreenV2.tsx": 12,
   "ui-v2/components/ErrorBoundary.tsx": 1,
   "ui-v2/components/LeaguePickerMapV2.tsx": 3,
-  "ui-v2/components/RosterOverlayPanel.tsx": 1,
   "ui-v2/components/TitleBarV2.test.tsx": 1,
   "ui-v2/components/TitleBarV2.tsx": 1,
   "ui-v2/components/negotiation/NegotiationFeedbackPanel.tsx": 1,

@@ -228,13 +228,10 @@
   "rosterOverlay": {
     "asOf": "Elencos em {{date}}",
     "attribution": "Dados dos elencos: colaboradores de {{name}},",
-    "update": "Atualizar elencos",
-    "updating": "Atualizando...",
     "checking": "Procurando atualizações dos elencos…",
-    "checkFailed": "Não foi possível verificar atualizações dos elencos. Os elencos exibidos serão usados.",
+    "checkFailed": "Não foi possível verificar atualizações dos elencos",
     "updated": "Elencos atualizados para {{date}}",
-    "upToDate": "Os elencos já estão atualizados",
-    "error": "Não foi possível atualizar os elencos: {{message}}. Você ainda pode começar com os elencos atuais."
+    "upToDate": "Os elencos estão atualizados ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Iniciar Carreira",
@@ -353,6 +350,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Aguardando a verificação dos elencos…",
     "searchLeague": "Buscar ligas...",
     "regionalLeagues": "Ligas regionais",
     "confirming": "Confirmando...",
