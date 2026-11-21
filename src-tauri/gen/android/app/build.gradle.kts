@@ -29,7 +29,9 @@ android {
     namespace = "com.openleaguemanager.olmanager"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "com.openleaguemanager.olmanager"
+        // The fork has its own id: upstream ships com.openleaguemanager.olmanager signed with its own key,
+        // so this one installs beside it. `namespace` stays, because the Kotlin sources live in that package.
+        applicationId = "io.github.prophetlemon.olmanager"
         minSdk = 24
         targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
