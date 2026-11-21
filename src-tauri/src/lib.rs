@@ -188,6 +188,11 @@ pub fn run() {
             use tauri::Manager as TauriManager;
             #[cfg(target_os = "linux")]
             {
+                // Opens the start-up window of the rendering watch and lets it
+                // close the app cleanly when it restarts in Compatibility.
+                linux_render::gbm_watch::mark_window_created();
+                let handle = app.handle().clone();
+                linux_render::gbm_watch::set_exit_hook(move || handle.exit(0));
                 log::info!("[setup] {}", render_report.line());
                 if let Some(error) = &render_report.save_error {
                     log::warn!("[setup] Could not remember the rendering choice: {error}");

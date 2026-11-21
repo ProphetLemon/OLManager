@@ -10,6 +10,7 @@
 //! are plain functions that need no display; only `dialog` touches GTK.
 
 mod dialog;
+pub mod gbm_watch;
 mod texts;
 
 use crate::commands::settings::{AppSettings, RenderChoice};
@@ -19,6 +20,11 @@ use texts::DialogTexts;
 
 /// Environment variable WebKitGTK reads to disable its accelerated renderer.
 pub const DMABUF_ENV: &str = "WEBKIT_DISABLE_DMABUF_RENDERER";
+
+/// Set by the app on the process it restarts after an accelerated start could
+/// not draw. It forces Compatibility for that start, whatever the saved file
+/// says (so a failed save cannot loop), and disables the watch.
+pub const FALLBACK_ENV: &str = "OLM_RENDER_FALLBACK";
 
 /// Must match the `identifier` in `tauri.conf.json`: Tauri's `app_data_dir`
 /// on Linux is `<data dir>/<identifier>`.
@@ -57,19 +63,24 @@ impl RenderMode {
 pub enum StartupPlan {
     /// The user set the variable (any value): leave it, show nothing.
     UserEnvironment,
+    /// The previous start could not draw and restarted this one: Compatibility.
+    AutomaticFallback,
     /// A saved choice settles it.
     Saved(RenderMode),
     /// Nothing settles it: show the question.
     Ask,
 }
 
-/// Pure decision from the saved choice and the variable as the user set it.
-pub fn decide(saved: RenderChoice, user_value: Option<&str>) -> StartupPlan {
-    match (user_value, saved) {
-        (Some(_), _) => StartupPlan::UserEnvironment,
-        (None, RenderChoice::Accelerated) => StartupPlan::Saved(RenderMode::Accelerated),
-        (None, RenderChoice::Compatibility) => StartupPlan::Saved(RenderMode::Compatibility),
-        (None, RenderChoice::Ask) => StartupPlan::Ask,
+/// Pure decision from the saved choice, the variable as the user set it and
+/// the fallback marker. The user's variable wins, then the marker, then the
+/// saved choice.
+pub fn decide(saved: RenderChoice, user_value: Option<&str>, fallback_marker: bool) -> StartupPlan {
+    match (user_value, fallback_marker, saved) {
+        (Some(_), _, _) => StartupPlan::UserEnvironment,
+        (None, true, _) => StartupPlan::AutomaticFallback,
+        (None, false, RenderChoice::Accelerated) => StartupPlan::Saved(RenderMode::Accelerated),
+        (None, false, RenderChoice::Compatibility) => StartupPlan::Saved(RenderMode::Compatibility),
+        (None, false, RenderChoice::Ask) => StartupPlan::Ask,
     }
 }
 
@@ -89,6 +100,7 @@ pub enum Answer {
 pub enum Reason {
     Environment,
     SavedChoice,
+    AutomaticFallback,
     AnsweredNow { remembered: bool },
     ClosedWithoutAnswer,
     QuestionUnavailable(String),
@@ -114,6 +126,7 @@ impl StartupReport {
         let reason = match &self.reason {
             Reason::Environment => format!("{DMABUF_ENV} is set in the environment"),
             Reason::SavedChoice => "saved choice".to_string(),
+            Reason::AutomaticFallback => "automatic fallback: accelerated could not draw".to_string(),
             Reason::AnsweredNow { remembered: true } => "answered now, remembered".to_string(),
             Reason::AnsweredNow { remembered: false } => "answered now, this start only".to_string(),
             Reason::ClosedWithoutAnswer => "question closed without an answer".to_string(),
@@ -211,6 +224,7 @@ fn save_choice(path: &Path, mode: RenderMode) -> Result<(), SaveError> {
 pub fn startup_with<F>(
     settings_path: Option<&Path>,
     user_value: Option<&str>,
+    fallback_marker: bool,
     system_locale: Option<&str>,
     ask: F,
 ) -> StartupReport
@@ -220,10 +234,15 @@ where
     let settings = settings_path.and_then(read_settings_value);
     let saved = read_saved_choice(settings.as_ref());
 
-    match decide(saved, user_value) {
+    match decide(saved, user_value, fallback_marker) {
         StartupPlan::UserEnvironment => StartupReport {
             mode: None,
             reason: Reason::Environment,
+            save_error: None,
+        },
+        StartupPlan::AutomaticFallback => StartupReport {
+            mode: Some(RenderMode::Compatibility),
+            reason: Reason::AutomaticFallback,
             save_error: None,
         },
         StartupPlan::Saved(mode) => StartupReport {
@@ -273,10 +292,25 @@ where
 pub fn apply_at_startup() -> StartupReport {
     let path = settings_file_path();
     let user_value = std::env::var(DMABUF_ENV).ok();
+    let fallback_marker = std::env::var(FALLBACK_ENV).is_ok_and(|value| value == "1");
+    // Read once and removed, so a later restart of this process (an update)
+    // does not keep forcing Compatibility after the user went back to Fast.
+    std::env::remove_var(FALLBACK_ENV);
     let locale = system_locale();
-    let report = startup_with(path.as_deref(), user_value.as_deref(), locale.as_deref(), dialog::ask);
+    let report = startup_with(
+        path.as_deref(),
+        user_value.as_deref(),
+        fallback_marker,
+        locale.as_deref(),
+        dialog::ask,
+    );
     if report.mode == Some(RenderMode::Compatibility) {
         std::env::set_var(DMABUF_ENV, "1");
+    }
+    if gbm_watch::watch_applies(report.mode, user_value.as_deref(), fallback_marker) {
+        if let Err(error) = gbm_watch::install() {
+            eprintln!("[OLManager] Could not watch for rendering failures: {error}");
+        }
     }
     report
 }
@@ -298,15 +332,15 @@ mod tests {
     #[test]
     fn user_variable_wins_over_every_saved_choice() {
         for saved in [RenderChoice::Ask, RenderChoice::Accelerated, RenderChoice::Compatibility] {
-            assert_eq!(decide(saved, Some("0")), StartupPlan::UserEnvironment);
-            assert_eq!(decide(saved, Some("1")), StartupPlan::UserEnvironment);
+            assert_eq!(decide(saved, Some("0"), false), StartupPlan::UserEnvironment);
+            assert_eq!(decide(saved, Some("1"), false), StartupPlan::UserEnvironment);
         }
     }
 
     #[test]
     fn saved_accelerated_sets_nothing() {
         assert_eq!(
-            decide(RenderChoice::Accelerated, None),
+            decide(RenderChoice::Accelerated, None, false),
             StartupPlan::Saved(RenderMode::Accelerated)
         );
     }
@@ -314,14 +348,38 @@ mod tests {
     #[test]
     fn saved_compatibility_selects_compatibility() {
         assert_eq!(
-            decide(RenderChoice::Compatibility, None),
+            decide(RenderChoice::Compatibility, None, false),
             StartupPlan::Saved(RenderMode::Compatibility)
         );
     }
 
     #[test]
+    fn marker_forces_compatibility_whatever_is_saved() {
+        for saved in [RenderChoice::Ask, RenderChoice::Accelerated, RenderChoice::Compatibility] {
+            assert_eq!(decide(saved, None, true), StartupPlan::AutomaticFallback);
+        }
+    }
+
+    #[test]
+    fn user_variable_wins_over_the_marker() {
+        assert_eq!(decide(RenderChoice::Accelerated, Some("0"), true), StartupPlan::UserEnvironment);
+    }
+
+    #[test]
+    fn startup_with_marker_shows_no_question_and_says_why() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = settings_in(&dir, r#"{"linux_render_mode":"accelerated"}"#);
+        let report = startup_with(Some(&path), None, true, None, never_asked);
+        assert_eq!(report.mode, Some(RenderMode::Compatibility));
+        assert_eq!(
+            report.line(),
+            "Linux rendering: compatibility (automatic fallback: accelerated could not draw)"
+        );
+    }
+
+    #[test]
     fn saved_ask_shows_the_question() {
-        assert_eq!(decide(RenderChoice::Ask, None), StartupPlan::Ask);
+        assert_eq!(decide(RenderChoice::Ask, None, false), StartupPlan::Ask);
     }
 
     #[test]
@@ -377,7 +435,7 @@ mod tests {
     fn startup_with_user_variable_shows_no_question() {
         let dir = tempfile::tempdir().unwrap();
         let path = settings_in(&dir, "{}");
-        let report = startup_with(Some(&path), Some("1"), None, never_asked);
+        let report = startup_with(Some(&path), Some("1"), false, None, never_asked);
         assert_eq!(report.mode, None);
         assert_eq!(report.reason, Reason::Environment);
     }
@@ -386,7 +444,7 @@ mod tests {
     fn startup_with_saved_choice_shows_no_question() {
         let dir = tempfile::tempdir().unwrap();
         let path = settings_in(&dir, r#"{"linux_render_mode":"compatibility"}"#);
-        let report = startup_with(Some(&path), None, None, never_asked);
+        let report = startup_with(Some(&path), None, false, None, never_asked);
         assert_eq!(report.mode, Some(RenderMode::Compatibility));
         assert_eq!(report.reason, Reason::SavedChoice);
     }
@@ -395,7 +453,7 @@ mod tests {
     fn answer_without_remember_applies_now_and_saves_nothing() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("settings.json");
-        let report = startup_with(Some(&path), None, None, |_| Answer::Chosen {
+        let report = startup_with(Some(&path), None, false, None, |_| Answer::Chosen {
             mode: RenderMode::Compatibility,
             remember: false,
         });
@@ -408,7 +466,7 @@ mod tests {
     fn remembered_answer_keeps_the_other_fields_of_the_file() {
         let dir = tempfile::tempdir().unwrap();
         let path = settings_in(&dir, r#"{"theme":"light","language":"es","currency":"USD"}"#);
-        let report = startup_with(Some(&path), None, None, |_| Answer::Chosen {
+        let report = startup_with(Some(&path), None, false, None, |_| Answer::Chosen {
             mode: RenderMode::Compatibility,
             remember: true,
         });
@@ -424,7 +482,7 @@ mod tests {
     fn remembered_answer_without_a_file_writes_settings_that_load() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("nested").join("settings.json");
-        startup_with(Some(&path), None, None, |_| Answer::Chosen {
+        startup_with(Some(&path), None, false, None, |_| Answer::Chosen {
             mode: RenderMode::Accelerated,
             remember: true,
         });
@@ -436,7 +494,7 @@ mod tests {
     fn unwritable_settings_keep_the_choice_for_this_start_only() {
         let dir = tempfile::tempdir().unwrap();
         let path = settings_in(&dir, "not json at all");
-        let report = startup_with(Some(&path), None, None, |_| Answer::Chosen {
+        let report = startup_with(Some(&path), None, false, None, |_| Answer::Chosen {
             mode: RenderMode::Compatibility,
             remember: true,
         });
@@ -450,14 +508,14 @@ mod tests {
     fn closed_window_means_accelerated_and_saves_nothing() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("settings.json");
-        let report = startup_with(Some(&path), None, None, |_| Answer::Dismissed);
+        let report = startup_with(Some(&path), None, false, None, |_| Answer::Dismissed);
         assert_eq!(report.mode, Some(RenderMode::Accelerated));
         assert!(!path.exists());
     }
 
     #[test]
     fn unavailable_question_starts_accelerated_with_the_reason() {
-        let report = startup_with(None, None, None, |_| Answer::Unavailable("no display".into()));
+        let report = startup_with(None, None, false, None, |_| Answer::Unavailable("no display".into()));
         assert_eq!(report.mode, Some(RenderMode::Accelerated));
         assert!(report.line().contains("no display"));
     }
@@ -467,7 +525,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = settings_in(&dir, r#"{"language":"es"}"#);
         let mut title = String::new();
-        startup_with(Some(&path), None, Some("de_DE.UTF-8"), |texts| {
+        startup_with(Some(&path), None, false, Some("de_DE.UTF-8"), |texts| {
             title = texts.title.clone();
             Answer::Dismissed
         });
