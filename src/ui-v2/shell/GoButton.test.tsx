@@ -11,6 +11,7 @@ import pt from "@/i18n/locales/pt.json";
 import tr from "@/i18n/locales/tr.json";
 
 import { GO_ID, GoButton, type GoVariant } from "./GoButton";
+import { GO_ROW_MARGIN_PX } from "./railMode";
 
 const i18n = vi.hoisted(() => {
   const state = { dict: {} as unknown };
@@ -89,11 +90,20 @@ describe("GoButton", () => {
     },
   );
 
-  it("sizes the Tree row from --go-row with 5 px above and below, one line, styled like a search field", () => {
+  it("takes its margins from the reserve's GO_ROW_MARGIN_PX, half above and half below", () => {
+    render(<GoButton variant="row" onClick={() => {}} />);
+    const button = screen.getByRole("button");
+    expect(GO_ROW_MARGIN_PX).toBe(10);
+    expect(button.style.marginTop).toBe(`${GO_ROW_MARGIN_PX / 2}px`);
+    expect(button.style.marginBottom).toBe(`${GO_ROW_MARGIN_PX / 2}px`);
+    // One source: no margin class of its own that could drift from the reserve.
+    expect(button.className).not.toMatch(/(^|\s)(my|mt|mb)-/);
+  });
+
+  it("sizes the Tree row from --go-row, one line, styled like a search field", () => {
     render(<GoButton variant="row" onClick={() => {}} />);
     expect(screen.getByRole("button")).toHaveClass(
       "h-[var(--go-row)]",
-      "my-[5px]",
       "whitespace-nowrap",
       "border-line",
       "text-muted-foreground",

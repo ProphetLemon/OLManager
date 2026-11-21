@@ -7,6 +7,10 @@ import { cn } from "@/ui-v2/lib/utils";
 
 import { RAIL_FOCUS_CLASS, RAIL_LABEL_CLASS, RAIL_STOP_CLASS, RAIL_STOP_LABELLED_CLASS } from "./RailItem";
 import { railCellClass } from "./RailUtility";
+import { GO_ROW_MARGIN_PX } from "./railMode";
+
+/** The row's margin above and below: half the reserve's, so the two cannot drift. */
+const GO_ROW_MARGIN_Y = `${GO_ROW_MARGIN_PX / 2}px`;
 
 /**
  * Go's id in every mode: the rail's roving row id, and the DOM id the palette gets as its
@@ -79,8 +83,9 @@ export function GoButton({ variant, onClick, tabIndex, buttonRef }: GoButtonProp
   return (
     <button
       {...shared}
+      style={{ marginTop: GO_ROW_MARGIN_Y, marginBottom: GO_ROW_MARGIN_Y }}
       className={cn(
-        "mx-[6px] my-[5px] flex h-[var(--go-row)] w-[calc(100%-12px)] shrink-0 items-center gap-2 rounded-md border border-line px-3",
+        "mx-[6px] flex h-[var(--go-row)] w-[calc(100%-12px)] shrink-0 items-center gap-2 rounded-md border border-line px-3",
         "whitespace-nowrap text-start text-nav text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
         RAIL_FOCUS_CLASS,
       )}
