@@ -232,7 +232,8 @@ export function DashboardSidebarV2({
     onSelect: (i) => stopsRef.current[i]?.activate(),
     getItemLabel: (i) => {
       const el = itemRefs.current[stops[i]?.id ?? ""];
-      return el?.title || el?.getAttribute("aria-label") || "";
+      // Go's row and stop are named by their content, with no title or aria-label (R90).
+      return el?.title || el?.getAttribute("aria-label") || el?.textContent?.trim() || "";
     },
     onKey: (e, i) => keymapRef.current(e, i),
   });

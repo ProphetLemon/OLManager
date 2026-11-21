@@ -113,6 +113,13 @@ describe("Android rail", () => {
     expect(panel.className).toContain("w-[var(--nav-panel-w)]");
   });
 
+  it("answers type-ahead on the Go stop, named by its visible text (R90)", () => {
+    setup();
+    act(() => navId("tab:Home").focus());
+    fireEvent.keyDown(navId("tab:Home"), { key: "g" });
+    expect(navId("util:go")).toHaveFocus();
+  });
+
   it("pads the rail 4 px top and bottom so eight 48 px stops need exactly 392 px (R32)", () => {
     setup();
     expect(document.querySelector('[data-slot="rail-column"]')!.className).toContain("py-[4px]");

@@ -514,6 +514,13 @@ describe("Tree: the Go row (NR2.9, spec section 7.1)", () => {
     expect(usePaletteStore.getState()).toMatchObject({ open: true, openerId: "util:go" });
   });
 
+  it("answers type-ahead: G reaches the row by its visible text (R90)", () => {
+    setup();
+    focus(navId("tab:Home"));
+    fireEvent.keyDown(navId("tab:Home"), { key: "g" });
+    expect(navId("util:go")).toHaveFocus();
+  });
+
   it("keeps focus on Go when the rail flips to Split", () => {
     const { rerender } = setup();
     focus(navId("util:go"));
