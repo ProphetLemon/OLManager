@@ -286,7 +286,7 @@ describe("GoPalette: keys, pointer and activation (spec §5.5, R27, R37)", () =>
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Go" })));
   });
 
-  it("closes on popstate, the Android back gesture", async () => {
+  it("closes on popstate, the back gesture, with no history entry of its own on desktop", async () => {
     await openPalette();
     act(() => window.dispatchEvent(new PopStateEvent("popstate")));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
