@@ -31,6 +31,43 @@ function isKeyboardFocus(el: Element): boolean {
   }
 }
 
+/**
+ * One tip shows at a time (NR2.10). A tip that opens closes the one showing, so a hovered
+ * icon replaces the tip its neighbour shows for keyboard focus. When that hover ends and
+ * the focused trigger still holds :focus-visible, the focused one shows again.
+ */
+interface TipHandle {
+  setOpen: (open: boolean) => void;
+  /** The element whose keyboard focus shows this tip: the parent button. */
+  focusTarget: () => Element | null;
+}
+
+let shownTip: TipHandle | null = null;
+/** The tip whose parent holds keyboard focus, until a blur or an Escape. */
+let focusedTip: TipHandle | null = null;
+
+function showTip(tip: TipHandle) {
+  if (shownTip && shownTip !== tip) shownTip.setOpen(false);
+  shownTip = tip;
+  tip.setOpen(true);
+}
+
+/** `fallBack`: a hover that ends hands the plate back to the focused trigger's tip. */
+function hideTip(tip: TipHandle, fallBack: boolean) {
+  tip.setOpen(false);
+  if (shownTip !== tip) return;
+  shownTip = null;
+  const focused = focusedTip;
+  if (!fallBack || !focused || focused === tip) return;
+  const target = focused.focusTarget();
+  if (target && document.activeElement === target && isKeyboardFocus(target)) showTip(focused);
+}
+
+function forgetTip(tip: TipHandle) {
+  if (shownTip === tip) shownTip = null;
+  if (focusedTip === tip) focusedTip = null;
+}
+
 export interface IconTipProps extends Omit<HTMLAttributes<HTMLSpanElement>, "title"> {
   /** The text of the tip. Also what a pointer user reads; screen readers get it elsewhere. */
   label: string;
@@ -54,6 +91,9 @@ interface Placement {
  * tap still does what the parent does. It closes on the next press anywhere, on scroll, on
  * Escape and after a couple of seconds.
  *
+ * One tip shows at a time: opening one closes the other, and a hover that ends hands the plate
+ * back to a neighbour whose trigger still holds keyboard focus (NR2.10).
+ *
  * Nothing is rendered or listened to while closed; the plate is portalled only while open, so a
  * screen with many icons carries no extra tree. The names should also reach assistive
  * technology through the parent's description, because the plate is not announced.
@@ -61,6 +101,11 @@ interface Placement {
 export function IconTip({ label, className, followFocus = false, children, ...rest }: IconTipProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLSpanElement>(null);
+  // This tip's stable handle in the one-at-a-time registry.
+  const [tip] = useState<TipHandle>(() => ({
+    setOpen,
+    focusTarget: () => triggerRef.current?.parentElement ?? null,
+  }));
   const hoverTimer = useRef<number | undefined>(undefined);
   const pressTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
@@ -75,16 +120,33 @@ export function IconTip({ label, className, followFocus = false, children, ...re
 
   const close = useCallback(() => {
     clearTimers();
-    setOpen(false);
-  }, [clearTimers]);
+    hideTip(tip, false);
+  }, [clearTimers, tip]);
 
-  useEffect(() => clearTimers, [clearTimers]);
+  // A hover or a touch tip that ends hands the plate back to a focused neighbour.
+  const closeHover = useCallback(() => {
+    clearTimers();
+    hideTip(tip, true);
+  }, [clearTimers, tip]);
+
+  const show = useCallback(() => showTip(tip), [tip]);
+
+  useEffect(
+    () => () => {
+      clearTimers();
+      forgetTip(tip);
+    },
+    [clearTimers, tip],
+  );
 
   // Listeners exist only while the tip is open.
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key !== "Escape") return;
+      // Escape dismisses: no focused neighbour comes back until its trigger is focused again.
+      focusedTip = null;
+      close();
     };
     const onPress = (event: Event) => {
       if (event instanceof PointerEvent && event.pointerType === "mouse") return;
@@ -108,10 +170,16 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     // through a compat mousedown after pointerup) does not match :focus-visible. Without support
     // (jsdom), every focus counts as keyboard focus.
     const onFocus = () => {
-      if (isKeyboardFocus(parent)) setOpen(true);
+      if (!isKeyboardFocus(parent)) return;
+      focusedTip = tip;
+      show();
+    };
+    const onBlur = () => {
+      if (focusedTip === tip) focusedTip = null;
+      close();
     };
     parent.addEventListener("focus", onFocus);
-    parent.addEventListener("blur", close);
+    parent.addEventListener("blur", onBlur);
     // The whole button is the hover target, not only the icon inside it. The handlers are read
     // through a ref so this effect does not re-bind on every render.
     const enter = (e: Event) => hoverRef.current.enter(e as PointerEvent);
@@ -120,11 +188,11 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     parent.addEventListener("pointerleave", leave);
     return () => {
       parent.removeEventListener("focus", onFocus);
-      parent.removeEventListener("blur", close);
+      parent.removeEventListener("blur", onBlur);
       parent.removeEventListener("pointerenter", enter);
       parent.removeEventListener("pointerleave", leave);
     };
-  }, [followFocus, close]);
+  }, [followFocus, close, show, tip]);
 
   const hoverRef = useRef<{ enter: (e: { pointerType: string }) => void; leave: (e: { pointerType: string }) => void }>({
     enter: () => {},
@@ -145,7 +213,7 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     if (event.pointerType === "touch") return;
     window.clearTimeout(leaveTimer.current);
     window.clearTimeout(hoverTimer.current);
-    hoverTimer.current = window.setTimeout(() => setOpen(true), ICON_TIP_HOVER_DELAY_MS);
+    hoverTimer.current = window.setTimeout(show, ICON_TIP_HOVER_DELAY_MS);
   };
 
   // The tip is hoverable: leaving the trigger or the tip waits a short grace before closing.
@@ -153,7 +221,7 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     if (event.pointerType === "touch") return;
     window.clearTimeout(hoverTimer.current);
     window.clearTimeout(leaveTimer.current);
-    leaveTimer.current = window.setTimeout(close, ICON_TIP_LEAVE_GRACE_MS);
+    leaveTimer.current = window.setTimeout(closeHover, ICON_TIP_LEAVE_GRACE_MS);
   };
 
   const keepOpen = () => window.clearTimeout(leaveTimer.current);
@@ -164,8 +232,8 @@ export function IconTip({ label, className, followFocus = false, children, ...re
     window.clearTimeout(pressTimer.current);
     pressTimer.current = window.setTimeout(() => {
       swallowNextClick();
-      setOpen(true);
-      hideTimer.current = window.setTimeout(close, ICON_TIP_TOUCH_HIDE_MS);
+      show();
+      hideTimer.current = window.setTimeout(closeHover, ICON_TIP_TOUCH_HIDE_MS);
     }, ICON_TIP_LONG_PRESS_MS);
   };
 
@@ -232,7 +300,7 @@ function IconTipPlate({
       onPointerLeave={onLeave}
       className={cn(
         "fixed z-50 w-max max-w-[min(16rem,calc(100vw-1rem))] rounded border border-line bg-popover px-2 py-1",
-        "font-heading text-caption font-semibold leading-tight text-popover-foreground shadow-md",
+        "font-heading text-nav font-semibold leading-tight text-popover-foreground shadow-md",
         "motion-safe:animate-in motion-safe:fade-in-0",
       )}
       style={{ left: placement?.left ?? 0, top: placement?.top ?? 0, visibility: placement ? "visible" : "hidden" }}
