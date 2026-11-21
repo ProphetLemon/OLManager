@@ -21,7 +21,28 @@ let entry: EntryState = "none";
 let repush = false;
 let listening = false;
 const verdicts = new WeakMap<Event, PaletteEntryPop | null>();
-const waiters = new Set<() => void>();
+/** Each waiting run, with its fallback timer. */
+const waiters = new Map<() => void, number>();
+
+/**
+ * How long an activated row waits for the entry's pop before it runs anyway (R89): a pop
+ * the WebView drops, or a history someone else traversed, must not swallow the activation.
+ */
+export const PALETTE_ENTRY_POP_TIMEOUT_MS = 400;
+
+function runWaiters(): void {
+  const runs = [...waiters];
+  waiters.clear();
+  for (const [run, timer] of runs) {
+    window.clearTimeout(timer);
+    run();
+  }
+}
+
+function dropWaiters(): void {
+  for (const timer of waiters.values()) window.clearTimeout(timer);
+  waiters.clear();
+}
 
 function push(): void {
   // The router's state (`idx`, `key`) stays, so React Router reads this entry as its own.
@@ -40,8 +61,7 @@ function classify(event: Event): PaletteEntryPop | null {
       repush = false;
       push();
     } else {
-      for (const run of [...waiters]) run();
-      waiters.clear();
+      runWaiters();
     }
   }
   verdicts.set(event, verdict);
@@ -56,7 +76,11 @@ export function pushPaletteEntry(): void {
     listening = true;
   }
   if (entry === "none") push();
-  else if (entry === "releasing") repush = true;
+  else if (entry === "releasing") {
+    repush = true;
+    // A reopening drops the row its close was waiting to run (R89).
+    dropWaiters();
+  }
 }
 
 /** On a close that was not a pop: takes the palette's entry off with `history.back()`. */
@@ -73,24 +97,32 @@ export function paletteEntryPop(event: PopStateEvent): PaletteEntryPop | null {
 }
 
 /**
- * Runs `run` once the palette's entry is off the history: now if it is, else after its pop.
- * Returns a cancel function. A route the run pushes then cannot be undone by that pop.
+ * Runs `run` once the palette's entry is off the history: now if it is, else after its pop,
+ * or after `PALETTE_ENTRY_POP_TIMEOUT_MS` if the pop never comes, which also forgets the
+ * entry. Returns a cancel function. A route the run pushes then cannot be undone by that pop.
  */
 export function whenPaletteEntryOff(run: () => void): () => void {
   if (entry === "none") {
     run();
     return () => {};
   }
-  waiters.add(run);
+  // A wrapper per call, so the same function waiting twice is two waiters.
+  const waiter = () => run();
+  const timer = window.setTimeout(() => {
+    if (entry === "releasing") entry = "none";
+    runWaiters();
+  }, PALETTE_ENTRY_POP_TIMEOUT_MS);
+  waiters.set(waiter, timer);
   return () => {
-    waiters.delete(run);
+    window.clearTimeout(timer);
+    waiters.delete(waiter);
   };
 }
 
 /** Forgets the entry without traversing, for a palette that unmounts while it is open. */
 export function forgetPaletteEntry(): void {
   repush = false;
-  waiters.clear();
+  dropWaiters();
   // An entry already coming off keeps its state, so its pop is still read as a release.
   if (entry === "pushed") entry = "none";
 }

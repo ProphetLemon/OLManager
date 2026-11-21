@@ -8,6 +8,7 @@ import { usePaletteStore } from "@/store/paletteStore";
 import { resetSessionNavigation } from "@/store/sessionReset";
 import { translateFromEnglish } from "@/test-i18n";
 
+import { PALETTE_ENTRY_POP_TIMEOUT_MS } from "./paletteHistory";
 import { GoPalette } from "./GoPalette";
 import { buildPaletteIndex, type PaletteEntry, type PaletteIndexInput } from "./paletteIndex";
 import { searchPalette } from "./paletteSearch";
@@ -622,6 +623,51 @@ describe("GoPalette: its own history entry on Android (R87, R79)", () => {
     expect(stateAtRun).toEqual(before);
     await noFurtherPop();
     expect(window.history.state).toEqual({ idx: 1, key: "row-route" });
+  });
+
+  it("still runs an activated row once, after a fallback, when the entry's pop never comes (R89)", async () => {
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    let ranAt = 0;
+    onActivate.mockImplementation(() => {
+      ranAt = performance.now();
+    });
+    try {
+      await openPalette("android");
+      const pressedAt = performance.now();
+      press("Enter");
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(back).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(onActivate).toHaveBeenCalledTimes(1), { timeout: 2000 });
+      expect(ranAt - pressedAt).toBeGreaterThanOrEqual(PALETTE_ENTRY_POP_TIMEOUT_MS - 5);
+    } finally {
+      back.mockRestore();
+    }
+    // The fallback forgot the entry, so the next opening pushes one again.
+    window.history.replaceState(before, "");
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await screen.findByRole("dialog");
+    expect(window.history.state).toEqual({ ...before, olmPalette: true });
+    press("Escape");
+    await settled();
+    expect(onActivate).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops an activated row whose palette reopened before the entry came off (R89)", async () => {
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    await openPalette("android");
+    press("Enter");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await screen.findByRole("dialog");
+    // The old entry's pop arrives only now, and a new entry goes on after it.
+    back.mockRestore();
+    act(() => window.history.back());
+    await noFurtherPop();
+    expect(window.history.state).toEqual({ ...before, olmPalette: true });
+    press("Escape");
+    await settled();
+    await act(() => new Promise((resolve) => setTimeout(resolve, PALETTE_ENTRY_POP_TIMEOUT_MS + 100)));
+    expect(onActivate).not.toHaveBeenCalled();
   });
 
   it("keeps an entry when it reopens before the old one has come off", async () => {
