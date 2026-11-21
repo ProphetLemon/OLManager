@@ -64,14 +64,14 @@ export function RailMore({ label, items, open, onOpenChange, active, tabIndex, b
           <Menu.Positioner anchor={anchor} side="right" align="end" sideOffset={4} className="z-50">
             <Menu.Popup
               aria-label={label}
-              className="min-w-48 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md outline-none"
+              className="min-w-48 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md focus-visible:outline-hidden"
             >
               {items.map(({ id, label: itemLabel, icon: Icon, onSelect, tone = "default" }) => (
                 <Menu.Item
                   key={id}
                   onClick={onSelect}
                   className={cn(
-                    "flex min-h-[var(--hit)] cursor-default items-center gap-3 rounded-md px-3 font-heading text-nav outline-none data-[highlighted]:bg-muted data-[highlighted]:ring-[3px] data-[highlighted]:ring-inset data-[highlighted]:ring-ring",
+                    "flex min-h-[var(--hit)] cursor-default items-center gap-3 rounded-md px-3 font-heading text-nav focus-visible:outline-hidden data-[highlighted]:bg-muted data-[highlighted]:ring-[3px] data-[highlighted]:ring-inset data-[highlighted]:ring-ring",
                     tone === "danger" ? "text-negative" : "text-popover-foreground data-[highlighted]:text-foreground",
                   )}
                 >

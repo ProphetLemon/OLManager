@@ -47,9 +47,12 @@ export const RAIL_STOP_CLASS =
   "relative mx-1.5 flex w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center text-center transition-colors";
 /** A labelled stop's size: the touch hit at least, icon over label. */
 export const RAIL_STOP_LABELLED_CLASS = "min-h-[var(--hit)] min-w-[var(--hit)] gap-0.5 px-1 py-1.5";
-/** The inset focus ring every rail control wears. */
+/**
+ * The inset focus ring every rail control wears. The ring is a box-shadow, which forced
+ * colours drops, so the outline is hidden, not removed: forced colours paints it (R88).
+ */
 export const RAIL_FOCUS_CLASS =
-  "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring";
+  "focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring";
 
 /** One icon-over-label stop of the navigation rail. */
 export function RailItem({
