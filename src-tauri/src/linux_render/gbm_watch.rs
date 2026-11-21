@@ -13,7 +13,7 @@
 //! marker that forces Compatibility for that start.
 //!
 //! Everything here is best effort: if any step fails, stderr is left as it
-//! was and the game starts as it did before. The decision (`should_fall_back`),
+//! was and the game starts as it did before. The decisions (`watch_applies`, `handle_match`),
 //! the window (`window_open`), the line matcher and the tee are plain
 //! functions that need no display.
 
@@ -62,18 +62,16 @@ pub fn line_matches(line: &[u8]) -> bool {
         .any(|part| part == GBM_PREFIX)
 }
 
-/// Pure decision: may a match restart the game in Compatibility?
+/// Pure decision: does this start need the watch at all?
 ///
 /// Only an accelerated start qualifies, the user's own variable is never
-/// overridden, the marker means this start already is the fallback, and the
-/// match must fall inside the start-up window.
-pub fn should_fall_back(
+/// overridden, and the marker means this start already is the fallback.
+pub fn watch_applies(
     mode: Option<RenderMode>,
     user_value: Option<&str>,
     fallback_marker: bool,
-    in_window: bool,
 ) -> bool {
-    mode == Some(RenderMode::Accelerated) && user_value.is_none() && !fallback_marker && in_window
+    mode == Some(RenderMode::Accelerated) && user_value.is_none() && !fallback_marker
 }
 
 /// Pure window rule from the time since the watch was installed and, when
@@ -116,7 +114,11 @@ impl LineScanner {
                 self.pending.extend_from_slice(part);
                 if self.pending.len() > MAX_LINE {
                     hits += usize::from(line_matches(&self.pending));
-                    self.pending.clear();
+                    // Keep the tail that could still be the start of the prefix, so a
+                    // prefix cut in two by this drop is found once the rest arrives.
+                    // The tail is shorter than the prefix: nothing is counted twice.
+                    let cut = self.pending.len() - (GBM_PREFIX.len() - 1);
+                    self.pending.drain(..cut);
                 }
             }
         }
@@ -133,8 +135,11 @@ fn tee<R: Read, W: Write>(mut reader: R, mut out: W, mut on_match: impl FnMut())
     let mut scanner = LineScanner::default();
     loop {
         let read = match reader.read(&mut buffer) {
-            Ok(0) | Err(_) => return,
+            Ok(0) => return,
             Ok(read) => read,
+            // A signal arriving during the read is not the end of the stream.
+            Err(error) if error.kind() == io::ErrorKind::Interrupted => continue,
+            Err(_) => return,
         };
         let chunk = &buffer[..read];
         let _ = out.write_all(chunk).and_then(|()| out.flush());
@@ -166,15 +171,49 @@ fn restart(original_stderr: &OwnedFd) -> io::Result<()> {
         .map(|_child| ())
 }
 
+/// Ends the process without running exit handlers: GTK and WebKit are still
+/// live at this point, and their handlers could hang the exit. Rust's own
+/// stdout is flushed first so the last log lines are kept.
+fn hard_exit() -> ! {
+    let _ = io::stdout().flush();
+    // SAFETY: `_exit` takes no pointers and never returns; skipping the exit
+    // handlers is the point.
+    unsafe { libc::_exit(0) }
+}
+
 /// Closes the app: through the hook when set, and for sure after a grace time.
 fn exit_soon() {
     std::thread::spawn(|| {
         std::thread::sleep(EXIT_GRACE);
-        std::process::exit(0);
+        hard_exit();
     });
     match EXIT_HOOK.get() {
         Some(hook) => hook(),
-        None => std::process::exit(0),
+        None => hard_exit(),
+    }
+}
+
+/// Runs `act` for the first match inside the window, and never again. A panic
+/// in `act` is caught, so the tee keeps draining the pipe. Returns `None` when
+/// `act` was not run, else whether it ran to the end without panicking.
+fn handle_match(fired: &mut bool, in_window: bool, act: impl FnOnce()) -> Option<bool> {
+    if *fired || !in_window {
+        return None;
+    }
+    *fired = true;
+    Some(std::panic::catch_unwind(std::panic::AssertUnwindSafe(act)).is_ok())
+}
+
+/// Puts the original stderr back on fd 2 when the reader thread ends, for any
+/// reason (including a panic), so the app's own later writes never go into a
+/// pipe that nobody reads. Child processes that already hold the pipe keep it;
+/// the tee only ends on a read error, which a blocking pipe does not produce
+/// short of a bug.
+struct RestoreStderr(OwnedFd);
+
+impl Drop for RestoreStderr {
+    fn drop(&mut self) {
+        let _ = redirect_stderr(self.0.as_fd());
     }
 }
 
@@ -192,8 +231,9 @@ fn fall_back(settings_path: Option<&Path>, original_stderr: &OwnedFd, log: &mut 
     if let Err(error) = saved {
         let _ = writeln!(
             log,
-            "[OLManager] Could not save the compatibility choice: {error}; \
-             the restart still uses it once"
+            "[OLManager] Could not save the compatibility choice: {error}. \
+             This restart still uses compatibility, but the next start will try \
+             accelerated again; choose Compatibility in Settings to keep it"
         );
     }
     match restart(original_stderr) {
@@ -219,11 +259,17 @@ fn redirect_stderr(to: BorrowedFd<'_>) -> io::Result<()> {
 
 /// Puts the tee in place of fd 2. On any error stderr is left untouched.
 /// Must run on the main thread before the first web view is created.
+///
+/// While the watch runs, fd 2 is a pipe: GLib and other libraries no longer see
+/// a terminal (so no colours) or the journal, but every byte still reaches the
+/// original stderr. Bytes written just before a crash can be lost, because the
+/// copy is asynchronous.
 pub fn install() -> io::Result<()> {
     let installed = Instant::now();
     let settings_path = settings_file_path();
     let (reader, writer) = io::pipe()?;
     let original = io::stderr().as_fd().try_clone_to_owned()?;
+    let restore = RestoreStderr(original.try_clone()?);
     let mut out = File::from(original.try_clone()?);
     let mut log = out.try_clone()?;
 
@@ -231,19 +277,23 @@ pub fn install() -> io::Result<()> {
     std::thread::Builder::new()
         .name("gbm-watch".into())
         .spawn(move || {
+            let _restore = restore;
             let mut fired = false;
             tee(reader, &mut out, || {
                 let in_window = window_open(
                     installed.elapsed(),
                     WINDOW_CREATED.get().map(Instant::elapsed),
                 );
-                // Installed only for an accelerated start with no user variable
-                // and no marker, so only the window is left to check.
-                let qualifies =
-                    should_fall_back(Some(RenderMode::Accelerated), None, false, in_window);
-                if qualifies && !fired {
-                    fired = true;
+                // Installed only when `watch_applies`, so only the window and
+                // the one-shot rule are left to check here.
+                let outcome = handle_match(&mut fired, in_window, || {
                     fall_back(settings_path.as_deref(), &original, &mut log);
+                });
+                if outcome == Some(false) {
+                    let _ = writeln!(
+                        log,
+                        "[OLManager] The switch to compatibility rendering failed unexpectedly"
+                    );
                 }
             });
         })?;
@@ -304,7 +354,73 @@ mod tests {
     fn scanner_drops_an_endless_line_without_growing() {
         let mut scanner = LineScanner::default();
         scanner.feed(&vec![b'x'; MAX_LINE + 1]);
-        assert!(scanner.pending.is_empty());
+        assert!(scanner.pending.len() < GBM_PREFIX.len());
+    }
+
+    #[test]
+    fn scanner_finds_a_prefix_cut_in_two_by_the_overflow_drop() {
+        let mut scanner = LineScanner::default();
+        let (head, rest) = GBM_PREFIX.split_at(10);
+        let long = [vec![b'x'; MAX_LINE - 5].as_slice(), head].concat();
+        assert_eq!(scanner.feed(&long), 0);
+        assert_eq!(scanner.feed(&[rest, b"1x1: e\n".as_slice()].concat()), 1);
+    }
+
+    #[test]
+    fn tee_retries_a_read_interrupted_by_a_signal() {
+        struct InterruptedOnce {
+            interrupted: bool,
+            data: &'static [u8],
+        }
+        impl Read for InterruptedOnce {
+            fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+                if !self.interrupted {
+                    self.interrupted = true;
+                    return Err(io::ErrorKind::Interrupted.into());
+                }
+                let n = self.data.len().min(buf.len());
+                buf[..n].copy_from_slice(&self.data[..n]);
+                self.data = &self.data[n..];
+                Ok(n)
+            }
+        }
+        let reader = InterruptedOnce {
+            interrupted: false,
+            data: ENGLISH,
+        };
+        let mut out = Vec::new();
+        let mut matches = 0;
+        tee(reader, &mut out, || matches += 1);
+        assert_eq!(out, ENGLISH);
+        assert_eq!(matches, 1);
+    }
+
+    #[test]
+    fn a_match_acts_once_and_only_inside_the_window() {
+        let mut fired = false;
+        let mut runs = 0;
+        assert_eq!(handle_match(&mut fired, false, || runs += 1), None);
+        assert_eq!(handle_match(&mut fired, true, || runs += 1), Some(true));
+        assert_eq!(handle_match(&mut fired, true, || runs += 1), None);
+        assert_eq!(runs, 1);
+    }
+
+    #[test]
+    fn a_panicking_fallback_is_caught_and_never_retried() {
+        let mut fired = false;
+        let outcome = handle_match(&mut fired, true, || panic!("save exploded"));
+        assert_eq!(outcome, Some(false));
+        assert_eq!(handle_match(&mut fired, true, || ()), None);
+    }
+
+    #[test]
+    fn the_watch_applies_only_to_an_accelerated_start_with_no_variable_or_marker() {
+        let accelerated = Some(RenderMode::Accelerated);
+        assert!(watch_applies(accelerated, None, false));
+        assert!(!watch_applies(accelerated, Some("1"), false));
+        assert!(!watch_applies(accelerated, None, true));
+        assert!(!watch_applies(Some(RenderMode::Compatibility), None, false));
+        assert!(!watch_applies(None, None, false));
     }
 
     #[test]
@@ -340,29 +456,14 @@ mod tests {
     }
 
     #[test]
-    fn only_an_accelerated_start_with_no_variable_or_marker_in_the_window_falls_back() {
-        let accelerated = Some(RenderMode::Accelerated);
-        assert!(should_fall_back(accelerated, None, false, true));
-    }
-
-    #[test]
-    fn compatibility_or_a_user_variable_never_fall_back() {
-        let accelerated = Some(RenderMode::Accelerated);
-        assert!(!should_fall_back(
-            Some(RenderMode::Compatibility),
-            None,
-            false,
-            true
+    fn a_user_variable_that_keeps_acceleration_still_disables_the_watch() {
+        // "0" leaves WebKit accelerated, but the user chose it: never override.
+        assert!(!watch_applies(
+            Some(RenderMode::Accelerated),
+            Some("0"),
+            false
         ));
-        assert!(!should_fall_back(None, Some("0"), false, true));
-        assert!(!should_fall_back(accelerated, Some("0"), false, true));
-    }
-
-    #[test]
-    fn the_marker_and_a_closed_window_never_fall_back() {
-        let accelerated = Some(RenderMode::Accelerated);
-        assert!(!should_fall_back(accelerated, None, true, true));
-        assert!(!should_fall_back(accelerated, None, false, false));
+        assert!(!watch_applies(None, Some("0"), false));
     }
 
     #[test]

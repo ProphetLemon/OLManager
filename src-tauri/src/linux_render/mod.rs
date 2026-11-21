@@ -307,7 +307,7 @@ pub fn apply_at_startup() -> StartupReport {
     if report.mode == Some(RenderMode::Compatibility) {
         std::env::set_var(DMABUF_ENV, "1");
     }
-    if gbm_watch::should_fall_back(report.mode, user_value.as_deref(), fallback_marker, true) {
+    if gbm_watch::watch_applies(report.mode, user_value.as_deref(), fallback_marker) {
         if let Err(error) = gbm_watch::install() {
             eprintln!("[OLManager] Could not watch for rendering failures: {error}");
         }
