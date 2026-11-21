@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { TFunction } from "i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -535,6 +535,19 @@ describe("GoPalette: back and history on desktop (R79)", () => {
     }
   });
 
+  it("touches no history when it unmounts while open", async () => {
+    const spies = HISTORY_METHODS.map((method) => vi.spyOn(window.history, method));
+    try {
+      render(<Harness />);
+      act(() => usePaletteStore.getState().openPalette("util:go"));
+      await screen.findByRole("dialog");
+      cleanup();
+      for (const spy of spies) expect(spy).not.toHaveBeenCalled();
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
+  });
+
   it.each(["Escape", "Close", "an activation"])("leaves history as it was when it opens and closes by %s", async (how) => {
     const spies = HISTORY_METHODS.map((method) => vi.spyOn(window.history, method));
     const { length, state } = window.history;
@@ -668,6 +681,39 @@ describe("GoPalette: its own history entry on Android (R87, R79)", () => {
     await settled();
     await act(() => new Promise((resolve) => setTimeout(resolve, PALETTE_ENTRY_POP_TIMEOUT_MS + 100)));
     expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it("takes its entry off when it unmounts while open, so the next Back is not spent on it", async () => {
+    const { unmount } = render(<Harness platform="android" />);
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await screen.findByRole("dialog");
+    expect(window.history.state).toEqual({ ...before, olmPalette: true });
+    unmount();
+    await settled();
+    await noFurtherPop();
+    expect(window.history.state).toEqual(before);
+  });
+
+  it("leaves a route pushed over its entry alone when it unmounts, and pushes afresh next time", async () => {
+    const { unmount } = render(<Harness platform="android" />);
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    await screen.findByRole("dialog");
+    const route = { idx: 1, key: `route-${mark}` };
+    window.history.pushState(route, "");
+    const back = vi.spyOn(window.history, "back");
+    try {
+      unmount();
+      expect(back).not.toHaveBeenCalled();
+    } finally {
+      back.mockRestore();
+    }
+    expect(window.history.state).toEqual(route);
+    // The palette is still open in the store: mounting again pushes a new entry over the route.
+    render(<Harness platform="android" />);
+    await screen.findByRole("dialog");
+    expect(window.history.state).toEqual({ ...route, olmPalette: true });
+    press("Escape");
+    await waitFor(() => expect(window.history.state).toEqual(route));
   });
 
   it("keeps an entry when it reopens before the old one has come off", async () => {

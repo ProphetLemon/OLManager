@@ -119,10 +119,20 @@ export function whenPaletteEntryOff(run: () => void): () => void {
   };
 }
 
-/** Forgets the entry without traversing, for a palette that unmounts while it is open. */
+/**
+ * For a palette that unmounts while it is open. An entry still on top comes off, so the
+ * next Back is not spent on it; one a route pushed or replaced over is only forgotten,
+ * since going back would undo that route. An entry already coming off keeps its state, so
+ * its pop is still read as a release.
+ */
 export function forgetPaletteEntry(): void {
   repush = false;
   dropWaiters();
-  // An entry already coming off keeps its state, so its pop is still read as a release.
-  if (entry === "pushed") entry = "none";
+  if (entry !== "pushed") return;
+  if ((window.history.state as { olmPalette?: unknown } | null)?.olmPalette) {
+    entry = "releasing";
+    window.history.back();
+  } else {
+    entry = "none";
+  }
 }
