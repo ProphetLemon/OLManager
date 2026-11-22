@@ -33,6 +33,7 @@ src/
 │   └── ...
 ├── ui-v2/
 │   ├── AppV2.tsx              # router root + update checker + UI scale + Android immersive
+│   ├── updater/               # AndroidUpdateNotice (aviso de arranque en Android sin build en latest.json)
 │   ├── _legacy/               # copias de v1 con imports convertidos
 │   │   ├── components/        # 11 subdirectorios
 │   │   └── pages/
@@ -63,7 +64,7 @@ src/
 | ScheduleTabV2 | `_legacy/components/playoffs/PlayoffBracketBoard` |
 | PlayersTabV2 | PlayerAvatar desde _legacy (SquadTabV2 no importa nada de _legacy) |
 | CompetitionsTabV2 | ScheduleCalendarView desde _legacy |
-| AppV2 | MainMenu, MatchSimulation, UpdateModal; `SettingsV2` es nativo en `ui-v2/pages/` y envuelve `_legacy/pages/Settings` (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
+| AppV2 | MainMenu, MatchSimulation, UpdateModal (sólo escritorio); en Android, cuando el manifiesto no tiene build, el aviso nativo `ui-v2/updater/AndroidUpdateNotice` envía a la página de la última release; `SettingsV2` es nativo en `ui-v2/pages/` y envuelve `_legacy/pages/Settings` (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
 | DashboardV2 | `DashboardOverlays`, `FiredModal`, `dashboardHelpers` y `DashboardWorkspaceContent` → `DashboardTabContent` → `EndOfSeasonScreen`: ese camino sólo se monta con la pantalla de fin de temporada (Home); el resto de pestañas son nativas v2 |
 | TeamSelectionV2 | `LeaguePickerV2`, `TeamGridV2`, `teamSelection.helpers`; FloatingBugButton en el pie de `RosterOverlayPanel` (prop `actions`), en todos los pasos de /select-team |
 | DashboardSidebarV2 | FloatingBugButton: variante `cell` (celda de iconos del cluster en Tree y Split de escritorio, con `open` controlado para abrirlo con Enter) y `hidden` (sólo el modal, abierto desde el menú Más de Android, donde las utilidades viven) |
