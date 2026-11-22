@@ -4,6 +4,9 @@ import android.content.res.AssetManager
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -21,6 +24,21 @@ class MainActivity : TauriActivity() {
     enableEdgeToEdge()
     seedBundledDataIfNeeded()
     super.onCreate(savedInstanceState)
+    hideSystemBars()
+  }
+
+  override fun onWindowFocusChanged(hasFocus: Boolean) {
+    super.onWindowFocusChanged(hasFocus)
+    // The bars come back after the keyboard, dialogs and app switches.
+    if (hasFocus) hideSystemBars()
+  }
+
+  // The web page cannot request full screen without a tap, so hide the bars natively.
+  // A swipe from the edge shows them transiently.
+  private fun hideSystemBars() {
+    val controller = WindowCompat.getInsetsController(window, window.decorView)
+    controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    controller.hide(WindowInsetsCompat.Type.systemBars())
   }
 
   /**
