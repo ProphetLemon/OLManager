@@ -34,6 +34,7 @@ import {
   type ImportSummary,
 } from "@/lib/dataImport";
 import { useUpdater } from "@/hooks/useUpdater";
+import { LATEST_RELEASE_URL, openExternal } from "@/lib/openExternal";
 import { APP_VERSION } from "@/lib/common/appInfo";
 import { APP_NAME } from "@/lib/common/appInfo";
 import { useGameStore } from "@/store/gameStore";
@@ -506,11 +507,30 @@ export default function Settings() {
               </div>
             )}
 
-            {noPlatformBuild && !checkingUpdate && (
+            {noPlatformBuild && !checkingUpdate && !isAndroid && (
               <div className="rounded-lg bg-accent-400/10 border border-accent-400/30 p-3">
                 <p className="text-xs text-accent-400 font-medium">
                   {t("settings.noPlatformBuild")}
                 </p>
+              </div>
+            )}
+
+            {noPlatformBuild && !checkingUpdate && isAndroid && (
+              <div className="flex flex-col items-start gap-2 rounded-lg bg-accent-400/10 border border-accent-400/30 p-3">
+                <p className="text-xs text-accent-400 font-medium">
+                  {t("settings.androidUpdateAvailable")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("settings.androidUpdateKeepsSaves")}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => openExternal(LATEST_RELEASE_URL)}
+                  className="flex min-h-[var(--hit)] items-center gap-2 rounded-lg border border-accent-400/50 px-4 py-2 text-sm font-heading font-bold uppercase tracking-wider text-accent-400 transition-colors hover:border-accent-400 hover:bg-accent-400/10"
+                >
+                  <Download className="w-4 h-4" aria-hidden="true" />
+                  {t("settings.androidUpdateDownload")}
+                </button>
               </div>
             )}
 
