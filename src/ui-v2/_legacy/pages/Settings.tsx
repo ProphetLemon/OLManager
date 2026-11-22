@@ -526,7 +526,7 @@ export default function Settings() {
                 <button
                   type="button"
                   onClick={() => openExternal(LATEST_RELEASE_URL)}
-                  className="flex min-h-[var(--hit)] items-center gap-2 rounded-lg border border-accent-400/50 px-4 py-2 text-sm font-heading font-bold uppercase tracking-wider text-accent-400 transition-colors hover:border-accent-400 hover:bg-accent-400/10"
+                  className="flex min-h-[var(--hit)] items-center gap-2 rounded-lg border border-accent-400/50 px-4 py-2 text-sm font-heading font-bold uppercase tracking-wide text-accent-400 transition-colors hover:border-accent-400 hover:bg-accent-400/10"
                 >
                   <Download className="w-4 h-4" aria-hidden="true" />
                   {t("settings.androidUpdateDownload")}

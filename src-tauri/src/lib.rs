@@ -359,6 +359,7 @@ pub fn run() {
             sim_live_skip_to_end,
             auto_import_database,
             update_world_overlay,
+            latest_release_version,
             get_world_overlay_info,
             import_export_zip,
             import_cached_export,

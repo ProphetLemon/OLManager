@@ -321,7 +321,7 @@ fn usable_etag(value: &str) -> bool {
         && value.bytes().all(|byte| byte.is_ascii_graphic())
 }
 
-fn overlay_client_builder(user_agent: &str, timeout: Duration) -> reqwest::ClientBuilder {
+pub(super) fn overlay_client_builder(user_agent: &str, timeout: Duration) -> reqwest::ClientBuilder {
     reqwest::Client::builder()
         .user_agent(user_agent)
         .timeout(timeout)
