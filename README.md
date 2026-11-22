@@ -69,6 +69,8 @@ The bug button in the game saves a ZIP file with your description of the problem
 
 On Linux the game asks, the first time it starts, how it should draw its window: **Fast** (recommended, uses the graphics card) or **Compatibility** (slower, most of all in fullscreen, but it avoids drawing problems seen with some graphics drivers on Wayland). Tick "remember my choice" to stop being asked; otherwise it asks again at the next start. You can change the choice at any time in Settings, under "Graphics mode" (it applies the next time you open the game).
 
+If Fast fails with WebKit's "Failed to create GBM buffer" error (a grey window after start, seen with some NVIDIA drivers on Wayland), the game notices in the first seconds, saves Compatibility and restarts once by itself. To go back to Fast, choose it in Settings, under "Graphics mode". This automatic switch never happens when you have set `WEBKIT_DISABLE_DMABUF_RENDERER` yourself.
+
 If the window flickers, draws wrongly or stays blank, choose Compatibility. As a last resort, and for scripts, you can start the game with the variable set; when it is set the game never asks and never overrides it:
 
 ```bash

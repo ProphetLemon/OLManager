@@ -4,9 +4,87 @@ import fs from "node:fs";
 import { OFFLINE_LICENSE } from "./overlay.mjs";
 import { validateOverlay } from "./overlay-schema.mjs";
 import { isRelease, rosterFloor, simulateRosterCounts, startingCounts } from "./roster-floor.mjs";
+import { foldName, foldedNames, realBirthDate } from "./same-person.mjs";
+import { titleKey } from "./pool.mjs";
 import { toOverlayWorld } from "./world.mjs";
 
 export { simulateRosterCounts };
+
+/**
+ * People Leaguepedia lists in both roles on one team, reviewed: each may be a player and a staff member at once. Anybody
+ * else held twice fails `no-player-staff-twins`. src-tauri/src/world_identity_review.json `dual_roles` holds the same pairs.
+ */
+export const DUAL_ROLES = Object.freeze([
+  // CTBC Flying Oyster Academy (PCS), Leaguepedia team page of the 2026-11-17 run: Leaky (Chang Tsu-Chia) is a starting
+  // Jungler (joined 2026-07-15) and, in the same page's staff table, the Head Coach (not inactive). A player-coach.
+  Object.freeze({ player: "player-6498e762", staff: "staff-6498e762" }),
+]);
+
+/** The date the staff generator writes when it has no birth date (generate.mjs `generateStaff`); it says nothing. */
+const STAFF_PLACEHOLDER_DOB = "1990-01-01";
+const PAGE_HASH_ID = /^(?:player|staff)-([0-9a-f]{8})$/;
+
+/** The records of one kind once the ops are applied: retirements leave, adds arrive with whether their birth date is a guess. */
+function recordsAfter(records, ops, kind) {
+  const byId = new Map(records.map((record) => [record.id, { record, dobApprox: false }]));
+  for (const op of ops) {
+    if (op.op === "retire") byId.delete(op.id);
+    else if (op.op === "add" && op[kind]) byId.set(op[kind].id, { record: op[kind], dobApprox: op.dob_approx === true });
+  }
+  return [...byId.values()];
+}
+
+const staffNames = (staff) => {
+  const names = [staff.nickname, staff.first_name, `${staff.first_name ?? ""} ${staff.last_name ?? ""}`].map(foldName).filter(Boolean);
+  return [...new Set(names)];
+};
+
+/** A birth date that identifies: readable, not a catalog placeholder, not a guess. */
+const knownBirthDate = ({ record, dobApprox }) => {
+  if (dobApprox || record.date_of_birth === STAFF_PLACEHOLDER_DOB) return null;
+  return realBirthDate(record.date_of_birth)?.iso ?? null;
+};
+
+/**
+ * The people a new world would hold both as a player and as a staff member, by the keys world_identity.rs uses for that pair
+ * (`no_person_is_both_a_player_and_a_staff_member`): the same Leaguepedia page, or a shared folded name and the same real birth
+ * date. Ids made from a page ("player-"/"staff-" plus 8 hex of the page hash) with the same hash share the page; `pages` adds the
+ * page titles this run knows (by id), which also catches one page spelled two ways. Pairs in `allowed` are left out.
+ * @param {{overlay: {players?: object[], staff?: object[]}, world: {players: object[], staff: object[]}, pages?: Map<string, string>, allowed?: ReadonlyArray<{player: string, staff: string}>}} input
+ * @returns {Array<{player: string, staff: string, rule: "same-page"|"name-and-birth-date"}>} sorted by player id, then staff id
+ */
+export function playerStaffTwins({ overlay, world, pages = new Map(), allowed = DUAL_ROLES }) {
+  const players = recordsAfter(world.players, overlay.players ?? [], "player");
+  const staff = recordsAfter(world.staff, overlay.staff ?? [], "staff");
+  const skip = new Set(allowed.map((pair) => `${pair.player}\u0000${pair.staff}`));
+  const found = new Map();
+  const note = (player, staffId, rule) => {
+    const key = `${player}\u0000${staffId}`;
+    if (!skip.has(key) && !found.has(key)) found.set(key, { player, staff: staffId, rule });
+  };
+
+  const pageOf = (id) => {
+    const hash = PAGE_HASH_ID.exec(id)?.[1];
+    const title = pages.get(id);
+    return [hash ? `hash:${hash}` : null, title ? `title:${titleKey(title)}` : null].filter(Boolean);
+  };
+  const staffByPage = new Map();
+  for (const { record } of staff) for (const key of pageOf(record.id)) staffByPage.set(key, [...(staffByPage.get(key) ?? []), record.id]);
+  for (const { record } of players) for (const key of pageOf(record.id)) for (const staffId of staffByPage.get(key) ?? []) note(record.id, staffId, "same-page");
+
+  const staffByNameAndBirth = new Map();
+  for (const entry of staff) {
+    const born = knownBirthDate(entry);
+    if (!born) continue;
+    for (const name of staffNames(entry.record)) staffByNameAndBirth.set(`${name}|${born}`, [...(staffByNameAndBirth.get(`${name}|${born}`) ?? []), entry.record.id]);
+  }
+  for (const entry of players) {
+    const born = knownBirthDate(entry);
+    if (!born) continue;
+    for (const name of foldedNames(entry.record)) for (const staffId of staffByNameAndBirth.get(`${name}|${born}`) ?? []) note(entry.record.id, staffId, "name-and-birth-date");
+  }
+  return [...found.values()].sort((a, b) => (a.player < b.player ? -1 : a.player > b.player ? 1 : a.staff < b.staff ? -1 : a.staff > b.staff ? 1 : 0));
+}
 
 export const DEFAULT_GATE_OPTIONS = Object.freeze({
   minRosterSize: 5,
@@ -60,9 +138,10 @@ function duplicateIds(ops) {
 }
 
 /**
- * @param {{overlay: object, world: ReturnType<import("./world.mjs").loadWorld>, coveredTeamIds: Set<string>, options?: Partial<typeof DEFAULT_GATE_OPTIONS>, gateExceptions?: GateExceptions}} input
+ * @param {{overlay: object, world: ReturnType<import("./world.mjs").loadWorld>, coveredTeamIds: Set<string>, options?: Partial<typeof DEFAULT_GATE_OPTIONS>, gateExceptions?: GateExceptions, pages?: Map<string, string>}} input
+ *   `pages`: the Leaguepedia page of each added id, when the run knows it (`playerStaffTwins`)
  */
-export function runGates({ overlay, world, coveredTeamIds, options = {}, gateExceptions = EMPTY_GATE_EXCEPTIONS }) {
+export function runGates({ overlay, world, coveredTeamIds, options = {}, gateExceptions = EMPTY_GATE_EXCEPTIONS, pages = new Map() }) {
   const config = { ...DEFAULT_GATE_OPTIONS, ...options };
   const results = [];
   const playerOps = overlay.players ?? [];
@@ -125,6 +204,11 @@ export function runGates({ overlay, world, coveredTeamIds, options = {}, gateExc
   const pct = Math.round(config.maxChangedShare * 100);
   const exceptedNote = excepted.length ? `; over ${pct}% but accepted: ${excepted.join("; ")}` : "";
   results.push(gate("max-changed-share", "competition", hot.length === 0, hot.length ? `more than ${pct}% of players changed: ${hot.join(", ")}${exceptedNote}` : `no competition changes more than ${pct}% of its players without a reviewed exception${exceptedNote}`));
+
+  // One person, two records: a player and a staff member of the same person (a coach the pool also adds as a free agent).
+  const twins = playerStaffTwins({ overlay, world, pages });
+  const shown = twins.slice(0, 5).map((t) => `${t.player} ~ ${t.staff} (${t.rule})`).join(", ");
+  results.push(gate("no-player-staff-twins", "global", twins.length === 0, twins.length ? `people who are both a player and a staff member: ${shown}${twins.length > 5 ? `, ... (${twins.length} in all)` : ""}` : `nobody is both a player and a staff member (${DUAL_ROLES.length} reviewed dual role(s) allowed)`, { twins: twins.length }));
 
   return { ok: results.every((r) => r.ok), results };
 }

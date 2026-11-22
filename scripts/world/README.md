@@ -42,7 +42,14 @@ Fix problems in the reviewed inputs, not in the overlay:
 
 Gates (a failed gate exits non-zero and the overlay is not written unless `--allow-gate-failures`): schema and references
 valid, no id used twice, no team left under its floor by a release, at most 8 new players per team, at most 60% of a
-competition's players moved or retired unless it has a reviewed exception.
+competition's players moved or retired unless it has a reviewed exception, and nobody both a player and a staff member.
+
+- **`no-player-staff-twins` gate.** After the operations, no player and staff member of the new world may be one person:
+  ids made from the same page (the same 8-hex page hash), the same page title of this run (case and spacing aside), or a
+  shared folded name and the same real birth date (placeholders and `dob_approx` dates do not count). A player-coach
+  Leaguepedia lists in both tables of one team is allowed through `DUAL_ROLES` in `lib/gates.mjs`, with the evidence in a
+  comment, and through `dual_roles` in `src-tauri/src/world_identity_review.json` (the app's identity test runs the same check).
+  `src/lib/world/overlay-ship-twins.test.ts` runs it on the shipped overlay.
 
 - **Roster floor.** `floor(team) = min(5, the team's starting player count in the bundled world)`. In the off-season
   Leaguepedia rosters are empty or partial, but the game starts on 1 January with playable rosters. After the operations
@@ -264,7 +271,12 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
 800 pool staff, and the game's own limit of 5,000 ops per list), `pool-complete` (every person has a name and a game role),
 `pool-ids` (derived from the page, unique, none of the game's), `pool-no-duplicates` (no pool person matches a game record or another
 pool person) and `pool-overlay-size` (the app rejects an overlay over 4 MiB: `MAX_OVERLAY_BYTES`). The roster refresh's
-`max-adds-per-team` gate ignores teamless adds.
+`max-adds-per-team` gate ignores teamless adds, and its `no-player-staff-twins` gate covers the pool too: the pool leaves out a person
+the roster overlay of the run adds or moves in either role (a coach on a staff table is not also a free agent player), a person the
+game's matcher finds in the bundled world in the other role (a coach of the bundled world is not also a free agent player, and the
+reverse), and a player whose own Players page makes him staff when the run adds an undated staff member with his real name and
+country (one coach under two pages); it refuses both pages when a page read as a player and one read as staff are the same person
+(same IGN, name, country and birth date).
 
 **Report.** A new "Active-pros pool" section: the funnel (who was left out and why), counts by position, region, level, tier and staff
 kind, the effect of the qualifier cap (tournaments and roster entries kept and left out), a sample per region, the probe (is

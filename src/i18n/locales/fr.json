@@ -193,6 +193,13 @@
         "unknown": "Une erreur s’est produite : {{error}}"
       }
     },
+    "loadFailed": "La sauvegarde n’a pas pu être chargée : {{error}}",
+    "saveStatus": {
+      "otherVersion": "D’une autre version",
+      "unreadable": "Illisible",
+      "otherVersionReason": "Enregistrée au format {{found}}, que cette version ne lit pas. Elle reste sur votre appareil : exportez-la pour en garder une copie, ou ouvrez-la avec la version qui l’a créée.",
+      "unreadableReason": "Le fichier est endommagé ou incomplet, il ne peut donc pas être chargé. Il reste sur votre appareil : exportez-le pour conserver ce qu’il contient, ou supprimez-le."
+    },
     "noResults": "Aucun résultat",
     "failedStartGame": "Échec du démarrage du jeu : {{error}}",
     "community": "Community",
@@ -221,13 +228,10 @@
   "rosterOverlay": {
     "asOf": "Effectifs au {{date}}",
     "attribution": "Données des effectifs : contributeurs de {{name}},",
-    "update": "Mettre à jour les effectifs",
-    "updating": "Mise à jour...",
     "checking": "Recherche de mises à jour des effectifs…",
-    "checkFailed": "Impossible de vérifier les mises à jour des effectifs. Les effectifs affichés sont utilisés.",
+    "checkFailed": "Impossible de vérifier les mises à jour des effectifs",
     "updated": "Effectifs mis à jour au {{date}}",
-    "upToDate": "Les effectifs sont déjà à jour",
-    "error": "Impossible de mettre à jour les effectifs : {{message}}. Vous pouvez commencer avec les effectifs actuels."
+    "upToDate": "Les effectifs sont à jour ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Démarrer la Carrière",
@@ -346,6 +350,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "En attente de la vérification des effectifs…",
     "searchLeague": "Rechercher des ligues...",
     "regionalLeagues": "Ligues régionales",
     "confirming": "Confirmation...",
@@ -1736,6 +1741,10 @@
     "updateAvailableDetail": "La version {{version}} est disponible",
     "upToDate": "Vous êtes à jour",
     "noPlatformBuild": "Une version existe, mais elle n'a pas encore de build pour votre système",
+    "androidUpdateAvailable": "Une nouvelle version est disponible. Téléchargez le nouvel APK depuis la page de la version.",
+    "androidUpdateKeepsSaves": "L'installer par-dessus l'application actuelle conserve vos sauvegardes.",
+    "androidUpdateDownload": "Télécharger le nouvel APK",
+    "androidUpdateLater": "Plus tard",
     "autoImport": "Importation automatique de la base",
     "autoImportDesc": "Télécharge la base publique d’OLMDBManager (équipes, joueurs, staff et images) et met à jour les données du jeu.",
     "data": "Données",
@@ -3683,10 +3692,13 @@
   "onAir": {
     "nav": {
       "rail": "Navigation principale",
-      "strip": "Sections {{group}}",
+      "sections": "Sections {{group}}",
       "skip": "Aller au contenu principal",
       "bug": "Signaler un bug",
-      "manager": "Profil du manager"
+      "manager": "Profil du manager",
+      "needsCall_one": "{{label}}, attend votre décision",
+      "needsCall_other": "{{label}}, {{count}} attendent votre décision",
+      "more": "Plus"
     },
     "bar": {
       "phase": {

@@ -9,6 +9,7 @@ import { useGameStore } from "@/store/gameStore";
 import { Button, DatePicker, CountryFlag } from "@/ui-v2/_legacy/components/ui";
 import SavesList from "@/ui-v2/_legacy/components/menu/SavesList";
 import { useSaveTransfer } from "@/ui-v2/_legacy/components/menu/useSaveTransfer";
+import { useSaveLoadFailure } from "@/ui-v2/_legacy/components/menu/useSaveLoadFailure";
 import MenuBackground from "@/ui-v2/_legacy/components/menu/MenuBackground";
 import CommunityPanel from "@/ui-v2/_legacy/components/menu/CommunityPanel";
 import PatchNotesPanel from "@/ui-v2/_legacy/components/menu/PatchNotesPanel";
@@ -36,6 +37,8 @@ interface SaveEntry {
   checksum: string;
   created_at: string;
   last_played_at: string;
+  status?: "ok" | "other_version" | "unreadable";
+  format_version?: number | null;
 }
 
 function normaliseSearchText(value: string): string {
@@ -332,8 +335,13 @@ export default function MainMenu() {
     setSaves(refreshed);
   });
 
+  const loadFailure = useSaveLoadFailure(async () => {
+    setSaves((await getApiClientSync().saves.list()) as unknown as SaveEntry[]);
+  });
+
   const handleLoadGame = async (saveId: string) => {
     console.log("[MainMenu] handleLoadGame start, saveId:", saveId);
+    loadFailure.clear();
     setLoadingSaveId(saveId);
     try {
       const client = getApiClientSync();
@@ -352,6 +360,7 @@ export default function MainMenu() {
           try { console.error("[DEBUG] error JSON:", JSON.stringify(error)); } catch {}
         }
         setLoadingSaveId(null);
+        void loadFailure.report(error);
       }
   };
 
@@ -921,7 +930,7 @@ export default function MainMenu() {
                     onConfirmReplace={transfer.confirmReplace}
                     onCancelReplace={transfer.cancelReplace}
                     transferBusy={transfer.busy}
-                    transferNotice={transfer.notice}
+                    transferNotice={loadFailure.notice ?? transfer.notice}
                     pendingReplace={transfer.pendingReplace}
                   />
                 )}

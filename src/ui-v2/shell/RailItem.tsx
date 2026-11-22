@@ -1,7 +1,10 @@
 import type { LucideIcon } from "lucide-react";
 import type { Ref } from "react";
 
+import { IconTip } from "@/ui-v2/components/ui/icon-tip";
 import { cn } from "@/ui-v2/lib/utils";
+
+import { ACTIVE_ROW_CLASS, RailActiveBar, badgeText as formatBadge } from "./railActive";
 
 interface RailItemProps {
   icon: LucideIcon;
@@ -16,12 +19,29 @@ interface RailItemProps {
   onClick: () => void;
   /** Hides the visible label (still exposed through the accessible name). */
   compact?: boolean;
+  /**
+   * R13: no visible label, the stop is a `--nav-cell` cell with an IconTip (hover and keyboard
+   * focus) and its aria-label. Used when the labelled stops would not fit the rail's height.
+   */
+  iconOnly?: boolean;
   tone?: "default" | "danger";
   buttonRef?: Ref<HTMLButtonElement>;
+  "aria-haspopup"?: "menu";
+  "aria-expanded"?: boolean;
   "data-rail-stop"?: string;
+  /** Stable row id (`util:settings`) the tree rail keys focus and tests on. */
+  "data-nav-id"?: string;
 }
 
-const BADGE_CAP = 99;
+/**
+ * The visible label of a Split stop: up to two balanced lines, hyphenated by the document
+ * language, never clipped (R12). The weight is set apart. The hidden measurer that decides
+ * R13 uses these same classes.
+ */
+export const RAIL_LABEL_CLASS =
+  "w-full wrap-break-word font-heading text-nav leading-4 line-clamp-2 text-balance hyphens-auto";
+/** What a stop's label loses to its margin (mx-1.5 twice) and padding (px-1 twice), in rem. */
+export const RAIL_STOP_INSET_REM = 1.25;
 
 /** One icon-over-label stop of the navigation rail. */
 export function RailItem({
@@ -33,13 +53,29 @@ export function RailItem({
   tabIndex,
   onClick,
   compact = false,
+  iconOnly = false,
   tone = "default",
   buttonRef,
   ...rest
 }: RailItemProps) {
   const count = badge !== undefined && badge > 0 ? badge : 0;
-  const badgeText = count > BADGE_CAP ? `${BADGE_CAP}+` : String(count);
+  const badgeText = formatBadge(count);
   const accessibleName = count > 0 ? `${label}, ${badgeText}` : label;
+
+  const iconAndBadge = (
+    <>
+      <Icon className="size-[var(--nav-icon)] shrink-0" aria-hidden="true" />
+      {count > 0 && (
+        <span
+          aria-hidden="true"
+          data-slot="rail-item-badge"
+          className="absolute -top-1.5 -end-2.5 inline-flex min-w-4 items-center justify-center rounded-full bg-club px-1 font-heading text-nav leading-4 font-bold text-club-foreground tabular-nums"
+        >
+          {badgeText}
+        </span>
+      )}
+    </>
+  );
 
   return (
     <button
@@ -50,49 +86,46 @@ export function RailItem({
       aria-label={accessibleName}
       aria-current={active ? "page" : undefined}
       aria-description={hint}
-      title={hint ? `${label}: ${hint}` : label}
+      aria-haspopup={rest["aria-haspopup"]}
+      aria-expanded={rest["aria-expanded"]}
+      title={iconOnly ? undefined : hint ? `${label}: ${hint}` : label}
       data-slot="rail-item"
       data-active={active ? "true" : undefined}
       data-rail-stop={rest["data-rail-stop"]}
+      data-nav-id={rest["data-nav-id"]}
       className={cn(
-        "relative mx-1.5 flex min-h-[var(--hit)] w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center gap-0.5 px-1 py-1.5 text-center transition-colors",
+        "relative mx-1.5 flex w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center text-center transition-colors",
+        iconOnly ? "h-[var(--nav-cell)] min-w-[var(--hit)]" : "min-h-[var(--hit)] min-w-[var(--hit)] gap-0.5 px-1 py-1.5",
         "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring",
         tone === "danger"
           ? "text-negative hover:bg-negative/10"
           : active
-            ? "bg-[color-mix(in_srgb,var(--club)_16%,transparent)] text-foreground [[data-contrast=high]_&]:data-[active=true]:outline-2 [[data-contrast=high]_&]:data-[active=true]:-outline-offset-2 [[data-contrast=high]_&]:data-[active=true]:outline-solid [[data-contrast=high]_&]:data-[active=true]:outline-club-text"
+            ? ACTIVE_ROW_CLASS
             : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
-      {active && (
-        <span
-          aria-hidden="true"
-          data-slot="rail-item-bar"
-          className="absolute inset-y-0 -start-1.5 my-auto h-8 max-h-full w-1 rounded-e-sm bg-club-text"
-        />
+      {active && <RailActiveBar size="stop" />}
+      {iconOnly ? (
+        // The tip's parent must be the button itself, so it follows the button's focus.
+        <IconTip label={hint ? `${label}: ${hint}` : label} followFocus className="relative inline-flex">
+          {iconAndBadge}
+        </IconTip>
+      ) : (
+        <span className="relative inline-flex">{iconAndBadge}</span>
       )}
-      <span className="relative inline-flex">
-        <Icon className="size-5 shrink-0" aria-hidden="true" />
-        {count > 0 && (
-          <span
-            aria-hidden="true"
-            data-slot="rail-item-badge"
-            className="absolute -top-1.5 -end-2.5 inline-flex min-w-4 items-center justify-center rounded-full bg-club px-1 font-heading text-xs leading-4 font-bold text-club-foreground tabular-nums"
-          >
-            {badgeText}
-          </span>
-        )}
-      </span>
+      {!iconOnly && (
       <span
         aria-hidden="true"
+        data-slot="rail-item-label"
         className={cn(
-          "w-full truncate font-heading text-[0.75rem] leading-4",
+          RAIL_LABEL_CLASS,
           active ? "font-bold" : "font-medium",
           compact && "sr-only",
         )}
       >
         {label}
       </span>
+      )}
     </button>
   );
 }

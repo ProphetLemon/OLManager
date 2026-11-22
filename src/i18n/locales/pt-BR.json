@@ -193,6 +193,13 @@
         "unknown": "Algo deu errado: {{error}}"
       }
     },
+    "loadFailed": "Não foi possível carregar o save: {{error}}",
+    "saveStatus": {
+      "otherVersion": "De outra versão",
+      "unreadable": "Não pode ser lido",
+      "otherVersionReason": "Salvo no formato {{found}}, que esta versão não lê. Ele continua no seu dispositivo: exporte para manter uma cópia ou abra com a versão que o criou.",
+      "unreadableReason": "O arquivo está danificado ou incompleto, por isso não pode ser carregado. Ele continua no seu dispositivo: exporte para manter o que há nele ou exclua."
+    },
     "noResults": "Sem resultados",
     "failedStartGame": "Falha ao iniciar o jogo: {{error}}",
     "community": "Comunidade",
@@ -221,13 +228,10 @@
   "rosterOverlay": {
     "asOf": "Elencos em {{date}}",
     "attribution": "Dados dos elencos: colaboradores de {{name}},",
-    "update": "Atualizar elencos",
-    "updating": "Atualizando...",
     "checking": "Procurando atualizações dos elencos…",
-    "checkFailed": "Não foi possível verificar atualizações dos elencos. Os elencos exibidos serão usados.",
+    "checkFailed": "Não foi possível verificar atualizações dos elencos",
     "updated": "Elencos atualizados para {{date}}",
-    "upToDate": "Os elencos já estão atualizados",
-    "error": "Não foi possível atualizar os elencos: {{message}}. Você ainda pode começar com os elencos atuais."
+    "upToDate": "Os elencos estão atualizados ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Iniciar Carreira",
@@ -346,6 +350,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Aguardando a verificação dos elencos…",
     "searchLeague": "Buscar ligas...",
     "regionalLeagues": "Ligas regionais",
     "confirming": "Confirmando...",
@@ -1736,6 +1741,10 @@
     "updateAvailableDetail": "A versão {{version}} está disponível",
     "upToDate": "Você está na versão mais recente",
     "noPlatformBuild": "Existe uma versão, mas ela ainda não tem build para o seu sistema",
+    "androidUpdateAvailable": "Há uma nova versão disponível. Baixe o novo APK na página da versão.",
+    "androidUpdateKeepsSaves": "Instalá-lo por cima do app atual mantém seus jogos salvos.",
+    "androidUpdateDownload": "Baixar o novo APK",
+    "androidUpdateLater": "Mais tarde",
     "autoImport": "Importar BD automaticamente",
     "autoImportDesc": "Baixa o banco de dados público do OLMDBManager (times, jogadores, comissão técnica e imagens) e atualiza os dados do jogo.",
     "data": "Dados",
@@ -3683,10 +3692,13 @@
   "onAir": {
     "nav": {
       "rail": "Navegação principal",
-      "strip": "Seções de {{group}}",
+      "sections": "Seções de {{group}}",
       "skip": "Pular para o conteúdo principal",
       "bug": "Reportar bug",
-      "manager": "Perfil do técnico"
+      "manager": "Perfil do técnico",
+      "needsCall_one": "{{label}}, precisa da sua decisão",
+      "needsCall_other": "{{label}}, {{count}} precisam da sua decisão",
+      "more": "Mais"
     },
     "bar": {
       "phase": {

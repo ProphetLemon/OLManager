@@ -39,6 +39,8 @@ export interface RailGroup {
   icon: LucideIcon;
   items: NavItem[];
   hiddenWhenUnemployed?: boolean;
+  /** Whether the group shows its children before the user toggles it. */
+  defaultOpen: boolean;
 }
 
 export const RAIL_DIRECT: NavItem[] = [
@@ -56,6 +58,7 @@ export const RAIL_GROUPS: RailGroup[] = [
     defaultLabel: "Club",
     icon: Users,
     hiddenWhenUnemployed: true,
+    defaultOpen: true,
     items: [
       { tab: "Squad", labelKey: "dashboard.squad", defaultLabel: "Squad", icon: Users },
       { tab: "Tactics", labelKey: "dashboard.tactics", defaultLabel: "Tactics", icon: Crosshair },
@@ -74,6 +77,7 @@ export const RAIL_GROUPS: RailGroup[] = [
     labelKey: "dashboard.sectionMarket",
     defaultLabel: "Market",
     icon: Store,
+    defaultOpen: false,
     items: [
       { tab: "Market", labelKey: "dashboard.market", defaultLabel: "Market", icon: Store },
       { tab: "Transfers", labelKey: "dashboard.transfers", defaultLabel: "Transfers", icon: TrendingUp, badge: "offers" },
@@ -84,6 +88,7 @@ export const RAIL_GROUPS: RailGroup[] = [
     labelKey: "dashboard.sectionWorld",
     defaultLabel: "World",
     icon: Globe,
+    defaultOpen: false,
     items: [
       { tab: "Competitions", labelKey: "dashboard.competitions", defaultLabel: "Competitions", icon: Globe },
       { tab: "Players", labelKey: "dashboard.players", defaultLabel: "Players", icon: UsersRound, badge: "players" },
@@ -124,6 +129,14 @@ export function railStopForTab(tab: string): string {
   if (RAIL_DIRECT.some((i) => i.tab === tab)) return tab;
   const group = groupForTab(tab);
   return group ? `group:${group}` : "";
+}
+
+/** Whether a group shows its children: the stored choice, else the group's `defaultOpen`. */
+export function isGroupOpen(
+  openGroups: Partial<Record<RailGroupId, boolean>>,
+  id: RailGroupId,
+): boolean {
+  return openGroups[id] ?? RAIL_GROUPS.find((g) => g.id === id)?.defaultOpen ?? false;
 }
 
 export function defaultTabForGroup(id: RailGroupId): string {

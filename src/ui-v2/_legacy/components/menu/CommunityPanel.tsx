@@ -2,23 +2,11 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Heart, ExternalLink, Download } from "lucide-react";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
+import { GITHUB_URL, LATEST_RELEASE_URL, openExternal } from "@/lib/openExternal";
 
-const GITHUB_URL = "https://github.com/ProphetLemon/OLManager";
-const DOWNLOADS_URL = "https://github.com/ProphetLemon/OLManager/releases/latest";
+const DOWNLOADS_URL = LATEST_RELEASE_URL;
 
 const SUPPORTERS: Array<{ name: string; note?: string }> = [];
-
-function openExternal(url: string): void {
-  const isTauri =
-    typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-  if (isTauri) {
-    void import("@tauri-apps/plugin-opener")
-      .then((m) => m.openUrl(url))
-      .catch(() => window.open(url, "_blank", "noopener,noreferrer"));
-  } else {
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-}
 
 function GithubIcon({ className }: { className?: string }) {
   return (

@@ -193,6 +193,13 @@
         "unknown": "Algo correu mal: {{error}}"
       }
     },
+    "loadFailed": "Não foi possível carregar o jogo: {{error}}",
+    "saveStatus": {
+      "otherVersion": "De outra versão",
+      "unreadable": "Não se consegue ler",
+      "otherVersionReason": "Guardado com o formato {{found}}, que esta versão não lê. Continua no teu dispositivo: exporta-o para guardar uma cópia ou abre-o com a versão que o criou.",
+      "unreadableReason": "O ficheiro está danificado ou incompleto, por isso não pode ser carregado. Continua no teu dispositivo: exporta-o para guardar o que lá está ou elimina-o."
+    },
     "noResults": "Sem resultados",
     "failedStartGame": "Falha ao iniciar o jogo: {{error}}",
     "community": "Comunidade",
@@ -221,13 +228,10 @@
   "rosterOverlay": {
     "asOf": "Plantéis à data de {{date}}",
     "attribution": "Dados dos plantéis: colaboradores de {{name}},",
-    "update": "Atualizar plantéis",
-    "updating": "A atualizar...",
     "checking": "A procurar atualizações dos plantéis…",
-    "checkFailed": "Não foi possível verificar atualizações dos plantéis. Estão a ser usados os plantéis apresentados.",
+    "checkFailed": "Não foi possível verificar atualizações dos plantéis",
     "updated": "Plantéis atualizados para {{date}}",
-    "upToDate": "Os plantéis já estão atualizados",
-    "error": "Não foi possível atualizar os plantéis: {{message}}. Podes começar com os plantéis atuais."
+    "upToDate": "Os plantéis estão atualizados ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Iniciar Carreira",
@@ -346,6 +350,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "A aguardar a verificação dos plantéis…",
     "searchLeague": "Pesquisar ligas...",
     "regionalLeagues": "Ligas regionais",
     "confirming": "A confirmar...",
@@ -1736,6 +1741,10 @@
     "updateAvailableDetail": "A versão {{version}} está disponível",
     "upToDate": "Tens a versão mais recente",
     "noPlatformBuild": "Existe uma versão, mas ainda não tem compilação para o teu sistema",
+    "androidUpdateAvailable": "Há uma nova versão disponível. Descarrega o novo APK a partir da página da versão.",
+    "androidUpdateKeepsSaves": "Ao instalá-lo por cima da aplicação atual, os teus jogos guardados são mantidos.",
+    "androidUpdateDownload": "Descarregar o novo APK",
+    "androidUpdateLater": "Mais tarde",
     "autoImport": "Importar BD automaticamente",
     "autoImportDesc": "Transfere a base de dados pública do OLMDBManager (equipas, jogadores, staff e imagens) e atualiza os dados do jogo.",
     "data": "Dados",
@@ -3683,10 +3692,13 @@
   "onAir": {
     "nav": {
       "rail": "Navegação principal",
-      "strip": "Secções de {{group}}",
+      "sections": "Secções de {{group}}",
       "skip": "Saltar para o conteúdo principal",
       "bug": "Reportar bug",
-      "manager": "Perfil do treinador"
+      "manager": "Perfil do treinador",
+      "needsCall_one": "{{label}}, precisa da sua decisão",
+      "needsCall_other": "{{label}}, {{count}} precisam da sua decisão",
+      "more": "Mais"
     },
     "bar": {
       "phase": {

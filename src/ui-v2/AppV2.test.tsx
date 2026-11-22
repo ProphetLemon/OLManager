@@ -4,6 +4,7 @@ import { MemoryRouter, useNavigate } from "react-router-dom";
 
 import i18n from "@/i18n";
 import { useBugReportStore } from "@/store/bugReportStore";
+import { resetRosterUpdatesForTests, useRosterUpdateStore } from "@/store/rosterUpdateStore";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData } from "@/store/types";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -13,6 +14,16 @@ import AppV2, { AppContent } from "./AppV2";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(() => Promise.resolve()),
+}));
+
+const overlay = vi.hoisted(() => ({
+  getWorldOverlayInfo: vi.fn(() => new Promise(() => {})),
+  updateWorldOverlay: vi.fn(() => new Promise(() => {})),
+}));
+
+vi.mock("@/services/worldOverlayService", () => ({
+  getWorldOverlayInfo: overlay.getWorldOverlayInfo,
+  updateWorldOverlay: overlay.updateWorldOverlay,
 }));
 
 vi.mock("@/hooks/useUpdater", () => ({
@@ -30,7 +41,7 @@ vi.mock("@/hooks/useUpdater", () => ({
 }));
 
 vi.mock("@/ui-v2/components/TitleBarV2", () => ({
-  TitleBarV2: () => null,
+  TitleBarV2: () => <div data-testid="title-bar" />,
 }));
 
 vi.mock("@/ui-v2/dashboard/DashboardV2", () => ({
@@ -165,6 +176,70 @@ describe("AppV2 high contrast", () => {
     await waitFor(() =>
       expect(document.documentElement.dataset.contrast).toBeUndefined(),
     );
+  });
+});
+
+describe("AppV2 platform", () => {
+  const ANDROID_UA =
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36";
+  let userAgent: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    delete document.documentElement.dataset.platform;
+    useSettingsStore.setState({ loaded: true });
+    userAgent = vi.spyOn(window.navigator, "userAgent", "get");
+  });
+
+  afterEach(() => {
+    userAgent.mockRestore();
+    delete document.documentElement.dataset.platform;
+  });
+
+  it("flags the root as android and renders no title bar there", async () => {
+    userAgent.mockReturnValue(ANDROID_UA);
+    render(<AppV2 />);
+    await waitFor(() => expect(document.documentElement.dataset.platform).toBe("android"));
+    expect(screen.queryByTestId("title-bar")).toBeNull();
+  });
+
+  it("leaves the root unflagged and keeps the title bar on desktop", () => {
+    userAgent.mockReturnValue("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
+    render(<AppV2 />);
+    expect(document.documentElement.dataset.platform).toBeUndefined();
+    expect(screen.getByTestId("title-bar")).toBeInTheDocument();
+  });
+});
+
+describe("AppV2 roster launch check", () => {
+  beforeEach(() => {
+    resetRosterUpdatesForTests();
+    overlay.updateWorldOverlay.mockClear();
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  it("starts one automatic roster check per session without waiting for it", () => {
+    const first = render(<AppV2 />);
+
+    expect(overlay.updateWorldOverlay).toHaveBeenCalledTimes(1);
+    expect(overlay.updateWorldOverlay).toHaveBeenCalledWith({ automatic: true });
+    expect(useRosterUpdateStore.getState().status).toBe("checking");
+    expect(screen.getByTestId("app-root")).toBeInTheDocument();
+
+    first.unmount();
+    render(<AppV2 />);
+
+    expect(overlay.updateWorldOverlay).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("AppV2 safe areas", () => {
+  it("pads the app root with the four safe-area tokens", () => {
+    useSettingsStore.setState({ loaded: true });
+    render(<AppV2 />);
+    const root = screen.getByTestId("app-root");
+    for (const side of ["top", "right", "bottom", "left"]) {
+      expect(root.className).toContain(`var(--safe-${side})`);
+    }
   });
 });
 

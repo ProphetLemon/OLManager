@@ -6,6 +6,8 @@ import type { SaveImportPreview } from "@/api/types";
 import type { TransferNotice } from "./useSaveTransfer";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 
+type SaveStatus = "ok" | "other_version" | "unreadable";
+
 interface SaveEntry {
   id: string;
   name: string;
@@ -14,7 +16,13 @@ interface SaveEntry {
   checksum: string;
   created_at: string;
   last_played_at: string;
+  /** Worked out from the file on every listing; a list without it is read as `ok`. */
+  status?: SaveStatus;
+  /** The format number the file declares, when it is from another version. */
+  format_version?: number | null;
 }
+
+const canLoad = (save: SaveEntry): boolean => (save.status ?? "ok") === "ok";
 
 interface SavesListProps {
   saves: SaveEntry[];
@@ -54,22 +62,48 @@ export default function SavesList({
   const { t, i18n } = useTranslation();
 
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const { activeIndex, handleKeyDown, getTabIndex } = useRovingFocus({
+  const { activeIndex, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({
     itemCount: saves.length,
     columns: 1,
     loop: false,
-    onSelect: (i) => onLoad(saves[i]?.id),
+    onSelect: (i) => {
+      const save = saves[i];
+      if (save && canLoad(save)) onLoad(save.id);
+    },
     getItemLabel: (i) => saves[i]?.name ?? "",
   });
 
   useEffect(() => {
     if (!isLoading && saves.length > 0) {
-      itemRefs.current[activeIndex]?.focus();
+      // Do not pull focus off another button of the same row (Export, Delete).
+      const load = itemRefs.current[activeIndex];
+      if (!load?.closest("[data-save-row]")?.contains(document.activeElement)) load?.focus();
     }
   }, [activeIndex, isLoading, saves.length]);
 
+  // Enter and Space act on the row that holds the focused Load button, never on the stored
+  // index: a click or a `.focus()` moves focus without moving the index. Every other button
+  // keeps its own key handling.
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      const row = (e.target as HTMLElement).closest<HTMLElement>("[data-save-load]");
+      if (!row) return;
+      e.preventDefault();
+      const save = saves[Number(row.dataset.saveIndex)];
+      if (save && canLoad(save)) onLoad(save.id);
+      return;
+    }
+    handleKeyDown(e);
+  };
+
+  // Keep the roving index on the row that has focus or was clicked, so the two never diverge.
+  const syncIndex = (e: React.SyntheticEvent) => {
+    const row = (e.target as HTMLElement).closest<HTMLElement>("[data-save-row]");
+    if (row) setActiveIndex(Number(row.dataset.saveRow));
+  };
+
   return (
-    <div className="flex flex-col" onKeyDown={handleKeyDown}>
+    <div className="flex flex-col" onKeyDown={onKeyDown} onFocus={syncIndex} onClickCapture={syncIndex}>
       <div className="flex justify-between items-center pb-5">
         <h2 className="text-2xl font-heading font-bold uppercase tracking-wider text-white drop-shadow">
           {t("menu.loadGame")}
@@ -141,9 +175,13 @@ export default function SavesList({
             {t("menu.noSaves")}
           </div>
         ) : (
-          saves.map((save, i) => (
+          saves.map((save, i) => {
+            const loadable = canLoad(save);
+            const reasonId = `save-reason-${save.id}`;
+            return (
             <div
               key={save.id}
+              data-save-row={i}
               className="group relative flex flex-col gap-2 w-full py-4 text-left transition-colors border-b border-white/10 hover:bg-white/5"
             >
               {confirmDeleteId === save.id ? (
@@ -173,15 +211,31 @@ export default function SavesList({
                 <div className="flex items-center gap-3 w-full">
                   <button
                     ref={(el) => { itemRefs.current[i] = el; }}
+                    data-save-load
+                    data-save-index={i}
                     tabIndex={getTabIndex(i)}
-                    onClick={() => onLoad(save.id)}
-                    className="flex flex-col gap-2 flex-1 text-left min-w-0 px-1"
+                    // Not `disabled`: a disabled button leaves the tab order, and the keyboard
+                    // user would never reach the reason this save cannot be loaded.
+                    aria-disabled={loadable ? undefined : true}
+                    aria-describedby={loadable ? undefined : reasonId}
+                    onClick={() => {
+                      if (loadable) onLoad(save.id);
+                    }}
+                    className={`flex flex-col gap-2 flex-1 text-left min-w-0 px-1 ${loadable ? "" : "cursor-not-allowed"}`}
                   >
                     <div className="flex justify-between items-center w-full">
                       <span className="font-heading font-bold text-white text-lg uppercase tracking-wide truncate">
                         {save.name}
                       </span>
-                      {loadingSaveId === save.id ? (
+                      {!loadable ? (
+                        <span className="shrink-0 ml-2 px-2 py-0.5 border border-warning text-warning text-caption font-heading font-bold uppercase tracking-wide rounded">
+                          {t(
+                            save.status === "unreadable"
+                              ? "menu.saveStatus.unreadable"
+                              : "menu.saveStatus.otherVersion",
+                          )}
+                        </span>
+                      ) : loadingSaveId === save.id ? (
                         <Loader2 className="w-4 h-4 text-accent-400 animate-spin shrink-0" />
                       ) : (
                         <Play className="w-4 h-4 text-accent-400 opacity-0 group-hover:opacity-100 transition-all shrink-0" />
@@ -224,8 +278,16 @@ export default function SavesList({
                   </button>
                 </div>
               )}
+              {!loadable && (
+                <p id={reasonId} className="px-1 text-sm text-dim">
+                  {save.status === "unreadable"
+                    ? t("menu.saveStatus.unreadableReason")
+                    : t("menu.saveStatus.otherVersionReason", { found: save.format_version ?? "?" })}
+                </p>
+              )}
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

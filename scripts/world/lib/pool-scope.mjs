@@ -192,21 +192,59 @@ export function isStaffLabel(label) {
 /** Every label in a roster role value, which Leaguepedia may join with commas ("Top,Jungle,Mid"). */
 export const roleLabels = (value) => text(value).split(/[,;]/).map((x) => x.trim()).filter(Boolean);
 
+const POSITION_LABELS = Object.freeze({ Top: "top", Jungle: "jungle", Mid: "mid", Bot: "bot", Support: "support" });
+
+/** The roster row that started last: `roleRows` are `{last, min, max}` per people-query row. Rows without a date lose to rows with one. */
+export function latestRoleRow(roleRows) {
+  let best = null;
+  for (const row of roleRows ?? []) if (!best || text(row.last) > text(best.last)) best = row;
+  return best ? { min: text(best.min), max: text(best.max) } : null;
+}
+
 /**
- * Player or staff, and the position or staff label. `roles` are the roster role values the person has in the filter;
- * `profileRole` is `Players.Role`, used when the roster values name nothing. A person who ever held a playing position
- * is a player; otherwise one who held only staff labels is staff.
+ * The playing position of a player, from the evidence that says most about where he plays now, and which step decided:
+ *  - "b": the latest roster row names one playing label (no span, no list, no staff label);
+ *  - "c": the Players page role, when the roster names it as a label;
+ *  - "d": the Players page role, when it only lies between the MIN and MAX of a roster row (the people query returns those two
+ *    extremes of each row's roles, so the labels between them are hidden, not ruled out);
+ *  - "first": else the first playing label of the roster.
+ * A staff label is never a position. Step "a", his own recent games, is applied by `selectPool` on top of this.
  */
-export function describePerson(roles, profileRole) {
+function choosePosition({ labels, profilePosition, spans, latest }) {
+  const rosterPosition = labels.map(playerPosition).find(Boolean) ?? null;
+  if (!rosterPosition) return null;
+  if (latest && latest.min === latest.max && !/[,;]/.test(latest.min)) {
+    const single = playerPosition(latest.min);
+    if (single) return { position: single, step: "b" };
+  }
+  if (profilePosition && labels.some((label) => playerPosition(label) === profilePosition)) return { position: profilePosition, step: "c" };
+  const name = POSITION_LABELS[profilePosition];
+  if (name && spans.some(([low, high]) => text(low).toLowerCase() < name && name < text(high).toLowerCase())) return { position: profilePosition, step: "d" };
+  return { position: rosterPosition, step: "first" };
+}
+
+/**
+ * Player or staff, the position or staff label, and the step that chose a position. `roles` are the roster role values the
+ * person has in the filter; `profileRole` is `Players.Role`, used when the roster values name nothing; `spans` are the [MIN, MAX]
+ * pairs of the rows that read two different labels and `latest` is `{min, max}` of the row that started last (see `choosePosition`).
+ * A person who ever held a playing position is a player; otherwise one who held only staff labels is staff.
+ */
+export function describePersonDetailed(roles, profileRole, spans = [], latest = null) {
   const labels = roles.flatMap(roleLabels);
-  const position = labels.map(playerPosition).find(Boolean) ?? null;
   const staffLabel = labels.find(isStaffLabel) ?? null;
-  if (position) return { kind: "player", position, staffLabel: null };
-  if (staffLabel) return { kind: "staff", position: null, staffLabel };
-  const fromProfile = playerPosition(profileRole);
-  if (fromProfile) return { kind: "player", position: fromProfile, staffLabel: null };
-  if (isStaffLabel(profileRole)) return { kind: "staff", position: null, staffLabel: text(profileRole) };
-  return { kind: "player", position: null, staffLabel: null };
+  const profilePosition = playerPosition(profileRole);
+  const chosen = choosePosition({ labels, profilePosition, spans, latest });
+  if (chosen) return { kind: "player", position: chosen.position, staffLabel: null, step: chosen.step };
+  if (staffLabel) return { kind: "staff", position: null, staffLabel, step: null };
+  if (profilePosition) return { kind: "player", position: profilePosition, staffLabel: null, step: "profile" };
+  if (isStaffLabel(profileRole)) return { kind: "staff", position: null, staffLabel: text(profileRole), step: null };
+  return { kind: "player", position: null, staffLabel: null, step: null };
+}
+
+/** `describePersonDetailed` without the step. */
+export function describePerson(roles, profileRole, spans = [], latest = null) {
+  const { step: _step, ...person } = describePersonDetailed(roles, profileRole, spans, latest);
+  return person;
 }
 
 /**
@@ -251,12 +289,20 @@ export function personFromRow(row) {
     residency: text(row.res), role: text(row.prole), team: text(row.team), currentTeams: "",
   };
   const roles = [row.rmin, row.rmax].map(text).filter(Boolean);
+  const spans = text(row.rmin) && text(row.rmax) && text(row.rmin) !== text(row.rmax) ? [[text(row.rmin), text(row.rmax)]] : [];
+  const roleRows = [{ last: text(row.last), min: text(row.rmin), max: text(row.rmax) }];
+  const detailed = describePersonDetailed(roles, profile.role, spans, latestRoleRow(roleRows));
   const { tournaments, truncated } = parseTournaments(row.tours);
   return {
     page: text(row.player),
     profile,
     roles,
-    ...describePerson(roles, profile.role),
+    spans,
+    roleRows,
+    kind: detailed.kind,
+    position: detailed.position,
+    staffLabel: detailed.staffLabel,
+    positionStep: detailed.step,
     tier: tierFromAggregates({
       leagueLevelMin: text(row.lmin), tournamentLevelMin: text(row.tmin), tournamentOfficial: text(row.toff), leagueOfficial: text(row.loff),
     }),
@@ -273,10 +319,18 @@ export function personFromRow(row) {
 export function mergePerson(a, b) {
   const profileRole = a.profile.role || b.profile.role;
   const roles = [...new Set([...a.roles, ...b.roles])];
+  const spans = [...(a.spans ?? []), ...(b.spans ?? [])];
+  const roleRows = [...(a.roleRows ?? []), ...(b.roleRows ?? [])];
+  const detailed = describePersonDetailed(roles, profileRole, spans, latestRoleRow(roleRows));
   return {
     ...a,
     roles,
-    ...describePerson(roles, profileRole),
+    spans,
+    roleRows,
+    kind: detailed.kind,
+    position: detailed.position,
+    staffLabel: detailed.staffLabel,
+    positionStep: detailed.step,
     tier: Math.min(a.tier, b.tier),
     bestLevel: bestLevel(a.bestLevel, b.bestLevel),
     lastStart: a.lastStart > b.lastStart ? a.lastStart : b.lastStart,
@@ -336,7 +390,7 @@ export function gameTeamKeys(teamMap) {
 /**
  * Is this person already in the game?
  * `in-game`: matched to a game player or staff id. `on-game-team`: not matched, but his current team is one the game
- * has, so the roster overlay handles him. `uncertain`: a weak or ambiguous match that needs a human. `new`: neither.
+ * has (the pool leaves him to the roster overlay only when that overlay handles him; `unconfirmed` carries a weak or ambiguous match). `uncertain`: a weak or ambiguous match that needs a human. `new`: neither.
  */
 export function gameStatus(person, { playerIndex, staffIndex, overrides, teamKeys }) {
   const profile = person.profile;
@@ -348,7 +402,11 @@ export function gameStatus(person, { playerIndex, staffIndex, overrides, teamKey
   );
   if (result.status === "matched") return { status: "in-game", id: result.entity.id };
   const teams = [profile.team, ...String(profile.currentTeams ?? "").split(",")].map(compactKey).filter(Boolean);
-  if (teams.some((team) => teamKeys.has(team))) return { status: "on-game-team" };
+  if (teams.some((team) => teamKeys.has(team))) {
+    // The matcher's doubt travels along: a person the roster overlay does not handle is still not new when a game record may be him.
+    const doubtful = result.status === "review" || result.status === "ambiguous";
+    return doubtful ? { status: "on-game-team", unconfirmed: result.reason } : { status: "on-game-team" };
+  }
   if (result.status === "review" || result.status === "ambiguous") return { status: "uncertain", reason: result.reason };
   return { status: "new" };
 }

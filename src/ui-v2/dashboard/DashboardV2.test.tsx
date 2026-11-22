@@ -1,10 +1,11 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
+import { useNavMemoryStore } from "@/store/navMemoryStore";
 import type { GameStateData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
 
@@ -84,6 +85,7 @@ vi.mock("@/lib/common/managerAvatars", () => ({
 
 vi.mock("@/lib/common/helpers", () => ({
   formatDateFull: () => "19 Jun 2026",
+  formatMatchDate: () => "Jun 19",
   isSeasonComplete: () => false,
 }));
 
@@ -211,6 +213,9 @@ function minimalGameState(): GameStateData {
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────
+
+// The remembered tab outlives a render on purpose, so each test starts a fresh game.
+beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
 
 describe("DashboardV2 tab sync", () => {
   beforeEach(() => {
@@ -405,6 +410,15 @@ describe("DashboardV2 shell wiring", () => {
     expect(document.activeElement).toBe(main);
   });
 
+  it("hands the header a short date next to the full one", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+    const { currentDate, currentDateShort } = shell.header as { currentDate: string; currentDateShort: string };
+    expect(currentDateShort).toBeTruthy();
+    expect(currentDateShort).not.toContain("2026");
+    expect(currentDateShort.length).toBeLessThan(currentDate.length);
+  });
+
   it("passes the shell props to the header and the rail", async () => {
     await renderDashboard();
     await screen.findByTestId("home-tab-v2");
@@ -415,9 +429,11 @@ describe("DashboardV2 shell wiring", () => {
       isUnemployed: false,
       callCount: 0,
       compact: false,
-      badges: { unread: 0, offers: 0, players: 0, teams: 1, staff: 0 },
     });
-    expect(typeof shell.header?.onNavClick).toBe("function");
+    // The header no longer takes navigation or badges: the rail is the only navigation.
+    expect(shell.header).not.toHaveProperty("onNavClick");
+    expect(shell.header).not.toHaveProperty("badges");
+    expect(shell.header).not.toHaveProperty("stripVisible");
     expect(typeof shell.header?.onShowCalls).toBe("function");
     expect(shell.sidebar).toMatchObject({ compact: false, activeTab: "Home" });
   });
@@ -713,5 +729,100 @@ describe("DashboardV2 shell wiring", () => {
 
     await waitFor(() => expect(shell.header?.activeTab).toBe("Home"));
     await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
+  });
+});
+
+describe("DashboardV2 rail mode", () => {
+  class MockResizeObserver {
+    static all: MockResizeObserver[] = [];
+    constructor(private cb: (entries: Array<{ contentRect: { width: number; height: number } }>) => void) {
+      MockResizeObserver.all.push(this);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    emit(width: number, height: number) {
+      this.cb([{ contentRect: { width, height } }]);
+    }
+  }
+
+  beforeEach(() => {
+    MockResizeObserver.all = [];
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    document.documentElement.style.fontSize = "16px";
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: minimalGameState(),
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.documentElement.style.fontSize = "";
+  });
+
+  async function renderDashboard() {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+  }
+  const measure = (w: number, h: number) =>
+    act(() => MockResizeObserver.all.forEach((o) => o.emit(w, h)));
+
+  it("is Split while the body has no size", async () => {
+    await renderDashboard();
+    expect(shell.sidebar).toMatchObject({ railMode: "split" });
+  });
+
+  it("is already in Tree on the first committed render when the body has a size", async () => {
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 1280, height: 764, top: 0, left: 0, right: 1280, bottom: 764, x: 0, y: 0, toJSON() {},
+    } as DOMRect);
+    try {
+      await renderDashboard();
+      expect(shell.sidebar).toMatchObject({ railMode: "tree" });
+      } finally {
+      rect.mockRestore();
+    }
+  });
+
+  it("hands the sidebar the attention map built from the call items", async () => {
+    await renderDashboard();
+    expect(shell.sidebar).toHaveProperty("attention");
+    expect(shell.sidebar?.attention).toEqual({});
+  });
+
+  it("always passes Split on Android, whatever the body size, with the platform", async () => {
+    document.documentElement.dataset.platform = "android";
+    try {
+      await renderDashboard();
+      measure(5000, 5000);
+      expect(shell.sidebar).toMatchObject({ railMode: "split", platform: "android" });
+    } finally {
+      delete document.documentElement.dataset.platform;
+    }
+  });
+
+  it("passes Tree to the sidebar when the body fits the tree", async () => {
+    await renderDashboard();
+    measure(1280, 764);
+    expect(shell.sidebar).toMatchObject({
+      railMode: "tree",
+      railSlot: { slotW: 1280, slotH: 764, need: 622 },
+    });
+  });
+
+  it("falls back to Split at 960x640", async () => {
+    await renderDashboard();
+    measure(1280, 764);
+    measure(960, 595);
+    expect(shell.sidebar).toMatchObject({ railMode: "split" });
   });
 });

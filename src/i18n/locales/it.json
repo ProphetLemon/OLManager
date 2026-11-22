@@ -30,6 +30,13 @@
         "unknown": "Qualcosa è andato storto: {{error}}"
       }
     },
+    "loadFailed": "Non è stato possibile caricare il salvataggio: {{error}}",
+    "saveStatus": {
+      "otherVersion": "Di un’altra versione",
+      "unreadable": "Non leggibile",
+      "otherVersionReason": "Salvato con il formato {{found}}, che questa versione non legge. Resta sul tuo dispositivo: esportalo per conservarne una copia oppure aprilo con la versione che lo ha creato.",
+      "unreadableReason": "Il file è danneggiato o incompleto, quindi non può essere caricato. Resta sul tuo dispositivo: esportalo per conservare ciò che contiene oppure eliminalo."
+    },
     "noResults": "Nessun risultato",
     "failedStartGame": "Impossibile avviare il gioco: {{error}}",
     "community": "Community",
@@ -56,15 +63,12 @@
     "invalidDob": "Data di nascita non valida"
   },
   "rosterOverlay": {
-    "asOf": "Rose aggiornate al {{date}}",
+    "asOf": "Rose al {{date}}",
     "attribution": "Dati delle rose: collaboratori di {{name}},",
-    "update": "Aggiorna rose",
-    "updating": "Aggiornamento...",
     "checking": "Controllo degli aggiornamenti delle rose…",
-    "checkFailed": "Impossibile controllare gli aggiornamenti delle rose. Vengono usate le rose mostrate.",
+    "checkFailed": "Impossibile controllare gli aggiornamenti delle rose",
     "updated": "Rose aggiornate al {{date}}",
-    "upToDate": "Le rose sono già aggiornate",
-    "error": "Impossibile aggiornare le rose: {{message}}. Puoi comunque iniziare con le rose attuali."
+    "upToDate": "Le rose sono aggiornate ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Inizia carriera",
@@ -183,6 +187,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "In attesa del controllo delle rose…",
     "searchLeague": "Cerca campionati...",
     "regionalLeagues": "Leghe regionali",
     "confirming": "Conferma in corso...",
@@ -1573,6 +1578,10 @@
     "updateAvailableDetail": "La versione {{version}} è disponibile",
     "upToDate": "Hai l'ultima versione",
     "noPlatformBuild": "Esiste una versione, ma non ha ancora una build per il tuo sistema",
+    "androidUpdateAvailable": "È disponibile una nuova versione. Scarica il nuovo APK dalla pagina della release.",
+    "androidUpdateKeepsSaves": "Installandolo sopra l'app attuale i tuoi salvataggi vengono conservati.",
+    "androidUpdateDownload": "Scarica il nuovo APK",
+    "androidUpdateLater": "Più tardi",
     "autoImport": "Importa automaticamente il database",
     "autoImportDesc": "Scarica il database pubblico di OLMDBManager (squadre, giocatori, staff e immagini) e aggiorna i dati di gioco.",
     "data": "Dati",
@@ -3683,10 +3692,13 @@
   "onAir": {
     "nav": {
       "rail": "Navigazione principale",
-      "strip": "Sezioni {{group}}",
+      "sections": "Sezioni {{group}}",
       "skip": "Vai al contenuto principale",
       "bug": "Segnala bug",
-      "manager": "Profilo manager"
+      "manager": "Profilo manager",
+      "needsCall_one": "{{label}}, richiede una tua decisione",
+      "needsCall_other": "{{label}}, {{count}} richiedono una tua decisione",
+      "more": "Altro"
     },
     "bar": {
       "phase": {

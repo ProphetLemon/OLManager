@@ -10,6 +10,9 @@
 //!   occur (a fixed pair has to leave the list) and the list may never grow past
 //!   `DEFERRED_CEILING`, so the count can only go down.
 //! - `rated_one`: a record allowed at OVR 1 or with every attribute at 0.
+//! - `dual_roles`: one person who is both a player and a staff member (ids: player, then staff),
+//!   allowed only when Leaguepedia lists him in both roles on one team. Each must still occur.
+//!   `DUAL_ROLES` in scripts/world/lib/gates.mjs holds the same pairs for the refresh gate.
 //!
 //! Set `OLM_WI_PRINT=1` to print every suspect pair as ready-to-paste JSON entries.
 
@@ -17,6 +20,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use chrono::NaiveDate;
 use olm_core::domain::player::Player;
+use olm_core::domain::staff::Staff;
 use olm_core::domain::stats::LolRole;
 use olm_core::domain::team::TeamKind;
 use olm_core::game::Game;
@@ -31,7 +35,13 @@ const REVIEW: &str = include_str!("world_identity_review.json");
 
 /// The most deferred pairs the review file may hold. Lower it when pairs are fixed; raising it
 /// needs a reviewed reason in the change that does so.
-const DEFERRED_CEILING: usize = 29;
+/// 28 since the overlay of 2026-11-17 moves Chapters (`player-0aee4cee`) instead of adding a
+/// second record: the Leaguepedia KUMEW page reads Leandro Gabriel Paiano Krenz, born
+/// 2005-01-17, AR, Bot, and the game record has the same name and birth date, so the
+/// deferred pair `0aee4cee`/`4362e7be` no longer occurs. 27 since its pool also leaves out Howl
+/// (`dea22e1c`, Kim Min-jun, born 2009-05-04, KR): the world build hides him as the same person as Eclipse
+/// `d62e9487` (same real name, KR, birth dates six days apart), so the deferred pair `d62e9487`/`dea22e1c` is gone.
+const DEFERRED_CEILING: usize = 27;
 
 /// Main clubs (the user's club apart) missing a lane at day 0, by the lane the club page shows.
 /// Re-measured after each change; a ratchet, so it only moves down.
@@ -44,6 +54,7 @@ struct Review {
     namesakes: Vec<PairEntry>,
     deferred: Vec<PairEntry>,
     rated_one: Vec<RatedEntry>,
+    dual_roles: Vec<PairEntry>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -71,7 +82,12 @@ fn pair(a: &str, b: &str) -> Pair {
 
 fn review() -> Review {
     let review: Review = serde_json::from_str(REVIEW).expect("world_identity_review.json parses");
-    for entry in review.namesakes.iter().chain(&review.deferred) {
+    for entry in review
+        .namesakes
+        .iter()
+        .chain(&review.deferred)
+        .chain(&review.dual_roles)
+    {
         assert!(
             !entry.reason.trim().is_empty() && !entry.class.trim().is_empty(),
             "review entry {:?} needs a class and a reason",
@@ -349,6 +365,192 @@ fn ai_guard_hidden_free_agents() {
     }
 }
 
+/// Measurement: the pool adds of the bundled overlay that the world build folds away (K2,
+/// `collapse_same_person_records`) before the player sees them, with the records that share a
+/// folded name with each.
+///
+/// ```text
+/// cargo test --lib pool_adds_folded_by_the_world_build -- --ignored --nocapture
+/// ```
+#[test]
+#[ignore = "measurement harness; run by hand"]
+fn pool_adds_folded_by_the_world_build() {
+    init_message_stores();
+    let overlay = bundled_world_overlay().expect("bundled overlay");
+    let game = &new_game(&overlay, "lec-fnatic").0;
+    let in_world: BTreeSet<&str> = game.players.iter().map(|p| p.id.as_str()).collect();
+    let mut folded = 0;
+    for op in &overlay.players {
+        let olm_core::world_overlay::PlayerOp::Add { player, .. } = op else {
+            continue;
+        };
+        if player.team_id.is_some() || in_world.contains(player.id.as_str()) {
+            continue;
+        }
+        folded += 1;
+        let names = folded_names(player);
+        let twins: Vec<String> = game
+            .players
+            .iter()
+            .filter(|other| folded_names(other).iter().any(|n| names.contains(n)))
+            .map(|other| describe(game, &other.id))
+            .collect();
+        println!(
+            "FOLDED {} {:?}/{:?} dob={:?} nat={} -> {}",
+            player.id, player.match_name, player.full_name, player.date_of_birth,
+            player.nationality, twins.join(" | ")
+        );
+    }
+    println!("FOLDED total {folded}");
+}
+
+/// The day the staff generator writes when it has no birth date (a guess, flagged `dob_approx`).
+const STAFF_PLACEHOLDER_DOB: &str = "1990-01-01";
+
+/// A birth date that tells people apart: readable, and not a day a generator writes for an unknown one.
+fn identifying_dob(raw: &str) -> Option<NaiveDate> {
+    let placeholders = [parse_dob(PLACEHOLDER_DOB), parse_dob(STAFF_PLACEHOLDER_DOB)];
+    parse_dob(raw).filter(|day| !placeholders.contains(&Some(*day)))
+}
+
+/// The page hash of an id made from a Leaguepedia page: `player-` or `staff-` and 8 hex digits.
+/// A player and a staff member with the same hash were made from the same page.
+fn page_hash(id: &str) -> Option<&str> {
+    let hash = id
+        .strip_prefix("player-")
+        .or_else(|| id.strip_prefix("staff-"))?;
+    (hash.len() == 8 && hash.bytes().all(|b| b.is_ascii_hexdigit())).then_some(hash)
+}
+
+/// A staff member's folded names: the nick, the real name and first plus last name.
+fn staff_names(staff: &Staff) -> Vec<String> {
+    let full = format!("{} {}", staff.first_name, staff.last_name);
+    let mut names = Vec::with_capacity(3);
+    for raw in [
+        staff.nickname.as_str(),
+        staff.first_name.as_str(),
+        full.as_str(),
+    ] {
+        let folded = fold_name(raw);
+        if !folded.is_empty() && !names.contains(&folded) {
+            names.push(folded);
+        }
+    }
+    names
+}
+
+/// Every (player id, staff id) of one person held both as a player and as a staff member: ids
+/// made from the same page, or a shared folded name and the same identifying birth date. The
+/// refresh gate `no-player-staff-twins` (scripts/world/lib/gates.mjs) uses the same keys.
+fn player_staff_twins(game: &Game) -> BTreeSet<Pair> {
+    let mut by_hash: HashMap<&str, Vec<&str>> = HashMap::new();
+    let mut by_name_and_birth: HashMap<(String, NaiveDate), Vec<&str>> = HashMap::new();
+    for staff in &game.staff {
+        if let Some(hash) = page_hash(&staff.id) {
+            by_hash.entry(hash).or_default().push(&staff.id);
+        }
+        if let Some(born) = identifying_dob(&staff.date_of_birth) {
+            for name in staff_names(staff) {
+                by_name_and_birth
+                    .entry((name, born))
+                    .or_default()
+                    .push(&staff.id);
+            }
+        }
+    }
+    let mut found = BTreeSet::new();
+    let mut note = |player: &Player, staff_ids: Option<&Vec<&str>>| {
+        for staff_id in staff_ids.into_iter().flatten() {
+            found.insert((player.id.clone(), (*staff_id).to_string()));
+        }
+    };
+    for player in &game.players {
+        note(
+            player,
+            page_hash(&player.id).and_then(|hash| by_hash.get(hash)),
+        );
+        if let Some(born) = identifying_dob(&player.date_of_birth) {
+            for name in folded_names(player) {
+                note(player, by_name_and_birth.get(&(name, born)));
+            }
+        }
+    }
+    found
+}
+
+fn describe_staff(game: &Game, id: &str) -> String {
+    game.staff
+        .iter()
+        .find(|staff| staff.id == id)
+        .map(|s| {
+            format!(
+                "{id} {:?}/{:?} dob={:?} nat={} role={:?} team={}",
+                s.nickname,
+                s.first_name,
+                s.date_of_birth,
+                s.nationality,
+                s.role,
+                s.team_id.as_deref().unwrap_or("FA"),
+            )
+        })
+        .unwrap_or_else(|| format!("{id} (absent)"))
+}
+
+fn report_player_staff(game: &Game, pairs: &BTreeSet<Pair>) -> String {
+    pairs
+        .iter()
+        .map(|(player, staff)| {
+            format!(
+                "\n  {}\n  {}\n",
+                describe(game, player),
+                describe_staff(game, staff)
+            )
+        })
+        .collect()
+}
+
+/// (player id, staff id) of each reviewed dual role.
+fn dual_roles(review: &Review) -> BTreeSet<Pair> {
+    review
+        .dual_roles
+        .iter()
+        .map(|entry| (entry.ids[0].clone(), entry.ids[1].clone()))
+        .collect()
+}
+
+/// One person, one record: the pool used to add, as a free agent player, a coach the roster
+/// overlay adds to a club's staff (and a pool coach could be a player the overlay adds).
+#[test]
+fn no_person_is_both_a_player_and_a_staff_member() {
+    let game = world();
+    let allowed = dual_roles(&review());
+    let twins: BTreeSet<Pair> = player_staff_twins(game)
+        .difference(&allowed)
+        .cloned()
+        .collect();
+    assert!(
+        twins.is_empty(),
+        "{} person(s) both a player and a staff member:{}",
+        twins.len(),
+        report_player_staff(game, &twins)
+    );
+}
+
+#[test]
+fn reviewed_dual_roles_still_occur() {
+    let game = world();
+    let stale: BTreeSet<Pair> = dual_roles(&review())
+        .difference(&player_staff_twins(game))
+        .cloned()
+        .collect();
+    assert!(
+        stale.is_empty(),
+        "{} reviewed dual role(s) no longer occur; remove them from the review file:{}",
+        stale.len(),
+        report_player_staff(game, &stale)
+    );
+}
+
 #[test]
 fn deferred_pairs_still_occur_and_never_grow() {
     let game = world();
@@ -458,15 +660,9 @@ fn collapsed_same_club_records_are_tombstoned_and_the_moved_survivor_stays_prote
     let retired: BTreeSet<&str> = game.retired_player_ids.iter().map(String::as_str).collect();
     for loser in [
         "player-2ba313af", // Ace, the stub
-        "player-5236c06a", // Ace, the pool add
         "player-e340e76a", // Samkz, the cd stub
         "player-067b9a1f", // Kaii, the les record
         "player-20d7dc63", // Sankaizer, the stub
-        "player-e6070e34", // BetaTwinz, the pool add
-        "player-6f539319", // Pauporter, the pool add
-        "player-988c0230", // Kellie, the pool add
-        "player-723229ff", // Papiteero, the pool add
-        "player-776a86c8", // Lurox, the pool add
     ] {
         assert!(retired.contains(loser), "{loser} is not tombstoned");
         assert!(
@@ -478,6 +674,47 @@ fn collapsed_same_club_records_are_tombstoned_and_the_moved_survivor_stays_prote
         game.moved_player_ids.contains("player-d9d06923"),
         "the moved Samkz keeps its protection"
     );
+}
+
+/// The pool adds of the overlay of 2026-11-14 that the world build folded into a catalog record, and so tombstoned:
+/// Ace `5236c06a`, BetaTwinz `e6070e34`, Pauporter `6f539319`, Kellie `988c0230`, Papiteero `723229ff` and Lurox
+/// `776a86c8`. The overlay of 2026-11-17 no longer adds them: its pool leaves out a person the world build would
+/// fold or hide (`pool-no-duplicates`, same rules as `collapse_same_person_records`), so a new world never holds
+/// them and there is nothing to tombstone. Ace, for one: Leaguepedia's "Ace (Ignacio David Piaggio)" page reads
+/// Uruguay, Bot, Senshi eSports, and the catalog record `cea7803b` has the same real name, UY and ADC. The
+/// collapse that tombstones them when an overlay does add them is covered by
+/// `a_world_holding_the_old_pool_add_of_ace_keeps_only_the_catalog_record` in `olm_core::world_catalog`; a save that
+/// already holds them is not repaired (`commands::import`).
+#[test]
+fn pool_adds_the_world_build_used_to_fold_are_no_longer_added() {
+    let game = world();
+    let overlay = bundled_world_overlay().expect("bundled overlay");
+    let added = overlay.teamless_added_player_ids();
+    for id in [
+        "player-5236c06a",
+        "player-e6070e34",
+        "player-6f539319",
+        "player-988c0230",
+        "player-723229ff",
+        "player-776a86c8",
+    ] {
+        assert!(!added.contains(id), "{id} is a pool add of the overlay again");
+        assert!(game.players.iter().all(|p| p.id != id), "{id} is in the world");
+    }
+}
+
+/// Every pool add of the bundled overlay reaches a new world: none is folded into a record on a club.
+#[test]
+fn every_pool_add_of_the_bundled_overlay_survives_the_world_build() {
+    let game = world();
+    let overlay = bundled_world_overlay().expect("bundled overlay");
+    let in_world: BTreeSet<&str> = game.players.iter().map(|p| p.id.as_str()).collect();
+    let folded: Vec<String> = overlay
+        .teamless_added_player_ids()
+        .into_iter()
+        .filter(|id| !in_world.contains(id.as_str()))
+        .collect();
+    assert!(folded.is_empty(), "{} pool add(s) folded away: {folded:?}", folded.len());
 }
 
 /// A player's lane and natural role are one fact: where both name a lane they agree. The

@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardHeaderV2 } from "@/ui-v2/dashboard/DashboardHeaderV2";
 import { DashboardSidebarV2 } from "@/ui-v2/dashboard/DashboardSidebarV2";
-import { SectionStripV2 } from "@/ui-v2/shell/SectionStripV2";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
@@ -21,8 +20,6 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
     </button>
   ),
 }));
-
-const BADGES = { unread: 2, offers: 1, players: 20, teams: 12, staff: 5 };
 
 function renderShell() {
   return render(
@@ -54,11 +51,8 @@ function renderShell() {
         onContinue={vi.fn()}
         onSkipToMatchDay={vi.fn()}
         onSkipToNextDay={vi.fn()}
-        onNavigate={vi.fn()}
         teamName="Night Owls"
         activeTab="Squad"
-        onNavClick={vi.fn()}
-        badges={BADGES}
         callCount={2}
         onShowCalls={vi.fn()}
       />
@@ -88,6 +82,17 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
     }
   });
 
+  it("has exactly one navigation landmark in the whole dashboard: the rail", () => {
+    renderShell();
+    const navs = screen.getAllByRole("navigation");
+    expect(navs).toHaveLength(1);
+    expect(navs[0]).toHaveAccessibleName("Main navigation");
+    // The group's sections are a labelled group inside that nav, not a second landmark.
+    expect(within(navs[0]).getByRole("group", { name: /Club/i })).toBeInTheDocument();
+    // And no complementary landmark wraps the navigation.
+    expect(screen.queryByRole("complementary")).toBeNull();
+  });
+
   it("labels every navigation landmark uniquely", () => {
     renderShell();
     const labels = screen.getAllByRole("navigation").map((n) => n.getAttribute("aria-label"));
@@ -95,24 +100,28 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
     expect(new Set(labels).size).toBe(labels.length);
   });
 
-  it("marks one current rail stop and one current strip tab, never by colour alone", () => {
+  it("marks the current launcher and its panel tab, one per list, never by colour alone", () => {
     renderShell();
     const rail = screen.getByRole("navigation", { name: "Main navigation" });
-    const current = rail.querySelectorAll('[aria-current="page"]');
-    expect(current).toHaveLength(1);
-    expect(current[0]).toHaveAccessibleName(/^Club/);
-    const strip = screen.getByRole("navigation", { name: /Club/i, hidden: false });
-    expect(strip).not.toBe(rail);
-    const active = within(strip).getAllByRole("button").filter((b) => b.hasAttribute("aria-current"));
-    expect(active).toHaveLength(1);
+    const panel = within(rail).getByRole("group", { name: /Club/i });
+    const inPanel = panel.querySelectorAll('[aria-current="page"]');
+    expect(inPanel).toHaveLength(1);
+    expect(inPanel[0]).toHaveAccessibleName("Squad");
+    const outside = [...rail.querySelectorAll('[aria-current="page"]')].filter((el) => !panel.contains(el));
+    expect(outside).toHaveLength(1);
+    expect(outside[0]).toHaveAccessibleName(/^Club/);
+    expect(inPanel[0].querySelector('[data-slot="rail-item-bar"]')).not.toBeNull();
   });
 
-  it("uses no positive tabindex and one tab stop per roving widget", () => {
+  it("uses no positive tabindex and one tab stop per roving widget (the rail and its panel)", () => {
     const { container } = renderShell();
     expect(container.querySelector('[tabindex]:not([tabindex="0"]):not([tabindex="-1"])')).toBeNull();
     const rail = screen.getByRole("navigation", { name: "Main navigation" });
-    const stops = rail.querySelectorAll('[data-slot="rail-stops"] button[tabindex="0"], [data-slot="rail-pinned"] button[tabindex="0"]');
-    expect(stops).toHaveLength(1);
+    // Two widgets, one Tab stop each (R15): the rail's current stop and the panel's current row.
+    const stops = rail.querySelectorAll('button[tabindex="0"]');
+    expect(stops).toHaveLength(2);
+    const panel = within(rail).getByRole("group", { name: /Club/i });
+    expect([...stops].filter((s) => panel.contains(s))).toHaveLength(1);
   });
 
   it("has no duplicate ids and no hidden focusable controls", () => {
@@ -123,19 +132,26 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
   });
 });
 
-describe("section strip keyboard", () => {
-  it("moves with arrows without wrapping and opens with Enter", () => {
+describe("compact (the end-of-season screen)", () => {
+  it("renders one landmark, no panel and a rail that still navigates", () => {
     const onNavClick = vi.fn();
-    render(<SectionStripV2 group="club" activeTab="Squad" onNavClick={onNavClick} badges={BADGES} label="Club" />);
-    const tabs = screen.getAllByRole("button");
-    tabs[0].focus();
-    fireEvent.keyDown(tabs[0], { key: "ArrowLeft" });
-    expect(tabs.filter((t) => t.getAttribute("tabindex") === "0")).toHaveLength(1);
-    fireEvent.keyDown(document.activeElement as Element, { key: "End" });
-    const last = document.activeElement as HTMLElement;
-    fireEvent.keyDown(last, { key: "ArrowRight" });
-    expect(document.activeElement).toBe(last);
-    fireEvent.keyDown(last, { key: "Enter" });
-    expect(onNavClick).toHaveBeenCalledTimes(1);
+    render(
+      <DashboardSidebarV2
+        activeTab="Squad"
+        onNavClick={onNavClick}
+        unreadMessagesCount={0}
+        managerName="Boss"
+        teamName="Night Owls"
+        teamLogo={null}
+        isUnemployed={false}
+        onNavigateSettings={vi.fn()}
+        onExitClick={vi.fn()}
+        compact
+      />,
+    );
+    expect(screen.getAllByRole("navigation")).toHaveLength(1);
+    expect(screen.queryByRole("group", { name: /sections/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Inbox" }));
+    expect(onNavClick).toHaveBeenCalledWith("Inbox");
   });
 });

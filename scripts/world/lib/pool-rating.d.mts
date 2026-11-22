@@ -9,6 +9,10 @@ export const RATING_GAME_TIER_DEFAULT: "game-tier-default";
 export const RATING_JUDGMENT_DEFAULT: "judgment-default";
 export const JUDGMENT_DEFAULT_TIER: number;
 export const STATS_MIN_GAMES: number;
+/** The fewest games in the activity window that settle a player's position. */
+export const POSITION_MIN_GAMES: number;
+/** The role most of each player's games in the window were played in, with the games and the newest date. */
+export function recentRolesFromRows(rows: Array<{ playerKey: string; role: string; date: string }>, options: { since: string }): Map<string, { position: string; games: number; last: string }>;
 export const POOL_LEAGUE_SD: number;
 export const POOL_MAX_CHANGE: number;
 
