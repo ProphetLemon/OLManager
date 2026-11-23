@@ -23,6 +23,8 @@ let listening = false;
 const verdicts = new WeakMap<Event, PaletteEntryPop | null>();
 /** Each waiting run, with its fallback timer. */
 const waiters = new Map<() => void, number>();
+/** The fallback armed while the entry is coming off; see `startRelease`. */
+let releaseTimer: number | undefined;
 
 /**
  * How long an activated row waits for the entry's pop before it runs anyway (R89): a pop
@@ -44,6 +46,35 @@ function dropWaiters(): void {
   waiters.clear();
 }
 
+function clearReleaseTimer(): void {
+  if (releaseTimer !== undefined) window.clearTimeout(releaseTimer);
+  releaseTimer = undefined;
+}
+
+/**
+ * The fallback for an entry that is coming off: if its pop never arrives, forget the entry
+ * (and push the one a reopening asked for), so `entry` cannot stay `"releasing"` for good.
+ */
+function settleRelease(): void {
+  clearReleaseTimer();
+  if (entry === "releasing") {
+    entry = "none";
+    if (repush) {
+      repush = false;
+      push();
+    }
+  }
+  runWaiters();
+}
+
+/** Takes the entry off with `history.back()` and arms the fallback; a new call restarts it. */
+function startRelease(): void {
+  entry = "releasing";
+  clearReleaseTimer();
+  releaseTimer = window.setTimeout(settleRelease, PALETTE_ENTRY_POP_TIMEOUT_MS);
+  window.history.back();
+}
+
 function push(): void {
   // The router's state (`idx`, `key`) stays, so React Router reads this entry as its own.
   const state = (window.history.state ?? {}) as Record<string, unknown>;
@@ -57,6 +88,7 @@ function classify(event: Event): PaletteEntryPop | null {
   if (entry !== "none") {
     verdict = entry === "pushed" ? "back" : "release";
     entry = "none";
+    clearReleaseTimer();
     if (repush) {
       repush = false;
       push();
@@ -78,6 +110,9 @@ export function pushPaletteEntry(): void {
   if (entry === "none") push();
   else if (entry === "releasing") {
     repush = true;
+    // The pop may still never come: give the reopening its own full wait.
+    clearReleaseTimer();
+    releaseTimer = window.setTimeout(settleRelease, PALETTE_ENTRY_POP_TIMEOUT_MS);
     // A reopening drops the row its close was waiting to run (R89).
     dropWaiters();
   }
@@ -87,8 +122,7 @@ export function pushPaletteEntry(): void {
 export function releasePaletteEntry(): void {
   repush = false;
   if (entry !== "pushed") return;
-  entry = "releasing";
-  window.history.back();
+  startRelease();
 }
 
 /** Whether this pop took the palette's entry off, and how; `null` for any other pop. */
@@ -108,10 +142,7 @@ export function whenPaletteEntryOff(run: () => void): () => void {
   }
   // A wrapper per call, so the same function waiting twice is two waiters.
   const waiter = () => run();
-  const timer = window.setTimeout(() => {
-    if (entry === "releasing") entry = "none";
-    runWaiters();
-  }, PALETTE_ENTRY_POP_TIMEOUT_MS);
+  const timer = window.setTimeout(settleRelease, PALETTE_ENTRY_POP_TIMEOUT_MS);
   waiters.set(waiter, timer);
   return () => {
     window.clearTimeout(timer);
@@ -130,8 +161,7 @@ export function forgetPaletteEntry(): void {
   dropWaiters();
   if (entry !== "pushed") return;
   if ((window.history.state as { olmPalette?: unknown } | null)?.olmPalette) {
-    entry = "releasing";
-    window.history.back();
+    startRelease();
   } else {
     entry = "none";
   }
