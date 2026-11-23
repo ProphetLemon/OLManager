@@ -164,6 +164,16 @@ describe("DashboardSidebarV2 rail", () => {
     expect(stop(/^Manager profile/)).toHaveAttribute("tabindex", "0");
   });
 
+  it("outlines the manager avatar in forced colours only while Manager is current (R97)", () => {
+    const { unmount } = setup({ activeTab: "Manager" });
+    const ring = stop(/^Manager profile/).querySelector('span[aria-hidden="true"], img') as HTMLElement;
+    expect(ring.className).toContain("forced-colors:outline-[Highlight]");
+    unmount();
+    setup({ activeTab: "Home" });
+    const idle = stop(/^Manager profile/).querySelector('span[aria-hidden="true"], img') as HTMLElement;
+    expect(idle.className).not.toContain("forced-colors:outline");
+  });
+
   it("keeps stops scrollable while the pinned block is separate", () => {
     setup();
     const scroller = nav().querySelector('[data-slot="rail-stops"]') as HTMLElement;

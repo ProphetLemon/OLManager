@@ -31,7 +31,8 @@ export function RailActiveBar({ size }: { size: "stop" | "row" }) {
       aria-hidden="true"
       data-slot="rail-item-bar"
       className={cn(
-        "absolute inset-y-0 -start-1.5 my-auto rounded-e-sm bg-club-text",
+        // Forced colours drops backgrounds, so the bar keeps its fill in a system colour.
+        "absolute inset-y-0 -start-1.5 my-auto rounded-e-sm bg-club-text forced-color-adjust-none forced-colors:bg-[Highlight]",
         size === "stop" ? "h-8 max-h-full w-1" : "h-4 w-[3px]",
       )}
     />

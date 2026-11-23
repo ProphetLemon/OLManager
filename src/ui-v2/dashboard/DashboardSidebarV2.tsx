@@ -544,7 +544,9 @@ export function DashboardSidebarV2({
             alt=""
             className={cn(
               "size-7 rounded-full object-cover ring-2",
-              activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
+              activeTab === "Manager"
+                ? "ring-[3px] ring-club-text forced-colors:outline-2 forced-colors:outline-solid forced-colors:outline-[Highlight]"
+                : "ring-line",
             )}
           />
         ) : (
@@ -552,7 +554,9 @@ export function DashboardSidebarV2({
             aria-hidden="true"
             className={cn(
               "flex size-7 items-center justify-center rounded-full bg-muted font-heading text-nav font-bold text-foreground ring-2",
-              activeTab === "Manager" ? "ring-[3px] ring-club-text" : "ring-line",
+              activeTab === "Manager"
+                ? "ring-[3px] ring-club-text forced-colors:outline-2 forced-colors:outline-solid forced-colors:outline-[Highlight]"
+                : "ring-line",
             )}
           >
             {initials}
