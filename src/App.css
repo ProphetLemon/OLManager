@@ -231,3 +231,15 @@ option {
   background: var(--card);
   color: var(--foreground);
 }
+
+/* Phone: the content area scrolls as one page and each panel takes its own height.
+   Desktop pins every tab to the window and scrolls inside each panel, which leaves
+   slivers in 300 px of height. Unlayered on purpose: it must win over the utilities. */
+[data-form="phone"] #main-content {
+  overflow-y: auto;
+}
+[data-form="phone"] #main-content > * {
+  flex: none;
+  height: auto;
+  min-height: 100%;
+}
