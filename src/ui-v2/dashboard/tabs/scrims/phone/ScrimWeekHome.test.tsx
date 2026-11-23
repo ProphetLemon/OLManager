@@ -424,3 +424,50 @@ describe("Semana: the club's name and the safety scroll", () => {
     expect(document.querySelector('[data-slot="scrim-week-home"]')!.className).toContain("overflow-y-auto");
   });
 });
+
+describe("Semana: team names in the hero are never cut", () => {
+  const LONG_MINE = team("mine", "Real Avilés Industrial", "RAI");
+  const LONG_RIVAL = team("a", "Team Heretics Academy", "THA");
+  const mountLong = (week: WeeklyScrimContext, today = makeToday()) =>
+    render(
+      <ScrimWeekHome
+        home={buildPhoneHome({ week, today })}
+        myTeam={LONG_MINE}
+        teams={[LONG_MINE, LONG_RIVAL, ...TEAMS.slice(2)]}
+        weekdayLabels={DAY_LABELS}
+        teamNameById={new Map([["mine", LONG_MINE.name], ["a", LONG_RIVAL.name], ["b", "Bravo Gaming"]])}
+        todayMessage="The day's sentence."
+        lockText={null}
+        onOpen={onOpen}
+      />,
+    );
+  const matchupNames = () => [...document.querySelectorAll('[data-slot="phone-week-matchup"] [data-slot="phone-week-team-name"]')] as HTMLElement[];
+
+  it("lets both names of a matchup take two lines and gives their columns no fixed width", () => {
+    // Next, up next and decide heroes draw the matchup: the tallest is the plain one, 52 + 2 + 16 = 70 of the 82 px, 86 if a name wraps.
+    mountLong(makeWeek(4, { 0: lockedPlan("a", "b") }, lockWeek), makeToday());
+    const names = matchupNames();
+    expect(names.map((name) => name.textContent)).toEqual(["Real Avilés Industrial", "Team Heretics Academy"]);
+    for (const name of names) {
+      expect(name.className).toContain("line-clamp-2");
+      expect(name.className).not.toContain("truncate");
+      expect(name.parentElement!.className).not.toMatch(/\bw-(24|32)\b/);
+    }
+  });
+
+  it("does the same in the decide hero", () => {
+    mountLong(makeWeek(4, { 0: { ...played(false, 61, "Reviewed"), report: report({ post_decision: null }) } }, lockWeek), decideToday);
+    expect(matchupNames()).toHaveLength(2);
+    for (const name of matchupNames()) {
+      expect(name.className).toContain("line-clamp-2");
+      expect(name.className).not.toContain("truncate");
+    }
+  });
+
+  it("shows the rival of the Today hero whole too", () => {
+    mountLong(makeWeek(4, { 0: lockedPlan("a") }, lockWeek), plannedToday());
+    const name = screen.getByText("Team Heretics Academy", { selector: '[data-slot="phone-week-today-rival"]' });
+    expect(name.className).not.toContain("truncate");
+    expect(name.className).toContain("line-clamp-2");
+  });
+});

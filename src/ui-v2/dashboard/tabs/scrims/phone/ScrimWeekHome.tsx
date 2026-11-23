@@ -64,14 +64,14 @@ function Matchup({ mine, rival, rivalLabel, compact }: { mine: TeamIdentity; riv
   const { t } = useTranslation();
   return (
     <span data-slot="phone-week-matchup" className="flex items-start gap-3">
-      <span className="flex w-24 flex-col items-center gap-0.5">
+      <span className="flex min-w-16 max-w-44 flex-col items-center gap-0.5">
         <TeamShield identity={mine} size={size} />
-        <span aria-hidden="true" className="max-w-full truncate font-heading text-entry font-semibold leading-4">{mine.name}</span>
+        <span data-slot="phone-week-team-name" aria-hidden="true" className="max-w-full break-words text-center font-heading text-entry font-semibold leading-4 line-clamp-2">{mine.name}</span>
       </span>
       <span aria-hidden="true" className="font-heading text-section font-bold leading-none text-muted-foreground">{t("common.vs")}</span>
-      <span className="flex w-32 flex-col items-center gap-0.5">
+      <span className="flex min-w-16 max-w-44 flex-col items-center gap-0.5">
         {rival ? <TeamShield identity={rival} size={size} /> : <EmptyShield size={size} />}
-        <span aria-hidden={rival ? true : undefined} className="max-w-full truncate font-heading text-entry font-semibold leading-4">{rivalLabel}</span>
+        <span data-slot="phone-week-team-name" aria-hidden={rival ? true : undefined} className="max-w-full break-words text-center font-heading text-entry font-semibold leading-4 line-clamp-2">{rivalLabel}</span>
       </span>
     </span>
   );
@@ -168,7 +168,7 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
               {rival ? <TeamShield identity={rival} size="small" /> : <EmptyShield size="small" />}
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-caption leading-3.5 text-muted-foreground">{t("scrims.todayOpponent")}</span>
-                <span className="truncate font-heading text-entry font-bold leading-5">{rival?.name ?? t("scrims.noOpponentSet")}</span>
+                <span data-slot="phone-week-today-rival" className="break-words font-heading text-entry font-bold leading-4 line-clamp-2">{rival?.name ?? t("scrims.noOpponentSet")}</span>
               </div>
             </div>
             {hero.risk ? (
