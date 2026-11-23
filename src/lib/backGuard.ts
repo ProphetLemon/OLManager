@@ -1,7 +1,20 @@
-import { paletteHoldsEntry } from "@/ui-v2/palette/paletteHistory";
+import { paletteEntryPhase, paletteHoldsEntry } from "@/ui-v2/palette/paletteHistory";
 
 /**
  * What the system Back means while a screen is showing, on Android.
+ *
+ * Primary path, the native `back-button` event. Tauri's Android plugin traverses the history
+ * (or finishes the activity when it cannot) only when no JS listener is registered for it; a
+ * listener makes it just emit `{ canGoBack }`. `registerNativeBack` registers one at startup
+ * and `handleNativeBack` decides from the slot, never from the payload (`canGoBack` can be
+ * stale by the time the handler runs). A hold therefore touches no history at all, so the
+ * WebView never sits on index 0 between a traversal and a `history.forward()` that a busy
+ * main thread delays, where a second press would find `canGoBack()` false and close the app.
+ *
+ * Fallback, the `popstate` guard below, for when the registration failed or has not resolved
+ * yet (the native default is then in force) and for pops nobody pressed Back for (the
+ * `history.back()` of the palette's release or of a "go back" press). The rest of this
+ * comment is about it.
  *
  * The WebView's Back walks its browser history and raises `popstate` on `window`. Chromium
  * runs the listeners of that event in registration order, whatever their capture flag, and
@@ -25,6 +38,12 @@ import { paletteHoldsEntry } from "@/ui-v2/palette/paletteHistory";
  *
  * The pop that `forward()` raises is ours and is swallowed whichever screen is mounted when
  * it lands, so the pending restore lives here and not in a component.
+ *
+ * Interplay: the pop a native "go back" press raises (nothing set) is read by the guard
+ * against the slot at the time it lands. Still nothing set: it goes to the router. A menu
+ * has mounted since (two quick presses on Settings): the guard exits, which is what the
+ * second press means. The dashboard has: the guard holds it, so the player stays on the
+ * dashboard. Either way the app is left on a screen that is showing and not stuck.
  */
 export type BackMeaning = { kind: "hold" } | { kind: "exit"; exit: () => Promise<void> };
 
@@ -98,4 +117,60 @@ export function setBackMeaning(next: BackMeaning): () => void {
 export function resetBackGuardForTests(): void {
   meaning = null;
   settleRestore();
+}
+
+/** The payload of Tauri's Android `back-button` event. */
+export type NativeBackPayload = { canGoBack: boolean };
+
+function logExitFailure(error: unknown): void {
+  console.error("Failed to exit app:", error);
+}
+
+function callExit(exit: () => Promise<void>): void {
+  try {
+    exit().catch(logExitFailure);
+  } catch (error) {
+    logExitFailure(error);
+  }
+}
+
+/**
+ * What a native Back press does, once a JS listener owns the event. The slot decides first;
+ * `canGoBack` is read only when nothing is set (Settings, team selection, the match screens),
+ * where Back goes back, or closes the app when there is nowhere to go. The palette's entry
+ * is checked before the slot, as in the popstate guard: pushed, a press takes it off with
+ * `history.back()` (its own listener then closes it); releasing, its pop is already coming,
+ * so the press is ignored.
+ */
+export function handleNativeBack(payload: NativeBackPayload, exitApp: () => Promise<void>): void {
+  const phase = paletteEntryPhase();
+  if (phase === "releasing") return;
+  if (phase === "pushed") {
+    window.history.back();
+    return;
+  }
+  if (meaning?.kind === "hold") return;
+  if (meaning?.kind === "exit") {
+    callExit(meaning.exit);
+    return;
+  }
+  if (payload.canGoBack) window.history.back();
+  else callExit(exitApp);
+}
+
+/**
+ * Registers the native `back-button` listener (`onBackButtonPress` from `@tauri-apps/api/app`,
+ * passed in so this stays testable). A rejected registration is reported with `console.error`
+ * (the app has no other front-end error report) and never thrown: the native default stays in
+ * force and the popstate guard keeps working as the fallback.
+ */
+export async function registerNativeBack(
+  register: (handler: (payload: NativeBackPayload) => void) => Promise<unknown>,
+  exitApp: () => Promise<void>,
+): Promise<void> {
+  try {
+    await register((payload) => handleNativeBack(payload, exitApp));
+  } catch (error) {
+    console.error("Failed to register the native back-button listener:", error);
+  }
 }

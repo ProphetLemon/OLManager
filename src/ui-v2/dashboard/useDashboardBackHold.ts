@@ -17,8 +17,10 @@ export const DASHBOARD_RESTORE_TIMEOUT_MS = BACK_RESTORE_TIMEOUT_MS;
  * by the time `popstate` fires, and React Router renders the route it landed on in a
  * microtask that unmounts the dashboard before a listener registered after the router's can
  * run. So the dashboard registers no listener: it sets "hold" in the Back guard
- * (`lib/backGuard.ts`) while it is mounted, and the guard's one listener, installed before
- * the router's, stops the event and takes the entry back with `history.forward()`. That puts
+ * (`lib/backGuard.ts`) while it is mounted. The native `back-button` handler then does
+ * nothing at all, so no history traversal happens; if it is not registered, the guard's
+ * `popstate` listener, installed before the router's, stops the event and takes the entry
+ * back with `history.forward()`. That puts
  * the history exactly where it was, so any number of Backs leave its length alone and never
  * drain it to the point where the WebView has nowhere to go back to and Android closes the
  * app. The pop that `forward()` raises is swallowed by the guard too.

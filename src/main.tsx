@@ -4,7 +4,10 @@ import "./i18n";
 import "./App.css";
 import AppV2 from "./ui-v2/AppV2";
 import { getApiClient } from "./api/client";
-import { installBackGuard } from "./lib/backGuard";
+import { onBackButtonPress } from "@tauri-apps/api/app";
+import { installBackGuard, registerNativeBack } from "./lib/backGuard";
+import { exitApp } from "./services/appExit";
+import { isAndroidUserAgent } from "./ui-v2/uiScale";
 
 // Disable the native browser context menu in the Tauri app.
 document.addEventListener("contextmenu", (event) => {
@@ -34,6 +37,13 @@ document.addEventListener(
 // The system Back listener must be registered before the router's, which registers when the
 // app first mounts: Chromium runs popstate listeners in registration order.
 installBackGuard();
+
+// On Android the native back-button event is the primary path: with a listener registered
+// the native side neither traverses the history nor closes the app (see lib/backGuard.ts).
+// Until it resolves, or if it fails, the popstate guard above is the fallback.
+if (isAndroidUserAgent(navigator.userAgent)) {
+  void registerNativeBack(onBackButtonPress, () => exitApp());
+}
 
 function Boot() {
   const [ready, setReady] = useState(false);

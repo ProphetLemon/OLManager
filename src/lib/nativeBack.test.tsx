@@ -1,0 +1,197 @@
+import { render } from "@testing-library/react";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+
+import { useMenuBackExit } from "@/hooks/useMenuBackExit";
+import { useDashboardBackHold } from "@/ui-v2/dashboard/useDashboardBackHold";
+import { forgetPaletteEntry, pushPaletteEntry, releasePaletteEntry } from "@/ui-v2/palette/paletteHistory";
+
+import { handleNativeBack, installBackGuard, registerNativeBack, resetBackGuardForTests, setBackMeaning } from "./backGuard";
+
+/**
+ * Tauri's `back-button` event: with a JS listener registered the native side neither traverses
+ * the history nor closes the app, it only reports `{ canGoBack }`, so `handleNativeBack` owns
+ * what the press does. The slot decides first: `canGoBack` may be stale by the time it runs.
+ */
+function Menu({ exit }: { exit: () => Promise<void> }) {
+  useMenuBackExit(true, exit);
+  return <p>menu</p>;
+}
+function Dashboard() {
+  useDashboardBackHold(true, vi.fn());
+  return <p>dashboard</p>;
+}
+
+const pop = () => window.dispatchEvent(new PopStateEvent("popstate"));
+
+describe("native back button", () => {
+  let back: ReturnType<typeof vi.spyOn>;
+  let forward: ReturnType<typeof vi.spyOn>;
+  let exitApp: Mock<() => Promise<void>>;
+  let view: ReturnType<typeof render> | undefined;
+
+  beforeAll(() => installBackGuard());
+  beforeEach(() => {
+    back = vi.spyOn(window.history, "back").mockImplementation(() => {});
+    forward = vi.spyOn(window.history, "forward").mockImplementation(() => {});
+    exitApp = vi.fn<() => Promise<void>>(() => Promise.resolve());
+  });
+  afterEach(() => {
+    view?.unmount();
+    view = undefined;
+    forgetPaletteEntry();
+    resetBackGuardForTests();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  describe("the palette's entry", () => {
+    it("is taken off with one history.back() while it is pushed, whatever canGoBack says", () => {
+      pushPaletteEntry();
+      handleNativeBack({ canGoBack: false }, exitApp);
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(exitApp).not.toHaveBeenCalled();
+    });
+
+    it("is left alone while it is being released", () => {
+      pushPaletteEntry();
+      releasePaletteEntry(); // its own history.back()
+      back.mockClear();
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).not.toHaveBeenCalled();
+      expect(exitApp).not.toHaveBeenCalled();
+      pop(); // the release's own pop arrives and the palette forgets the entry
+    });
+  });
+
+  describe("hold", () => {
+    it("does nothing at all, even when canGoBack is false", () => {
+      view = render(<Dashboard />);
+      handleNativeBack({ canGoBack: false }, exitApp);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).not.toHaveBeenCalled();
+      expect(forward).not.toHaveBeenCalled();
+      expect(exitApp).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("exit", () => {
+    it("calls the menu's exit once and no history method, even when canGoBack is true", () => {
+      const exit = vi.fn(() => Promise.resolve());
+      view = render(<Menu exit={exit} />);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(exit).toHaveBeenCalledTimes(1);
+      expect(back).not.toHaveBeenCalled();
+      expect(exitApp).not.toHaveBeenCalled();
+    });
+
+    it("logs a rejected exit and retries on the next press", async () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const exit = vi.fn(() => Promise.reject(new Error("no exit")));
+      view = render(<Menu exit={exit} />);
+      handleNativeBack({ canGoBack: false }, exitApp);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(error).toHaveBeenCalled();
+      handleNativeBack({ canGoBack: false }, exitApp);
+      expect(exit).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("nothing set", () => {
+    it("goes back once when the WebView can", () => {
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(exitApp).not.toHaveBeenCalled();
+    });
+
+    it("closes the app once when it cannot", () => {
+      handleNativeBack({ canGoBack: false }, exitApp);
+      expect(exitApp).toHaveBeenCalledTimes(1);
+      expect(back).not.toHaveBeenCalled();
+    });
+
+    it("logs a rejected app exit", async () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      exitApp.mockRejectedValue(new Error("no exit"));
+      handleNativeBack({ canGoBack: false }, exitApp);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(error).toHaveBeenCalled();
+    });
+  });
+
+  describe("interplay with the popstate guard", () => {
+    it("lets the pop of a go-back press through when nothing is set when it lands", () => {
+      const router = vi.fn();
+      window.addEventListener("popstate", router);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      pop();
+      window.removeEventListener("popstate", router);
+      expect(router).toHaveBeenCalledTimes(1);
+      expect(forward).not.toHaveBeenCalled();
+    });
+
+    it("exits through the guard when the pop of the first press lands on a menu that mounted since (two presses)", () => {
+      const exit = vi.fn(() => Promise.resolve());
+      const router = vi.fn();
+      window.addEventListener("popstate", router);
+      handleNativeBack({ canGoBack: true }, exitApp); // press 1 on Settings
+      view = render(<Menu exit={exit} />); // the menu mounted before the second traversal's pop
+      handleNativeBack({ canGoBack: true }, exitApp); // press 2: the menu is "exit"
+      pop();
+      window.removeEventListener("popstate", router);
+      expect(exit).toHaveBeenCalledTimes(2);
+    });
+
+    it("holds a pop that lands on the dashboard: the entry is taken back, the screen stays", () => {
+      const router = vi.fn();
+      window.addEventListener("popstate", router);
+      handleNativeBack({ canGoBack: true }, exitApp); // press on Settings
+      view = render(<Dashboard />); // the dashboard is showing when the pop lands
+      pop();
+      window.removeEventListener("popstate", router);
+      expect(forward).toHaveBeenCalledTimes(1);
+      expect(router).not.toHaveBeenCalled();
+    });
+
+    it("leaves the pop of a palette press to the palette and the router", () => {
+      const router = vi.fn();
+      window.addEventListener("popstate", router);
+      view = render(<Dashboard />);
+      pushPaletteEntry();
+      handleNativeBack({ canGoBack: true }, exitApp);
+      pop();
+      window.removeEventListener("popstate", router);
+      expect(forward).not.toHaveBeenCalled();
+      expect(router).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("registerNativeBack", () => {
+    it("registers a handler that routes the payload to handleNativeBack", async () => {
+      const register = vi.fn((handler: (payload: { canGoBack: boolean }) => void) => {
+        handler({ canGoBack: true });
+        return Promise.resolve({});
+      });
+      await registerNativeBack(register, exitApp);
+      expect(register).toHaveBeenCalledTimes(1);
+      expect(back).toHaveBeenCalledTimes(1);
+    });
+
+    it("reports a rejected registration and leaves the popstate guard as the fallback", async () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      await registerNativeBack(() => Promise.reject(new Error("denied")), exitApp);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("back-button"), expect.any(Error));
+      view = render(<Dashboard />);
+      pop();
+      expect(forward).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("keeps the slot's compare-before-clear for meanings set around a press", () => {
+    const clear = setBackMeaning({ kind: "hold" });
+    handleNativeBack({ canGoBack: true }, exitApp);
+    expect(back).not.toHaveBeenCalled();
+    clear();
+    handleNativeBack({ canGoBack: true }, exitApp);
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+});

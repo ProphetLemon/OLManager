@@ -139,6 +139,15 @@ export function paletteHoldsEntry(): boolean {
   return entry !== "none";
 }
 
+/**
+ * The same peek, told apart: `pushed` while the entry sits on the history (a Back takes it
+ * off), `releasing` while the palette's own `history.back()` is coming off (its pop is
+ * already on the way), `none` otherwise. Changes nothing and runs no waiter.
+ */
+export function paletteEntryPhase(): EntryState {
+  return entry;
+}
+
 /** Whether this pop took the palette's entry off, and how; `null` for any other pop. */
 export function paletteEntryPop(event: PopStateEvent): PaletteEntryPop | null {
   return classify(event);
