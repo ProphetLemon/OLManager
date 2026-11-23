@@ -199,3 +199,61 @@ describe("the lane strip at the 960x640 minimum (T13 D4)", () => {
     expect(16 + 22 + 2 * 3).toBeLessThanOrEqual(44);
   });
 });
+
+describe("the phone form (data-form=\"phone\" on <html>)", () => {
+  const PHONE_SHELL = ':root[data-form="phone"] .live-shell';
+
+  /** Every phone shell rule with the `@container live` header it sits in (or "" at the top level). */
+  const phoneShellRules = (): { container: string; body: string }[] => {
+    const rules: { container: string; body: string }[] = [];
+    const pattern = new RegExp(`${PHONE_SHELL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`, "g");
+    for (const match of css.matchAll(pattern)) {
+      const before = css.slice(0, match.index);
+      const lastContainer = before.lastIndexOf("@container live (");
+      // A phone rule is inside the container when no top level rule closed it in between.
+      const header = lastContainer === -1 ? "" : css.slice(lastContainer, css.indexOf("{", lastContainer)).trim();
+      const between = lastContainer === -1 ? "" : before.slice(css.indexOf("{", lastContainer));
+      const open = (between.match(/{/g) ?? []).length - (between.match(/}/g) ?? []).length;
+      rules.push({ container: open > 0 ? header : "", body: match[1] });
+    }
+    return rules;
+  };
+
+  const ruleIn = (container: string) => {
+    const rule = phoneShellRules().find((r) => r.container === container);
+    if (!rule) throw new Error(`no phone shell rule in ${container || "the top level"}`);
+    return rule.body;
+  };
+
+  it("sizes the map from the room it has: no 20rem floor in any phone rule, and still capped by 44.5rem", () => {
+    const rules = phoneShellRules();
+    expect(rules.length).toBeGreaterThanOrEqual(2);
+    for (const { body } of rules) {
+      expect(body).not.toContain("20rem");
+      expect(body).toMatch(/--map-side:[^;]*100cqh/);
+      expect(body).toContain("44.5rem");
+    }
+  });
+
+  it("drops the shell's min-height floor in the side by side layout (from 1240px)", () => {
+    const body = ruleIn("@container live (min-width: 1240px)");
+    expect(body).toMatch(/min-height:\s*0\s*;/);
+    expect(body).not.toMatch(/--live-rows\)\s*\+/);
+  });
+
+  it("keeps the stacked layout's own min-height (100%) from 720px to 1239px, where a phone of 804px lands", () => {
+    const body = ruleIn("@container live (min-width: 720px) and (max-width: 1239px)");
+    expect(body).toMatch(/--map-side:[^;]*100cqw[^;]*100cqh/);
+    expect(body).not.toMatch(/min-height:\s*0/);
+  });
+
+  it("never reaches under 720px, where the one column phone block already has no floor", () => {
+    expect(phoneShellRules().map((r) => r.container)).not.toContain("@container live (max-width: 719px)");
+    for (const { container } of phoneShellRules()) expect(container).toMatch(/min-width/);
+  });
+
+  it("leaves the shared rules the desktop reads exactly as they were", () => {
+    expect(ruleBody(".live-shell")).toMatch(/min-height:\s*calc\(var\(--live-rows\) \+ 20rem\)/);
+    expect(/--map-side:\s*max\(([^;]*)\);/.exec(ruleBody(".live-shell"))?.[1]).toMatch(/^\s*20rem,/);
+  });
+});

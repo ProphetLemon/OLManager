@@ -136,3 +136,13 @@ describe("controls row at laptop widths", () => {
     expect(block).toMatch(/--live-ctl:\s*7rem/);
   });
 });
+
+describe("the phone form leaves the controls row alone", () => {
+  it("adds no breakpoint of its own and never redeclares --live-ctl, which the map is sized from", () => {
+    const phoneRules = [...css.matchAll(/:root\[data-form="phone"\][^{]*\{([^}]*)\}/g)].map((m) => m[1]);
+    expect(phoneRules.length).toBeGreaterThan(0);
+    for (const body of phoneRules) expect(body).not.toContain("--live-ctl");
+    // The two-line row keeps its 1179px edge: the phone blocks use the 720/1239px bands of the map.
+    expect(css.match(/@container live \(min-width: 720px\) and \(max-width: 1179px\) \{/g)).toHaveLength(1);
+  });
+});
