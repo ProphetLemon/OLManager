@@ -3361,7 +3361,8 @@
       "weekList": "Scrim haftası",
       "choosing": "Seçiliyor",
       "noteWinAccepts": "Galibiyet, scrimi kazanma şansındır. Kabul, bu rakibin iki veya daha fazla planı olan bir slotu alma şansıdır.",
-      "notePlans": "Tek planlı bir slot her zaman o planı oynar; tüm planlar reddederse Plan A oynanır."
+      "notePlans": "Tek planlı bir slot her zaman o planı oynar; tüm planlar reddederse Plan A oynanır.",
+      "decideSlot": "{{slot}} için karar ver"
     },
     "reputation": "Scrim itibarı",
     "reviewBlockTitle": "Blok değerlendirmesi",

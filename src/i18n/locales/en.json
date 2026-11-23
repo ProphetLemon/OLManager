@@ -349,7 +349,8 @@
       "weekList": "Scrims week",
       "choosing": "Choosing",
       "noteWinAccepts": "Win is your chance to win the scrim. Accepts is the chance this rival takes a slot with two or more plans.",
-      "notePlans": "A slot with one plan always plays it, and Plan A plays if every plan declines."
+      "notePlans": "A slot with one plan always plays it, and Plan A plays if every plan declines.",
+      "decideSlot": "Decide {{slot}}"
     },
     "reputation": "Scrim rep",
     "reviewBlockTitle": "Block review",

@@ -18,9 +18,9 @@ export function PaneHeading({ id, children }: { id: string; children: ReactNode 
 }
 
 /** Why the pane cannot be edited: one line, ellipsis when it does not fit, the full sentence stays in the text. */
-export function LockLine({ children }: { children: ReactNode }) {
+export function LockLine({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p data-slot="phone-lock-line" className="flex shrink-0 items-center gap-2 text-entry text-muted-foreground">
+    <p data-slot="phone-lock-line" className={cn("flex shrink-0 items-center gap-2 text-entry text-muted-foreground", className)}>
       <Lock aria-hidden="true" className="size-4 shrink-0" />
       <span className="min-w-0 truncate">{children}</span>
     </p>
