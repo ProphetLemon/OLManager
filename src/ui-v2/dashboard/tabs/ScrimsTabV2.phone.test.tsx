@@ -225,9 +225,9 @@ function mount(context: ScrimContextResponse | null, state = game()) {
   contextMock.current = context;
   const onGameUpdate = vi.fn();
   const utils = render(<ScrimsTabV2 gameState={state} onGameUpdate={onGameUpdate} />);
-  const swap = (next: ScrimContextResponse) => {
+  const swap = (next: ScrimContextResponse, nextState = state) => {
     contextMock.current = next;
-    utils.rerender(<ScrimsTabV2 gameState={state} onGameUpdate={onGameUpdate} />);
+    utils.rerender(<ScrimsTabV2 gameState={nextState} onGameUpdate={onGameUpdate} />);
   };
   return { ...utils, onGameUpdate, swap };
 }
@@ -306,7 +306,8 @@ describe("ScrimsTabV2 on a phone: what opens on arrival", () => {
     expect(home()).not.toBeNull();
     expect(heroEl()).toHaveAttribute("data-state", "today");
     expect(heroEl()).toHaveTextContent("Nothing to decide right now. Wed A plays against Alpha when you continue.");
-    expect(heroEl()).toHaveTextContent("You confirmed this week's setup");
+    expect(heroEl()).toHaveTextContent("Locked");
+    expect(heroEl()).not.toHaveTextContent("You confirmed this week's setup");
     expect(heroEl()).toHaveTextContent("Today's Risk");
     expect(within(heroEl()).queryAllByRole("button")).toHaveLength(0);
     expect(block(0)).toHaveAttribute("data-hero", "true");
@@ -590,6 +591,25 @@ describe("ScrimsTabV2 on a phone: focus", () => {
     await waitFor(() => expect(document.activeElement).toBe(entry("objective")));
   });
 
+  it("a view the game opens later does not return focus to a control that opened an earlier one", async () => {
+    const { swap } = mount(scrimMorning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(back());
+    await waitFor(() => expect(document.activeElement).toBe(entry("volume")));
+    swap(afterBlockA());
+    expect(pane("decision")).not.toBeNull();
+    fireEvent.click(back());
+    await waitFor(() => expect(document.activeElement).toBe(entry("objective")));
+  });
+
+  it("a move from view to view (Done) forgets the control that opened the first", async () => {
+    mount(planning());
+    fireEvent.click(heroEl());
+    fireEvent.click(screen.getByRole("button", { name: /Done/ }));
+    fireEvent.click(back());
+    await waitFor(() => expect(document.activeElement).toBe(entry("objective")));
+  });
+
   it("moves focus to the new view's heading after Done", async () => {
     mount(planning());
     fireEvent.click(heroEl());
@@ -659,5 +679,101 @@ describe("ScrimsTabV2 on a phone: the live line", () => {
     resolve(updatedAfterPush());
     await waitFor(() => expect(pane("result")).not.toBeNull());
     expect(viewTitle()).toBe("Block review");
+  });
+});
+
+describe("ScrimsTabV2 on a phone: moves the game makes while the player is elsewhere", () => {
+  const unplannedToday = () =>
+    ctx(
+      week({ objective: "Macro", planned: 1, slots: [slot(0), slot(1, { plan: ["bravo"] }), slot(2, { plan: ["charlie"] }), slot(3, { plan: ["delta"] })] }),
+      today({ state: "Planned", slotIndex: 0, opponentTeamId: null, canEditPlan: true }),
+    );
+  const plannedTodayCtx = () =>
+    ctx(
+      week({ objective: "Macro", planned: 4, slots: [slot(0, { plan: ["alpha"] }), slot(1, { plan: ["bravo"] }), slot(2, { plan: ["charlie"] }), slot(3, { plan: ["delta"] })] }),
+      today({ state: "Planned", slotIndex: 0, opponentTeamId: "alpha", resolvedOpponentTeamId: "alpha", canEditPlan: true }),
+    );
+
+  it("the manager's own pick that makes the open block carry Today moves nothing", () => {
+    const { swap } = mount(unplannedToday());
+    fireEvent.click(block(0));
+    expect(viewTitle()).toBe("Wed A");
+    swap(plannedTodayCtx());
+    expect(frame()).not.toBeNull();
+    expect(viewTitle()).toBe("Wed A");
+  });
+
+  it("a day that advances so the open block carries Today moves to Semana", () => {
+    const { swap } = mount(unplannedToday());
+    fireEvent.click(block(0));
+    const tomorrow = game({ clock: { current_date: "2026-04-30", start_date: "2026-01-01T12:00:00Z" } } as Partial<GameStateData>);
+    swap(plannedTodayCtx(), tomorrow);
+    expect(home()).not.toBeNull();
+    expect(heroEl()).toHaveAttribute("data-state", "today");
+  });
+
+  it("a result and a Decide tag arriving in the same render, with the manager on Semana: the result's block opens, focused", async () => {
+    let resolve!: (state: GameStateData) => void;
+    trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    fireEvent.click(back());
+    expect(home()).not.toBeNull();
+    contextMock.current = afterPushThrough();
+    resolve(updatedAfterPush());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    expect(viewTitle()).toBe("Block review");
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+    expect(screen.getByRole("button", { name: "Decide Wed B" })).toBeInTheDocument();
+  });
+
+  it("the same with the manager on another view", async () => {
+    let resolve!: (state: GameStateData) => void;
+    trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    fireEvent.click(back());
+    fireEvent.click(entry("report"));
+    contextMock.current = afterPushThrough();
+    resolve(updatedAfterPush());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    expect(viewTitle()).toBe("Block review");
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+  });
+
+  it("a result that arrives while another view is open takes focus to its heading", async () => {
+    let resolve!: (state: GameStateData) => void;
+    trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    fireEvent.click(back());
+    fireEvent.click(entry("report"));
+    resolve(updatedAfterPush());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+  });
+
+  it("re-mounting the tab opens by the arrival rule again", () => {
+    const first = mount(afterBlockA());
+    fireEvent.click(back());
+    expect(home()).not.toBeNull();
+    first.unmount();
+    const second = mount(afterBlockA());
+    expect(pane("decision")).not.toBeNull();
+    second.unmount();
+    mount(planning());
+    expect(home()).not.toBeNull();
+  });
+
+  it("a game-made move to Semana leaves focus alone when it sits outside the screen", () => {
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    const { swap } = mount(planning());
+    fireEvent.click(entry("report"));
+    outside.focus();
+    swap(scrimMorning());
+    expect(home()).not.toBeNull();
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
   });
 });

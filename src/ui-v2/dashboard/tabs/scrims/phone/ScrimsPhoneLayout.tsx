@@ -104,12 +104,15 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   // Only Decide and Today move the screen by themselves; the key changes when the game moves the tag.
   const tagKey = hero.state === "decide" || hero.state === "today" ? `${hero.state}:${hero.slotIndex}` : "";
 
-  const [selected, setSelected] = useState<View>(() => (hero.state === "decide" ? slotRowId(hero.slotIndex) : "home"));
+  const [selected, setSelected] = useState<View>(() =>
+    result && resultSlotIndex != null ? slotRowId(resultSlotIndex) : hero.state === "decide" ? slotRowId(hero.slotIndex) : "home",
+  );
   const [focusRequest, setFocusRequest] = useState<FocusRequest>({ to: "heading", force: true, n: 0 });
   // The control of Semana that opened the view, so closing it gives focus back there.
   const opener = useRef<string | null>(null);
   const request = (to: FocusRequest["to"], force: boolean) => setFocusRequest((previous) => ({ to, force, n: previous.n + 1 }));
   const goTo = (id: PhoneRowId) => {
+    opener.current = null;
     setSelected(id);
     request("heading", true);
   };
@@ -118,13 +121,24 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     request("home", true);
   }, []);
   const open = (id: PhoneRowId, control: string) => {
-    opener.current = control;
     goTo(id);
+    opener.current = control;
   };
 
   const slotExists = (id: View) => id === "home" || !id.startsWith("slot:") || week.slots.some((entry) => slotRowId(entry.slotIndex) === id);
   const current: View = slotExists(selected) ? selected : "home";
   const resultRow = result && resultSlotIndex != null ? slotRowId(resultSlotIndex) : null;
+  const currentRef = useRef(current);
+  currentRef.current = current;
+  // A game-made move asks for focus without taking it from a control outside this screen.
+  const gameMove = (to: View) => {
+    opener.current = null;
+    setSelected(to);
+    setFocusRequest((previous) => ({ to: to === "home" ? "home" : "heading", force: false, n: previous.n + 1 }));
+  };
+  // A day that advances is the game's move; a tag that appears because of the manager's own pick is not.
+  const date = gameState.clock.current_date;
+  const lastDate = useRef(date);
 
   // The tag moves because the game moved (a block was played, the day advanced): Decide opens its block,
   // Today goes back to Semana, whose hero shows it. While a decision's result is on screen it stays there
@@ -133,20 +147,22 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   useEffect(() => {
     if (lastTag.current === tagKey) return;
     lastTag.current = tagKey;
+    const dayMoved = lastDate.current !== date;
     if (!tagKey || current === resultRow) return;
-    if (hero.state === "decide") {
-      setSelected(slotRowId(hero.slotIndex));
-      setFocusRequest((previous) => ({ to: "heading", force: false, n: previous.n + 1 }));
-    } else if (current !== "home") {
-      setSelected("home");
-      setFocusRequest((previous) => ({ to: "home", force: false, n: previous.n + 1 }));
-    }
-  }, [tagKey, hero, current, resultRow]);
+    if (hero.state === "decide") gameMove(slotRowId(hero.slotIndex));
+    else if (current !== "home" && (dayMoved || current !== slotRowId(hero.state === "today" ? hero.slotIndex : -1))) gameMove("home");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tagKey, hero, current, resultRow, date]);
+
+  useEffect(() => {
+    lastDate.current = date;
+  }, [date]);
 
   // The result belongs on the block it was taken on, even if the player tapped another one during the save.
   // After the tag effect above, so it wins when both fire for the same change.
   useEffect(() => {
-    if (result && resultSlotIndex != null) setSelected(slotRowId(resultSlotIndex));
+    if (result && resultSlotIndex != null && currentRef.current !== slotRowId(resultSlotIndex)) gameMove(slotRowId(resultSlotIndex));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, resultSlotIndex]);
 
   useEffect(() => {

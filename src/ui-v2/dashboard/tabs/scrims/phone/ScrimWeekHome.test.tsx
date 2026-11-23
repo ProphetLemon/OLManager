@@ -141,11 +141,35 @@ describe("Semana: the hero in each of its seven states", () => {
     expect(hero()).toHaveTextContent("Today's Risk");
     expect(hero()).toHaveTextContent("Medium");
     expect(hero()).toHaveTextContent("Nothing to decide right now.");
-    expect(hero()).toHaveTextContent("The week is locked until Monday.");
+    // The lock is its icon and its word, as in states 1 and 6; the full sentence stays in the views.
+    expect(hero()).toHaveTextContent("Locked");
+    expect(hero()).not.toHaveTextContent("The week is locked until Monday.");
     const plans = within(hero()).getByRole("list", { name: "Opponent plans" });
     expect(within(plans).getAllByRole("listitem")).toHaveLength(3);
     expect(within(plans).getByRole("img", { name: "Alpha Esports" })).toBeInTheDocument();
     expect(within(plans).getByRole("img", { name: "Bravo Gaming" })).toBeInTheDocument();
+  });
+
+  it("2 today keeps the day's sentence whole for a long rival name, apart from the lock", () => {
+    const long = { ...TEAMS[1], name: "Team Heretics Academy" } as TeamData;
+    const names = new Map(NAMES).set("a", long.name);
+    const message = "Nothing to decide right now. Wed A plays against Team Heretics Academy when you continue.";
+    render(
+      <ScrimWeekHome
+        home={buildPhoneHome({ week: makeWeek(4, { 0: lockedPlan("a") }, lockWeek), today: plannedToday() })}
+        myTeam={MINE}
+        teams={[MINE, long, ...TEAMS.slice(2)]}
+        weekdayLabels={DAY_LABELS}
+        teamNameById={names}
+        todayMessage={message}
+        lockText="The full lock sentence."
+        onOpen={onOpen}
+      />,
+    );
+    const sentence = within(hero()).getByText(message);
+    expect(sentence.className).toContain("line-clamp-2");
+    expect(sentence).not.toHaveTextContent("Locked");
+    expect(within(hero()).getByText("Locked")).toBeInTheDocument();
   });
 
   it("2 today without a risk shows no risk label", () => {
@@ -195,6 +219,19 @@ describe("Semana: the hero in each of its seven states", () => {
     expect(hero().tagName).toBe("BUTTON");
     fireEvent.click(hero());
     expect(onOpen).toHaveBeenCalledWith("slot:0", "hero");
+  });
+
+  it("6 a week that cannot be edited with empty blocks: the first block ahead, your shield against an empty one, Not planned and the lock; opens nothing", () => {
+    mount(makeWeek(4, {}, lockWeek));
+    expect(hero()).toHaveAttribute("data-state", "upNext");
+    expect(hero().tagName).toBe("SECTION");
+    expect(hero()).toHaveTextContent("Wed A");
+    expect(hero()).toHaveTextContent("Next");
+    expect(hero()).toHaveTextContent("Not planned");
+    expect(hero()).toHaveTextContent("Locked");
+    expect(hero().querySelector('[data-slot="phone-empty-shield"]')).not.toBeNull();
+    expect(within(hero()).getByRole("img", { name: "Mine FC" })).toBeInTheDocument();
+    expect(within(hero()).queryAllByRole("button")).toHaveLength(0);
   });
 
   it("6 on a locked week the hero shows a lock and Locked and opens nothing", () => {
@@ -319,6 +356,41 @@ describe("Semana: the day groups", () => {
   it("never tells a state by opacity: no block or hero uses a dimming class", () => {
     mount(makeWeek(4, { 0: played(true, 70, "Reviewed"), 1: { status: "Cancelled", canEdit: false, plan: ["b"] }, 2: lockedPlan("c"), 3: lockedPlan("d") }, lockWeek));
     for (const element of [...blocks(), hero()]) expect(element.className).not.toMatch(/opacity/);
+  });
+});
+
+describe("Semana: markup and heights", () => {
+  it("a hero that is a button holds only phrasing content", () => {
+    const cases: Array<() => void> = [
+      () => mount(makeWeek(4, {}, { objective: null })),
+      () => mount(makeWeek(4, { 0: planned("a") })),
+      () => mount(makeWeek(4, { 0: planned("a", "b", "c"), 1: planned("d"), 2: planned("b"), 3: planned("c") })),
+      () => mount(makeWeek(2, { 0: played(true, 70, "Reviewed"), 1: played(false, 55, "Reviewed") }, { ...lockWeek, wins: 1, losses: 1 })),
+    ];
+    for (const run of cases) {
+      const { unmount } = (run(), { unmount: () => document.body.replaceChildren() });
+      expect(hero().tagName).toBe("BUTTON");
+      expect(hero().querySelectorAll("div, ul, li, p, section, h1, h2, h3")).toHaveLength(0);
+      unmount();
+    }
+  });
+
+  it("the Informe entry's name contains what it shows", () => {
+    mount(makeWeek(4, { 0: played(true, 70, "Reviewed"), 1: planned("b"), 2: planned("c"), 3: planned("d") }, { wins: 1, losses: 0, played: 1 }));
+    const entryButton = document.querySelector('[data-home-control="report"]') as HTMLElement;
+    expect(entryButton).toHaveAccessibleName(/1-0/);
+    expect(entryButton).toHaveAccessibleName(/Week Record/);
+  });
+
+  it("fits two blocks in 116 px (a 16 px header, 2 px gaps, two targets) and gives a taller area to the hero", () => {
+    mount(makeWeek(4, { 0: planned("a"), 1: planned("b"), 2: planned("c"), 3: planned("d") }));
+    const days = document.querySelector('[data-slot="phone-week-days"]') as HTMLElement;
+    expect(days.className).toContain("h-[7.25rem]");
+    expect(days.className).toContain("shrink-0");
+    const header = document.querySelector('[data-slot="phone-week-day"] > span') as HTMLElement;
+    expect(header.className).toContain("h-4");
+    expect(hero().className).toContain("min-h-[5.625rem]");
+    expect(hero().className).toContain("flex-1");
   });
 });
 

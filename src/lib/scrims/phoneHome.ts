@@ -117,7 +117,7 @@ function buildHero(input: PhoneHomeInput, tagged: { cell: PhoneSlotCell | null; 
   if (tagged?.tag === "next" && tagged.id === "objective") return { ...base, state: "nextObjective", opens: "objective" };
   if (tagged?.tag === "next" && tagged.cell) return { ...base, state: "nextSlot", slotIndex: tagged.cell.slotIndex, opens: tagged.cell.id };
 
-  const upNext = cells.find((cell) => (cell.status === "Open" || cell.status === "Locked") && cell.rival.kind === "team");
+  const upNext = cells.find((cell) => cell.status === "Open" || cell.status === "Locked");
   if (upNext) {
     const slot = slotOf(upNext.slotIndex)!;
     return {

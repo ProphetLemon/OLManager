@@ -196,3 +196,24 @@ describe("days and entries of Semana", () => {
     expect(after.entries.report).toMatchObject({ wins: 1, hasResult: true });
   });
 });
+
+describe("hero state 6 counts blocks still ahead, with or without a rival", () => {
+  it("a locked week whose blocks have no plan still has blocks ahead: the first one, with no rival, opens nothing", () => {
+    const week = makeWeek(4, {}, { setupLocked: true, setupLockedReason: "manual" });
+    expect(home({ week }).hero).toMatchObject({ state: "upNext", slotIndex: 0, opponentTeamId: null, plan: [null, null, null], locked: true, opens: null });
+  });
+
+  it("the assistant on with empty blocks: the first block ahead, no rival, nothing to open", () => {
+    expect(home({ week: makeWeek(4), readOnly: true }).hero).toMatchObject({ state: "upNext", slotIndex: 0, opponentTeamId: null, opens: null });
+  });
+
+  it("a past block without a plan (Cancelled, so it reads Not played) is not ahead: the next Open one is", () => {
+    const week = makeWeek(4, { 0: { status: "Cancelled", canEdit: false }, 1: { status: "Cancelled", canEdit: false } }, { setupLocked: true, setupLockedReason: "week_started" });
+    expect(home({ week }).hero).toMatchObject({ state: "upNext", slotIndex: 2, opponentTeamId: null });
+  });
+
+  it("with nothing ahead the hero is still the report", () => {
+    const week = makeWeek(2, { 0: reviewed(true), 1: reviewed(false) }, { setupLocked: true, wins: 1, losses: 1 });
+    expect(home({ week }).hero).toMatchObject({ state: "report", wins: 1, losses: 1 });
+  });
+});

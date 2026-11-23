@@ -80,29 +80,32 @@ function Matchup({ mine, rival, rivalLabel, compact }: { mine: TeamIdentity; riv
   const size = compact ? "small" : "medium";
   const { t } = useTranslation();
   return (
-    <div data-slot="phone-week-matchup" className="flex items-start gap-3">
-      <div className="flex w-24 flex-col items-center gap-0.5">
+    <span data-slot="phone-week-matchup" className="flex items-start gap-3">
+      <span className="flex w-24 flex-col items-center gap-0.5">
         <TeamShield identity={mine} size={size} />
         <span aria-hidden="true" className="max-w-full truncate font-heading text-entry font-semibold leading-4">{t("teams.yourTeam")}</span>
-      </div>
+      </span>
       <span aria-hidden="true" className="font-heading text-section font-bold leading-none text-muted-foreground">{t("common.vs")}</span>
-      <div className="flex w-32 flex-col items-center gap-0.5">
+      <span className="flex w-32 flex-col items-center gap-0.5">
         {rival ? <TeamShield identity={rival} size={size} /> : <EmptyShield size={size} />}
         <span aria-hidden={rival ? true : undefined} className="max-w-full truncate font-heading text-entry font-semibold leading-4">{rivalLabel}</span>
-      </div>
-    </div>
+      </span>
+    </span>
   );
 }
 
 /** Plans B and C (or A to C) as small shields with their letter, as the Week and WeekDay frames draw them. */
-function PlanShields({ plans, from, identityOf, withWords }: { plans: readonly (string | null)[]; from: number; identityOf: (id: string) => TeamIdentity; withWords?: boolean }) {
+function PlanShields({ plans, from, identityOf, withWords, phrasing }: { plans: readonly (string | null)[]; from: number; identityOf: (id: string) => TeamIdentity; withWords?: boolean; phrasing?: boolean }) {
   const { t } = useTranslation();
+  // Inside a button only phrasing content is valid: spans, and the plans' names read through the shields.
+  const List = phrasing ? "span" : "ul";
+  const Item = phrasing ? "span" : "li";
   return (
-    <ul data-slot="phone-week-plans" aria-label={t("scrims.opponentPlans")} className="m-0 flex list-none items-start gap-3 p-0">
+    <List data-slot="phone-week-plans" aria-label={phrasing ? undefined : t("scrims.opponentPlans")} className="m-0 flex list-none items-start gap-3 p-0">
       {plans.slice(from).map((id, offset) => {
         const index = from + offset;
         return (
-          <li key={PLAN_LETTERS[index]} className="flex flex-col items-center gap-0.5">
+          <Item key={PLAN_LETTERS[index]} className="flex flex-col items-center gap-0.5">
             <span className="relative">
               {id ? <TeamShield identity={identityOf(id)} size="tiny" /> : <EmptyShield size="tiny" />}
               <span aria-hidden="true" className="absolute -end-2 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-muted font-heading text-caption font-bold leading-none">
@@ -110,10 +113,10 @@ function PlanShields({ plans, from, identityOf, withWords }: { plans: readonly (
               </span>
             </span>
             <span className={withWords ? "font-heading text-caption leading-3 text-muted-foreground" : "sr-only"}>{t(PLAN_LABEL_KEYS[index])}</span>
-          </li>
+          </Item>
         );
       })}
-    </ul>
+    </List>
   );
 }
 
@@ -123,17 +126,15 @@ interface HeroContext {
   mine: TeamIdentity;
   lockText: string | null;
   todayMessage: string;
-  home: PhoneHome;
-  weekdayLabels: readonly string[];
 }
 
 function SlotTitle({ label, word, locked }: { label: string; word: PhoneTag; locked: boolean }) {
   return (
-    <div className="flex w-24 shrink-0 flex-col gap-0.5">
+    <span className="flex w-24 shrink-0 flex-col gap-0.5">
       <span className="truncate font-heading text-title font-bold uppercase leading-[1.1]">{label}</span>
       <Word tag={word} />
       {locked ? <LockMark /> : null}
-    </div>
+    </span>
   );
 }
 
@@ -193,16 +194,10 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
             ) : null}
             <PlanShields plans={hero.plan} from={0} identityOf={(id) => identityOf(id) ?? { name: id, tag: id, logoUrl: null }} />
           </div>
-          <p className="m-0 line-clamp-2 text-caption leading-3.5">
-            {ctx.todayMessage}
-            {hero.lockKey && ctx.lockText ? (
-              <span className="text-muted-foreground">
-                {" "}
-                <Lock aria-hidden="true" className="me-1 inline size-3 align-[-1px]" />
-                {ctx.lockText}
-              </span>
-            ) : null}
-          </p>
+          <div className="flex items-end justify-between gap-3">
+            <p className="m-0 line-clamp-2 min-w-0 flex-1 text-caption leading-3.5">{ctx.todayMessage}</p>
+            {hero.locked ? <LockMark /> : null}
+          </div>
         </div>
       );
     }
@@ -215,61 +210,59 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
       );
     case "nextObjective":
       return (
-        <div className="flex h-full items-center gap-4">
+        <span className="flex h-full items-center gap-4">
           <Target aria-hidden="true" className="size-9 shrink-0 text-club-text" />
-          <div className="flex min-w-0 flex-col gap-1">
+          <span className="flex min-w-0 flex-col gap-1">
             <span className="flex items-center gap-3">
               <span className="font-heading text-section font-bold leading-none">{t("training.scrims.weeklyObjective")}</span>
               <Word tag="next" />
             </span>
             <span className="line-clamp-2 text-caption leading-3.5 text-muted-foreground">{t("training.scrims.weeklyObjectiveDescription")}</span>
-          </div>
+          </span>
           <ChevronRight aria-hidden="true" className="ms-auto size-5 shrink-0 text-muted-foreground" />
-        </div>
+        </span>
       );
     case "nextSlot":
       return (
-        <div className="flex h-full items-center justify-between gap-3">
+        <span className="flex h-full items-center justify-between gap-3">
           <SlotTitle label={slotLabel(hero.slotIndex)} word="next" locked={hero.locked} />
           <Matchup mine={mine} rival={null} rivalLabel={t("scrims.notPlanned")} compact={compact} />
           <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-        </div>
+        </span>
       );
     case "upNext": {
       const rival = identityOf(hero.opponentTeamId);
       return (
-        <div className="flex h-full items-center justify-between gap-3">
+        <span className="flex h-full items-center justify-between gap-3">
           <SlotTitle label={slotLabel(hero.slotIndex)} word="next" locked={hero.locked} />
-          <Matchup mine={mine} rival={rival} rivalLabel={rival?.name ?? t("scrims.noOpponentSet")} compact={compact} />
-          <PlanShields plans={hero.plan} from={1} identityOf={(id) => identityOf(id) ?? { name: id, tag: id, logoUrl: null }} withWords />
+          <Matchup mine={mine} rival={rival} rivalLabel={rival?.name ?? t("scrims.notPlanned")} compact={compact} />
+          {rival ? <PlanShields phrasing plans={hero.plan} from={1} identityOf={(id) => identityOf(id) ?? { name: id, tag: id, logoUrl: null }} withWords /> : null}
           {hero.opens ? <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" /> : null}
-        </div>
+        </span>
       );
     }
     case "report":
       return (
-        <div className="flex h-full items-center gap-4">
+        <span className="flex h-full items-center gap-4">
           <FileText aria-hidden="true" className="size-9 shrink-0 text-muted-foreground" />
           <span className="font-heading text-scoreboard leading-none tabular-nums">{hero.wins}-{hero.losses}</span>
           <span className="text-entry text-muted-foreground">{t("scrims.weekRecord")}</span>
           <ChevronRight aria-hidden="true" className="ms-auto size-5 shrink-0 text-muted-foreground" />
-        </div>
+        </span>
       );
   }
 }
 
-const HERO_CLASS = "block h-[5.625rem] w-full shrink-0 overflow-hidden rounded-xl bg-card px-4 py-1.5 text-start text-card-foreground";
+const HERO_CLASS = "flex min-h-[5.625rem] w-full flex-1 flex-col justify-center overflow-hidden rounded-xl bg-card px-4 py-1.5 text-start text-card-foreground";
 
 function Hero({ hero, ctx, onOpen }: { hero: PhoneHero; ctx: HeroContext; onOpen: ScrimWeekHomeProps["onOpen"] }) {
   const { t } = useTranslation();
   const closed = hero.closedDayKey && hero.state !== "today" ? t(hero.closedDayKey) : null;
   const body = (
-    <div className="flex h-full flex-col">
-      <div className="min-h-0 flex-1">
-        <HeroBody hero={hero} ctx={ctx} onOpen={onOpen} compact={closed != null} />
-      </div>
+    <span className="flex flex-col">
+      <HeroBody hero={hero} ctx={ctx} onOpen={onOpen} compact={closed != null} />
       {closed ? <span data-slot="phone-week-closed" className="block truncate text-caption leading-3.5 text-muted-foreground">{closed}</span> : null}
-    </div>
+    </span>
   );
   const common = { "data-slot": "phone-week-hero", "data-state": hero.state } as const;
 
@@ -340,7 +333,7 @@ function Block({ block, identityOf, nameOf, weekdayLabel, onOpen }: {
   );
   const content = (
     <>
-      <span aria-hidden={undefined} className={cn("w-4 shrink-0 font-heading text-section font-bold leading-none", block.isHero ? "text-foreground" : "text-muted-foreground")}>
+      <span className={cn("w-4 shrink-0 font-heading text-section font-bold leading-none", block.isHero ? "text-foreground" : "text-muted-foreground")}>
         {block.suffix}
       </span>
       {rival ? <TeamShield identity={rival} size="small" /> : <EmptyShield size="small" />}
@@ -417,7 +410,7 @@ export function ScrimWeekHome({ home, myTeam, teams, weekdayLabels, teamNameById
           <span className="font-heading text-title font-bold leading-none tabular-nums">{volume.capacity}</span>
           <span className="text-caption text-muted-foreground">{days.join(" ")}</span>
         </Entry>
-        <Entry control="report" id="report" onOpen={onOpen} label={`${t("scrims.weeklyReportInline")}: ${reportText}`}>
+        <Entry control="report" id="report" onOpen={onOpen} label={`${t("scrims.weeklyReportInline")}: ${report.hasResult ? `${record} ${t("scrims.weekRecord")}` : reportText}`}>
           <FileText aria-hidden="true" className="size-[1.375rem] shrink-0 text-muted-foreground" />
           {report.hasResult ? (
             <>
@@ -433,10 +426,10 @@ export function ScrimWeekHome({ home, myTeam, teams, weekdayLabels, teamNameById
       <Hero
         hero={home.hero}
         onOpen={onOpen}
-        ctx={{ slotLabel, identityOf, mine: teamIdentity(myTeam), lockText, todayMessage, home, weekdayLabels }}
+        ctx={{ slotLabel, identityOf, mine: teamIdentity(myTeam), lockText, todayMessage }}
       />
 
-      <div role="group" aria-label={t("scrims.phone.weekList")} data-slot="phone-week-days" className="flex min-h-0 flex-1 gap-6">
+      <div role="group" aria-label={t("scrims.phone.weekList")} data-slot="phone-week-days" className="flex h-[7.25rem] shrink-0 gap-6">
         {home.days.map((day) => (
           <div
             key={day.weekday}
@@ -445,7 +438,7 @@ export function ScrimWeekHome({ home, myTeam, teams, weekdayLabels, teamNameById
             data-slot="phone-week-day"
             className="flex min-w-0 flex-1 flex-col gap-0.5"
           >
-            <span aria-hidden="true" className="block h-[1.125rem] border-b border-line ps-1.5 font-heading text-entry font-bold uppercase leading-4">
+            <span aria-hidden="true" className="block h-4 border-b border-line ps-1.5 font-heading text-entry font-bold uppercase leading-4">
               {weekdayLabels[day.weekday] ?? ""}
             </span>
             {day.blocks.map((block) => (
