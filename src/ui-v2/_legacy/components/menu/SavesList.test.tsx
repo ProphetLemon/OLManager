@@ -45,6 +45,13 @@ function renderList(overrides: Partial<React.ComponentProps<typeof SavesList>> =
 }
 
 describe("SavesList transfer controls", () => {
+  it("keeps the row buttons clear of the scrollbar of the scrolling list", () => {
+    renderList();
+    const scroller = screen.getByRole("button", { name: "menu.deleteSave" }).closest(".overflow-y-auto");
+
+    expect(scroller).toHaveClass("pr-2", "[scrollbar-gutter:stable]");
+  });
+
   it("exports the save whose button was pressed without loading it", () => {
     const props = renderList();
 
