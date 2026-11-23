@@ -3,13 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { DECISION_IMPACT_TAGS } from "@/lib/scrims/decisionTags";
 import type { EffectLine } from "@/lib/scrims/decisionEffects";
-import { SCRIM_FOCUS_OBJECTIVE_KEYS, SCRIM_ISSUE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import type { ScrimReportData } from "@/store/gameStore";
 import type { DailyScrimAction } from "@/services/trainingService";
 import { Button } from "@/ui-v2/components/ui/button";
-import { ResultLetter } from "@/ui-v2/components/ResultLetter";
-import { cn } from "@/ui-v2/lib/utils";
 import { EffectLineText } from "./EffectText";
+import { ScrimDecisionFacts } from "./ScrimDecisionFacts";
 import { ScrimTag } from "./ScrimTag";
 
 export interface DecisionOption {
@@ -48,55 +46,10 @@ export function ScrimDecisionPanel({
 }: ScrimDecisionPanelProps) {
   const { t } = useTranslation();
   const uid = useId();
-  const won = Boolean(report.won);
 
   return (
     <div>
-      <dl className="flex flex-wrap items-stretch border-b border-line">
-        <div className="flex items-center gap-3 border-e border-line px-4 py-3 sm:px-5">
-          <span
-            className={cn(
-              "inline-flex size-11 items-center justify-center rounded-md font-heading text-3xl font-bold leading-none",
-              won ? "bg-positive text-positive-foreground" : "bg-negative text-negative-foreground",
-            )}
-          >
-            <ResultLetter kind={won ? "win" : "loss"} />
-          </span>
-          <div>
-            <dt className="sr-only">{t("scrims.reviewBlockTitle")}</dt>
-            <dd className="font-heading text-section font-semibold uppercase leading-tight tracking-wide">
-              {won ? t("scrims.reviewWin") : t("scrims.reviewLoss")}
-            </dd>
-            <dd className="text-caption text-muted-foreground">{slotLabel}</dd>
-          </div>
-        </div>
-        <div className="flex flex-col justify-center gap-0.5 border-e border-line px-4 py-3 sm:px-5">
-          <dt className="text-caption text-muted-foreground">{t("scrims.reportFocus")}</dt>
-          <dd className="font-heading text-section font-semibold uppercase leading-tight tracking-wide">
-            {t(SCRIM_FOCUS_OBJECTIVE_KEYS[report.focus])}
-          </dd>
-        </div>
-        <div className="flex flex-col justify-center gap-0.5 border-e border-line px-4 py-3 sm:px-5">
-          <dt className="text-caption text-muted-foreground">{t("scrims.reportQuality")}</dt>
-          <dd className="font-heading text-section font-semibold leading-tight tabular-nums">{report.quality}</dd>
-        </div>
-        {report.issue ? (
-          <div className="flex flex-col justify-center gap-0.5 border-e border-line px-4 py-3 sm:px-5">
-            <dt className="text-caption text-muted-foreground">{t("scrims.detectedIssue")}</dt>
-            <dd className="font-heading text-section font-semibold uppercase leading-tight tracking-wide">
-              {t(SCRIM_ISSUE_KEYS[report.issue])}
-            </dd>
-          </div>
-        ) : null}
-        {blockLabel ? (
-          <div className="flex flex-col justify-center gap-0.5 px-4 py-3 sm:px-5">
-            <dt className="text-caption text-muted-foreground">{t("scrims.block")}</dt>
-            <dd className="font-heading text-section font-semibold uppercase leading-tight tracking-wide">
-              {t("scrims.blockOfTwo", { label: blockLabel })}
-            </dd>
-          </div>
-        ) : null}
-      </dl>
+      <ScrimDecisionFacts report={report} slotLabel={slotLabel} blockLabel={blockLabel} />
 
       <div className="flex flex-col gap-4 p-4 sm:p-5">
         <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(20.625rem,100%),1fr))] gap-2.5">

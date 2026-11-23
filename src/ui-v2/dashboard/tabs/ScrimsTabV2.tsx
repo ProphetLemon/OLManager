@@ -12,7 +12,6 @@ import {
   deriveWeeklyScrimContext,
   effectiveWeeklyScrimSlots,
   teamLolOvr,
-  type ScrimDayState,
 } from "@/lib/scrims/scrimContext";
 import {
   chooseDailyScrimAction,
@@ -25,7 +24,7 @@ import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
 import { decisionEffectLines, NEXT_BLOCK_CANCELLATION, type DecisionEffectContext } from "@/lib/scrims/decisionEffects";
 import { buildDecisionResult, type DecisionResult } from "@/lib/scrims/decisionResult";
 import { buildRivalRows } from "@/lib/scrims/rivalOdds";
-import { deskPanel, riskLevel, todayBarOpponentId, type RiskLevel } from "@/lib/scrims/scrimDesk";
+import { dayStateKey, deskPanel, riskLevel, todayBarOpponentId, type RiskLevel } from "@/lib/scrims/scrimDesk";
 import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { formatDate } from "@/lib/formatting/dateFormatting";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
@@ -60,16 +59,6 @@ const DECISION_TEXT_KEY: Record<DailyScrimAction, string> = {
   TargetedDrills: "targetedDrills",
   DayOff: "dayOff",
 };
-
-function todayStateKey(state: ScrimDayState): string {
-  switch (state) {
-    case "PlayedNeedsReview": return "scrims.pendingReview";
-    case "Reviewed": return "scrims.reviewed";
-    case "Planned": return "scrims.planned";
-    case "Cancelled": return "scrims.cancelled";
-    default: return "scrims.noScrim";
-  }
-}
 
 export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const { t, i18n } = useTranslation();
@@ -335,7 +324,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
             ref={headingRef}
             id={headingId}
             title={panelTitle}
-            badge={t(todayStateKey(todayContext.state))}
+            badge={t(dayStateKey(todayContext.state))}
             status={<ScrimDecisionResult result={result} statusText={liveText} />}
           >
             {panel === "setup" ? (

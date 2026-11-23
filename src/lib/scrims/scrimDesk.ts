@@ -25,6 +25,17 @@ export function deskPanel(today: TodayScrimContext, week: WeeklyScrimContext): D
   return "setup";
 }
 
+/** The `scrims.*` locale key that words the state of the day, for the badge of its pane. */
+export function dayStateKey(state: TodayScrimContext["state"]): string {
+  switch (state) {
+    case "PlayedNeedsReview": return "scrims.pendingReview";
+    case "Reviewed": return "scrims.reviewed";
+    case "Planned": return "scrims.planned";
+    case "Cancelled": return "scrims.cancelled";
+    default: return "scrims.noScrim";
+  }
+}
+
 export type RiskLevel = "high" | "medium" | "low";
 
 /** The browser-side estimate behind "Today's Risk": the rival's OVR first, then the larger of the OVR and reputation gaps. */

@@ -3,6 +3,7 @@ import { TriangleAlert } from "lucide-react";
 
 import type { EffectLine } from "@/lib/scrims/decisionEffects";
 import type { ResultRow } from "@/lib/scrims/decisionResult";
+import { cn } from "@/ui-v2/lib/utils";
 
 /** A signed whole number with an ASCII minus, the way the impact tags write their signs. */
 export function signed(value: number): string {
@@ -70,6 +71,23 @@ export function EffectLineText({ line }: { line: EffectLine }) {
       ) : null}
       <span>{text}</span>
     </li>
+  );
+}
+
+/** The dashed "Cost" chip: the game charges the club for what sits next to it. Icon and word, never colour alone. */
+export function CostMark({ className }: { className?: string }) {
+  const { t } = useTranslation();
+  return (
+    <span
+      data-slot="cost-mark"
+      className={cn(
+        "inline-flex items-center gap-1 rounded border border-dashed border-warning px-1.5 py-0.5 text-caption font-semibold leading-none text-warning",
+        className,
+      )}
+    >
+      <TriangleAlert aria-hidden="true" className="size-3" />
+      {t("scrims.costMark")}
+    </span>
   );
 }
 
