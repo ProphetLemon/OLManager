@@ -152,6 +152,9 @@ const BLOCKER_REFRESH_DEBOUNCE_MS = 400;
 const FOCUS_CALLS_ATTEMPTS = 40;
 const FOCUS_CALLS_INTERVAL_MS = 50;
 
+/** Tabs that are fixed panes on a phone: their wrapper opts out of the page scroll of the content area (see App.css). */
+const PHONE_FIXED_PANE_TABS: ReadonlySet<string> = new Set(["Scrims"]);
+
 export default function DashboardV2() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -1066,7 +1069,10 @@ export default function DashboardV2() {
             />
           </div>
         ) : profileNavigation.activeTab === "Scrims" && !profileOpen ? (
-          <div className="flex-1 overflow-y-auto scrollbar-v2">
+          <div
+            data-phone-fixed={phone && PHONE_FIXED_PANE_TABS.has(profileNavigation.activeTab) ? "" : undefined}
+            className="flex-1 overflow-y-auto scrollbar-v2"
+          >
             <ScrimsTabV2
               gameState={gameState}
               onGameUpdate={setGameState}

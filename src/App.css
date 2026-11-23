@@ -247,9 +247,10 @@ option {
   height: auto;
   min-height: 100%;
 }
-/* Phone: a tab that is two fixed panes opts out of the page scroll above with `data-phone-fixed` on its
-   root. It is exactly as high as the content area and only the places its design names scroll, inside
-   the pane. Unlayered like the rules above, and one attribute more specific, so it wins. */
+/* Phone: a tab that is two fixed panes opts out of the page scroll above: DashboardV2 puts
+   `data-phone-fixed` on the wrapper it renders around that tab (a direct child of #main-content) and
+   the tab fills it. The wrapper is exactly as high as the content area and only the places the design
+   names scroll, inside the pane. Unlayered like the rules above, and one attribute more specific, so it wins. */
 [data-form="phone"] #main-content > [data-phone-fixed] {
   flex: 1 1 0%;
   height: 100%;
