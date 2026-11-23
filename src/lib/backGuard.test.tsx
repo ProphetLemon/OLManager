@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type Mock }
 
 import { useMenuBackExit } from "@/hooks/useMenuBackExit";
 import { DASHBOARD_RESTORE_TIMEOUT_MS, useDashboardBackHold } from "@/ui-v2/dashboard/useDashboardBackHold";
-import { forgetPaletteEntry, pushPaletteEntry } from "@/ui-v2/palette/paletteHistory";
+import { forgetPaletteEntry, PALETTE_ENTRY_POP_TIMEOUT_MS, pushPaletteEntry, releasePaletteEntry } from "@/ui-v2/palette/paletteHistory";
 
 import { BACK_RESTORE_TIMEOUT_MS, installBackGuard, resetBackGuardForTests, setBackMeaning } from "./backGuard";
 
@@ -95,7 +95,58 @@ describe("back guard", () => {
     });
   });
 
+  describe("hold, edge cases", () => {
+    it("leaves the pop of a palette entry that is coming off to the palette and the router", () => {
+      vi.spyOn(window.history, "back").mockImplementation(() => {});
+      view = render(<Dashboard />);
+      pushPaletteEntry();
+      releasePaletteEntry(); // the palette's own history.back(): releasing, its pop not yet arrived
+      pop();
+      expect(forward).not.toHaveBeenCalled();
+      expect(router).toHaveBeenCalledTimes(1);
+    });
+
+    it("reads a release pop that arrives after the palette's fallback as an ordinary Back", () => {
+      vi.useFakeTimers();
+      vi.spyOn(window.history, "back").mockImplementation(() => {});
+      view = render(<Dashboard />);
+      pushPaletteEntry();
+      releasePaletteEntry();
+      vi.advanceTimersByTime(PALETTE_ENTRY_POP_TIMEOUT_MS);
+      pop();
+      expect(forward).toHaveBeenCalledTimes(1);
+      expect(router).not.toHaveBeenCalled();
+    });
+
+    it("takes a second Back during a pending restore as the restore pop, then holds the real restore pop as a Back", () => {
+      vi.useFakeTimers();
+      view = render(<Dashboard />);
+      pop(); // Back 1: forward() #1, restore pending
+      pop(); // Back 2 arrives first: swallowed as the restore pop
+      expect(forward).toHaveBeenCalledTimes(1);
+      pop(); // the real restore pop of forward() #1 now reads as a Back: forward() #2
+      expect(forward).toHaveBeenCalledTimes(2);
+      expect(router).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(BACK_RESTORE_TIMEOUT_MS);
+      pop(); // nothing stays pending after the timeout: still a Back
+      expect(forward).toHaveBeenCalledTimes(3);
+      expect(router).not.toHaveBeenCalled();
+    });
+  });
+
   describe("exit", () => {
+    it("calls exit once per Back, restore pops in between (accepted: a Back after a failed exit retries it)", () => {
+      const exit = vi.fn(() => Promise.resolve());
+      view = render(<Menu exit={exit} />);
+      pop(); // Back 1
+      pop(); // its restore pop
+      pop(); // Back 2
+      pop(); // its restore pop
+      expect(exit).toHaveBeenCalledTimes(2);
+      expect(forward).toHaveBeenCalledTimes(2);
+      expect(router).not.toHaveBeenCalled();
+    });
+
     it("exits once and the router never renders the stale route", () => {
       const exit = vi.fn(() => Promise.resolve());
       view = render(<Menu exit={exit} />);

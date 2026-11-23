@@ -14,8 +14,9 @@ function Menu({ enabled, exit }: { enabled: boolean; exit: () => Promise<void> }
  * (registered before any screen's) renders the new route in a microtask, which unmounts
  * the screen and removes its listeners before a later listener runs. jsdom runs no
  * microtask checkpoint between listeners, so the test unmounts synchronously instead. The
- * Back guard (`lib/backGuard.ts`) is installed before it, as `main.tsx` does. The wiring
- * against a router registered first is in `lib/backGuard.test.tsx`.
+ * Back guard (`lib/backGuard.ts`) is registered before it, as `main.tsx` does, and these
+ * tests show that it, being first, keeps the later listener from running. The install order
+ * itself is pinned by `mainBackGuard.guard.test.ts` and was checked in a real browser.
  */
 function routerThatLeavesTheMenu(unmount: () => void) {
   const listener = vi.fn(() => unmount());

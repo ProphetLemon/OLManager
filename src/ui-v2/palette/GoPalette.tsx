@@ -135,8 +135,10 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   }, [open, typed, results.length, emptyText, t]);
 
   // Back (popstate, raised by the Android back gesture) closes the palette. It does not
-  // consume the event: DashboardV2's handler asks paletteHistory whether this pop only took
-  // the palette's entry off, and then runs no navigate (spec §5.5, R87).
+  // consume the event. On Android the Back guard (lib/backGuard.ts) asks `paletteHoldsEntry`
+  // and leaves such a pop alone; on desktop DashboardV2's handler asks `paletteEntryPop`
+  // whether this pop only took the palette's entry off, and then runs no navigate
+  // (spec §5.5, R87).
   // R79, R87: wry 0.55.1 raises that popstate only when the webview can go back, so on
   // Android the palette pushes an entry of its own while open, and a close by any other
   // path takes it off. Desktop pushes nothing.

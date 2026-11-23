@@ -17,8 +17,9 @@ function Dashboard({ android }: { android: boolean }) {
  * React Router's `popstate` listener: on a pop that leaves /dashboard it renders the new
  * route in a microtask that runs before the next listener, unmounting the dashboard. jsdom
  * runs no microtask checkpoint between listeners, so the stub unmounts synchronously. The
- * Back guard is installed before it, as `main.tsx` does; the order Chromium really uses
- * (router registered first, capture or not) is covered in `lib/backGuard.test.tsx`.
+ * Back guard is registered before it, as `main.tsx` does, and these tests show that it,
+ * being first, keeps the later listener from running. The install order itself is pinned by
+ * `mainBackGuard.guard.test.ts` and was checked in a real browser.
  */
 function routerThatLeavesTheDashboard(unmount: () => void): Mock<() => void> {
   const listener = vi.fn<() => void>(() => unmount());
