@@ -342,11 +342,21 @@ fn importing_a_good_copy_over_an_odd_save_with_replace_recovers_it() {
     }
 }
 
-/// The bytes of a valid save made by another manager, as an export would carry them.
+/// The bytes of a valid save made by another manager, as an older build wrote it: with no
+/// id in the file, so only the file name says which save it replaces.
 fn good_copy(dir: &Path) -> Vec<u8> {
+    use flate2::{Compression, read::GzDecoder, write::GzEncoder};
+    use std::io::Write;
     let mut source = SaveManager::init(&dir.join("pc")).unwrap();
     let id = source.create_save(&sample_game(), "Main career").unwrap();
-    fs::read(source.save_path(&id)).unwrap()
+    let stored = fs::read(source.save_path(&id)).unwrap();
+    let mut json = Vec::new();
+    GzDecoder::new(&stored[4..]).read_to_end(&mut json).unwrap();
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(&json).unwrap();
+    let mut bytes = stored[..4].to_vec();
+    bytes.extend_from_slice(&encoder.finish().unwrap());
+    bytes
 }
 
 /// An entry whose path cannot be examined (a parent that is a file gives ENOTDIR, not
