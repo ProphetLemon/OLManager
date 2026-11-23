@@ -2,18 +2,8 @@ import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
 import { decisionEffectLines, type DecisionEffectContext } from "@/lib/scrims/decisionEffects";
 import type { ScrimReportData } from "@/store/gameStore";
 import i18n from "@/i18n";
+import { DECISION_TEXT_KEY } from "@/lib/scrims/decisionTextKey";
 import type { DecisionOption } from "../ScrimDecisionPanel";
-
-const KEY = {
-  ContinueToBlock2: "continueBlock2",
-  OfferRest: "offerRest",
-  PushThrough: "pushThrough",
-  CancelScrims: "cancelScrims",
-  VodReview: "vodReview",
-  MentalReset: "mentalReset",
-  TargetedDrills: "targetedDrills",
-  DayOff: "dayOff",
-} as const;
 
 /** A report of block A, lost by default, as the game stores it. */
 export function makeReport(over: Partial<ScrimReportData> = {}): ScrimReportData {
@@ -50,8 +40,8 @@ export function makeOptions(opts: { isFirstBlock: boolean; won: boolean; showCan
   };
   return dailyScrimDecisionActions({ isFirstBlock: opts.isFirstBlock, won: opts.won, showCancelFollowups: Boolean(opts.showCancelFollowups) }).map((id) => ({
     id,
-    label: i18n.t(`scrims.decision.${KEY[id]}`),
-    description: i18n.t(`scrims.decision.${KEY[id]}Desc`),
+    label: i18n.t(`scrims.decision.${DECISION_TEXT_KEY[id]}`),
+    description: i18n.t(`scrims.decision.${DECISION_TEXT_KEY[id]}Desc`),
     effects: decisionEffectLines(id, context),
   }));
 }
