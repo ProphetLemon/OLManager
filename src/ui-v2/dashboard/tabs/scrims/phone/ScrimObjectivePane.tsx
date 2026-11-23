@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { Ban, ClipboardList, Flag, Heart, Layers, Swords, Target, type LucideIcon } from "lucide-react";
+import { Ban, ClipboardList, Flag, Heart, Layers, Lock, Swords, Target, type LucideIcon } from "lucide-react";
 
 import { SCRIM_FOCUS_IMPACT_KEYS, SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import type { ScrimFocus } from "@/store/gameStore";
 import { cn } from "@/ui-v2/lib/utils";
-import { LockNote, PhoneOption } from "./PhoneOption";
+import { LockWord, PhoneOption } from "./PhoneOption";
 import { ScrimViewFrame } from "./ScrimViewFrame";
 
 export interface ScrimObjectivePaneProps {
@@ -54,7 +54,7 @@ export function ScrimObjectivePane({ title, onBack, objective, disabled, blocked
   };
 
   return (
-    <ScrimViewFrame title={title} onBack={onBack} lead={blockedText ? <LockNote>{blockedText}</LockNote> : undefined}>
+    <ScrimViewFrame title={title} onBack={onBack} lead={blockedText ? <LockWord /> : undefined}>
       <div data-slot="scrim-objective-pane" className="h-full min-h-0 pb-3 pt-2">
         <div
           role="group"
@@ -63,12 +63,20 @@ export function ScrimObjectivePane({ title, onBack, objective, disabled, blocked
         >
           {choice("none", t("training.scrims.objectives.none"), objective === null, null)}
           {OBJECTIVES.map((focus) => choice(focus, t(SCRIM_FOCUS_OBJECTIVE_KEYS[focus]), objective === focus, focus))}
-          <p className="m-0 flex items-center border-s-[3px] border-club ps-3 text-caption leading-4">
-            <span>
-              <span className="me-1 font-heading text-entry font-semibold text-muted-foreground">{t("scrims.impactLabel")}</span>{" "}
-              {impact}
-            </span>
-          </p>
+          {blockedText ? (
+            // Locked, nothing can change, so the eighth cell holds the whole lock sentence (three lines of 16 px fit its 48 px).
+            <p data-slot="objective-lock-sentence" className="m-0 flex items-center gap-2 border-s-[3px] border-line ps-3 text-caption leading-4 text-muted-foreground">
+              <Lock aria-hidden="true" className="size-4 shrink-0" />
+              <span className="min-w-0">{blockedText}</span>
+            </p>
+          ) : (
+            <p className="m-0 flex items-center border-s-[3px] border-club ps-3 text-caption leading-4">
+              <span>
+                <span className="me-1 font-heading text-entry font-semibold text-muted-foreground">{t("scrims.impactLabel")}</span>{" "}
+                {impact}
+              </span>
+            </p>
+          )}
         </div>
       </div>
     </ScrimViewFrame>

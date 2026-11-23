@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Check, Circle, Lock } from "lucide-react";
 
 import { cn } from "@/ui-v2/lib/utils";
@@ -46,12 +47,13 @@ export function PhoneOption({ checked, disabled, onSelect, label, className, chi
   );
 }
 
-/** Why the view cannot be changed, in the top row beside the back control: the lock and the whole sentence (up to three lines). */
-export function LockNote({ children }: { children: ReactNode }) {
+/** The lock as its icon and the word, in the top row, as Decidir shows it; the whole sentence sits in the view's body. */
+export function LockWord() {
+  const { t } = useTranslation();
   return (
-    <p data-slot="phone-lock-line" className="m-0 flex min-w-0 flex-1 items-center gap-2 text-caption leading-4 text-muted-foreground">
-      <Lock aria-hidden="true" className="size-4 shrink-0" />
-      <span className="min-w-0">{children}</span>
-    </p>
+    <span data-slot="phone-lock-word" className="flex min-w-0 items-center gap-1.5 text-entry text-muted-foreground">
+      <Lock aria-hidden="true" className="size-[1.125rem] shrink-0" />
+      {t("scrims.slotStatus.locked")}
+    </span>
   );
 }

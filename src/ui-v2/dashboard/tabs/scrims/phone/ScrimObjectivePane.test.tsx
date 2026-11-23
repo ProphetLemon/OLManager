@@ -140,11 +140,14 @@ describe("ScrimObjectivePane impact", () => {
 });
 
 describe("ScrimObjectivePane locked, assistant and saving", () => {
-  it("says why it is locked in the top row, and keeps every choice in place, aria-disabled, focusable and not dimmed", () => {
+  it("says Locked in the top row and the whole sentence in the body, in the eighth cell, and keeps every choice in place, aria-disabled, focusable and not dimmed", () => {
     const { onSelect, container } = setup({ disabled: true, blockedText: "Setup locked once block starts" });
-    const lock = screen.getByText("Setup locked once block starts");
     const top = container.querySelector('[data-slot="scrim-view-top"]') as HTMLElement;
-    expect(top).toContainElement(lock);
+    expect(top).toHaveTextContent("Locked");
+    expect(top).not.toHaveTextContent("Setup locked once block starts");
+    const sentence = container.querySelector('[data-slot="objective-lock-sentence"]') as HTMLElement;
+    expect(sentence).toHaveTextContent("Setup locked once block starts");
+    expect(container.querySelector('[data-slot="scrim-objective-pane"]')).toContainElement(sentence);
     const choice = screen.getByRole("button", { name: "Expand champion pool" });
     expect(choice).toHaveAttribute("aria-disabled", "true");
     expect(choice).not.toBeDisabled();
@@ -165,7 +168,8 @@ describe("ScrimObjectivePane locked, assistant and saving", () => {
 
   it("while a save runs keeps its place, does nothing on a press and says no reason", () => {
     const { onSelect, container } = setup({ disabled: true, blockedText: null });
-    expect(container.querySelector('[data-slot="phone-lock-line"]')).toBeNull();
+    expect(container.querySelector('[data-slot="objective-lock-sentence"]')).toBeNull();
+    expect(screen.getByText("Impact")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Improve teamfights" }));
     expect(onSelect).not.toHaveBeenCalled();
   });

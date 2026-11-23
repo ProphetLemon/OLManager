@@ -3,7 +3,7 @@ import { Check, Lock, WandSparkles } from "lucide-react";
 
 import { scrimSlotWeekdays } from "@/lib/scrims/scrimContext";
 import { cn } from "@/ui-v2/lib/utils";
-import { PhoneOption } from "./PhoneOption";
+import { LockWord, PhoneOption } from "./PhoneOption";
 import { ScrimViewFrame } from "./ScrimViewFrame";
 
 export interface ScrimVolumePaneProps {
@@ -32,17 +32,6 @@ const PIP_DAYS = [0, 1, 2];
 
 const BUTTON =
   "flex h-[var(--hit)] shrink-0 items-center justify-center gap-2 rounded-lg border-[1.5px] bg-transparent px-4 font-heading text-section font-bold outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-default aria-disabled:border-line aria-disabled:text-muted-foreground";
-
-/** The lock as its icon and the word, in the top row, as Decidir shows it; the whole sentence is at the bottom. */
-function LockWord() {
-  const { t } = useTranslation();
-  return (
-    <span data-slot="volume-lock" className="flex min-w-0 items-center gap-1.5 text-entry text-muted-foreground">
-      <Lock aria-hidden="true" className="size-[1.125rem] shrink-0" />
-      {t("scrims.slotStatus.locked")}
-    </span>
-  );
-}
 
 /** The days of a volume as six places in three pairs; the filled ones are the blocks the volume plays. Hidden: the words say it. */
 function Pips({ slots, chosen }: { slots: number; chosen: boolean }) {
