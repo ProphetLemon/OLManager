@@ -14,6 +14,8 @@ import MenuBackground from "@/ui-v2/_legacy/components/menu/MenuBackground";
 import CommunityPanel from "@/ui-v2/_legacy/components/menu/CommunityPanel";
 import PatchNotesPanel from "@/ui-v2/_legacy/components/menu/PatchNotesPanel";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
+import { useMenuBackExit } from "@/hooks/useMenuBackExit";
+import { isAndroidUserAgent } from "@/ui-v2/uiScale";
 import {
   FolderOpen,
   Settings,
@@ -117,8 +119,11 @@ function logNationalityDebug(
   });
 }
 
+const IS_ANDROID = isAndroidUserAgent(navigator.userAgent);
+
 export default function MainMenu() {
   const navigate = useNavigate();
+  useMenuBackExit(IS_ANDROID, exitApp);
   const setGameActive = useGameStore((state) => state.setGameActive);
   const { t, i18n } = useTranslation();
   const [menuState, setMenuState] = useState<
