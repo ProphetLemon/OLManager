@@ -187,6 +187,7 @@
       "error": {
         "too_small": "Ce fichier est trop petit pour être une sauvegarde.",
         "wrong_version": "Ce fichier provient d’une autre version du jeu et ne peut pas être chargé ici. Exportez-le de nouveau depuis la version qui l’a créé, ou mettez celle-ci à jour.",
+        "not_a_save": "Ce fichier n’est pas une sauvegarde. Pour transférer une carrière, ouvrez « Charger Partie » dans le jeu où vous avez joué, utilisez « Exporter la sauvegarde » et importez le fichier .olsave ainsi créé.",
         "corrupt": "Ce fichier est endommagé ou n’est pas une sauvegarde OLManager.",
         "storage": "La sauvegarde n’a pas pu être lue ou enregistrée. Vérifiez le fichier et l’espace libre, puis réessayez.",
         "id_taken": "Une sauvegarde avec cet identifiant existe déjà.",

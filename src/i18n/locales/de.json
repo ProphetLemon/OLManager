@@ -187,6 +187,7 @@
       "error": {
         "too_small": "Diese Datei ist zu klein, um ein Spielstand zu sein.",
         "wrong_version": "Diese Datei stammt aus einer anderen Spielversion und kann hier nicht geladen werden. Exportiere sie erneut aus der Version, die sie erstellt hat, oder aktualisiere diese.",
+        "not_a_save": "Diese Datei ist kein Spielstand. Um eine Karriere zu übertragen, öffne im Spiel, in dem du sie gespielt hast, „Spiel Laden“, verwende „Spielstand exportieren“ und importiere die dabei erstellte .olsave-Datei.",
         "corrupt": "Diese Datei ist beschädigt oder kein OLManager-Spielstand.",
         "storage": "Der Spielstand konnte nicht gelesen oder gespeichert werden. Prüfe die Datei und den freien Speicher und versuche es erneut.",
         "id_taken": "Ein Spielstand mit dieser ID existiert bereits.",

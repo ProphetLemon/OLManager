@@ -99,6 +99,20 @@ describe("useSaveTransfer", () => {
     expect(onImported).not.toHaveBeenCalled();
   });
 
+  it("words a not-a-save refusal with its own message and leaves the list alone", async () => {
+    const { result, onImported } = setup({
+      pickImport: vi.fn().mockRejectedValue("not_a_save|The file is not an OLManager save"),
+    });
+
+    await act(() => result.current.startImport());
+
+    expect(result.current.notice).toEqual({
+      tone: "error",
+      text: "menu.transfer.error.not_a_save",
+    });
+    expect(onImported).not.toHaveBeenCalled();
+  });
+
   it("shows the backend text for an error it has no code for", async () => {
     const { result } = setup({ pickImport: vi.fn().mockRejectedValue("Lock error: x") });
 

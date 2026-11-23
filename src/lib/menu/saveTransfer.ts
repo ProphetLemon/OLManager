@@ -2,6 +2,7 @@
 export const IMPORT_ERROR_CODES = [
   "too_small",
   "wrong_version",
+  "not_a_save",
   "corrupt",
   "storage",
   "id_taken",

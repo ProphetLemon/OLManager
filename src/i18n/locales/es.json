@@ -189,6 +189,7 @@
       "error": {
         "too_small": "Ese archivo es demasiado pequeño para ser una partida.",
         "wrong_version": "Ese archivo es de otra versión del juego y no se puede cargar aquí. Vuelve a exportarlo desde la versión que lo creó o actualiza esta.",
+        "not_a_save": "Ese archivo no es una partida guardada. Para llevar una carrera a otro dispositivo, abre «Cargar Partida» en el juego donde la jugaste, usa «Exportar partida» e importa el archivo .olsave que se crea.",
         "corrupt": "Ese archivo está dañado o no es una partida de OLManager.",
         "storage": "No se pudo leer o guardar la partida. Revisa el archivo y el espacio libre e inténtalo de nuevo.",
         "id_taken": "Ya existe una partida con ese identificador.",
