@@ -187,6 +187,7 @@
       "error": {
         "too_small": "Esse arquivo é pequeno demais para ser um save.",
         "wrong_version": "Esse arquivo é de outra versão do jogo e não pode ser carregado aqui. Exporte-o novamente da versão que o criou ou atualize esta.",
+        "not_a_save": "Esse arquivo não é um save. Para levar uma carreira para outro dispositivo, abra “Carregar Jogo” no jogo em que você jogou, use “Exportar save” e importe o arquivo .olsave que é criado.",
         "corrupt": "Esse arquivo está danificado ou não é um save do OLManager.",
         "storage": "Não foi possível ler ou gravar o save. Verifique o arquivo e o espaço livre e tente novamente.",
         "id_taken": "Já existe um save com esse identificador.",
@@ -228,13 +229,10 @@
   "rosterOverlay": {
     "asOf": "Elencos em {{date}}",
     "attribution": "Dados dos elencos: colaboradores de {{name}},",
-    "update": "Atualizar elencos",
-    "updating": "Atualizando...",
     "checking": "Procurando atualizações dos elencos…",
-    "checkFailed": "Não foi possível verificar atualizações dos elencos. Os elencos exibidos serão usados.",
+    "checkFailed": "Não foi possível verificar atualizações dos elencos",
     "updated": "Elencos atualizados para {{date}}",
-    "upToDate": "Os elencos já estão atualizados",
-    "error": "Não foi possível atualizar os elencos: {{message}}. Você ainda pode começar com os elencos atuais."
+    "upToDate": "Os elencos estão atualizados ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Iniciar Carreira",
@@ -353,6 +351,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Aguardando a verificação dos elencos…",
     "searchLeague": "Buscar ligas...",
     "regionalLeagues": "Ligas regionais",
     "confirming": "Confirmando...",
@@ -1743,6 +1742,10 @@
     "updateAvailableDetail": "A versão {{version}} está disponível",
     "upToDate": "Você está na versão mais recente",
     "noPlatformBuild": "Existe uma versão, mas ela ainda não tem build para o seu sistema",
+    "androidUpdateAvailable": "Há uma nova versão disponível. Baixe o novo APK na página da versão.",
+    "androidUpdateKeepsSaves": "Instalá-lo por cima do app atual mantém seus jogos salvos.",
+    "androidUpdateDownload": "Baixar o novo APK",
+    "androidUpdateLater": "Mais tarde",
     "autoImport": "Importar BD automaticamente",
     "autoImportDesc": "Baixa o banco de dados público do OLMDBManager (times, jogadores, comissão técnica e imagens) e atualiza os dados do jogo.",
     "data": "Dados",

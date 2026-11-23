@@ -21,8 +21,9 @@ import { fetchPoolInputs } from "./pool-fetch.mjs";
 import { runPoolGates } from "./pool-gates.mjs";
 import { explainProbe } from "./pool-report.mjs";
 import { gameTeamKeys } from "./pool-scope.mjs";
-import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, selectPool } from "./pool.mjs";
-import { poolSkillFromRows } from "./pool-rating.mjs";
+import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, dropWorldBuildTwins, selectPool } from "./pool.mjs";
+import { contractedPlayers } from "./same-person.mjs";
+import { poolSkillFromRows, recentRolesFromRows } from "./pool-rating.mjs";
 import { poolOfLevels } from "../../stats/lib/levels.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
@@ -147,15 +148,20 @@ export async function runRefresh(options) {
     // Titles too: the same person can be spelled differently on a team page and in the pool query, which hashes to another id.
     const addedPages = (entries) => new Set(entries.filter((entry) => entry.op.op === "add" && entry.page).map((entry) => entry.page));
     const rosterTitles = { player: addedPages(ops.players), staff: addedPages(ops.staff) };
-    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles });
+    const recentRoles = options.pool.statsRows ? recentRolesFromRows(options.pool.statsRows, { since: settings.since }) : null;
+    const addedRecords = (entries, kind) => entries.filter((entry) => entry.op.op === "add").map((entry) => entry.op[kind]);
+    const rosterRecords = { player: addedRecords(ops.players, "player"), staff: addedRecords(ops.staff, "staff") };
+    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles });
     // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;
     const poolOf = anchors ? poolOfLevels(anchors.levels) : undefined;
     const skill = options.pool.skill ?? (options.pool.statsRows ? poolSkillFromRows(options.pool.statsRows, positions, { poolOf }) : null);
-    const poolOps = buildPoolOps({
+    const builtPoolOps = buildPoolOps({
       selection, baselines, games: inputs.games, skill, anchors, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
     });
+    // The game folds a pool player into a record it already has on a club, or hides him from the AI, so he is left out here.
+    const poolOps = dropWorldBuildTwins({ selection, ops: builtPoolOps, contracted: contractedPlayers(world.players, ops.players.map((entry) => entry.op)) });
     ops = { players: [...ops.players, ...poolOps.players], staff: [...ops.staff, ...poolOps.staff], skipped: [...ops.skipped, ...poolOps.skipped] };
     poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff } };
     log(`pool: ${poolOps.players.length} players, ${poolOps.staff.length} staff as free agents`);
@@ -179,7 +185,9 @@ export async function runRefresh(options) {
   }
   const asOf = options.asOf ?? oldestFetch ?? todayUtc();
   const overlay = buildOverlay({ asOf, license, coverage, players: ops.players, staff: ops.staff });
-  let gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions, gateExceptions: options.gateExceptions });
+  // The page of every add this run made (roster adds by their team page row, pool adds by their own page), for the twin gate.
+  const pages = new Map([...ops.players, ...ops.staff].map((entry) => [entry.id, entry.page ?? entry.op.pool?.page]).filter(([, page]) => page));
+  let gates = runGates({ overlay, world, coveredTeamIds: readableTeamIds, options: options.gateOptions, gateExceptions: options.gateExceptions, pages });
   let poolReport = null;
   if (poolRun) {
     const bytes = Buffer.byteLength(serializeOverlay(overlay));

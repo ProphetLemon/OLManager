@@ -24,6 +24,7 @@
       "error": {
         "too_small": "Il file è troppo piccolo per essere un salvataggio.",
         "wrong_version": "Il file proviene da un’altra versione del gioco e non può essere caricato qui. Esportalo di nuovo dalla versione che lo ha creato, oppure aggiorna questa.",
+        "not_a_save": "Questo file non è un salvataggio. Per spostare una carriera, apri «Carica partita» nel gioco in cui l’hai giocata, usa «Esporta salvataggio» e importa il file .olsave che viene creato.",
         "corrupt": "Il file è danneggiato o non è un salvataggio di OLManager.",
         "storage": "Non è stato possibile leggere o salvare il salvataggio. Controlla il file e lo spazio libero, poi riprova.",
         "id_taken": "Esiste già un salvataggio con questo identificativo.",
@@ -63,15 +64,12 @@
     "invalidDob": "Data di nascita non valida"
   },
   "rosterOverlay": {
-    "asOf": "Rose aggiornate al {{date}}",
+    "asOf": "Rose al {{date}}",
     "attribution": "Dati delle rose: collaboratori di {{name}},",
-    "update": "Aggiorna rose",
-    "updating": "Aggiornamento...",
     "checking": "Controllo degli aggiornamenti delle rose…",
-    "checkFailed": "Impossibile controllare gli aggiornamenti delle rose. Vengono usate le rose mostrate.",
+    "checkFailed": "Impossibile controllare gli aggiornamenti delle rose",
     "updated": "Rose aggiornate al {{date}}",
-    "upToDate": "Le rose sono già aggiornate",
-    "error": "Impossibile aggiornare le rose: {{message}}. Puoi comunque iniziare con le rose attuali."
+    "upToDate": "Le rose sono aggiornate ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Inizia carriera",
@@ -190,6 +188,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "In attesa del controllo delle rose…",
     "searchLeague": "Cerca campionati...",
     "regionalLeagues": "Leghe regionali",
     "confirming": "Conferma in corso...",
@@ -1580,6 +1579,10 @@
     "updateAvailableDetail": "La versione {{version}} è disponibile",
     "upToDate": "Hai l'ultima versione",
     "noPlatformBuild": "Esiste una versione, ma non ha ancora una build per il tuo sistema",
+    "androidUpdateAvailable": "È disponibile una nuova versione. Scarica il nuovo APK dalla pagina della release.",
+    "androidUpdateKeepsSaves": "Installandolo sopra l'app attuale i tuoi salvataggi vengono conservati.",
+    "androidUpdateDownload": "Scarica il nuovo APK",
+    "androidUpdateLater": "Più tardi",
     "autoImport": "Importa automaticamente il database",
     "autoImportDesc": "Scarica il database pubblico di OLMDBManager (squadre, giocatori, staff e immagini) e aggiorna i dati di gioco.",
     "data": "Dati",

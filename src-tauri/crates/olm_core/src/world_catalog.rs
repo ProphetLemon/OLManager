@@ -1646,6 +1646,33 @@ mod tests {
         players.iter().map(|p| p.id.as_str()).collect()
     }
 
+    /// Ace of Senshi eSports. The overlay of 2026-11-14 (b084a971) added him from his Leaguepedia page as the teamless
+    /// pool add `5236c06a`; the hll catalog already holds the merged record `cea7803b` ("Ace (Ignacio David
+    /// Piaggio)", UY, ADC) and the nick-only stub `2ba313af`, both on Senshi. Leaguepedia reads Ignacio David Piaggio,
+    /// Uruguay, Bot, Senshi eSports (cache world-2026-11-16, page "Ace (Ignacio David Piaggio)").
+    ///
+    /// This proves what the world build does: a new world assembled with that overlay ends with one Ace, the catalog
+    /// record, and both losers are reported so the caller tombstones them in `retired_player_ids`. It does not prove
+    /// anything about a save that already holds the three records: no repair touches those (see
+    /// `rehydration_does_not_repair_a_duplicate_on_a_live_club_so_an_old_save_keeps_its_three_aces` in `commands::import`).
+    #[test]
+    fn a_world_holding_the_old_pool_add_of_ace_keeps_only_the_catalog_record() {
+        let merged = born(
+            on_team(player("player-cea7803b", "Ace (Ignacio David Piaggio)", None), "hll-team-ca24ae43"),
+            "Ignacio David Piaggio",
+            "",
+        );
+        let stub = born(on_team(player("player-2ba313af", "Ace", None), "hll-team-ca24ae43"), "Ace", "");
+        let pool_add = born(player("player-5236c06a", "Ace", None), "Ignacio David Piaggio", "");
+        let mut players = vec![stub, pool_add, merged];
+        let collapsed = collapse(&mut players, &[], &[], &["player-5236c06a"]);
+        assert_eq!(player_ids(&players), vec!["player-cea7803b"]);
+        let mut dropped: Vec<&str> = collapsed.iter().map(|c| c.dropped_id.as_str()).collect();
+        dropped.sort_unstable();
+        assert_eq!(dropped, vec!["player-2ba313af", "player-5236c06a"]);
+        assert!(collapsed.iter().all(|c| c.kept_id == "player-cea7803b"));
+    }
+
     #[test]
     fn a_nick_only_stub_collapses_into_the_real_record_on_the_same_club() {
         let stub = born(on_team(player("stub", "Samkz", None), "cd-t1"), "Samkz", "");

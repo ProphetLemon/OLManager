@@ -336,7 +336,10 @@
 }
 
 /* ── Android (data-platform set on <html> by AppV2) ─────────────
-   Touch targets reach 48px at least; desktop keeps its 24px floor. */
+   Touch targets reach 48px at least; desktop keeps its 24px floor.
+   Curved screens misread touches at their long edges (top and bottom in
+   landscape), so those two insets never drop below --edge-gutter.
+   The 12px value is provisional: tune it on a real curved phone. */
 :root[data-platform="android"] {
   --hit: max(2.75rem, 48px);
   /* The band's 1 px bottom border sits inside its height: 49 px keeps a 48 px pill whole (R62). */
@@ -344,6 +347,9 @@
   --lane-pill-h: var(--hit);
   --palette-row: var(--hit);
   --go-row: var(--hit);
+  --edge-gutter: 12px;
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--edge-gutter));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--edge-gutter));
 }
 
 /* ── High contrast (data-contrast set on <html> by AppV2) ───────

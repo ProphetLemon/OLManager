@@ -29,6 +29,7 @@ pub mod stats;
 pub mod time;
 pub mod transfers;
 pub mod world_export;
+pub mod release_check;
 pub mod world_overlay;
 #[cfg(test)]
 mod world_finance_measure;
@@ -57,6 +58,7 @@ pub use stats::*;
 pub use time::*;
 pub use transfers::*;
 pub use world_export::*;
+pub use release_check::*;
 pub use world_overlay::*;
 
 #[tauri::command]

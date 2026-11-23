@@ -2,9 +2,11 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
+import { startRosterLaunchCheck } from "@/store/rosterUpdateStore";
 import { useUpdater } from "@/hooks/useUpdater";
 import { useClubTheme } from "@/hooks/useClubTheme";
 import { invoke } from "@tauri-apps/api/core";
+import AndroidUpdateNotice from "@/ui-v2/updater/AndroidUpdateNotice";
 import UpdateModal from "@/ui-v2/_legacy/components/updater/UpdateModal";
 import { LazyFallback } from "./components/LazyFallback";
 import { TitleBarV2 } from "./components/TitleBarV2";
@@ -99,12 +101,14 @@ export default function AppV2() {
     downloading,
     progress,
     error,
+    noPlatformBuild,
     dismissed,
     install,
     dismiss,
   } = useUpdater(AUTO_CHECK_UPDATES);
 
   const [ready, setReady] = useState(false);
+  const [androidNoticeDismissed, setAndroidNoticeDismissed] = useState(false);
   // Decided once in AppV2 so no Tauri window call runs for chrome Android does not show.
   const isAndroid = useMemo(() => isAndroidUserAgent(window.navigator.userAgent), []);
 
@@ -116,6 +120,11 @@ export default function AppV2() {
       delete document.documentElement.dataset.platform;
     };
   }, [isAndroid]);
+
+  // One background roster check per session; the new-game screen shows its outcome.
+  useEffect(() => {
+    startRosterLaunchCheck();
+  }, []);
 
   useEffect(() => {
     if (!loaded) loadSettings();
@@ -272,6 +281,9 @@ export default function AppV2() {
                 onInstall={install}
                 onDismiss={dismiss}
               />
+            )}
+            {isAndroid && noPlatformBuild && !androidNoticeDismissed && (
+              <AndroidUpdateNotice onDismiss={() => setAndroidNoticeDismissed(true)} />
             )}
           </BrowserRouter>
         </ErrorBoundary>

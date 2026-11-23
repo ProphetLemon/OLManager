@@ -20,4 +20,21 @@ export function runGates(input: {
   coveredTeamIds: Set<string>;
   options?: Partial<{ minRosterSize: number; maxChangedShare: number; maxAddsPerTeam: number }>;
   gateExceptions?: GateExceptions;
+  pages?: Map<string, string>;
 }): { ok: boolean; results: GateResult[] };
+export interface DualRole {
+  player: string;
+  staff: string;
+}
+export const DUAL_ROLES: ReadonlyArray<DualRole>;
+export interface PlayerStaffTwin {
+  player: string;
+  staff: string;
+  rule: "same-page" | "name-and-birth-date";
+}
+export function playerStaffTwins(input: {
+  overlay: { players?: any[]; staff?: any[] };
+  world: { players: any[]; staff: any[] };
+  pages?: Map<string, string>;
+  allowed?: ReadonlyArray<DualRole>;
+}): PlayerStaffTwin[];

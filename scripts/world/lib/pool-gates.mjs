@@ -4,6 +4,7 @@ import { deterministicId } from "./generate.mjs";
 import { ADDED_STAFF_ROLES, POSITIONS } from "./overlay-schema.mjs";
 import { buildIndex, matchPerson, playerEntity, staffEntity } from "./match.mjs";
 import { POOL_LIMITS, compare } from "./pool.mjs";
+import { contractedPlayers, worldBuildChecker } from "./same-person.mjs";
 import { compactKey, countryToIso2 } from "./text.mjs";
 
 const gate = (name, ok, detail, value = null) => ({ name, scope: "pool", ok, detail, value });
@@ -82,10 +83,17 @@ export function runPoolGates({ overlay, world, overrides, collisions = [], bytes
     byIdentity.set(identity, [...(byIdentity.get(identity) ?? []), op.pool.page]);
   }
   const dupPool = [...byIdentity.values()].filter((pages) => pages.length > 1).map((pages) => [...pages].sort(compare).join(" = "));
+  // The rules the game applies when it builds a world (same-person.mjs): a pool player it would fold into a record on a club (K2)
+  // or hide from the AI signing guard is a duplicate the player would never see, so the pool must not emit him.
+  const contracted = contractedPlayers(world.players, overlay.players ?? []);
+  const foldedBy = worldBuildChecker(contracted, players.map(recordOf));
+  const dupBuild = players.map((op) => ({ op, hit: foldedBy(recordOf(op)) })).filter(({ hit }) => hit)
+    .map(({ op, hit }) => `${op.pool.page} ~ ${hit.with} (${hit.rule})`);
   const dupReasons = [];
   if (dupGame.length) dupReasons.push(`already in the game: ${head(dupGame)}`);
+  if (dupBuild.length) dupReasons.push(`the world build folds or hides them: ${head(dupBuild)}`);
   if (dupPool.length) dupReasons.push(`repeated inside the pool: ${head(dupPool)}`);
-  results.push(gate("pool-no-duplicates", dupReasons.length === 0, dupReasons.length ? dupReasons.join("; ") : "no pool person matches a game record or another pool person", { game: dupGame.length, pool: dupPool.length }));
+  results.push(gate("pool-no-duplicates", dupReasons.length === 0, dupReasons.length ? dupReasons.join("; ") : "no pool person matches a game record or another pool person", { game: dupGame.length, pool: dupPool.length, build: dupBuild.length }));
 
   // Size on disk: the app refuses an overlay larger than this (commands::world_overlay MAX_OVERLAY_BYTES).
   results.push(gate("pool-overlay-size", bytes <= max.overlayBytes, `overlay is ${bytes} bytes; the app rejects more than ${max.overlayBytes}`, { bytes }));

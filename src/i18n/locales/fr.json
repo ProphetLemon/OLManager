@@ -187,6 +187,7 @@
       "error": {
         "too_small": "Ce fichier est trop petit pour être une sauvegarde.",
         "wrong_version": "Ce fichier provient d’une autre version du jeu et ne peut pas être chargé ici. Exportez-le de nouveau depuis la version qui l’a créé, ou mettez celle-ci à jour.",
+        "not_a_save": "Ce fichier n’est pas une sauvegarde. Pour transférer une carrière, ouvrez « Charger Partie » dans le jeu où vous avez joué, utilisez « Exporter la sauvegarde » et importez le fichier .olsave ainsi créé.",
         "corrupt": "Ce fichier est endommagé ou n’est pas une sauvegarde OLManager.",
         "storage": "La sauvegarde n’a pas pu être lue ou enregistrée. Vérifiez le fichier et l’espace libre, puis réessayez.",
         "id_taken": "Une sauvegarde avec cet identifiant existe déjà.",
@@ -228,13 +229,10 @@
   "rosterOverlay": {
     "asOf": "Effectifs au {{date}}",
     "attribution": "Données des effectifs : contributeurs de {{name}},",
-    "update": "Mettre à jour les effectifs",
-    "updating": "Mise à jour...",
     "checking": "Recherche de mises à jour des effectifs…",
-    "checkFailed": "Impossible de vérifier les mises à jour des effectifs. Les effectifs affichés sont utilisés.",
+    "checkFailed": "Impossible de vérifier les mises à jour des effectifs",
     "updated": "Effectifs mis à jour au {{date}}",
-    "upToDate": "Les effectifs sont déjà à jour",
-    "error": "Impossible de mettre à jour les effectifs : {{message}}. Vous pouvez commencer avec les effectifs actuels."
+    "upToDate": "Les effectifs sont à jour ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Démarrer la Carrière",
@@ -353,6 +351,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "En attente de la vérification des effectifs…",
     "searchLeague": "Rechercher des ligues...",
     "regionalLeagues": "Ligues régionales",
     "confirming": "Confirmation...",
@@ -1743,6 +1742,10 @@
     "updateAvailableDetail": "La version {{version}} est disponible",
     "upToDate": "Vous êtes à jour",
     "noPlatformBuild": "Une version existe, mais elle n'a pas encore de build pour votre système",
+    "androidUpdateAvailable": "Une nouvelle version est disponible. Téléchargez le nouvel APK depuis la page de la version.",
+    "androidUpdateKeepsSaves": "L'installer par-dessus l'application actuelle conserve vos sauvegardes.",
+    "androidUpdateDownload": "Télécharger le nouvel APK",
+    "androidUpdateLater": "Plus tard",
     "autoImport": "Importation automatique de la base",
     "autoImportDesc": "Télécharge la base publique d’OLMDBManager (équipes, joueurs, staff et images) et met à jour les données du jeu.",
     "data": "Données",

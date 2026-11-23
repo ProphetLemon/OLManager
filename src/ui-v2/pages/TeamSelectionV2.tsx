@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
@@ -15,7 +15,11 @@ import {
 } from "@/ui-v2/_legacy/components/teamSelection/teamSelection.helpers";
 import { resolvePlayerLolRole } from "@/lib/players/lolIdentity";
 import { calculateLolOvr } from "@/lib/players/lolPlayerStats";
-import { useRosterOverlay } from "@/hooks/useRosterOverlay";
+import {
+  recheckRostersIfStale,
+  retryRosterCheck,
+  useRosterUpdateStore,
+} from "@/store/rosterUpdateStore";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { RosterOverlayPanel } from "@/ui-v2/components/RosterOverlayPanel";
 import CustomTeamWizardV2 from "@/ui-v2/pages/customTeam/CustomTeamWizardV2";
@@ -51,7 +55,14 @@ export default function TeamSelectionV2() {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-  const rosterOverlay = useRosterOverlay({ autoCheck: true });
+  const rosterStatus = useRosterUpdateStore((state) => state.status);
+  const rosterInfo = useRosterUpdateStore((state) => state.info);
+  const rosterWaitHintId = useId();
+
+  // The launch check usually answered already; repeat it only if it failed or is old.
+  useEffect(() => {
+    recheckRostersIfStale();
+  }, []);
 
   useEffect(() => {
     loadLeagueSelectionData()
@@ -113,7 +124,8 @@ export default function TeamSelectionV2() {
     customTeam?: CustomTeamSpec,
     competitionId?: string,
   ) => {
-    if (isConfirming) return;
+    // A new game reads the roster overlay when it starts; never while a check may replace it.
+    if (isConfirming || rosterStatus === "checking") return;
     setIsConfirming(true);
     setConfirmError(null);
     try {
@@ -186,7 +198,8 @@ export default function TeamSelectionV2() {
   const isLeagueScreen = screen === "league" && leagueData;
 
   const isCustomScreen = screen === "custom" && !!selectedCompetition;
-  const overlayBusy = rosterOverlay.status === "updating" || rosterOverlay.status === "checking";
+  // A new game reads the overlay when it starts: hold Confirm while a check may still replace it.
+  const overlayBusy = rosterStatus === "checking";
 
   const handleRootKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -224,12 +237,23 @@ export default function TeamSelectionV2() {
             </p>
           </div>
           {!isLeagueScreen && !isCustomScreen && selectedTeamId && (
-            <button type="button" disabled={isConfirming || overlayBusy} onClick={handleConfirm}
-              className="flex h-8 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 disabled:pointer-events-none disabled:opacity-50"
-            >
-              {isConfirming && <Loader2 className="size-4 animate-spin" />}
-              {t("teamSelect.confirm", "Confirmar")}
-            </button>
+            <div className="flex items-center gap-3">
+              {overlayBusy && (
+                <span id={rosterWaitHintId} className="text-caption text-muted-foreground">
+                  {t("teamSelect.waitingForRosterCheck")}
+                </span>
+              )}
+              {/* While a roster check runs Confirm stays focusable (aria-disabled, guarded
+                  in confirmSelection) so a keyboard user can reach it and hear why it waits. */}
+              <button type="button" disabled={isConfirming} onClick={handleConfirm}
+                aria-disabled={overlayBusy || undefined}
+                aria-describedby={overlayBusy ? rosterWaitHintId : undefined}
+                className="flex h-8 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 disabled:pointer-events-none disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+              >
+                {isConfirming && <Loader2 className="size-4 animate-spin" />}
+                {t("teamSelect.confirm", "Confirmar")}
+              </button>
+            </div>
           )}
         </div>
       </header>
@@ -274,10 +298,9 @@ export default function TeamSelectionV2() {
       )}
 
       <RosterOverlayPanel
-        info={rosterOverlay.info}
-        status={rosterOverlay.status}
-        error={rosterOverlay.error}
-        onUpdate={rosterOverlay.update}
+        info={rosterInfo}
+        status={rosterStatus}
+        onRetry={() => void retryRosterCheck()}
         actions={<FloatingBugButton />}
       />
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { getApiClientSync } from "@/api/client";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { exitApp } from "@/services/appExit";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useGameStore } from "@/store/gameStore";
@@ -377,10 +377,7 @@ export default function MainMenu() {
 
   const handleExitApp = async (): Promise<void> => {
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      }
-      await getCurrentWindow().destroy();
+      await exitApp();
     } catch (error) {
       console.error("Failed to exit app:", error);
     }

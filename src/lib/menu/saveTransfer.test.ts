@@ -9,6 +9,13 @@ describe("parseTransferError", () => {
     });
   });
 
+  it("reads the not-a-save code", () => {
+    expect(parseTransferError("not_a_save|The file is not an OLManager save")).toEqual({
+      code: "not_a_save",
+      message: "The file is not an OLManager save",
+    });
+  });
+
   it("keeps a pipe inside the message", () => {
     expect(parseTransferError("corrupt|bad | data").message).toBe("bad | data");
   });

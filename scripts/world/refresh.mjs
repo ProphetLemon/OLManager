@@ -10,6 +10,7 @@ import { loadGateExceptions } from "./lib/gates.mjs";
 import { serializeOverlay } from "./lib/overlay.mjs";
 import { resolveKeyPath, signOverlayFile } from "./lib/signing.mjs";
 import { runRefresh } from "./lib/pipeline.mjs";
+import { positionSteps } from "./lib/pool.mjs";
 import { buildTeamMap, loadTeamMap, summarizeTeamMap } from "./lib/team-map.mjs";
 import { DEFAULT_POOL_PROBE, DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP } from "./lib/pool.mjs";
 import { loadPoolAnchors } from "./lib/pool-anchors.mjs";
@@ -138,6 +139,7 @@ async function refresh() {
   const failed = result.gates.results.filter((g) => !g.ok);
   console.log(`players: ${result.summary.players} ops, staff: ${result.summary.staff} ops, unmapped teams: ${result.summary.unmapped}, unreadable pages: ${result.summary.unreadable}`);
   if (result.pool) console.log(`pool: ${result.pool.selection.players.length} players, ${result.pool.selection.staff.length} staff added as free agents (${result.pool.bytes} bytes of overlay)`);
+  if (result.pool) console.log(`pool positions by evidence step: ${JSON.stringify(positionSteps(result.pool.selection))}`);
   console.log(`gates: ${result.gates.results.length - failed.length}/${result.gates.results.length} passed${failed.length ? ` (FAILED: ${failed.map((g) => g.name).join(", ")})` : ""}`);
   console.log(`requests: ${client.stats.network} live, ${client.stats.cacheHits} cached; report: ${values.report}`);
   if (failed.length && !values["allow-gate-failures"]) {

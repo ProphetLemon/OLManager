@@ -39,6 +39,12 @@ export interface Person {
   page: string;
   profile: Profile;
   roles: string[];
+  /** The [MIN, MAX] role pairs of the rows that read two different labels. */
+  spans?: Array<[string, string]>;
+  /** One `{last, min, max}` per people-query row: the roster start date and the MIN and MAX of its roles. */
+  roleRows?: Array<{ last: string; min: string; max: string }>;
+  /** The step of `describePersonDetailed` that chose the position; null for staff. */
+  positionStep?: string | null;
   kind: "player" | "staff";
   position: string | null;
   staffLabel: string | null;
@@ -54,7 +60,7 @@ export interface Person {
 }
 export type GameStatus =
   | { status: "in-game"; id: string }
-  | { status: "on-game-team" }
+  | { status: "on-game-team"; unconfirmed?: string }
   | { status: "uncertain"; reason?: string }
   | { status: "new" };
 export interface PeopleSummary {
@@ -95,9 +101,18 @@ export function mergePerson(a: Person, b: Person): Person;
 export function playerPosition(label: unknown): string | null;
 export function isStaffLabel(label: unknown): boolean;
 export function roleLabels(value: unknown): string[];
+export function latestRoleRow(roleRows: Array<{ last: string; min: string; max: string }> | undefined): { min: string; max: string } | null;
+export function describePersonDetailed(
+  roles: string[],
+  profileRole?: string,
+  spans?: Array<[string, string]>,
+  latest?: { min: string; max: string } | null,
+): { kind: "player" | "staff"; position: string | null; staffLabel: string | null; step: string | null };
 export function describePerson(
   roles: string[],
   profileRole?: string,
+  spans?: Array<[string, string]>,
+  latest?: { min: string; max: string } | null,
 ): { kind: "player" | "staff"; position: string | null; staffLabel: string | null };
 export function tierFromAggregates(input: { leagueLevelMin?: string; tournamentLevelMin?: string; tournamentOfficial?: string; leagueOfficial?: string }): 1 | 2 | 3;
 export function personFromRow(row: Record<string, unknown>): Person;

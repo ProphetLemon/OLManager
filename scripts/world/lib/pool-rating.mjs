@@ -238,3 +238,33 @@ export function poolSkillFromRows(rows, positions, { poolOf } = {}) {
   if (Number.isNaN(dayNumber(referenceDate))) throw new Error("pool stats: rows carry no valid date");
   return poolSkillByPage(estimateSkill(rows, { referenceDate, ...(poolOf ? { poolOf } : {}) }), positions);
 }
+
+/** The fewest games in the activity window that settle a player's position (step a of the position evidence). */
+export const POSITION_MIN_GAMES = 5;
+
+/**
+ * Where each pool player has played lately, from the per-game rows of `scripts/stats/pro-stats.mjs`: the role most of his games
+ * in the activity window (`since`, the pool's own) were played in, with how many games and the date of the newest. A player with
+ * fewer than `POSITION_MIN_GAMES` games, or whose games split with no role over half, has no entry.
+ * @param {Array<{playerKey: string, role: string, date: string}>} rows
+ * @param {{since: string}} options first date of the window, YYYY-MM-DD
+ * @returns {Map<string, {position: string, games: number, last: string}>}
+ */
+export function recentRolesFromRows(rows, { since }) {
+  const byPlayer = new Map();
+  for (const row of rows) {
+    if (!(row.date >= since)) continue;
+    const entry = byPlayer.get(row.playerKey) ?? { games: 0, last: "", roles: new Map() };
+    entry.games += 1;
+    if (row.date > entry.last) entry.last = row.date;
+    entry.roles.set(row.role, (entry.roles.get(row.role) ?? 0) + 1);
+    byPlayer.set(row.playerKey, entry);
+  }
+  const roles = new Map();
+  for (const [page, entry] of byPlayer) {
+    if (entry.games < POSITION_MIN_GAMES) continue;
+    const [role, count] = [...entry.roles].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))[0];
+    if (count * 2 > entry.games) roles.set(page, { position: role, games: entry.games, last: entry.last });
+  }
+  return roles;
+}

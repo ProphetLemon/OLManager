@@ -26,8 +26,8 @@ export async function getWorldOverlayInfo(): Promise<WorldOverlayInfo> {
 
 /**
  * Download a newer roster overlay (if any); rejects with the backend message.
- * `automatic` marks the background check made when the new-game screen opens,
- * which the backend gives a shorter timeout than a manual update.
+ * `automatic` marks the background checks (at app launch and the new-game
+ * screen's re-check), which the backend gives a shorter timeout than a manual retry.
  */
 export async function updateWorldOverlay(
   options: { automatic?: boolean } = {},

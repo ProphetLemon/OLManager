@@ -187,6 +187,7 @@
       "error": {
         "too_small": "Bu dosya kayıt olamayacak kadar küçük.",
         "wrong_version": "Bu dosya oyunun başka bir sürümüne ait ve burada yüklenemez. Onu oluşturan sürümden yeniden dışa aktarın ya da bu sürümü güncelleyin.",
+        "not_a_save": "Bu dosya bir kayıt değil. Bir kariyeri taşımak için oynadığınız oyunda “Oyunu Yükle” bölümünü açın, “Kaydı dışa aktar” seçeneğini kullanın ve oluşan .olsave dosyasını içe aktarın.",
         "corrupt": "Bu dosya bozuk ya da bir OLManager kaydı değil.",
         "storage": "Kayıt okunamadı veya saklanamadı. Dosyayı ve boş alanı kontrol edip yeniden deneyin.",
         "id_taken": "Bu kimliğe sahip bir kayıt zaten var.",
@@ -228,13 +229,10 @@
   "rosterOverlay": {
     "asOf": "Kadrolar {{date}} tarihi itibarıyla",
     "attribution": "Kadro verileri: {{name}} katkıda bulunanlar,",
-    "update": "Kadroları güncelle",
-    "updating": "Güncelleniyor...",
     "checking": "Kadro güncellemeleri denetleniyor…",
-    "checkFailed": "Kadro güncellemeleri denetlenemedi. Gösterilen kadrolar kullanılıyor.",
+    "checkFailed": "Kadro güncellemeleri denetlenemedi",
     "updated": "Kadrolar {{date}} tarihine güncellendi",
-    "upToDate": "Kadrolar zaten güncel",
-    "error": "Kadrolar güncellenemedi: {{message}}. Mevcut kadrolarla başlayabilirsiniz."
+    "upToDate": "Kadrolar güncel ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Kariyere Başla",
@@ -353,6 +351,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Kadro denetimi bekleniyor…",
     "searchLeague": "Lig ara...",
     "regionalLeagues": "Bölgesel ligler",
     "confirming": "Onaylanıyor...",
@@ -1743,6 +1742,10 @@
     "updateAvailableDetail": "Sürüm {{version}} mevcut",
     "upToDate": "Güncel versiyonu kullanıyorsunuz",
     "noPlatformBuild": "Bir sürüm var, ancak sisteminiz için henüz bir yapı yok",
+    "androidUpdateAvailable": "Yeni bir sürüm mevcut. Yeni APK'yı sürüm sayfasından indirin.",
+    "androidUpdateKeepsSaves": "Mevcut uygulamanın üzerine kurarsanız kayıtlarınız korunur.",
+    "androidUpdateDownload": "Yeni APK'yı indir",
+    "androidUpdateLater": "Sonra",
     "autoImport": "Veritabanını otomatik içe aktar",
     "autoImportDesc": "Herkese açık OLMDBManager veritabanını (takımlar, oyuncular, ekip ve görseller) indirir ve oyun verilerini günceller.",
     "data": "Veriler",

@@ -189,6 +189,7 @@
       "error": {
         "too_small": "That file is too small to be a save.",
         "wrong_version": "That file is from another game version and cannot be loaded here. Export it again from the version that created it, or update this one.",
+        "not_a_save": "That file is not a save. To move a career, open “Load Game” in the game where you played it, use “Export save”, and import the .olsave file it creates.",
         "corrupt": "That file is damaged or is not an OLManager save.",
         "storage": "The save could not be read or stored. Check the file and the free space, then try again.",
         "id_taken": "A save with that id already exists.",
@@ -228,13 +229,10 @@
   "rosterOverlay": {
     "asOf": "Rosters as of {{date}}",
     "attribution": "Roster data: {{name}} contributors,",
-    "update": "Update rosters",
-    "updating": "Updating...",
     "checking": "Checking for roster updates…",
-    "checkFailed": "Couldn't check for roster updates. Using the rosters shown.",
+    "checkFailed": "Couldn't check for roster updates",
     "updated": "Rosters updated to {{date}}",
-    "upToDate": "Rosters already up to date",
-    "error": "Could not update rosters: {{message}}. You can still start with the current rosters."
+    "upToDate": "Rosters are up to date ({{date}})"
   },
   "worldSelect": {
     "startCareer": "Start Career",
@@ -525,6 +523,7 @@
     }
   },
   "teamSelect": {
+    "waitingForRosterCheck": "Waiting for the roster check…",
     "searchLeague": "Search leagues...",
     "regionalLeagues": "Regional leagues",
     "confirming": "Confirming...",
@@ -1940,6 +1939,10 @@
     "updateAvailableDetail": "Version {{version}} is available",
     "upToDate": "You're up to date",
     "noPlatformBuild": "A release exists, but it has no build for your system yet",
+    "androidUpdateAvailable": "A new version is available. Download the new APK from the release page.",
+    "androidUpdateKeepsSaves": "Installing it over the current app keeps your saves.",
+    "androidUpdateDownload": "Download the new APK",
+    "androidUpdateLater": "Later",
     "autoImport": "Auto-import database",
     "autoImportDesc": "Downloads the public OLMDBManager database (teams, players, staff and images) and updates the game data.",
     "data": "Data",

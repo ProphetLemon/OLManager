@@ -188,6 +188,11 @@ pub fn run() {
             use tauri::Manager as TauriManager;
             #[cfg(target_os = "linux")]
             {
+                // Opens the start-up window of the rendering watch and lets it
+                // close the app cleanly when it restarts in Compatibility.
+                linux_render::gbm_watch::mark_window_created();
+                let handle = app.handle().clone();
+                linux_render::gbm_watch::set_exit_hook(move || handle.exit(0));
                 log::info!("[setup] {}", render_report.line());
                 if let Some(error) = &render_report.save_error {
                     log::warn!("[setup] Could not remember the rendering choice: {error}");
@@ -354,6 +359,7 @@ pub fn run() {
             sim_live_skip_to_end,
             auto_import_database,
             update_world_overlay,
+            latest_release_version,
             get_world_overlay_info,
             import_export_zip,
             import_cached_export,

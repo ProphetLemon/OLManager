@@ -4,6 +4,65 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1123.1] - 2026-11-23
+
+A small update, mostly for Android. It was checked on an Android 14 emulator (x86_64 build) and on one real phone, a OnePlus 11 with Android 16 (arm64 build).
+
+### Fixed
+
+- Android: the game now always runs in landscape and in full screen. Before, it could turn to portrait, where the main menu did not fit, and in landscape the status bar stayed on screen and pushed the game down. Swipe from an edge of the screen to see the system bars for a moment.
+- Android: buttons at the top and bottom edges of the screen keep a small margin, so they are easier to press on a phone with curved edges.
+- Android: "Exit game" on the main menu now closes the app. Before, it did nothing.
+- Android: "Import save" and "Export save" now open the file picker. Before, they did nothing, so a save could not be moved to or from the phone. A save exported on a PC was imported on the phone and loaded there. Exporting was only checked on the emulator.
+- Importing a file that is not a save now says so, and tells you to use "Export save" in the Load Game list to get a .olsave file. Before, any such file was reported as a save from another game version. This is the only change for Windows and Linux players.
+
+### Changed
+
+- Android now treats the app as a game, which is what keeps it in landscape on tablets. On the OnePlus we tried, the phone's game mode (Game Space) showed its side handle over the game.
+
+### Known issues
+
+- Android: if you import a save you already have and pick the file from the Downloads view of the file picker, it is added as a second copy instead of asking to replace the one you have. Picking the same file through the device storage asks to replace it.
+- Android: the interface is still the desktop layout at a smaller size, and it is hard to read on a phone.
+- The file made by Settings > "Export World Database" holds teams, players and staff only. It is not a save and cannot be imported.
+
+## [2026.1122.1] - 2026-11-22
+
+### Added
+
+- The first Android app from this fork, as an APK attached to the release. It is a separate app from Open League Manager: it installs next to the original and does not replace it, and the two apps keep separate saves. On the phone it is called OLM Limón, so you can tell the two apps apart.
+- The Android APK is built for 64-bit ARM (arm64) devices only.
+- The Android app does not update itself. To update, download the new APK from the release and install it over the old one. Every APK is signed with the same key, so your saves stay.
+- On Android, when a new version is out, the game says so when it opens and in Settings > Updates, with a button that opens the release page to download the new APK. It never installs anything by itself.
+- Google Play Protect blocked a test copy of this APK as harmful on the one phone we tried it on, and you may see the same warning. We have asked Google to review it.
+- The Android app was checked on an Android 14 emulator running the x86_64 build (launch, new game, one match day, save and load, Settings > Updates, installing a new APK over an old one). The arm64 APK has not been run on a real phone, and live (watched) matches, landscape and the system Back button were not checked.
+- The Android layout is adapted to touch: no desktop title bar, navigation buttons and menu rows sized at 48 px, and a More menu for the sections that do not fit. Only checked on an emulated phone screen.
+
+### Changed
+
+- In a large window, the Club sections are a list down the left side: Club opens to its ten sections (Squad, Tactics, Training, Scrims, SoloQ, Meta, Staff, Scouting, Academy, Finances), and Market and World start folded. The strip of sections across the top is gone in every window size.
+- When the window is too small for the full list, and always on Android, the left bar shows the groups as icons, with a panel next to it listing the sections of the group you are in.
+- The top bar shows your team, and for pages inside a group the group, above the page title, and it fits narrow windows.
+- In the full list you can move with the arrow keys: Up and Down between rows, Right and Left to open and close a group.
+- A section with a decision waiting for you (the ones listed under "Needs your call" on Home) carries a warning marker in the left list. Notices that need no decision show none.
+- The game remembers the section you were on, the last section of each group and which groups are open when you come back from Settings or a match. The memory lasts for the session: it resets when you load a save, start a new game or leave the game.
+- The team selection screen no longer has an "Update rosters" button. The game checks for roster updates by itself when it opens, and the screen shows a status line instead: "Rosters as of {date}", "Checking for roster updates…", "Rosters updated to {date}" or "Rosters are up to date ({date})". The check only affects new games.
+- If the roster check fails, the status line reads "Couldn't check for roster updates" and a Retry button appears next to it.
+- While a roster check runs, Confirm on the team selection screen waits, with a note beside it: "Waiting for the roster check…".
+- New games come with the roster refresh of 17 November 2026 (the previous release used 15 November), and the roster check can bring a newer one. The pool of free agents is now 3,514 players and 613 staff, up from 3,495 and 587. New games only.
+- In new games, 117 free-agent players have a different role than before, decided from their latest games and roster entries. For example, Vander is now ADC and Huron is Support. New games only.
+- In new games, free-agent players who were really coaches or other staff in the game are no longer listed as free agents as well. New games only.
+
+### Fixed
+
+- Linux: if Fast graphics fails with WebKit's "Failed to create GBM buffer" error (a grey window after start, seen with an NVIDIA card on Wayland), the game now notices in the first seconds, saves Compatibility and restarts by itself. Seen working with a simulated error; the real failure and a restart from a packaged AppImage have not been tried yet.
+- Linux: the automatic switch only happens in the first 15 seconds after the window opens, only from Fast, and never when you have set `WEBKIT_DISABLE_DMABUF_RENDERER` yourself. After it, the game stays in Compatibility and does not restart again until you choose Fast and it fails again.
+- Linux: to go back to Fast, choose it in Settings under "Graphics mode".
+- Saves written in a different save format (from a very old or a future release), and saves whose header cannot be read (for example an empty or cut-short file), are no longer deleted when the game starts. Before, starting the game erased them without a word. Saves already deleted by an earlier release cannot be restored. Saves made by this release and by 2026.1116.1 use the same format.
+- Such a save is listed with "From another version" or "Can't be read". Load is blocked and the reason is shown, but Export and Delete still work, so you can keep a copy or open it with the version that made it. Importing an exported copy of the same save over it restores it.
+- On the saves list, Enter and Space on Export, Delete and Import no longer load a save, and Enter acts on the row you are on.
+- Releases before this one, including 2026.1116.1, still delete saves in a different save format or with an unreadable header when they start. If you share a save folder with an older release, do not start it.
+
 ## [2026.1116.1] - 2026-11-16
 
 ### Changed

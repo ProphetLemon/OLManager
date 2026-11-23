@@ -33,6 +33,7 @@ src/
 │   └── ...
 ├── ui-v2/
 │   ├── AppV2.tsx              # router root + update checker + UI scale + Android immersive
+│   ├── updater/               # AndroidUpdateNotice (aviso de arranque en Android sin build en latest.json)
 │   ├── _legacy/               # copias de v1 con imports convertidos
 │   │   ├── components/        # 11 subdirectorios
 │   │   └── pages/
@@ -68,7 +69,7 @@ src/
 | ScheduleTabV2 | `_legacy/components/playoffs/PlayoffBracketBoard` |
 | PlayersTabV2 | PlayerAvatar desde _legacy (SquadTabV2 no importa nada de _legacy) |
 | CompetitionsTabV2 | ScheduleCalendarView desde _legacy |
-| AppV2 | MainMenu, MatchSimulation, UpdateModal; `SettingsV2` es nativo en `ui-v2/pages/` y envuelve `_legacy/pages/Settings` (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
+| AppV2 | MainMenu, MatchSimulation, UpdateModal (sólo escritorio); en Android, cuando el manifiesto no tiene build, el aviso nativo `ui-v2/updater/AndroidUpdateNotice` envía a la página de la última release; `SettingsV2` es nativo en `ui-v2/pages/` y envuelve `_legacy/pages/Settings` (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
 | DashboardV2 | `DashboardOverlays`, `FiredModal`, `dashboardHelpers` y `DashboardWorkspaceContent` → `DashboardTabContent` → `EndOfSeasonScreen`: ese camino sólo se monta con la pantalla de fin de temporada (Home); el resto de pestañas son nativas v2 |
 | TeamSelectionV2 | `LeaguePickerV2`, `TeamGridV2`, `teamSelection.helpers`; FloatingBugButton en el pie de `RosterOverlayPanel` (prop `actions`), en todos los pasos de /select-team |
 | DashboardSidebarV2 | FloatingBugButton: variante `cell` (celda de iconos del cluster en Tree y Split de escritorio, con `open` controlado para abrirlo con Enter) y `hidden` (sólo el modal, abierto desde el menú Más de Android, donde las utilidades viven) |
@@ -89,6 +90,7 @@ Tocado en _legacy por la conservación de partidas: `SavesList` etiqueta una par
 - Tipografía: **Barlow Condensed** (`--font-heading`), mayúsculas, números tabulares. Tamaños con `--text-*` (2xs, caption, nav, entry, section, title, ovr, scoreboard); mínimo 0.75rem y todo en rem. Únicas excepciones: `--text-map: max(0.75rem, 10px)`, sólo para las etiquetas sobre el mapa del partido en vivo (`src/ui-v2/match/`); `--text-nav: max(0.75rem, 10px)`, sólo para las etiquetas de navegación (`src/ui-v2/shell/`, `DashboardSidebarV2`, la miga de `DashboardHeaderV2`, la franja de decisiones `AttentionLaneV2` y la placa de `IconTip`, que muestra un solo tip a la vez, R16/R35/NR2.10: `text-caption` serían 6.75 px en Android); y `--text-entry: max(0.875rem, 12px)`, para los titulares de las píldoras de la franja (R35). Android usa una raíz de 9 px y 0.75rem quedaría en 6.75 px.
 - Primary dirigido por el club: `--primary` = `--club` (`useClubTheme`). Texto sobre relleno de club: `--club-foreground`. Texto con el color del club: `--club-text` (`text-club-text`). `--club-wash` = tinte del club (desaparece en alto contraste).
 - Superficies: `--rail` (rail), `--line` (bordes), `--dim` (texto atenuado), `--surface-clamp` (superficie de referencia para el contraste del color del club).
+- Android: la app es sólo apaisada y a pantalla completa (nativo, `MainActivity` y manifiesto); `--safe-top` y `--safe-bottom` tienen un mínimo `--edge-gutter` para pantallas curvas.
 - Regla: `text-primary` desnudo está prohibido, usar `text-club-text`. Lo impone `src/ui-v2/tokens.guard.test.ts` (excluye `components/ui/`, `shell/` y `FloatingBugButton`).
 - `cn()` (`src/ui-v2/lib/utils.ts`) usa `extendTailwindMerge` y registra los tamaños `text-2xs/caption/map/nav/entry/section/title/ovr/scoreboard`; un test lo compara con los `--text-*` de `default.css`. Un tamaño nuevo se añade en los dos sitios.
 - Los estados activos nunca dependen sólo del color (barra, peso, `aria-current`).

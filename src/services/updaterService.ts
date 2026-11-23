@@ -1,5 +1,7 @@
 import { check, Update, DownloadEvent } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { invoke } from "@tauri-apps/api/core";
+import { APP_VERSION } from "@/lib/common/appInfo";
 
 export type { Update, DownloadEvent };
 
@@ -48,7 +50,49 @@ function currentPlatform(): string {
   return typeof navigator === "undefined" ? "" : navigator.userAgent;
 }
 
-export async function checkForUpdate(): Promise<UpdateInfo | null> {
+/** Parses `2026.1122.1` (an optional leading `v` is tolerated) into numbers, or null. */
+function parseVersion(value: string): number[] | null {
+  const match = /^v?(\d+(?:\.\d+)*)$/.exec(value.trim());
+  return match ? match[1].split(".").map(Number) : null;
+}
+
+/**
+ * True when `candidate` is a strictly newer dotted numeric version than
+ * `current`. Segments compare as numbers and a missing one counts as 0.
+ * Anything unparsable returns false, so a malformed manifest shows no notice.
+ */
+export function isNewerVersion(candidate: string, current: string): boolean {
+  const a = parseVersion(candidate);
+  const b = parseVersion(current);
+  if (!a || !b) return false;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const diff = (a[i] ?? 0) - (b[i] ?? 0);
+    if (diff !== 0) return diff > 0;
+  }
+  return false;
+}
+
+/**
+ * Android cannot use the updater plugin: tauri-plugin-updater has no Android
+ * target ("Unsupported OS"), and forcing one makes its reqwest 0.13 client panic
+ * ("Expect rustls-platform-verifier to be initialized"). The app's own HTTP
+ * client reads the same `latest.json` instead, and a newer version surfaces as
+ * `NoPlatformBuildError` because the manifest has no Android build to install.
+ */
+async function checkForAndroidRelease(): Promise<null> {
+  const latest = await invoke<string>("latest_release_version");
+  if (isNewerVersion(latest, APP_VERSION)) {
+    throw new NoPlatformBuildError(
+      `Release ${latest} is available, but it has no build the app can install on Android`,
+    );
+  }
+  return null;
+}
+
+export async function checkForUpdate(
+  platform: string = currentPlatform(),
+): Promise<UpdateInfo | null> {
+  if (/Android/i.test(platform)) return checkForAndroidRelease();
   let update: Update | null;
   try {
     update = await check();

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadGateExceptions, runGates, simulateRosterCounts } from "../../../scripts/world/lib/gates.mjs";
+import { DUAL_ROLES, loadGateExceptions, playerStaffTwins, runGates, simulateRosterCounts } from "../../../scripts/world/lib/gates.mjs";
 import { loadWorld } from "../../../scripts/world/lib/world.mjs";
 import { FIXTURES } from "./fixtures";
 
@@ -139,5 +139,60 @@ describe("plausibility gates", () => {
       expect(() => loadGateExceptions(write({ maxChangedShare: { lck: { reason: "x" } } }))).toThrow(/lck needs a reviewed date/);
       expect(() => loadGateExceptions(write({ maxChangedShare: { lck: { reason: "x", reviewed: "yesterday" } } }))).toThrow(/reviewed date/);
     });
+  });
+});
+
+describe("no-player-staff-twins: one person both a player and a staff member", () => {
+  type Rec = Record<string, unknown>;
+  const asPlayer = (id: string, extra: Rec = {}) => ({ op: "add", player: { id, match_name: "Someone", full_name: "Some One", date_of_birth: "2001-01-01", nationality: "FR", position: "Mid", team_id: null, ...extra }, evidence });
+  const asStaff = (id: string, extra: Rec = {}, op: Rec = {}) => ({ op: "add", staff: { id, nickname: "Someone", first_name: "Some One", last_name: "One", date_of_birth: "2001-01-01", nationality: "FR", role: "HeadCoach", team_id: "lck-team-bc4c40ec", ...extra }, evidence, ...op });
+  const empty = { players: [], staff: [] };
+  const twins = (overlay: { players?: unknown[]; staff?: unknown[] }, extra: { pages?: Map<string, string>; allowed?: { player: string; staff: string }[]; world?: { players: Rec[]; staff: Rec[] } } = {}) =>
+    playerStaffTwins({ overlay, world: extra.world ?? empty, pages: extra.pages, allowed: extra.allowed ?? [] });
+
+  it("finds a player and a staff member made from one Leaguepedia page (the same page hash)", () => {
+    const found = twins({ players: [asPlayer("player-1234abcd", { date_of_birth: "2002-01-01" })], staff: [asStaff("staff-1234abcd", { date_of_birth: "1990-01-01" })] });
+    expect(found).toEqual([{ player: "player-1234abcd", staff: "staff-1234abcd", rule: "same-page" }]);
+  });
+
+  it("finds one page spelled two ways through the page titles the run knows", () => {
+    const overlay = { players: [asPlayer("player-aaaaaaaa", { date_of_birth: "2002-01-01" })], staff: [asStaff("staff-bbbbbbbb", {}, { dob_approx: true })] };
+    expect(twins(overlay)).toEqual([]);
+    const pages = new Map([["player-aaaaaaaa", "AkaRyu"], ["staff-bbbbbbbb", "Akaryu"]]);
+    expect(twins(overlay, { pages })).toEqual([{ player: "player-aaaaaaaa", staff: "staff-bbbbbbbb", rule: "same-page" }]);
+  });
+
+  it("finds a shared folded name with the same real birth date, whatever the ids", () => {
+    const overlay = { players: [asPlayer("player-aaaaaaaa", { match_name: "AkaRyu", full_name: "Bourekda Abdelhai", date_of_birth: "1999-11-11" })], staff: [asStaff("staff-bbbbbbbb", { nickname: "Akaryu", first_name: "Bourekda Abdelhai", last_name: "Abdelhai", date_of_birth: "1999-11-11" })] };
+    expect(twins(overlay)).toEqual([{ player: "player-aaaaaaaa", staff: "staff-bbbbbbbb", rule: "name-and-birth-date" }]);
+  });
+
+  it("does not take a guessed or placeholder birth date, or another birth date, as identity", () => {
+    const player = asPlayer("player-aaaaaaaa");
+    expect(twins({ players: [player], staff: [asStaff("staff-bbbbbbbb", {}, { dob_approx: true })] })).toEqual([]);
+    expect(twins({ players: [asPlayer("player-aaaaaaaa", { date_of_birth: "1990-01-01" })], staff: [asStaff("staff-bbbbbbbb", { date_of_birth: "1990-01-01" })] })).toEqual([]);
+    expect(twins({ players: [asPlayer("player-aaaaaaaa", { date_of_birth: "2002-01-01" })], staff: [asStaff("staff-bbbbbbbb", { date_of_birth: "2002-01-01" })] })).toEqual([]);
+    expect(twins({ players: [player], staff: [asStaff("staff-bbbbbbbb", { date_of_birth: "2001-01-02" })] })).toEqual([]);
+  });
+
+  it("reads the world after the ops: a retired player is no longer anybody's twin", () => {
+    const world = { players: [{ id: "player-1234abcd", match_name: "Someone", full_name: "Some One", date_of_birth: "2001-01-01" }], staff: [] };
+    const staff = [asStaff("staff-1234abcd")];
+    expect(twins({ players: [], staff }, { world })).toHaveLength(1);
+    expect(twins({ players: [{ op: "retire", id: "player-1234abcd", evidence }], staff }, { world })).toEqual([]);
+  });
+
+  it("leaves out a reviewed dual role, and every reviewed one is a page-hash pair", () => {
+    const overlay = { players: [asPlayer("player-1234abcd")], staff: [asStaff("staff-1234abcd")] };
+    expect(twins(overlay, { allowed: [{ player: "player-1234abcd", staff: "staff-1234abcd" }] })).toEqual([]);
+    for (const role of DUAL_ROLES) expect(role.player.slice("player-".length)).toBe(role.staff.slice("staff-".length));
+  });
+
+  it("fails the run and names the pair; an overlay without twins passes", () => {
+    const overlay = { ...overlayOf([asPlayer("player-1234abcd")]), staff: [asStaff("staff-1234abcd")] };
+    const failed = gate(runGates({ overlay, world, coveredTeamIds: covered }), "no-player-staff-twins");
+    expect(failed).toMatchObject({ ok: false, value: { twins: 1 } });
+    expect(failed.detail).toContain("player-1234abcd ~ staff-1234abcd (same-page)");
+    expect(gate(runGates({ overlay: overlayOf([]), world, coveredTeamIds: covered }), "no-player-staff-twins").ok).toBe(true);
   });
 });

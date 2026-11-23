@@ -1,4 +1,5 @@
 <resources>
-    <string name="app_name">Open League Manager</string>
-    <string name="main_activity_title">Open League Manager</string>
+    <!-- The fork's own launcher name, so it is never confused with the original Open League Manager app installed beside it. -->
+    <string name="app_name">OLM Limón</string>
+    <string name="main_activity_title">OLM Limón</string>
 </resources>

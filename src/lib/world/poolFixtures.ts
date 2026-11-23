@@ -59,7 +59,7 @@ export const row = (overrides: Row): Row => ({
   last: "2026-01-01", n: "3", lmin: "Primary", tmin: "Primary", toff: "1", loff: "Yes", region: "EMEA", tours: "", ...overrides,
 });
 export const peopleOf = (rows: Row[]) => new Map(rows.map((r) => [r.player, personFromRow(r)] as [string, Person]));
-export const select = (rows: Row[], extra: { rosterIds?: Set<string>; rosterTitles?: { player?: Set<string>; staff?: Set<string> }; world?: typeof world } = {}) => selectPool({ people: peopleOf(rows), context, world: extra.world ?? world, rosterIds: extra.rosterIds, rosterTitles: extra.rosterTitles });
+export const select = (rows: Row[], extra: { rosterIds?: Set<string>; rosterTitles?: { player?: Set<string>; staff?: Set<string> }; rosterRecords?: { player?: object[]; staff?: object[] }; world?: typeof world } = {}) => selectPool({ people: peopleOf(rows), context, world: extra.world ?? world, rosterIds: extra.rosterIds, rosterTitles: extra.rosterTitles, rosterRecords: extra.rosterRecords });
 export const overlayOf = (ops: { players: { op: object }[]; staff: { op: object }[] }) =>
   buildOverlay({ asOf: "2026-11-07", license: OFFLINE_LICENSE, coverage: [], players: ops.players, staff: ops.staff });
 
