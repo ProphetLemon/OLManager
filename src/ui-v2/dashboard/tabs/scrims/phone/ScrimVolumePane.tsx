@@ -1,12 +1,15 @@
-import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Lock, WandSparkles } from "lucide-react";
 
 import { scrimSlotWeekdays } from "@/lib/scrims/scrimContext";
 import { cn } from "@/ui-v2/lib/utils";
-import { LockLine, PaneHeading, PhoneChoice } from "./PhonePanePieces";
+import { LockNote, PhoneOption } from "./PhoneOption";
+import { ScrimViewFrame } from "./ScrimViewFrame";
 
 export interface ScrimVolumePaneProps {
+  /** The view's name: the frame's heading and the name of its back control. */
+  title: string;
+  onBack: () => void;
   capacity: number;
   /** Mon..Sun, already translated. */
   weekdayLabels: readonly string[];
@@ -24,11 +27,44 @@ export interface ScrimVolumePaneProps {
 }
 
 const VOLUMES = [2, 4, 6];
+/** Three days of two blocks: the pips of a volume fill from the first block. */
+const PIP_DAYS = [0, 1, 2];
 
-const BUTTON = "flex h-[var(--hit)] w-full items-center gap-2 rounded-lg border px-3 py-1 text-start transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-ring aria-disabled:opacity-65 aria-disabled:cursor-default";
+const BUTTON =
+  "flex h-[var(--hit)] shrink-0 items-center justify-center gap-2 rounded-lg border-[1.5px] bg-transparent px-4 font-heading text-section font-bold outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-default aria-disabled:border-line aria-disabled:text-muted-foreground";
 
-/** Moment 1: the three volumes, Autofill, the assistant toggle and Finalize setup, in that order. */
+/** The days of a volume as six places in three pairs; the filled ones are the blocks the volume plays. Hidden: the words say it. */
+function Pips({ slots, chosen }: { slots: number; chosen: boolean }) {
+  return (
+    <span data-slot="volume-pips" aria-hidden="true" className="flex gap-2.5">
+      {PIP_DAYS.map((day) => (
+        <span key={day} className="flex gap-1">
+          {[0, 1].map((block) => {
+            const filled = day * 2 + block < slots;
+            return (
+              <span
+                key={block}
+                data-slot="volume-pip"
+                data-filled={filled}
+                className={cn("size-2.5 rounded-full border-[1.5px]", filled ? (chosen ? "border-club bg-club" : "border-foreground bg-foreground") : "border-muted-foreground")}
+              />
+            );
+          })}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Volumen (frame Volume): the three volumes as cards, then Rellenar and the Asistente switch, then the
+ * sentence of Confirmar with the button at the right end of the last row (outlined: it locks the week).
+ * Heights: 4 + 48 (the frame's top row) + 8 + 94 + 12 + 48 + 12 + 48 = 274 of 286, so 12 stay free;
+ * a Confirmar sentence of three lines takes 51 instead of 48.
+ */
 export function ScrimVolumePane({
+  title,
+  onBack,
   capacity,
   weekdayLabels,
   disabled,
@@ -41,89 +77,98 @@ export function ScrimVolumePane({
   onFinalize,
 }: ScrimVolumePaneProps) {
   const { t } = useTranslation();
-  const headingId = useId();
 
   return (
-    <div
-      data-slot="scrim-volume-pane"
-      // 22 + 48 + 48 + 48 + 56 and four gaps of 8 = 254 in the 266 the pane has; a lock line of 18 takes 4 px gaps instead.
-      className={cn("flex h-full min-h-0 flex-col overflow-y-auto p-2", blockedText && !assistant ? "gap-1" : "gap-2")}
-    >
-      <PaneHeading id={headingId}>{t("scrims.weeklyVolume")}</PaneHeading>
-      {blockedText && !assistant ? <LockLine>{blockedText}</LockLine> : null}
-
-      <div role="group" aria-labelledby={headingId} className="grid shrink-0 grid-cols-3 gap-2">
-        {VOLUMES.map((slots) => {
-          const days = [...new Set(scrimSlotWeekdays(slots))].map((day) => weekdayLabels[day]).join(", ");
-          return (
-            <PhoneChoice key={slots} checked={capacity === slots} disabled={disabled} onSelect={() => onVolume(slots)}>
-              {/* The check shares the number's line: beside both lines it left no room for three weekdays. */}
-              <span className="flex items-center justify-between gap-1">
-                <span className="font-heading text-section font-bold leading-none">{slots}</span>
-                {capacity === slots ? <Check data-slot="choice-check" aria-hidden="true" className="size-5 shrink-0" /> : null}
-              </span>
-              <span className="truncate text-entry leading-tight text-muted-foreground">{days}</span>
-            </PhoneChoice>
-          );
-        })}
-      </div>
-
-      {assistant ? null : (
-        <button
-          type="button"
-          aria-disabled={autofillDisabled || undefined}
-          onClick={() => {
-            if (!autofillDisabled) onAutofill();
-          }}
-          className={cn(BUTTON, "justify-start border-border bg-background hover:bg-muted")}
-        >
-          <WandSparkles aria-hidden="true" className="size-5 shrink-0" />
-          <span className="font-heading text-section font-bold uppercase leading-none tracking-wide">{t("training.scrims.autofill")}</span>
-        </button>
-      )}
-
-      <button
-        type="button"
-        aria-pressed={assistant}
-        onClick={() => onAssistant(!assistant)}
-        className={cn(BUTTON, "justify-between border-border bg-background hover:bg-muted", assistant && "outline-2 -outline-offset-2 outline-solid outline-club")}
-      >
-        <span className="flex min-w-0 flex-col">
-          <span className="font-heading text-section font-bold uppercase leading-none tracking-wide">{t("scrims.assistantLabel")}</span>
-          <span className="truncate text-entry leading-tight text-muted-foreground">
-            {t("scrims.delegation")}: {assistant ? t("scrims.autoMode") : t("scrims.manualControl")}
-          </span>
-        </span>
-        <span aria-hidden="true" className="flex size-6 shrink-0 items-center justify-center rounded-sm border-2 border-muted-foreground">
-          {assistant ? <Check data-slot="toggle-check" className="size-4" /> : null}
-        </span>
-      </button>
-
-      {assistant ? (
-        <div data-slot="scrim-assistant-block" className="flex flex-col gap-1 rounded-lg border border-line bg-muted px-3 py-2 text-entry">
-          <p className="flex items-center gap-2 font-semibold">
-            <Lock aria-hidden="true" className="size-4 shrink-0" />
-            {t("scrims.assistantHandling")}
-          </p>
-          <p className="text-muted-foreground">{t("scrims.assistantModeHint")}</p>
+    <ScrimViewFrame title={title} onBack={onBack} bare lead={blockedText && !assistant ? <LockNote>{blockedText}</LockNote> : undefined}>
+      <div data-slot="scrim-volume-pane" className="flex h-full min-h-0 flex-col pt-2">
+        <div role="group" aria-label={t("scrims.weeklyVolume")} className="grid shrink-0 grid-cols-3 gap-2">
+          {VOLUMES.map((slots) => {
+            const days = [...new Set(scrimSlotWeekdays(slots))].map((day) => weekdayLabels[day]).join(", ");
+            const chosen = capacity === slots;
+            return (
+              <PhoneOption
+                key={slots}
+                checked={chosen}
+                disabled={disabled}
+                label={`${title} ${slots}: ${days}`}
+                onSelect={() => onVolume(slots)}
+                className="h-[5.875rem] px-4"
+              >
+                <span className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className={cn("font-heading text-ovr font-bold tabular-nums", chosen && "text-club-text")}>{slots}</span>
+                  <span className="flex min-w-0 flex-col gap-2">
+                    <Pips slots={slots} chosen={chosen} />
+                    <span className="text-caption leading-tight text-muted-foreground">{days}</span>
+                  </span>
+                </span>
+              </PhoneOption>
+            );
+          })}
         </div>
-      ) : (
-        <button
-          type="button"
-          aria-disabled={disabled || undefined}
-          onClick={() => {
-            if (!disabled) onFinalize();
-          }}
-          className={cn(BUTTON, "h-15 shrink-0 border-border bg-background hover:bg-muted")}
-        >
-          <Lock aria-hidden="true" className="size-5 shrink-0" />
-          <span className="flex min-w-0 flex-col">
-            <span className="font-heading text-section font-bold uppercase leading-none tracking-wide">{t("scrims.finalizeSetup")}</span>
-            {/* Two lines: the second sentence says when the week reopens, and a cut one hid it. */}
-            <span className="line-clamp-2 text-caption leading-tight text-muted-foreground">{t("scrims.finalizeHint")}</span>
-          </span>
-        </button>
-      )}
-    </div>
+
+        <div data-slot="volume-row" className="mt-3 flex shrink-0 items-center gap-10">
+          {assistant ? null : (
+            <button
+              type="button"
+              aria-disabled={autofillDisabled || undefined}
+              onClick={() => {
+                if (!autofillDisabled) onAutofill();
+              }}
+              className={cn(BUTTON, "min-w-[12.25rem] border-muted-foreground")}
+            >
+              <WandSparkles aria-hidden="true" className="size-5 shrink-0" />
+              {t("training.scrims.autofill")}
+            </button>
+          )}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={assistant}
+            onClick={() => onAssistant(!assistant)}
+            className="flex h-[var(--hit)] shrink-0 items-center gap-3.5 rounded-lg pe-1 text-start outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="flex flex-col leading-tight">
+              <span className="font-heading text-section font-bold">{t("scrims.assistantLabel")}</span>
+              <span className="text-caption text-muted-foreground">
+                {t("scrims.delegation")}: {assistant ? t("scrims.autoMode") : t("scrims.manualControl")}
+              </span>
+            </span>
+            <span
+              aria-hidden="true"
+              className={cn("flex h-7 w-12 shrink-0 items-center rounded-full border-2 p-0.5", assistant ? "justify-end border-club" : "justify-start border-muted-foreground")}
+            >
+              <span className={cn("flex size-5 items-center justify-center rounded-full", assistant ? "bg-club text-club-foreground" : "bg-muted-foreground")}>
+                {assistant ? <Check data-slot="toggle-check" className="size-3.5" /> : null}
+              </span>
+            </span>
+          </button>
+        </div>
+
+        {assistant ? (
+          <div data-slot="scrim-assistant-block" className="mt-3 flex shrink-0 flex-col gap-1 text-entry">
+            <p className="m-0 flex items-center gap-2 font-semibold">
+              <Lock aria-hidden="true" className="size-4 shrink-0" />
+              {t("scrims.assistantHandling")}
+            </p>
+            <p className="m-0 text-muted-foreground">{t("scrims.assistantModeHint")}</p>
+          </div>
+        ) : (
+          <div data-slot="volume-row" className="mt-3 flex shrink-0 items-center gap-4">
+            <p className="m-0 min-w-0 flex-1 text-caption leading-[1.0625rem] text-muted-foreground">{t("scrims.finalizeHint")}</p>
+            <button
+              type="button"
+              aria-disabled={disabled || undefined}
+              onClick={() => {
+                if (!disabled) onFinalize();
+              }}
+              className={cn(BUTTON, "min-w-[16.75rem] border-foreground")}
+            >
+              <Lock aria-hidden="true" className="size-5 shrink-0" />
+              {t("scrims.finalizeSetup")}
+            </button>
+          </div>
+        )}
+      </div>
+    </ScrimViewFrame>
   );
 }

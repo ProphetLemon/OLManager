@@ -218,8 +218,11 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     if (current === "volume") {
       return {
         title: t("scrims.phone.volume"),
+        selfFramed: true,
         content: (
           <ScrimVolumePane
+            title={t("scrims.phone.volume")}
+            onBack={goHome}
             capacity={week.capacity}
             weekdayLabels={weekdayLabels}
             disabled={isSaving || locked}
