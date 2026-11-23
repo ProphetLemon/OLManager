@@ -199,8 +199,11 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     if (current === "objective") {
       return {
         title: t("scrims.phone.objective"),
+        selfFramed: true,
         content: (
           <ScrimObjectivePane
+            title={t("scrims.phone.objective")}
+            onBack={goHome}
             objective={week.objective}
             disabled={isSaving || locked}
             blockedText={setupBlockedText}
