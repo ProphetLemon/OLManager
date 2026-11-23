@@ -476,6 +476,8 @@ export default function DashboardV2() {
     }
   }, [markClean]);
 
+  // Leaving a game replaces the dashboard's history entry, so the system Back on the menu
+  // (Android) never returns to a game that is no longer loaded.
   const handleExitToMenu = async () => {
     if (isExitingToMenu) return;
     setIsExitingToMenu(true);
@@ -485,13 +487,13 @@ export default function DashboardV2() {
       console.error("Failed to exit:", err);
     } finally {
       clearGame();
-      navigate("/");
+      navigate("/", { replace: true });
     }
   };
 
   const handleExitWithoutSave = () => {
     clearGame();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   const handleCloseQuit = async (save: boolean) => {
