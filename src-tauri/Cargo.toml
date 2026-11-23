@@ -57,6 +57,10 @@ gtk = "0.18.2"
 # dup2 onto stderr for the start-up rendering watch (already in the lock file).
 libc = "0.2"
 
+[target.'cfg(target_os = "android")'.dependencies]
+# _exit at the end of the app, so the process skips the C++ static destructors.
+libc = "0.2"
+
 [dev-dependencies]
 tempfile = "3"
 ed25519-dalek = { version = "2", default-features = false }

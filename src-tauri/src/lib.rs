@@ -372,6 +372,28 @@ pub fn run() {
             update_manager_profile,
             debug_serde_test,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, event| {
+            #[cfg(target_os = "android")]
+            if matches!(event, tauri::RunEvent::Exit) {
+                end_process_without_finalizers();
+            }
+            #[cfg(not(target_os = "android"))]
+            let _ = event;
+        });
+}
+
+/// Ends the Android process at once with status 0, flushing the log first.
+///
+/// A normal exit makes libc run the C++ static destructors of the graphics
+/// libraries while their threads still run, which aborts the process with a
+/// destroyed-mutex SIGABRT after the player chose "Exit game".
+#[cfg(target_os = "android")]
+fn end_process_without_finalizers() -> ! {
+    log::logger().flush();
+    // SAFETY: `_exit` takes a plain integer and never returns. Skipping the
+    // destructors loses nothing: saves are written synchronously before any exit
+    // and the game state lives on disk, and the log was flushed just above.
+    unsafe { libc::_exit(0) }
 }
