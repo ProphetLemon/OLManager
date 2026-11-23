@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import {
   forgetPaletteEntry,
+  paletteEntryPhase,
   paletteEntryPop,
   pushPaletteEntry,
   releasePaletteEntry,
@@ -40,14 +41,26 @@ export function useSheetBack({ open, android, onBack, listenWithoutEntry = false
   const latest = useRef(onBack);
   latest.current = onBack;
   const back = useRef(() => latest.current()).current;
+  // The entry is one shared slot, so a sheet takes off only an entry it pushed itself: a closed
+  // sheet, or one that opened on another's entry, must not strip it from the sheet that holds it.
+  const pushed = useRef(false);
   useEffect(() => {
     if (!android) return;
-    if (open) pushPaletteEntry();
-    else releasePaletteEntry();
+    if (open) {
+      const before = paletteEntryPhase();
+      pushPaletteEntry();
+      // A push over an entry that is coming off is ours too: the release below cancels it.
+      pushed.current = before !== "pushed" && paletteEntryPhase() !== "none";
+    } else if (pushed.current) {
+      pushed.current = false;
+      releasePaletteEntry();
+    }
   }, [open, android]);
   useEffect(() => {
     if (!android) return;
-    return () => forgetPaletteEntry();
+    return () => {
+      if (pushed.current) forgetPaletteEntry();
+    };
   }, [android]);
   // With the native back-button listener registered the overlay holds no entry: Back closes it.
   useBackDismisser(open && android, back);

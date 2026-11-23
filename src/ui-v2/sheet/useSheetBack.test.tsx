@@ -1,4 +1,4 @@
-import { act, render, waitFor } from "@testing-library/react";
+import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { dismissOverlayWithBack, resetNativeBackOverlaysForTests, setNativeBackRegistered } from "@/ui-v2/palette/paletteHistory";
@@ -106,6 +106,56 @@ describe("useSheetBack", () => {
     expect(dismissOverlayWithBack()).toBe(false);
     rerender(<Probe open={false} android />);
     expect(dismissOverlayWithBack()).toBe(false);
+  });
+
+  describe("two sheets on the entry path", () => {
+    // Each sheet is its own mount of the hook; the history entry is one shared slot.
+    // Unmounting takes the entry off with history.back(): let that settle before the next test.
+    afterEach(async () => {
+      cleanup();
+      await later(50);
+    });
+    function Pair({ a, b, showB = true }: { a: boolean; b: boolean; showB?: boolean }) {
+      return (
+        <>
+          <Probe open={a} android />
+          {showB && <Probe open={b} android />}
+        </>
+      );
+    }
+
+    it("a sheet that mounts closed leaves the entry another open sheet holds", async () => {
+      const back = vi.spyOn(window.history, "back");
+      render(<Pair a b={false} />);
+      await later(20);
+      expect(back).not.toHaveBeenCalled();
+      expect(window.history.state).toEqual({ ...before, olmPalette: true });
+    });
+
+    it("a sheet that opened on another's entry does not take it off when it closes", async () => {
+      const back = vi.spyOn(window.history, "back");
+      const { rerender } = render(<Pair a b={false} />);
+      rerender(<Pair a b />);
+      rerender(<Pair a b={false} />);
+      await later(20);
+      expect(back).not.toHaveBeenCalled();
+      expect(window.history.state).toEqual({ ...before, olmPalette: true });
+    });
+
+    it("a closed sheet that unmounts leaves the entry of an open one", async () => {
+      const back = vi.spyOn(window.history, "back");
+      const view = render(<Pair a b={false} />);
+      view.rerender(<Pair a b={false} showB={false} />);
+      await later(20);
+      expect(back).not.toHaveBeenCalled();
+      expect(window.history.state).toEqual({ ...before, olmPalette: true });
+    });
+
+    it("the sheet that pushed the entry still takes it off when it closes", async () => {
+      const { rerender } = render(<Pair a b={false} />);
+      rerender(<Pair a={false} b={false} />);
+      await waitFor(() => expect(window.history.state).toEqual(before));
+    });
   });
 
   it("calls the latest onBack, not the one from the opening", () => {
