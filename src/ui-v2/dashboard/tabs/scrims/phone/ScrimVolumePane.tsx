@@ -56,14 +56,12 @@ export function ScrimVolumePane({
         {VOLUMES.map((slots) => {
           const days = [...new Set(scrimSlotWeekdays(slots))].map((day) => weekdayLabels[day]).join(", ");
           return (
-            <PhoneChoice
-              key={slots}
-              mark="end"
-              checked={capacity === slots}
-              disabled={disabled}
-              onSelect={() => onVolume(slots)}
-            >
-              <span className="font-heading text-section font-bold leading-none">{slots}</span>
+            <PhoneChoice key={slots} checked={capacity === slots} disabled={disabled} onSelect={() => onVolume(slots)}>
+              {/* The check shares the number's line: beside both lines it left no room for three weekdays. */}
+              <span className="flex items-center justify-between gap-1">
+                <span className="font-heading text-section font-bold leading-none">{slots}</span>
+                {capacity === slots ? <Check data-slot="choice-check" aria-hidden="true" className="size-5 shrink-0" /> : null}
+              </span>
               <span className="truncate text-entry leading-tight text-muted-foreground">{days}</span>
             </PhoneChoice>
           );
@@ -116,12 +114,13 @@ export function ScrimVolumePane({
           onClick={() => {
             if (!disabled) onFinalize();
           }}
-          className={cn(BUTTON, "h-14 shrink-0 border-border bg-background hover:bg-muted")}
+          className={cn(BUTTON, "h-15 shrink-0 border-border bg-background hover:bg-muted")}
         >
           <Lock aria-hidden="true" className="size-5 shrink-0" />
           <span className="flex min-w-0 flex-col">
             <span className="font-heading text-section font-bold uppercase leading-none tracking-wide">{t("scrims.finalizeSetup")}</span>
-            <span className="truncate text-entry leading-tight text-muted-foreground">{t("scrims.finalizeHint")}</span>
+            {/* Two lines: the second sentence says when the week reopens, and a cut one hid it. */}
+            <span className="line-clamp-2 text-caption leading-tight text-muted-foreground">{t("scrims.finalizeHint")}</span>
           </span>
         </button>
       )}

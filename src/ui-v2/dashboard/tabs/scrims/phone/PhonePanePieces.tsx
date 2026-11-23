@@ -34,7 +34,8 @@ interface PhoneChoiceProps {
   onSelect: () => void;
   children: ReactNode;
   /** `end` puts the check at the right and draws nothing when unchosen; `start` draws a ring that the check replaces. */
-  mark: "start" | "end";
+  /** Where the check goes; left out when the caller draws it inside its own content. */
+  mark?: "start" | "end";
   className?: string;
 }
 

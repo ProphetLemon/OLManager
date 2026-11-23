@@ -120,11 +120,11 @@ describe("ScrimVolumePane assistant", () => {
 });
 
 describe("ScrimVolumePane Finalize", () => {
-  it("is one 56 px button that holds its label and the sentence", () => {
+  it("is one 60 px button that holds its label and the sentence on two lines", () => {
     const { onFinalize } = setup();
     const button = screen.getByRole("button", { name: /Finalize Setup/ });
     expect(button).toHaveTextContent("Finalizing locks this week's setup. It reopens next Monday.");
-    expect(button.className).toContain("h-14");
+    expect(button.className).toContain("h-15");
     fireEvent.click(button);
     expect(onFinalize).toHaveBeenCalledTimes(1);
   });
