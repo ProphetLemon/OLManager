@@ -10,15 +10,13 @@ interface ScrimDecisionFactsProps {
   slotLabel: string;
   /** "A" or "B": the block this report is about. */
   blockLabel: string | null;
-  /** One 48 px row for a narrow pane: smaller type, labels that may ellipsize. Desktop keeps the default. */
-  compact?: boolean;
 }
 
 /**
  * The facts bar of a decision: the result, the slot, the report focus, its quality, the issue the
  * staff detected (after a loss only) and the block. It is not interactive.
  */
-export function ScrimDecisionFacts({ report, slotLabel, blockLabel, compact = false }: ScrimDecisionFactsProps) {
+export function ScrimDecisionFacts({ report, slotLabel, blockLabel }: ScrimDecisionFactsProps) {
   const { t } = useTranslation();
   const won = Boolean(report.won);
   const heading = "font-heading text-section font-semibold uppercase leading-tight tracking-wide";
@@ -37,16 +35,12 @@ export function ScrimDecisionFacts({ report, slotLabel, blockLabel, compact = fa
   return (
     <dl
       data-slot="scrim-decision-facts"
-      className={cn(
-        "border-b border-line",
-        compact ? "flex h-12 shrink-0 items-center gap-3 overflow-hidden px-3" : "flex flex-wrap items-stretch",
-      )}
+      className="border-b border-line flex flex-wrap items-stretch"
     >
-      <div className={cn("flex items-center gap-3", compact ? "shrink-0" : "border-e border-line px-4 py-3 sm:px-5")}>
+      <div className="flex items-center gap-3 border-e border-line px-4 py-3 sm:px-5">
         <span
           className={cn(
-            "inline-flex items-center justify-center rounded-md font-heading font-bold leading-none",
-            compact ? "size-8 text-xl" : "size-11 text-3xl",
+            "inline-flex items-center justify-center rounded-md font-heading font-bold leading-none size-11 text-3xl",
             won ? "bg-positive text-positive-foreground" : "bg-negative text-negative-foreground",
           )}
         >
@@ -54,20 +48,17 @@ export function ScrimDecisionFacts({ report, slotLabel, blockLabel, compact = fa
         </span>
         <div className="min-w-0">
           <dt className="sr-only">{t("scrims.reviewBlockTitle")}</dt>
-          <dd className={cn(heading, compact && "text-entry")}>{won ? t("scrims.reviewWin") : t("scrims.reviewLoss")}</dd>
+          <dd className={heading}>{won ? t("scrims.reviewWin") : t("scrims.reviewLoss")}</dd>
           <dd className="text-caption text-muted-foreground">{slotLabel}</dd>
         </div>
       </div>
       {facts.map((fact) => (
         <div
           key={fact.id}
-          className={cn(
-            "flex flex-col justify-center gap-0.5",
-            compact ? "min-w-0 shrink" : cn("px-4 py-3 sm:px-5", fact.id !== "block" && "border-e border-line"),
-          )}
+          className={cn("flex flex-col justify-center gap-0.5", cn("px-4 py-3 sm:px-5", fact.id !== "block" && "border-e border-line"))}
         >
-          <dt className={cn("text-caption text-muted-foreground", compact && "truncate")}>{fact.label}</dt>
-          <dd className={cn(fact.valueClass, compact && "truncate text-entry")}>{fact.value}</dd>
+          <dt className="text-caption text-muted-foreground">{fact.label}</dt>
+          <dd className={fact.valueClass}>{fact.value}</dd>
         </div>
       ))}
     </dl>

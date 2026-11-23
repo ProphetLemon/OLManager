@@ -79,7 +79,7 @@ export function ScrimVolumePane({
   const { t } = useTranslation();
 
   return (
-    <ScrimViewFrame title={title} onBack={onBack} bare lead={blockedText && !assistant ? <LockNote>{blockedText}</LockNote> : undefined}>
+    <ScrimViewFrame title={title} onBack={onBack} lead={blockedText && !assistant ? <LockNote>{blockedText}</LockNote> : undefined}>
       <div data-slot="scrim-volume-pane" className="flex h-full min-h-0 flex-col pt-2">
         <div role="group" aria-label={t("scrims.weeklyVolume")} className="grid shrink-0 grid-cols-3 gap-2">
           {VOLUMES.map((slots) => {

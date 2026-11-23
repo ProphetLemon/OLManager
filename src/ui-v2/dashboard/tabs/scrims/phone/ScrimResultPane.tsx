@@ -111,7 +111,6 @@ export function ScrimResultPane({ title, onBack, result, statusText, you, rival,
     <ScrimViewFrame
       title={title}
       onBack={onBack}
-      bare
       actions={
         statusText ? (
           <p data-slot="result-applied" className="m-0 flex max-w-[22rem] items-center gap-2 text-entry font-medium leading-tight">

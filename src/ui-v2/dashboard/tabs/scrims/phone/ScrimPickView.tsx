@@ -158,7 +158,7 @@ export function ScrimPickView(props: ScrimPickViewProps) {
   const rivalTitle = ownIdentity?.name ?? emptyLabel(active);
 
   return (
-    <ScrimViewFrame title={slotLabel} onBack={onBack} bare lead={lead} actions={helpButton}>
+    <ScrimViewFrame title={slotLabel} onBack={onBack} lead={lead} actions={helpButton}>
       <div data-slot="scrim-pick-view" className="flex h-full min-h-0 flex-col gap-2 pb-3 pt-2">
         <section
           data-slot="pick-card"

@@ -306,7 +306,7 @@ describe("Semana: the day groups", () => {
     expect(within(blocks()[0]).getByText("Loss")).toBeInTheDocument();
     expect(blocks()[1]).toHaveTextContent("Q74");
     expect(within(blocks()[1]).getByText("Win")).toBeInTheDocument();
-    expect(blocks()[0].querySelector('[data-slot="phone-week-result"]')).not.toBeNull();
+    expect(blocks()[0].querySelector('[data-slot="result-badge"]')).not.toBeNull();
   });
 
   it("cancelled block: the name, the cross and the word Cancelled; not a button", () => {

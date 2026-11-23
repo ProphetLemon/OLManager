@@ -8,6 +8,7 @@ import type { ScrimReportData, TeamData } from "@/store/gameStore";
 import { Meter } from "@/ui-v2/components/ui/meter";
 import { cn } from "@/ui-v2/lib/utils";
 import { ScrimStaffSuggestions } from "../ScrimStaffSuggestions";
+import { ResultBadge } from "./ResultBadge";
 import { ScrimViewFrame } from "./ScrimViewFrame";
 import { TeamShield } from "./TeamShield";
 
@@ -25,24 +26,6 @@ export interface ScrimReportPaneProps {
   suggestions: readonly string[];
 }
 
-/** K4: a small square with an outline and the letter; the word beside it says the result, so this one is silent. */
-function ResultBadge({ won }: { won: boolean }) {
-  const { t } = useTranslation();
-  return (
-    <span
-      data-slot="report-badge"
-      data-result={won ? "won" : "lost"}
-      aria-hidden="true"
-      className={cn(
-        "absolute -end-2.5 -top-1 inline-flex size-[1.375rem] items-center justify-center rounded-[4px] border-2 bg-card font-heading text-entry font-bold leading-none",
-        won ? "border-positive text-positive" : "border-negative text-negative",
-      )}
-    >
-      {won ? t("onAir.home.formWinLetter", { defaultValue: "W" }) : t("onAir.home.formLossLetter", { defaultValue: "L" })}
-    </span>
-  );
-}
-
 /** The most recent block as a medium matchup: the rival with its result, the quality as a bar, the focus and the detected issue. */
 function RecentBlock({ report, slotLabel, name, teams }: { report: ScrimReportData; slotLabel: string; name: string; teams: readonly TeamData[] }) {
   const { t } = useTranslation();
@@ -56,7 +39,7 @@ function RecentBlock({ report, slotLabel, name, teams }: { report: ScrimReportDa
       <div className="flex w-28 shrink-0 flex-col items-center gap-1">
         <span className="relative block">
           <TeamShield identity={identity} size="medium" />
-          <ResultBadge won={report.won === true} />
+          <ResultBadge result={report.won === true ? "won" : "lost"} silent className="absolute -end-2.5 -top-1 size-[1.375rem] border-2 bg-card text-entry" />
         </span>
         <span className="max-w-full text-center font-heading text-entry font-semibold leading-tight">{identity.name}</span>
       </div>
@@ -101,7 +84,7 @@ export function ScrimReportPane({ title, onBack, week, teams, teamNameById, slot
   const nameOf = (id: string) => teamNameById.get(id) ?? id;
 
   return (
-    <ScrimViewFrame title={title} onBack={onBack} bare>
+    <ScrimViewFrame title={title} onBack={onBack}>
       <div className="h-full min-h-0 pt-2">
         <section
           data-slot="scrim-report-pane"

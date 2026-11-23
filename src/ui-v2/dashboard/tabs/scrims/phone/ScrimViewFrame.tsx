@@ -12,8 +12,6 @@ export interface ScrimViewFrameProps {
   lead?: ReactNode;
   /** Controls that belong to this view, at the right end of the top row. */
   actions?: ReactNode;
-  /** The body without the raised card around it: the view draws its own surfaces. */
-  bare?: boolean;
   children: ReactNode;
   className?: string;
 }
@@ -21,9 +19,9 @@ export interface ScrimViewFrameProps {
 /**
  * The frame every view of the Scrims tab shares on a phone: a top row of `--hit` with the back
  * control (a real button holding the chevron and the title), room for the view's own actions, then
- * the body. The title is the view's heading and the target of the focus the layout moves.
+ * the body (the view draws its own surfaces). The title is the view's heading and the target of the focus the layout moves.
  */
-export function ScrimViewFrame({ title, onBack, lead, actions, bare, children, className }: ScrimViewFrameProps) {
+export function ScrimViewFrame({ title, onBack, lead, actions, children, className }: ScrimViewFrameProps) {
   const { t } = useTranslation();
   return (
     <div data-slot="scrim-view-frame" className={cn("flex h-full min-h-0 flex-col px-2 pt-1", className)}>
@@ -50,7 +48,7 @@ export function ScrimViewFrame({ title, onBack, lead, actions, bare, children, c
       </div>
       <div
         data-slot="scrim-view-body"
-        className={cn("scrollbar-v2 min-h-0 flex-1 overflow-y-auto", !bare && "rounded-lg bg-card text-card-foreground shadow-[inset_0_0_0_1px_var(--line)]")}
+        className="scrollbar-v2 min-h-0 flex-1 overflow-y-auto"
       >
         {children}
       </div>

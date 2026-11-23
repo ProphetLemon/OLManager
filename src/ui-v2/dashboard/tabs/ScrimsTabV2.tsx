@@ -302,7 +302,6 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
         todayRisk={todayRisk}
         decisionReport={decisionReport}
         blockLabel={dailyBlockMeta?.blockLabel ?? null}
-        isFirstBlock={isFirstBlock}
         decisionOptions={decisionOptions}
         decisionSaving={decisionSaving}
         showCancelFollowups={showCancelFollowups}

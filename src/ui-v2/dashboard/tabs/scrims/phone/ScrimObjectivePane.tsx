@@ -54,7 +54,7 @@ export function ScrimObjectivePane({ title, onBack, objective, disabled, blocked
   };
 
   return (
-    <ScrimViewFrame title={title} onBack={onBack} bare lead={blockedText ? <LockNote>{blockedText}</LockNote> : undefined}>
+    <ScrimViewFrame title={title} onBack={onBack} lead={blockedText ? <LockNote>{blockedText}</LockNote> : undefined}>
       <div data-slot="scrim-objective-pane" className="h-full min-h-0 pb-3 pt-2">
         <div
           role="group"

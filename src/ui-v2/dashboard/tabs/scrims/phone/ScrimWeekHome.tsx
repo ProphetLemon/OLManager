@@ -7,9 +7,9 @@ import type { PhoneRowId, PhoneTag } from "@/lib/scrims/phoneWeek";
 import { SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import { teamIdentity, teamIdentityById, type TeamIdentity } from "@/lib/teams/teamIdentity";
 import type { TeamData } from "@/store/gameStore";
-import { ResultLetter } from "@/ui-v2/components/ResultLetter";
 import { cn } from "@/ui-v2/lib/utils";
 import { RiskMarker } from "../RiskMarker";
+import { ResultBadge } from "./ResultBadge";
 import { EmptyShield, TeamShield } from "./TeamShield";
 
 export interface ScrimWeekHomeProps {
@@ -46,23 +46,6 @@ function Word({ tag, className }: { tag: PhoneTag; className?: string }) {
       {t(WORD_KEY[tag])}
     </span>
   );
-}
-
-/** K4: a square with an outline and the letter. `silent` when the word is written beside it. */
-function ResultBadge({ result, silent }: { result: "won" | "lost"; silent?: boolean }) {
-  const badge = (
-    <span
-      data-slot="phone-week-result"
-      data-result={result}
-      className={cn(
-        "inline-flex size-[1.125rem] shrink-0 items-center justify-center rounded-[4px] border font-heading text-caption font-bold leading-none",
-        result === "won" ? "border-positive text-positive" : "border-negative text-negative",
-      )}
-    >
-      <ResultLetter kind={result === "won" ? "win" : "loss"} />
-    </span>
-  );
-  return silent ? <span aria-hidden="true">{badge}</span> : badge;
 }
 
 function LockMark() {

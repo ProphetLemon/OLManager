@@ -52,7 +52,6 @@ export function ScrimDecisionPane({ title, onBack, report, you, rival, blockLabe
     <ScrimViewFrame
       title={title}
       onBack={onBack}
-      bare
       lead={
         locked ? (
           <span data-slot="decision-lock" className="flex min-w-0 items-center gap-1.5 text-entry text-muted-foreground">

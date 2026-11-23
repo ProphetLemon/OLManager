@@ -139,7 +139,7 @@ describe("ScrimReportPane the most recent block", () => {
     expect(card).toHaveAccessibleName("Block review Wed A");
     expect(within(card).getByRole("img", { name: "MVK Esports" })).toBeInTheDocument();
     expect(within(card).getByText("MVK Esports")).toBeInTheDocument();
-    const badge = card.querySelector('[data-slot="report-badge"]') as HTMLElement;
+    const badge = card.querySelector('[data-slot="result-badge"]') as HTMLElement;
     expect(badge).toHaveAttribute("data-result", "lost");
     expect(badge).toHaveAttribute("aria-hidden", "true");
     expect(badge).toHaveTextContent("L");
@@ -168,7 +168,7 @@ describe("ScrimReportPane the most recent block", () => {
     const { container } = setup({ week: week({ latestReports: [makeReport({ slot_index: 1, won: true, opponent_team_id: "gam", quality: 64, issue: null })] }) });
     const card = block(container);
     expect(within(card).getByText("Win")).toBeInTheDocument();
-    expect(card.querySelector('[data-slot="report-badge"]')).toHaveAttribute("data-result", "won");
+    expect(card.querySelector('[data-slot="result-badge"]')).toHaveAttribute("data-result", "won");
     expect(within(card).getByText("GAM Esports")).toBeInTheDocument();
     expect(within(card).getByText("Wed B")).toBeInTheDocument();
     expect(within(card).queryByText("Detected issue")).toBeNull();

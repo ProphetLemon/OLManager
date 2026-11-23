@@ -29,7 +29,7 @@ export function ScrimFollowUpPane({ title, onBack, report, options, savingId, on
   const cancel = options.flatMap((option) => option.effects).find((line) => line.kind === "cancelsNext");
 
   return (
-    <ScrimViewFrame title={title} onBack={onBack} bare actions={cancel?.kind === "cancelsNext" ? <CancelNote line={cancel} /> : null}>
+    <ScrimViewFrame title={title} onBack={onBack} actions={cancel?.kind === "cancelsNext" ? <CancelNote line={cancel} /> : null}>
       <section data-slot="scrim-followup-pane" role="group" aria-label={title} className="flex h-full min-h-0 flex-col pb-3 pt-2">
         <p data-slot="followup-prompt" className="m-0 shrink-0 px-2 pb-1 font-heading text-section font-semibold leading-tight">
           {t("scrims.cancelFollowupPrompt")}

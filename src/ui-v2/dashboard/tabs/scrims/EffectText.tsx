@@ -23,7 +23,7 @@ export function usePlayerChanges() {
 }
 
 /** A line is a cost when the game charges the club for it. */
-export function isCostLine(line: EffectLine): boolean {
+function isCostLine(line: EffectLine): boolean {
   return line.kind === "cancelsNext" || line.kind === "cancelStep" || line.kind === "severeLoss";
 }
 

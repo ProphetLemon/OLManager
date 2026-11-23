@@ -250,44 +250,6 @@ describe("phone tags", () => {
   });
 });
 
-describe("phone open row", () => {
-  it("opens on the tagged row", () => {
-    expect(buildPhoneWeek({ week: makeWeek(6, { 0: plan("a") }), today: makeToday() }).openRow).toBe("slot:1");
-    expect(buildPhoneWeek({ week: makeWeek(6, {}, { objective: null }), today: makeToday() }).openRow).toBe("objective");
-  });
-
-  it("opens on Volume with no tag while the setup can still be edited", () => {
-    const week = makeWeek(6, Object.fromEntries([0, 1, 2, 3, 4, 5].map((i) => [i, plan(`r${i}`)])));
-    expect(buildPhoneWeek({ week, today: makeToday() }).openRow).toBe("volume");
-  });
-
-  it("opens on Report with no tag once the setup is finalized, and while the assistant handles it", () => {
-    const locked = makeWeek(6, { 0: plan("a") }, { setupLocked: true });
-    expect(buildPhoneWeek({ week: locked, today: makeToday() }).openRow).toBe("report");
-    expect(buildPhoneWeek({ week: makeWeek(6), today: makeToday(), readOnly: true }).openRow).toBe("report");
-  });
-
-  it("opens on Report when every scrim day has passed", () => {
-    const week = makeWeek(2, { 0: { status: "Cancelled", canEdit: false }, 1: { status: "Cancelled", canEdit: false } });
-    expect(buildPhoneWeek({ week, today: makeToday() }).openRow).toBe("report");
-  });
-});
-
-describe("phone gauges", () => {
-  it("counts planned slots with one flag per slot, the record, the rep and the cancellations", () => {
-    const week = makeWeek(4, { 1: plan("a"), 3: { resolvedOpponentTeamId: "z" } }, { wins: 1, losses: 2, reputation: 47, cancellations: 1 });
-    expect(buildPhoneWeek({ week, today: makeToday() }).gauges).toEqual({
-      planned: 2,
-      capacity: 4,
-      plannedSlots: [false, true, false, true],
-      wins: 1,
-      losses: 2,
-      reputation: 47,
-      cancellations: 1,
-    });
-  });
-});
-
 describe("where Done leads", () => {
   it("goes to the next editable slot after it with no Plan A", () => {
     const week = makeWeek(6, { 1: plan("b"), 2: plan("c") });

@@ -3,9 +3,8 @@ import type { TodayScrimContext, WeeklyScrimContext, WeeklyScrimSlotContext } fr
 import { chipRival, deskPanel, displaySlotStatus, isPlanClearedToday, slotsByDay, type ChipRival, type DisplaySlotStatus } from "./scrimDesk";
 
 /**
- * The week of the Scrims tab on the phone, as data: the cells of the left list, which one carries a
- * tag, which one the right pane opens on and where "Done" leads. Pure: it returns ids, keys and
- * values, and the component words them.
+ * The week of the Scrims tab on the phone, as data: the cells of Semana, which one carries a tag
+ * and where "Done" leads. Pure: it returns ids, keys and values, and the component words them.
  */
 
 export type PhoneTag = "next" | "today" | "decide";
@@ -54,23 +53,9 @@ export interface PhoneSlotCell extends PhoneCellBase {
 
 export type PhoneCell = PhoneObjectiveCell | PhoneVolumeCell | PhoneReportCell | PhoneSlotCell;
 
-export interface PhoneGauges {
-  planned: number;
-  capacity: number;
-  /** One flag per slot, in slot order. */
-  plannedSlots: boolean[];
-  wins: number;
-  losses: number;
-  reputation: number;
-  cancellations: number;
-}
-
 export interface PhoneWeekModel {
   /** Visual rows, top to bottom: [objective], [volume, report], then one row per scrim weekday. */
   rows: PhoneCell[][];
-  /** The row the right pane opens on. */
-  openRow: PhoneRowId;
-  gauges: PhoneGauges;
 }
 
 export interface PhoneWeekInput {
@@ -79,8 +64,6 @@ export interface PhoneWeekInput {
   /** The setup cannot be changed by the manager (the assistant handles scrims). */
   readOnly?: boolean;
 }
-
-const isPlanned = (slot: WeeklyScrimSlotContext) => slot.plan.length > 0 || slot.resolvedOpponentTeamId != null;
 
 /** A slot the manager can still plan: not past, not played, and the week is neither finalized nor handled by the assistant. */
 export function isEditable(slot: WeeklyScrimSlotContext, week: WeeklyScrimContext, readOnly: boolean): boolean {
@@ -139,19 +122,7 @@ export function buildPhoneWeek(input: PhoneWeekInput): PhoneWeekModel {
     ...slotsByDay(week).map((day) => day.slots.map((slot) => withTag(slotCell(slot, week)))),
   ];
 
-  return {
-    rows,
-    openRow: picked?.id ?? (setupEditable(week, readOnly) ? "volume" : "report"),
-    gauges: {
-      planned: week.planned,
-      capacity: week.capacity,
-      plannedSlots: week.slots.map(isPlanned),
-      wins: week.wins,
-      losses: week.losses,
-      reputation: week.reputation,
-      cancellations: week.cancellations,
-    },
-  };
+  return { rows };
 }
 
 /**

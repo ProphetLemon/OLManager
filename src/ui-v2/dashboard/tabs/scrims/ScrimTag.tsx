@@ -8,18 +8,9 @@ import { cn } from "@/ui-v2/lib/utils";
  * meaning is also in the outline and the dot, solid for a benefit and dashed and hollow for a cost,
  * and in a word for assistive technology.
  */
-export function ScrimTag({ tag, plain = false }: { tag: ScrimTagKey; plain?: boolean }) {
+export function ScrimTag({ tag }: { tag: ScrimTagKey }) {
   const { t } = useTranslation();
   const benefit = isScrimTagBenefit(tag);
-  // Plain: a text line for a narrow row, where boxed chips would wrap. The word for assistive technology stays.
-  if (plain) {
-    return (
-      <span data-tone={benefit ? "benefit" : "cost"} className="text-caption font-medium leading-tight text-muted-foreground">
-        {t(`scrims.tags.${tag}`)}
-        <span className="sr-only">, {benefit ? t("scrims.tagBenefit") : t("scrims.tagCost")}</span>
-      </span>
-    );
-  }
   return (
     <span
       data-tone={benefit ? "benefit" : "cost"}

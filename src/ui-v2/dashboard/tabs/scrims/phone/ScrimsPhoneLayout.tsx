@@ -51,7 +51,6 @@ export interface ScrimsPhoneLayoutProps {
   // Decision
   decisionReport: ScrimReportData | null;
   blockLabel: string | null;
-  isFirstBlock: boolean;
   decisionOptions: readonly DecisionOption[];
   decisionSaving: DailyScrimAction | null;
   showCancelFollowups: boolean;
