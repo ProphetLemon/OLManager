@@ -16,9 +16,11 @@ export interface PoolInputs {
   people: Map<string, Person>;
   games: Map<string, number> | null;
   /** Normalized stats rows of the listed events (competition "listed"), empty unless `listedGames` was asked for. */
+  /** What the read of the listed events' scoreboard did: asked for, answered, tournaments read, rows in and kept, rows dropped by reason. */
+  listedStats: { requested: boolean; read: boolean; pages: number; inputRows: number; rows: number; dropped: Record<string, number> };
   listedRows: Array<{ playerKey: string; competition: string; role: string; date: string; [key: string]: unknown }>;
   /** Old names followed: how many, the ones two pages claim (left alone), roster rows merged and dropped, and the old-name map (also used to fold the stats rows). */
-  aliases: { names: number; ambiguous: string[]; rosterRows: number; dropped: number; targets: Map<string, string> };
+  aliases: { names: number; ambiguous: string[]; rosterRows: number; dropped: number; targets: Map<string, string>; followed: Array<{ name: string; page: string; entries: number; games: number }> };
   probe: { page: string; entries: Array<{ page: string; role: string }> | null } | null;
   requests: Record<string, number>;
   warnings: string[];

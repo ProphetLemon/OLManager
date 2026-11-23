@@ -160,14 +160,19 @@ export async function runRefresh(options) {
     const anchors = options.pool.anchors ?? null;
     const poolOf = anchors ? poolOfLevels(anchors.levels) : undefined;
     const gameSkill = options.pool.skill ?? (statsRows ? poolSkillFromRows(statsRows, positions, { poolOf }) : null);
-    // The listed events' own stats (pool-events.mjs): one pooled cohort per role, only for a listed-events person with no rows in the game's
-    // own competitions. The rows go through the same old-names fold; the pooled group never reaches the league ladder or anybody's cohort.
-    const hasGameRows = new Set([...(statsRows ?? []).map((r) => r.playerKey), ...(gameSkill?.keys() ?? [])]);
+    // The listed events' own stats (pool-events.mjs): one pooled cohort per role. The game's own competitions win only when they give a
+    // rating from stats (an estimate with 8+ games and, with a ladder, a league level); a person they give only the default is rated from
+    // the pooled rows when those give stats. The rows go through the same old-names fold; the pooled group never reaches the league ladder
+    // or anybody's cohort, and a pool person outside the listed events is not looked up in it at all.
+    const gameGivesStats = (page) => {
+      const estimate = gameSkill?.get(page);
+      return Boolean(estimate) && (!options.pool.anchors || Boolean(options.pool.anchors.levels?.[estimate.competition]));
+    };
     const isListedPerson = (page) => (inputs.people.get(page)?.tournaments ?? []).some((tournament) => inputs.classes.get(tournament)?.listed);
-    const listedPositions = new Map(selection.players.filter((e) => isListedPerson(e.page) && !hasGameRows.has(e.page)).map((e) => [e.page, e.role]));
+    const listedPositions = new Map(selection.players.filter((e) => isListedPerson(e.page) && !gameGivesStats(e.page)).map((e) => [e.page, e.role]));
     const listedRows = foldPlayerKeys(inputs.listedRows ?? [], inputs.aliases?.targets ?? new Map(), (name) => inputs.people.has(name));
     const listed = listedSkillFromRows(listedRows, listedPositions);
-    const skill = listed.skill.size > 0 ? new Map([...listed.skill, ...(gameSkill ?? [])]) : gameSkill;
+    const skill = listed.skill.size > 0 ? new Map([...(gameSkill ?? []), ...listed.skill]) : gameSkill;
     warnings.push(...listedGroupWarnings(listed));
     const builtPoolOps = buildPoolOps({
       selection, baselines, games: inputs.games, skill, anchors, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),

@@ -162,8 +162,21 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
 
   if (listed && listed.size > 0) {
     lines.push("### Listed events: pooled stats", "");
-    lines.push(`People of the listed events (pool-events.mjs) with no stats in the game's own competitions are compared with one another, one group per position, with the skill model's own thresholds (${STATS_MIN_GAMES} games to be rated, a group of 15 players with 10+ games), anchored to their tier baseline and capped at 6 points either way. Everybody else of those events keeps the default.`, "");
-    lines.push(...table([...listed].map(([position, v]) => [position, v.stats, v.belowMin, v.noData, v.groupTooSmall, v.noEstimate]), ["position", "from the pooled stats", `fewer than ${STATS_MIN_GAMES} games`, "no game-level data", "group too small", "no usable estimate"]), "");
+    const read = inputs.listedStats;
+    if (!read?.read) {
+      lines.push(`The scoreboard of the listed events (pool-events.mjs) was not read in this run (${read?.requested ? "the read failed, see the warnings" : "it needs --pool-stats"}), so nobody is rated from it: their people keep the default, which says nothing about their games.`, "");
+    } else {
+      lines.push(`People of the listed events with no stats rating from the game's own competitions are compared with one another, one group per position, with the skill model's own thresholds (${STATS_MIN_GAMES} games to be rated, a group of 15 players with 10+ games), anchored to their tier baseline and capped at 6 points either way. Everybody else of those events keeps the default. Read: ${read.inputRows} scoreboard rows of ${read.pages} tournaments, ${read.rows} kept.`, "");
+      const droppedTotal = Object.values(read.dropped ?? {}).reduce((sum, n) => sum + n, 0);
+      if (droppedTotal > 0) lines.push(`${droppedTotal} of ${read.inputRows} scoreboard rows were dropped (${Object.entries(read.dropped).map(([reason, n]) => `${reason}: ${n}`).join(", ")}): the people in them have no rows.`, "");
+      lines.push(...table([...listed].map(([position, v]) => [position, v.stats, v.belowMin, v.noData, v.groupTooSmall, v.noEstimate]), ["position", "from the pooled stats", `fewer than ${STATS_MIN_GAMES} games`, "no rows in the position", "group too small", "no usable estimate"]), "");
+    }
+  }
+
+  const followed = inputs.aliases?.followed ?? [];
+  if (followed.length > 0) {
+    lines.push("### Old names followed", "", "Each old name read as the page it went to (PlayerRedirects, not a Players page of its own), with the roster entries and scoreboard games it brought. A wrong merge shows here.", "");
+    lines.push(...table(followed.map((f) => [f.name, f.page, f.entries, f.games]), ["old name", "page", "roster entries", "games"]), "");
   }
 
   const view = inputs.view;

@@ -151,3 +151,46 @@ describe("fetchPoolInputs with old names", () => {
     expect(plain.calls.filter((c) => c.tables.includes("PlayerRedirects=PR,"))).toHaveLength(0);
   });
 });
+
+describe("a followed name is never a page of its own", () => {
+  const y = (n: string, extra: Row = {}) => row({ player: "Y", ign: "Y", n, ...extra });
+  const probe = (extra: Parameters<typeof stubClient>[0] = {}) =>
+    stubClient({
+      redirects: [{ AllName: "Foo", OverviewPage: "Y" }, { AllName: "Y", OverviewPage: "Y" }], peopleFor: official([y("3")]), aliasPeople: [y("7", { alias: "Foo" })],
+      games: [{ Link: "Foo", n: "120" }, { Link: "Y", n: "4" }], playersPages: ["Foo"], ...extra,
+    });
+
+  it("asks the Players table about the names it follows and leaves out the ones that are pages", async () => {
+    // Foo is a Players page with no row of its own in the redirects table and nobody in the pool: only the Players table can tell.
+    const client = probe();
+    const inputs = await fetchPoolInputs({ client });
+    expect(inputs.people.get("Y")!.entries).toBe(3);
+    expect(inputs.games!.get("Y")).toBe(4);
+    expect(inputs.games!.get("Foo")).toBe(120);
+    expect(inputs.aliases.ambiguous).toEqual(["Foo"]);
+    expect(inputs.aliases.followed).toEqual([]);
+    const asked = client.calls.filter((c) => c.tables === "Players=P");
+    expect(asked).toHaveLength(1);
+    expect(asked[0].where).toContain('"Foo"');
+  });
+
+  it("asks only about names the data actually uses, and lists every name it followed with what it brought", async () => {
+    const client = stubClient({ redirects: [...redirects, { AllName: "Unused Name", OverviewPage: "Vicky" }], games, peopleFor: official([vicky("5"), sakkuromi]), aliasPeople: aliasRows });
+    const inputs = await fetchPoolInputs({ client });
+    const asked = client.calls.filter((c) => c.tables === "Players=P").map((c) => c.where).join("\n");
+    expect(asked).toContain('"Indiff"');
+    expect(asked).not.toContain("Unused Name");
+    expect(inputs.aliases.followed).toEqual([
+      { name: "Indiff", page: "Vicky", entries: 2, games: 17 },
+      { name: "Indifferent", page: "Vicky", entries: 8, games: 3 },
+    ]);
+  });
+
+  it("follows nothing, with a warning, when the Players table cannot be read", async () => {
+    const inputs = await fetchPoolInputs({ client: probe({ failPlayers: true, playersPages: [] }) });
+    expect(inputs.warnings.some((w: string) => w.includes("Players table"))).toBe(true);
+    expect(inputs.people.get("Y")!.entries).toBe(3);
+    expect(inputs.games!.get("Y")).toBe(4);
+    expect(inputs.aliases.followed).toEqual([]);
+  });
+});

@@ -91,6 +91,7 @@ export type CargoClass = "official" | "seasonal" | "listed" | "other";
 export const CLASS_FILTERS: Readonly<Record<CargoClass, readonly FilterName[]>>;
 export function cargoClasses(tournaments: Tournament[], since: string, listedFrom?: string): Record<CargoClass, string[]>;
 export const OPEN_QUALIFIER_ENTRIES: number;
+export function quoteName(value: unknown): string;
 export function chunkNames(names: string[]): string[][];
 export function qualifierSplit(tournaments: Tournament[], classes: Map<string, TournamentClass>, entryCount: Map<string, number>, threshold?: number, exempt?: readonly string[]): { small: string[]; open: string[] };
 export const NOT_QUALIFIER_CLAUSE: string;

@@ -220,8 +220,9 @@ To add an event, append an entry and its source. Tests: `src/lib/world/pool-wome
   `--pool-since` given explicitly is the limit for everything, the listed events included, whether it is earlier or later than 2023-06-01.
 - **What the earlier date lets in.** Every page of a listed league from 2023-06-01 on, which the research did not confirm one by one: the
   Equal Esports Cup 2023 pages and its qualifiers, and Liga Valkyria's two 2023 pages (LAN and LAS). Their qualifier-flagged pages stay under the cap.
-- **Games window unchanged.** Scoreboard games count from `--pool-since` (default 2023-11-12), not from the listed date, so a person who
-  enters only through a 2023 edition has no games in the window and takes the default rating.
+- **Games window unchanged.** The games *count* (`pool.games`) runs from `--pool-since`
+  (default 2023-11-12), not from the listed date. With `--pool-stats` a person who enters only through a 2023 edition is still rated from
+  the pooled rows, which are read from the listed date (2023-06-01); without it they take the default.
 - **Rating from stats.** With `--pool-stats`, the run also reads the scoreboard rows of every listed tournament from the listed date
   (`fetchPoolInputs({ listedGames })`: ScoreboardPlayers joined to ScoreboardGames, by tournament page, cached like every other read; an
   event with no game-level data yields no rows). A person of those events who has no rows in the game's own competitions is rated
@@ -229,7 +230,10 @@ To add an event, append an entry and its source. Tests: `src/lib/world/pool-wome
   thresholds: 8 games to be rated, a group of 15 players with 10+ games). The anchor is the tier baseline the pool already gives the person
   (spread 4, change capped at 6 either way); the pooled group is never a league level and never feeds anyone's cohort. Under 8 games, no
   game-level data, or a group too small: the default below, and the report ("Listed events: pooled stats") and a warning say so. Old
-  names are folded as for the other rows. Caveat: the comparison is among the listed events' own players, so a rating says how a
+  names are folded as for the other rows. Precedence: the game's own competitions win only when they give a rating from stats (8+ games
+  and, with a ladder, a league level); a person they give only the default is rated from the pooled rows when those give stats, and a
+  pool person outside the listed events is never looked up in them. Rows the normalizer drops (a team without five rows or a damage
+  column) are counted by reason in the report and a warning. Caveat: the comparison is among the listed events' own players, so a rating says how a
   person did against them, not against the game's leagues.
 - **Default rating.** Unchanged: the tier comes from Leaguepedia's own flags, so a listed league it does not call official is tier 3 and
   Game Changers (official) is tier 2; anybody without 8 games in the window takes the default of that tier.
@@ -239,7 +243,9 @@ scoreboard rows (`ScoreboardPlayers.Link`) keep the name used at the time. The p
 name has a row too: a name that is a page of its own and also redirects elsewhere, or that two pages claim, is ambiguous and is never
 followed, whether or not its owner is in the pool), runs each people clause a second time joined through the old names, adds the games
 under an old name to the player's page, and reads the per-game stats rows (`--pool-stats`, keyed by the scoreboard link) by the same
-map, so a renamed player's games count for the position and the stats rating. A redirect to a page with no `Players` row adds nobody. If
+map, so a renamed player's games count for the position and the stats rating. A redirect to a page with no `Players` row adds nobody. The redirects table need not carry every page's own name, so the names the data
+uses and whose target is a pool person are also asked of the `Players` table (one chunked read, about 1 request per 50 names; any hit is
+ambiguous and not followed; if the read fails nothing is followed); the report lists every old name followed, with its page, roster entries and games. If
 the read fails, the run warns ("redirects unavailable") and follows nothing. Residual: a page with no self row in the table is not seen as
 a page of its own. Tests: `src/lib/world/pool-aliases.test.ts`.
 

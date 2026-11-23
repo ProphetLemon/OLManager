@@ -105,7 +105,8 @@ export function classifyTournaments(tournaments) {
   return result;
 }
 
-const quote = (value) => `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+/** A name as a double-quoted Cargo string, the way every pool query writes page and league names (backslash and double quote escaped). */
+export const quoteName = (value) => `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 /** Longest league list one request carries; Leaguepedia answers HTTP 400 for URLs near 8 KB. */
 export const MAX_LIST_CHARS = 2400;
 
@@ -115,7 +116,7 @@ export function chunkNames(leagues) {
   let current = [];
   let size = 0;
   for (const league of [...leagues].sort()) {
-    const length = quote(league).length + 1;
+    const length = quoteName(league).length + 1;
     if (current.length > 0 && size + length > MAX_LIST_CHARS) {
       chunks.push(current);
       current = [];
@@ -152,15 +153,15 @@ export function cargoClasses(tournaments, since, listedFrom = listedSince(since)
   const official = leaguesWhere((c) => c.strict);
   const seasonal = without(seasonalLeagues(tournaments), listedLeagues);
   const other = without(leaguesWhere((c) => c.loose && !c.recommended), listedLeagues);
-  const base = (start) => `T.DateStart >= ${quote(start)} AND (T.TournamentLevel IS NULL OR T.TournamentLevel NOT IN ("Showmatch","Show Match","Qualifier"))`;
-  const notListedPage = listedPages.length > 0 ? ` AND T.OverviewPage NOT IN (${listedPages.map(quote).join(",")})` : "";
-  const clauses = (leagues, rest, start = since, extra = notListedPage) => chunkNames(leagues).map((chunk) => `${base(start)} AND T.League IN (${chunk.map(quote).join(",")}) AND ${rest}${extra}`);
+  const base = (start) => `T.DateStart >= ${quoteName(start)} AND (T.TournamentLevel IS NULL OR T.TournamentLevel NOT IN ("Showmatch","Show Match","Qualifier"))`;
+  const notListedPage = listedPages.length > 0 ? ` AND T.OverviewPage NOT IN (${listedPages.map(quoteName).join(",")})` : "";
+  const clauses = (leagues, rest, start = since, extra = notListedPage) => chunkNames(leagues).map((chunk) => `${base(start)} AND T.League IN (${chunk.map(quoteName).join(",")}) AND ${rest}${extra}`);
   return {
     official: [...clauses(without(official, listedLeagues), OFFICIAL), ...clauses(new Set([...official].filter((league) => listedLeagues.has(league))), OFFICIAL, from)],
     seasonal: clauses(seasonal, `${NOT_QUALIFIER} AND ${NOT_OFFICIAL}`),
     listed: [
       ...clauses(listedLeagues, `${NOT_QUALIFIER} AND ${NOT_OFFICIAL}`, from, ""),
-      ...chunkNames(listedPages).map((chunk) => `${base(from)} AND T.OverviewPage IN (${chunk.map(quote).join(",")}) AND ${NOT_QUALIFIER}`),
+      ...chunkNames(listedPages).map((chunk) => `${base(from)} AND T.OverviewPage IN (${chunk.map(quoteName).join(",")}) AND ${NOT_QUALIFIER}`),
     ],
     other: clauses(other, `${NOT_QUALIFIER} AND ${NOT_OFFICIAL}`),
   };
@@ -188,7 +189,7 @@ export function qualifierSplit(tournaments, classes, entryCount, threshold = OPE
 
 /** Cargo `where` clauses (Tournaments=T) selecting the given tournament pages, chunked like the league lists. */
 export function pageClauses(pages) {
-  return chunkNames(pages).map((chunk) => `T.OverviewPage IN (${chunk.map(quote).join(",")})`);
+  return chunkNames(pages).map((chunk) => `T.OverviewPage IN (${chunk.map(quoteName).join(",")})`);
 }
 
 /** Which filters a Cargo class belongs to. */

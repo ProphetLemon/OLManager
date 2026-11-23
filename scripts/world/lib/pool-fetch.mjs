@@ -3,12 +3,12 @@
 // filter (both checked against the live API: the page filter returned the same rows as filtering locally).
 import { OfflineCacheMissError, RequestBudgetExceededError } from "./mediawiki-client.mjs";
 import {
-  NOT_QUALIFIER_CLAUSE, TOURS_SEPARATOR, aliasTargets, cargoClasses, chunkNames, classifyTournaments, foldGames, inPoolWindow, listedSince, mergePerson, normalizeTournament, pageClauses, personFromRow,
+  NOT_QUALIFIER_CLAUSE, TOURS_SEPARATOR, aliasTargets, cargoClasses, chunkNames, classifyTournaments, foldGames, inPoolWindow, listedSince, mergePerson, normalizeTournament, pageClauses, personFromRow, quoteName,
 } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, poolTournaments } from "./pool.mjs";
 import { LISTED_COMPETITION } from "./pool-rating.mjs";
 import { normalizeRows } from "../../stats/lib/normalize.mjs";
-import { FIELDS, ORDER_BY, rowsFromCargo, sqlString } from "../../stats/lib/queries.mjs";
+import { FIELDS, ORDER_BY, rowsFromCargo } from "../../stats/lib/queries.mjs";
 
 const PAGE = 500;
 const PEOPLE_TABLES = "TournamentPlayers=TP,Tournaments=T,Leagues=L,Players=P";
@@ -109,23 +109,23 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, list
   }
 
   // Old names: roster and scoreboard rows keep the name used at the time. One paged read of the whole redirects table (a page's own
-  // name has a row, which is how a name that is someone else's page is told from an old name), then the people query again through them. A failed read turns the whole step off, with a warning.
-  const aliases = { names: 0, ambiguous: [], rosterRows: 0, dropped: 0, targets: new Map() };
+  // name has a row, which is how a name that is someone else's page is told from an old name), then the people query again through them.
+  // A failed read turns the whole step off, with a warning. Nothing is merged or folded until every read is in and the names to be followed
+  // have been checked against the Players table (below).
+  const aliases = { names: 0, ambiguous: [], rosterRows: 0, dropped: 0, targets: new Map(), followed: [] };
   let targets = new Map();
   try {
     const redirectRows = await cargoAll(client, {
       tables: "PlayerRedirects=PR", fields: "PR.AllName=AllName,PR.OverviewPage=OverviewPage", order_by: "PR.AllName,PR.OverviewPage",
     });
     ({ targets, ambiguous: aliases.ambiguous } = aliasTargets(redirectRows));
-    aliases.names = targets.size;
-    aliases.targets = targets;
   } catch (error) {
     if (isFatal(error)) throw error;
     warnings.push(`pool: redirects unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); old names are not followed`);
   }
+  const aliasRows = [];
   if (targets.size > 0) {
     try {
-      const aliasRows = [];
       for (const clauses of Object.values(classClauses)) {
         for (const where of clauses) {
           aliasRows.push(...await cargoAll(client, {
@@ -133,54 +133,99 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, list
           }));
         }
       }
-      // The join hands a name two pages claim to both of them, and a name that is a page of its own (found by the plain query above) to
-      // the page it redirects to: neither is the same person, so only a name with one target and no page of its own is merged.
-      const own = new Set(people.keys());
-      for (const aliasRow of aliasRows) {
-        if (targets.get(aliasRow.alias) !== aliasRow.player || own.has(aliasRow.alias)) aliases.dropped += 1;
-        else {
-          addPerson(personFromRow(aliasRow));
-          aliases.rosterRows += 1;
-        }
-      }
-      log(`pool: old names -> ${aliases.rosterRows} roster rows merged, ${aliases.dropped} dropped`);
     } catch (error) {
       if (isFatal(error)) throw error;
+      aliasRows.length = 0;
       warnings.push(`pool: roster rows under old names unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); the games are still folded`);
     }
   }
 
-  let games = null;
+  let gameCounts = null;
   try {
     const gameRows = await cargoAll(client, {
       tables: "ScoreboardPlayers=SP", fields: "SP.Link,COUNT(*)=n", where: `SP.DateTime_UTC >= "${since} 00:00:00"`, group_by: "SP.Link", order_by: "SP.Link",
     });
-    games = foldGames(new Map(gameRows.map((row) => [row.Link, Number(row.n)])), targets, (name) => people.has(name));
+    gameCounts = new Map(gameRows.map((row) => [row.Link, Number(row.n)]));
   } catch (error) {
     if (isFatal(error)) throw error;
     warnings.push(`pool: game counts unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); pool ops carry games: null`);
   }
 
   // The listed events' own stats rows: every game of their tournaments from `listedFrom`, normalized into one pooled competition. An event
-  // with no game-level data adds no rows. Old names are folded later, by the pipeline, with the same map as every other stats row.
+  // with no game-level data adds no rows; rows dropped by the normalizer (a team without five rows or without a damage column) are counted
+  // by reason. Old names are folded later, by the pipeline, with the same map as every other stats row.
   let listedRows = [];
+  const listedStats = { requested: listedGames, read: false, pages: 0, inputRows: 0, rows: 0, dropped: {} };
   const listedPages = listedGames ? tournaments.filter((t) => classes.get(t.page)?.listed).map((t) => t.page) : [];
+  listedStats.pages = listedPages.length;
   if (listedPages.length > 0) {
     try {
       const raw = [];
       for (const chunk of chunkNames(listedPages)) {
         raw.push(...await cargoAll(client, {
           tables: "ScoreboardPlayers=SP,ScoreboardGames=SG", join_on: "SP.GameId=SG.GameId", fields: FIELDS.map(([expression, alias]) => `${expression}=${alias}`).join(","),
-          where: `SP.DateTime_UTC >= ${sqlString(listedFrom)} AND SP.OverviewPage IN (${chunk.map(sqlString).join(",")})`, order_by: ORDER_BY,
+          where: `SP.DateTime_UTC >= "${listedFrom} 00:00:00" AND SP.OverviewPage IN (${chunk.map(quoteName).join(",")})`, order_by: ORDER_BY,
         }));
       }
-      listedRows = normalizeRows(rowsFromCargo({ cargoquery: raw.map((title) => ({ title })) }), { competition: LISTED_COMPETITION }).rows;
+      const normalized = normalizeRows(rowsFromCargo({ cargoquery: raw.map((title) => ({ title })) }), { competition: LISTED_COMPETITION });
+      listedRows = normalized.rows;
+      Object.assign(listedStats, { read: true, inputRows: normalized.stats.inputRows, rows: normalized.stats.rows, dropped: normalized.dropped });
+      const droppedTotal = Object.values(normalized.dropped).reduce((sum, n) => sum + n, 0);
+      if (droppedTotal > 0) {
+        warnings.push(`pool: listed events: ${droppedTotal} of ${normalized.stats.inputRows} scoreboard rows were dropped (${Object.entries(normalized.dropped).map(([reason, n]) => `${reason}: ${n}`).join(", ")}); the people in them have no rows`);
+      }
       log(`pool: listed events -> ${listedRows.length} stats rows from ${listedPages.length} tournaments`);
     } catch (error) {
       if (isFatal(error)) throw error;
       warnings.push(`pool: stats of the listed events unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); their people keep the default`);
     }
+  } else if (listedGames) {
+    listedStats.read = true;
   }
+
+  // A name is followed only if no Players page carries it: the redirects table need not have a row for every page, so a name that is
+  // someone's own page can still show up as an old name of another. Ask the Players table once about the names the data uses and whose
+  // target is a pool person; any hit is ambiguous, and nothing is followed if the table cannot be read.
+  if (targets.size > 0) {
+    const poolPages = new Set([...people.keys(), ...aliasRows.map((r) => r.player)]);
+    const used = new Set([...aliasRows.map((r) => r.alias), ...(gameCounts?.keys() ?? []), ...listedRows.map((r) => r.playerKey)]);
+    const names = [...used].filter((name) => targets.has(name) && poolPages.has(targets.get(name)));
+    try {
+      const hits = new Set();
+      for (const chunk of chunkNames(names)) {
+        const rows = await cargoAll(client, { tables: "Players=P", fields: "P.OverviewPage=page", where: `P.OverviewPage IN (${chunk.map(quoteName).join(",")})`, order_by: "P.OverviewPage" });
+        for (const found of rows) hits.add(found.page);
+      }
+      for (const name of names) if (hits.has(name)) targets.delete(name);
+      aliases.ambiguous = [...new Set([...aliases.ambiguous, ...hits])].sort();
+    } catch (error) {
+      if (isFatal(error)) throw error;
+      targets = new Map();
+      warnings.push(`pool: Players table unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); old names are not followed`);
+    }
+  }
+  aliases.targets = targets;
+  aliases.names = targets.size;
+
+  // The join hands a name two pages claim to both of them, and a name that is a page of its own (found by the plain query above) to the
+  // page it redirects to: neither is the same person, so only a name that is still followed and has no page of its own is merged.
+  const own = new Set(people.keys());
+  const brought = new Map();
+  for (const aliasRow of aliasRows) {
+    if (targets.get(aliasRow.alias) !== aliasRow.player || own.has(aliasRow.alias)) aliases.dropped += 1;
+    else {
+      addPerson(personFromRow(aliasRow));
+      aliases.rosterRows += 1;
+      brought.set(aliasRow.alias, (brought.get(aliasRow.alias) ?? 0) + (Number(aliasRow.n) || 0));
+    }
+  }
+  if (targets.size > 0) log(`pool: old names -> ${aliases.rosterRows} roster rows merged, ${aliases.dropped} dropped`);
+  const games = gameCounts ? foldGames(gameCounts, targets, (name) => people.has(name)) : null;
+  const seen = new Set([...brought.keys(), ...(gameCounts?.keys() ?? []), ...listedRows.map((r) => r.playerKey)]);
+  aliases.followed = [...seen]
+    .filter((name) => targets.has(name) && !own.has(name) && people.has(targets.get(name)))
+    .sort()
+    .map((name) => ({ name, page: targets.get(name), entries: brought.get(name) ?? 0, games: gameCounts?.get(name) ?? 0 }));
 
   let probeEntries = null;
   if (probe) {
@@ -194,6 +239,6 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, list
   }
 
   return {
-    since, cap, tournaments, classes, entryCount, view, people, games, aliases, listedRows, probe: probe ? { page: probe, entries: probeEntries } : null, requests, warnings,
+    since, cap, tournaments, classes, entryCount, view, people, games, aliases, listedRows, listedStats, probe: probe ? { page: probe, entries: probeEntries } : null, requests, warnings,
   };
 }
