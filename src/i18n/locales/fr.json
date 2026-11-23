@@ -3367,7 +3367,10 @@
       "tagNext": "Suivant",
       "tagToday": "Aujourd’hui",
       "tagDecide": "Décider",
-      "weekList": "Semaine de scrims"
+      "weekList": "Semaine de scrims",
+      "choosing": "Choix en cours",
+      "noteWinAccepts": "Victoire est votre chance de gagner le scrim. Accepte est la chance que cet adversaire prenne un créneau avec deux plans ou plus.",
+      "notePlans": "Un créneau avec un seul plan le joue toujours, et le plan A est joué si tous les plans refusent."
     },
     "reputation": "Rép. scrims",
     "reviewBlockTitle": "Bilan du bloc",

@@ -3358,7 +3358,10 @@
       "tagNext": "Sıradaki",
       "tagToday": "Bugün",
       "tagDecide": "Karar ver",
-      "weekList": "Scrim haftası"
+      "weekList": "Scrim haftası",
+      "choosing": "Seçiliyor",
+      "noteWinAccepts": "Galibiyet, scrimi kazanma şansındır. Kabul, bu rakibin iki veya daha fazla planı olan bir slotu alma şansıdır.",
+      "notePlans": "Tek planlı bir slot her zaman o planı oynar; tüm planlar reddederse Plan A oynanır."
     },
     "reputation": "Scrim itibarı",
     "reviewBlockTitle": "Blok değerlendirmesi",

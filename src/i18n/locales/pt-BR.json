@@ -3367,7 +3367,10 @@
       "tagNext": "Próximo",
       "tagToday": "Hoje",
       "tagDecide": "Decidir",
-      "weekList": "Semana de scrims"
+      "weekList": "Semana de scrims",
+      "choosing": "Escolhendo",
+      "noteWinAccepts": "Vitória é a sua chance de vencer o scrim. Aceita é a chance de este adversário assumir um bloco com dois ou mais planos.",
+      "notePlans": "Um bloco com um só plano sempre joga esse plano, e o Plano A é jogado se todos os planos recusarem."
     },
     "reputation": "Rep. de scrims",
     "reviewBlockTitle": "Revisão do bloco",

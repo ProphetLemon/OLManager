@@ -3166,7 +3166,10 @@
       "tagNext": "Prossimo",
       "tagToday": "Oggi",
       "tagDecide": "Decidi",
-      "weekList": "Settimana scrim"
+      "weekList": "Settimana scrim",
+      "choosing": "Da scegliere",
+      "noteWinAccepts": "Vittoria è la tua probabilità di vincere lo scrim. Accetta è la probabilità che questo avversario prenda uno slot con due o più piani.",
+      "notePlans": "Uno slot con un solo piano lo gioca sempre, e il Piano A si gioca se tutti i piani rifiutano."
     },
     "reputation": "Rep. scrim",
     "reviewBlockTitle": "Revisione del blocco",

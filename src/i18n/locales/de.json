@@ -3367,7 +3367,10 @@
       "tagNext": "Nächste",
       "tagToday": "Heute",
       "tagDecide": "Entscheiden",
-      "weekList": "Scrim-Woche"
+      "weekList": "Scrim-Woche",
+      "choosing": "Auswählen",
+      "noteWinAccepts": "Sieg ist deine Chance, den Scrim zu gewinnen. „Nimmt an“ ist die Chance, dass dieser Gegner einen Slot mit zwei oder mehr Plänen übernimmt.",
+      "notePlans": "Ein Slot mit nur einem Plan spielt ihn immer, und Plan A wird gespielt, wenn alle Pläne ablehnen."
     },
     "reputation": "Scrim-Ruf",
     "reviewBlockTitle": "Blockauswertung",
