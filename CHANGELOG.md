@@ -4,6 +4,28 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1123.1] - 2026-11-23
+
+A small update, mostly for Android. It was checked on an Android 14 emulator (x86_64 build) and on one real phone, a OnePlus 11 with Android 16 (arm64 build).
+
+### Fixed
+
+- Android: the game now always runs in landscape and in full screen. Before, it could turn to portrait, where the main menu did not fit, and in landscape the status bar stayed on screen and pushed the game down. Swipe from an edge of the screen to see the system bars for a moment.
+- Android: buttons at the top and bottom edges of the screen keep a small margin, so they are easier to press on a phone with curved edges.
+- Android: "Exit game" on the main menu now closes the app. Before, it did nothing.
+- Android: "Import save" and "Export save" now open the file picker. Before, they did nothing, so a save could not be moved to or from the phone. A save exported on a PC was imported on the phone and loaded there. Exporting was only checked on the emulator.
+- Importing a file that is not a save now says so, and tells you to use "Export save" in the Load Game list to get a .olsave file. Before, any such file was reported as a save from another game version. This is the only change for Windows and Linux players.
+
+### Changed
+
+- Android now treats the app as a game, which is what keeps it in landscape on tablets. On the OnePlus we tried, the phone's game mode (Game Space) showed its side handle over the game.
+
+### Known issues
+
+- Android: if you import a save you already have and pick the file from the Downloads view of the file picker, it is added as a second copy instead of asking to replace the one you have. Picking the same file through the device storage asks to replace it.
+- Android: the interface is still the desktop layout at a smaller size, and it is hard to read on a phone.
+- The file made by Settings > "Export World Database" holds teams, players and staff only. It is not a save and cannot be imported.
+
 ## [2026.1122.1] - 2026-11-22
 
 ### Added
