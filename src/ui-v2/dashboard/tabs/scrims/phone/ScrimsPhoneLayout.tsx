@@ -5,12 +5,12 @@ import { useScrimPlans } from "@/hooks/useScrimPlans";
 import type { TeamData, GameStateData, ScrimFocus, ScrimReportData } from "@/store/gameStore";
 import type { TodayScrimContext, WeeklyScrimContext } from "@/lib/scrims/scrimContext";
 import type { DecisionResult } from "@/lib/scrims/decisionResult";
-import { NEXT_BLOCK_CANCELLATION } from "@/lib/scrims/decisionEffects";
 import { buildPhoneHome } from "@/lib/scrims/phoneHome";
 import { isEditable, phoneDoneTarget, slotRowId, type PhoneRowId } from "@/lib/scrims/phoneWeek";
 import { buildRivalRows } from "@/lib/scrims/rivalOdds";
 import { autofillDisabled } from "@/lib/scrims/scrimPlans";
 import { type DeskPanel, type RiskLevel } from "@/lib/scrims/scrimDesk";
+import { teamIdentity, teamIdentityById, type TeamIdentity } from "@/lib/teams/teamIdentity";
 import type { DailyScrimAction } from "@/services/trainingService";
 import { useBackDismisser } from "@/ui-v2/palette/useBackDismisser";
 import type { DecisionOption } from "../ScrimDecisionPanel";
@@ -21,7 +21,6 @@ import { ScrimReportPane } from "./ScrimReportPane";
 import { ScrimResultPane } from "./ScrimResultPane";
 import { ScrimPickView } from "./ScrimPickView";
 import { ScrimVolumePane } from "./ScrimVolumePane";
-import { ScrimViewFrame } from "./ScrimViewFrame";
 import { ScrimWeekHome } from "./ScrimWeekHome";
 
 export interface ScrimsPhoneLayoutProps {
@@ -182,77 +181,67 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     target?.focus();
   }, [focusRequest]);
 
-  // The system's Back closes a view the way the frame's back control does (and does nothing on Semana).
-  useBackDismisser(current !== "home", goHome);
-
   const decisionSlot = props.panel === "decision" && props.decisionReport ? props.decisionReport.slot_index : null;
-  const ghostReputation = Math.max(0, week.reputation + NEXT_BLOCK_CANCELLATION.reputation);
+  // The follow-ups answer to the decision, not to Semana: nothing was applied yet, so Back returns there.
+  const followUpOpen = current !== "home" && decisionSlot === Number(current.slice("slot:".length)) && showCancelFollowups;
+  // The system's Back closes a view the way the frame's back control does (and does nothing on Semana).
+  useBackDismisser(current !== "home", followUpOpen ? props.onBackToDecision : goHome);
+  const identityOf = (id: string | null | undefined): TeamIdentity =>
+    teamIdentityById(gameState.teams, id) ?? { name: (id && teamNameById.get(id)) || id || "", tag: id ?? "", logoUrl: null };
   const rowLabel = (id: PhoneRowId) => {
     if (id === "volume") return t("scrims.phone.volume", { defaultValue: "Volume" });
     const slot = id.startsWith("slot:") ? week.slots.find((entry) => slotRowId(entry.slotIndex) === id) : undefined;
     return slotLabelOf(slot);
   };
 
-  /** `selfFramed`: the view draws its own frame (its top row holds controls of its own). */
-  const view = (): { title: string; content: ReactNode; selfFramed?: boolean } | null => {
+  /** The open view, which draws its own frame (its top row holds controls of its own); null on Semana. */
+  const view = (): ReactNode => {
     if (current === "home") return null;
     if (current === "objective") {
-      return {
-        title: t("scrims.phone.objective"),
-        selfFramed: true,
-        content: (
-          <ScrimObjectivePane
-            title={t("scrims.phone.objective")}
-            onBack={goHome}
-            objective={week.objective}
-            disabled={isSaving || locked}
-            blockedText={setupBlockedText}
-            onSelect={(next) => {
-              props.onObjective(next);
-              goTo("volume");
-            }}
-          />
-        ),
-      };
+      return (
+        <ScrimObjectivePane
+          title={t("scrims.phone.objective")}
+          onBack={goHome}
+          objective={week.objective}
+          disabled={isSaving || locked}
+          blockedText={setupBlockedText}
+          onSelect={(next) => {
+            props.onObjective(next);
+            goTo("volume");
+          }}
+        />
+      );
     }
     if (current === "volume") {
-      return {
-        title: t("scrims.phone.volume"),
-        selfFramed: true,
-        content: (
-          <ScrimVolumePane
-            title={t("scrims.phone.volume")}
-            onBack={goHome}
-            capacity={week.capacity}
-            weekdayLabels={weekdayLabels}
-            disabled={isSaving || locked}
-            autofillDisabled={autofillDisabled(week, { isSaving, readOnly: locked })}
-            blockedText={setupBlockedText}
-            assistant={assistantControls}
-            onVolume={props.onVolume}
-            onAutofill={autofill}
-            onAssistant={props.onAssistant}
-            onFinalize={props.onFinalize}
-          />
-        ),
-      };
+      return (
+        <ScrimVolumePane
+          title={t("scrims.phone.volume")}
+          onBack={goHome}
+          capacity={week.capacity}
+          weekdayLabels={weekdayLabels}
+          disabled={isSaving || locked}
+          autofillDisabled={autofillDisabled(week, { isSaving, readOnly: locked })}
+          blockedText={setupBlockedText}
+          assistant={assistantControls}
+          onVolume={props.onVolume}
+          onAutofill={autofill}
+          onAssistant={props.onAssistant}
+          onFinalize={props.onFinalize}
+        />
+      );
     }
     if (current === "report") {
-      return {
-        title: t("scrims.phone.report"),
-        selfFramed: true,
-        content: (
-          <ScrimReportPane
-            title={t("scrims.phone.report")}
-            onBack={goHome}
-            week={week}
-            teams={gameState.teams}
-            teamNameById={teamNameById}
-            slotLabelOf={slotLabelOf}
-            suggestions={props.staffSuggestions}
-          />
-        ),
-      };
+      return (
+        <ScrimReportPane
+          title={t("scrims.phone.report")}
+          onBack={goHome}
+          week={week}
+          teams={gameState.teams}
+          teamNameById={teamNameById}
+          slotLabelOf={slotLabelOf}
+          suggestions={props.staffSuggestions}
+        />
+      );
     }
 
     const slotIndex = Number(current.slice("slot:".length));
@@ -260,48 +249,62 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     const label = slotLabelOf(slot);
 
     if (decisionSlot === slotIndex && props.decisionReport && showCancelFollowups) {
-      return {
-        title: t("scrims.decision.cancelScrims"),
-        content: <ScrimFollowUpPane options={props.decisionOptions} savingId={props.decisionSaving} onDecide={props.onDecide} onBack={props.onBackToDecision} />,
-      };
+      return (
+        <ScrimFollowUpPane
+          title={t("scrims.decision.cancelScrims")}
+          onBack={props.onBackToDecision}
+          report={props.decisionReport}
+          options={props.decisionOptions}
+          savingId={props.decisionSaving}
+          onDecide={props.onDecide}
+        />
+      );
     }
     if (result && resultSlotIndex === slotIndex) {
       const waiting = decisionSlot != null && decisionSlot !== slotIndex ? decisionSlot : null;
-      return {
-        title: t("scrims.reviewBlockTitle"),
-        content: (
-          <ScrimResultPane
-            result={result}
-            statusText={props.liveText}
-            nextSlotLabel={waiting != null ? slotLabelOf(week.slots.find((entry) => entry.slotIndex === waiting)) : null}
-            onDecideNext={() => waiting != null && goTo(slotRowId(waiting))}
-          />
-        ),
-      };
+      // The day's other block, from the same model Semana draws: the one beside this block in its day.
+      const day = home.days.find((entry) => entry.blocks.some((candidate) => candidate.slotIndex === slotIndex));
+      const sibling = day?.blocks.find((candidate) => candidate.slotIndex !== slotIndex);
+      const rivalId = slot.resolvedOpponentTeamId ?? slot.report?.opponent_team_id ?? slot.plan[0];
+      return (
+        <ScrimResultPane
+          title={t("scrims.reviewBlockTitle")}
+          onBack={goHome}
+          result={result}
+          statusText={props.liveText}
+          you={teamIdentity(myTeam)}
+          rival={identityOf(rivalId)}
+          won={(slot.resultWon ?? slot.report?.won) === true}
+          slotLabel={label}
+          other={
+            sibling
+              ? { label: slotLabelOf(week.slots.find((entry) => entry.slotIndex === sibling.slotIndex)), identity: sibling.rival.kind === "team" ? identityOf(sibling.rival.teamId) : null, state: sibling.state }
+              : null
+          }
+          nextSlotLabel={waiting != null ? slotLabelOf(week.slots.find((entry) => entry.slotIndex === waiting)) : null}
+          onDecideNext={() => waiting != null && goTo(slotRowId(waiting))}
+        />
+      );
     }
     if (decisionSlot === slotIndex && props.decisionReport) {
-      return {
-        title: t("scrims.phone.decideSlot", { slot: label }),
-        content: (
-          <ScrimDecisionPane
-            report={props.decisionReport}
-            slotLabel={label}
-            blockLabel={props.blockLabel}
-            options={props.decisionOptions}
-            savingId={props.decisionSaving}
-            onDecide={props.onDecide}
-            closeDay={!props.isFirstBlock}
-            ghostReputation={props.isFirstBlock ? ghostReputation : null}
-            lockText={setupBlockedText}
-          />
-        ),
-      };
+      return (
+        <ScrimDecisionPane
+          title={t("scrims.phone.decideSlot", { slot: label })}
+          onBack={goHome}
+          report={props.decisionReport}
+          you={teamIdentity(myTeam)}
+          rival={identityOf(props.decisionReport.opponent_team_id)}
+          blockLabel={props.blockLabel}
+          options={props.decisionOptions}
+          savingId={props.decisionSaving}
+          onDecide={props.onDecide}
+          reputation={week.reputation}
+          locked={locked}
+        />
+      );
     }
     const target = phoneDoneTarget(week, slotIndex, assistantControls);
-    return {
-      title: label,
-      selfFramed: true,
-      content: (
+    return (
         <ScrimPickView
           key={current}
           slotLabel={label}
@@ -318,8 +321,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           onDone={() => goTo(target)}
           onBack={goHome}
         />
-      ),
-    };
+      );
   };
   const openView = view();
 
@@ -329,13 +331,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
         {props.liveText}
       </div>
       {openView ? (
-        openView.selfFramed ? (
-          openView.content
-        ) : (
-          <ScrimViewFrame title={openView.title} onBack={goHome}>
-            {openView.content}
-          </ScrimViewFrame>
-        )
+        openView
       ) : (
         <ScrimWeekHome
           home={home}

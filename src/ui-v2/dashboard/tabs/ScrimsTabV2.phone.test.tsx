@@ -303,6 +303,15 @@ describe("ScrimsTabV2 on a phone: what opens on arrival", () => {
     expect(screen.getByRole("button", { name: /Push through/ })).toBeInTheDocument();
   });
 
+  it("the decision that opens by itself has one heading and none of the old tag words", () => {
+    mount(afterBlockA());
+    expect(screen.getAllByRole("heading")).toHaveLength(1);
+    expect(frameHeading()).toHaveTextContent("Decide Wed A");
+    expect(pane("decision")?.textContent).not.toMatch(/\+Volume|\+Learning|\+Fatigue|\+Impulse/);
+    expect(pane("decision")?.querySelectorAll('[data-slot="decision-card"]')).toHaveLength(2);
+    expect(frame()?.querySelector('[data-slot="decision-lock"]')).toHaveTextContent("Locked");
+  });
+
   it("opens Semana on a scrim-day morning: the hero is today's block, with its sentence and the lock", () => {
     mount(scrimMorning());
     expect(home()).not.toBeNull();
@@ -489,9 +498,47 @@ describe("ScrimsTabV2 on a phone: the cancel step", () => {
     expect(pane("followup")).not.toBeNull();
     expect(viewTitle()).toBe("Cancel scrims");
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
-    fireEvent.click(screen.getByRole("button", { name: /Back to block decision/ }));
+    fireEvent.click(back());
     expect(pane("decision")).not.toBeNull();
+    expect(home()).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+  });
+
+  it("shows the three follow-ups as rows and says what any of them cancels in the top row", () => {
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Cancel scrims/ }));
+    expect(screen.getAllByRole("heading")).toHaveLength(1);
+    const rows = [...document.querySelectorAll('[data-slot="decision-card"]')].map((row) => row.querySelector("button")?.textContent);
+    expect(rows).toEqual(["VOD Review", "Mental Reset", "Targeted Drills"]);
+    expect(frame()?.querySelector('[data-slot="scrim-view-top"]')).toHaveTextContent("Cancels block B. Scrim rep -5, cancellations +1.");
+    expect(screen.queryByRole("button", { name: /Back to block decision/ })).toBeNull();
+  });
+
+  it("the system's Back in the follow-ups returns to the decision, not to Semana, and then leaves for Semana", () => {
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Cancel scrims/ }));
+    expect(pane("followup")).not.toBeNull();
+    act(() => {
+      expect(dismissOverlayWithBack()).toBe(true);
+    });
+    expect(pane("followup")).toBeNull();
+    expect(pane("decision")).not.toBeNull();
+    expect(home()).toBeNull();
+    act(() => {
+      expect(dismissOverlayWithBack()).toBe(true);
+    });
+    expect(home()).not.toBeNull();
+  });
+
+  it("choosing a follow-up shows the result, and the one live line says the decision", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Cancel scrims/ }));
+    fireEvent.click(screen.getByRole("button", { name: "VOD Review" }));
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledWith(0, "VodReview");
+    expect(viewTitle()).toBe("Block review");
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Decision applied to scrim block: VOD Review");
   });
 });
 
@@ -511,7 +558,7 @@ describe("ScrimsTabV2 on a phone: after a decision", () => {
     expect(viewTitle()).toBe("Block review");
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
     expect(pane("result")?.querySelector("[aria-live]")).toBeNull();
-    expect(pane("result")).toHaveTextContent("Decision applied to scrim block: Push through");
+    expect(frame()?.querySelector('[data-slot="result-applied"]')).toHaveTextContent("Decision applied to scrim block: Push through");
   });
 
   it("stays on the result when the tag moves to the block that waits, and Decide <slot> opens that block", async () => {

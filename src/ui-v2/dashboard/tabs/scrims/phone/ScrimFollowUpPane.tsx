@@ -1,70 +1,54 @@
-import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft } from "lucide-react";
 
 import type { DailyScrimAction } from "@/services/trainingService";
-import { Button } from "@/ui-v2/components/ui/button";
-import { CostMark, signed } from "../EffectText";
+import type { ScrimReportData } from "@/store/gameStore";
 import type { DecisionOption } from "../ScrimDecisionPanel";
-import { PaneHeading } from "./PhonePanePieces";
-import { PhoneDecisionCard } from "./PhoneDecisionCard";
+import { CancelNote, PhoneDecisionCard } from "./PhoneDecisionCard";
+import { ScrimViewFrame } from "./ScrimViewFrame";
 
 export interface ScrimFollowUpPaneProps {
-  /** The follow-ups of Cancel scrims, from the existing rules. */
+  /** "Cancel scrims": the frame's heading and the name of its back control. */
+  title: string;
+  /** Back to the decision, not to Semana: nothing was applied yet. */
+  onBack: () => void;
+  report: ScrimReportData;
+  /** The follow-ups of Cancel scrims, from the existing rules. One to three. */
   options: readonly DecisionOption[];
   savingId: DailyScrimAction | null;
   onDecide: (id: DailyScrimAction) => void;
-  /** Leaves the step for the block decision. Nothing was applied yet. */
-  onBack: () => void;
 }
 
 /**
- * Moment 6: the step "Cancel scrims" opens before anything is applied. The heading carries the cost
- * (said once, with its mark), the follow-ups are rows that scroll when they grow, and "Back to block
- * decision" is pinned at the bottom so it never leaves the screen.
+ * Seguimiento (frame FollowUp): the step Cancel scrims opens before anything is applied. The top row
+ * carries the cost mark and what any follow-up will cancel; under it the prompt and one row per
+ * follow-up between hairlines, each a real button with its chevron.
  */
-export function ScrimFollowUpPane({ options, savingId, onDecide, onBack }: ScrimFollowUpPaneProps) {
+export function ScrimFollowUpPane({ title, onBack, report, options, savingId, onDecide }: ScrimFollowUpPaneProps) {
   const { t } = useTranslation();
-  const headingId = useId();
   // Every follow-up cancels the next block alike, so the first one's line says it for all.
   const cancel = options.flatMap((option) => option.effects).find((line) => line.kind === "cancelsNext");
 
   return (
-    <section
-      data-slot="scrim-followup-pane"
-      role="group"
-      aria-labelledby={headingId}
-      className="flex h-full min-h-0 flex-col gap-1 overflow-y-auto px-2"
-    >
-      <div className="flex shrink-0 flex-col px-2">
-        <PaneHeading id={headingId}>{t("scrims.cancelFollowupTitle")}</PaneHeading>
-        {cancel?.kind === "cancelsNext" ? (
-          <div className="flex items-center justify-between gap-2">
-            <p className="min-w-0 text-caption leading-3 text-muted-foreground">
-              {t("scrims.effect.cancelsNext", { label: cancel.label, rep: signed(cancel.reputation), count: cancel.cancellations })}
-            </p>
-            <CostMark className="shrink-0" />
-          </div>
-        ) : null}
-      </div>
-      <div data-slot="decision-scroll" className="min-h-0 flex-1 overflow-y-auto">
-        <ul className="flex flex-col gap-1">
+    <ScrimViewFrame title={title} onBack={onBack} bare actions={cancel?.kind === "cancelsNext" ? <CancelNote line={cancel} /> : null}>
+      <section data-slot="scrim-followup-pane" role="group" aria-label={title} className="flex h-full min-h-0 flex-col pb-3 pt-2">
+        <p data-slot="followup-prompt" className="m-0 shrink-0 px-2 pb-1 font-heading text-section font-semibold leading-tight">
+          {t("scrims.cancelFollowupPrompt")}
+        </p>
+        <ul className="m-0 flex min-h-0 flex-1 list-none flex-col p-0">
           {options.map((option) => (
             <PhoneDecisionCard
               key={option.id}
               option={option}
-              layout="row"
+              layout="hairline"
+              report={report}
+              reputation={0}
               saving={savingId === option.id}
               locked={savingId !== null}
               onDecide={() => onDecide(option.id)}
             />
           ))}
         </ul>
-      </div>
-      <Button type="button" variant="outline" size="touch" className="shrink-0 justify-start font-heading text-entry uppercase tracking-wide" onClick={onBack}>
-        <ArrowLeft aria-hidden="true" />
-        {t("scrims.backToBlockDecision")}
-      </Button>
-    </section>
+      </section>
+    </ScrimViewFrame>
   );
 }
