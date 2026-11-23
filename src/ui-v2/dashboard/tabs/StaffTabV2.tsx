@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Briefcase,
@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 
 import type { GameStateData, StaffData } from "@/store/gameStore";
+import { useTabUiField } from "@/store/tabUiStore";
+import { useResetOnChange } from "@/hooks/useResetOnChange";
 import { hireStaff, releaseStaff } from "@/services/staffService";
 import {
   formatStaffEffectPercent,
@@ -27,6 +29,7 @@ import { resolveStaffPhoto } from "@/lib/players/playerPhotos";
 import { staffDisplayName } from "@/lib/staff/staffName";
 import { staffAge } from "@/lib/staff/staffAge";
 import { staffErrorKey } from "@/lib/staff/staffErrors";
+import { availableStaff, clubStaff } from "@/lib/staff/staffLists";
 import { ATTR_LABEL_KEYS, bestAttr, ovrRating, getStaffImpactRows } from "@/lib/staff/staffStats";
 import { getTeamName } from "@/lib/common/helpers";
 import { countryName } from "@/lib/common/countries";
@@ -58,26 +61,28 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
   const { t, i18n } = useTranslation();
   const isWorldMode = mode === "world";
   const userTeamId = gameState.manager.team_id;
-  const [view, setView] = useState<"mystaff" | "available">("mystaff");
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string | null>(null);
-  const [competitionFilter, setCompetitionFilter] = useState<string | null>(null);
+  // The club tab and World › Staff keep separate view state, and both survive a
+  // profile visit (R23). `view` only applies to the club tab.
+  const stateKey = isWorldMode ? "worldStaff" : "staff";
+  const [view, setView] = useTabUiField(stateKey, "view");
+  const [search, setSearch] = useTabUiField(stateKey, "search");
+  const [roleFilter, setRoleFilter] = useTabUiField(stateKey, "roleFilter");
+  const [competitionFilter, setCompetitionFilter] = useTabUiField(stateKey, "competitionFilter");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useTabUiField(stateKey, "page");
   const [releaseTarget, setReleaseTarget] = useState<StaffData | null>(null);
   const releaseOpenerRef = useRef<HTMLElement | null>(null);
   const cancelReleaseRef = useRef<HTMLButtonElement | null>(null);
   const PAGE_SIZE = 12;
 
-  const myStaff = gameState.staff.filter((s) => s.team_id === userTeamId);
-  // Club owners belong to their club and are never offered in the market.
-  const availableStaff = gameState.staff.filter((s) => !s.team_id && s.role !== "Owner");
+  const myStaff = clubStaff(gameState.staff, userTeamId);
+  const freeStaff = availableStaff(gameState.staff);
   const displayStaff = isWorldMode
     ? gameState.staff
     : view === "mystaff"
       ? myStaff
-      : availableStaff;
+      : freeStaff;
 
   const competitionTeamIds = useMemo(() => {
     if (!competitionFilter) return null;
@@ -106,7 +111,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
   const safePage = Math.min(page, totalPages - 1);
   const pageData = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
-  useEffect(() => setPage(0), [view, roleFilter, competitionFilter, search]);
+  useResetOnChange([view, roleFilter, competitionFilter, search], () => setPage(0));
 
   const roles = useMemo(
     () => Array.from(new Set(gameState.staff.map((s) => s.role))).sort(),
@@ -180,7 +185,7 @@ export function StaffTabV2({ gameState, onGameUpdate, mode = "club", onSelectSta
               }`}
             >
               <UserPlus className="mr-1 inline size-3.5" />
-              {t("staff.available", { count: availableStaff.length })}
+              {t("staff.available", { count: freeStaff.length })}
             </button>
           </div>
         )}

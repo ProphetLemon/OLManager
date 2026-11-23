@@ -243,10 +243,12 @@ describe("Split keyboard", () => {
     expect(navId("group:market")).toHaveFocus();
   });
 
-  it("walks the rail column with Down and wraps, never entering the panel", () => {
+  it("walks the rail column with Down and wraps to Go, never entering the panel", () => {
     setup({ activeTab: "Squad" });
     focus(navId("util:manager"));
     press(navId("util:manager"), "ArrowDown");
+    expect(navId("util:go")).toHaveFocus();
+    press(navId("util:go"), "ArrowDown");
     expect(navId("tab:Home")).toHaveFocus();
     press(navId("tab:Home"), "End");
     expect(navId("util:manager")).toHaveFocus();
@@ -441,11 +443,11 @@ describe("Collapsing the group of the focused Tree child", () => {
     expect(navId("group:club")).toHaveFocus();
   });
 
-  it("falls back to the first stop when the header is gone too", () => {
+  it("falls back to the first stop, Go, when the header is gone too", () => {
     const { rerender } = setup({ railMode: "tree", activeTab: "Squad" });
     focus(navId("tab:Squad"));
     rerender({ isUnemployed: true });
-    expect(navId("tab:Home")).toHaveFocus();
+    expect(navId("util:go")).toHaveFocus();
   });
 });
 
@@ -458,12 +460,12 @@ describe("Focus survives a rail change that is not a Tree/Split flip", () => {
     expect(navId("group:market")).toHaveFocus();
   });
 
-  it("falls back to the first stop when the active group is hidden for an unemployed manager", () => {
+  it("falls back to the first stop, Go, when the active group is hidden for an unemployed manager", () => {
     const { rerender } = setup({ activeTab: "Squad" });
     focus(navId("group:club"));
     rerender({ isUnemployed: true });
     expect(navId("group:club")).toBeNull();
-    expect(document.activeElement).toBe(navId("tab:Home"));
+    expect(document.activeElement).toBe(navId("util:go"));
   });
 
   it("does not steal focus back after the window lost focus", () => {
@@ -699,5 +701,25 @@ describe("The label measurer shares the stop's styles", () => {
     expect(spy.mock.calls.length).toBeGreaterThan(before);
     expect(document.querySelector('[data-slot="rail-column"] [data-slot="rail-item-label"]')).toBeNull();
     delete (document as { fonts?: unknown }).fonts;
+  });
+});
+
+describe("Split: the Go cell (NR2.9, R31)", () => {
+  it("is first in the rail column, an icon-only --nav-cell cell named by aria-label, like the utility cells", () => {
+    setup();
+    const column = document.querySelector<HTMLElement>('[data-slot="rail-column"]')!;
+    const first = column.querySelector<HTMLElement>("button");
+    expect(first).toBe(navId("util:go"));
+    expect(first).toHaveAttribute("data-variant", "cell");
+    expect(first).toHaveAttribute("aria-label", "Go to…");
+    expect(first).toHaveAttribute("aria-haspopup", "dialog");
+    expect(first!.className).toContain("h-[var(--nav-cell)]");
+    expect(first!.textContent).toBe("");
+  });
+
+  it("sits at the top of the end-of-season rail too", () => {
+    setup({ compact: true });
+    const column = document.querySelector<HTMLElement>('[data-slot="rail-column"]')!;
+    expect(column.querySelector("button")).toBe(navId("util:go"));
   });
 });

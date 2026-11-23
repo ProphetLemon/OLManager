@@ -1,13 +1,18 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
-import { useNavMemoryStore } from "@/store/navMemoryStore";
-import type { GameStateData } from "@/store/gameStore";
+import { resetSessionNavigation } from "@/store/sessionReset";
+import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
+import { usePaletteStore } from "@/store/paletteStore";
+import { useTabUiStore } from "@/store/tabUiStore";
+import type { GameStateData, PlayerData } from "@/store/gameStore";
 import type { EndOfSeasonSummaryData } from "@/store/types";
+import type { CallState } from "@/lib/dashboard/needsYourCall";
+import { ROUTE_ANNOUNCE_DEBOUNCE_MS } from "./RouteAnnouncer";
 
 // ─── Mocks ───────────────────────────────────────────────────────────────
 
@@ -19,6 +24,9 @@ interface BlockerModalMock {
 const shell = vi.hoisted(() => ({
   header: null as Record<string, unknown> | null,
   sidebar: null as Record<string, unknown> | null,
+  home: null as Record<string, unknown> | null,
+  /** What the backend probe answers; null answers the minimal game. */
+  activeGame: null as GameStateData | null,
   blockerModal: null as BlockerModalMock | null,
   scrimResultNotice: null as string[] | null,
   dismissScrimResultNotice: vi.fn(),
@@ -32,7 +40,7 @@ vi.mock("@/services/advanceTimeService", () => ({
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((command: string) => {
     if (command === "get_active_game") {
-      return Promise.resolve(minimalGameState());
+      return Promise.resolve(shell.activeGame ?? minimalGameState());
     }
     if (command === "get_champions") {
       return Promise.resolve([]);
@@ -41,9 +49,36 @@ vi.mock("@tauri-apps/api/core", () => ({
   }),
 }));
 
+// One t for every render, as react-i18next gives, so memoised values stay put.
+const stableT = vi.hoisted(() => (key: string) => key);
 vi.mock("react-i18next", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-i18next")>();
-  return { ...actual, useTranslation: () => ({ t: (key: string) => key }) };
+  return { ...actual, useTranslation: () => ({ t: stableT }) };
+});
+
+// Counts the palette index builds, which must not follow the palette's keystrokes.
+const palette = vi.hoisted(() => ({ builds: 0 }));
+vi.mock("@/ui-v2/palette/paletteIndex", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/ui-v2/palette/paletteIndex")>();
+  return {
+    ...actual,
+    buildPaletteIndex: (input: Parameters<typeof actual.buildPaletteIndex>[0]) => {
+      palette.builds += 1;
+      return actual.buildPaletteIndex(input);
+    },
+  };
+});
+
+const calls = vi.hoisted(() => ({ build: 0 }));
+vi.mock("@/lib/dashboard/needsYourCall", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/dashboard/needsYourCall")>();
+  return {
+    ...actual,
+    buildCallItems: (input: Parameters<typeof actual.buildCallItems>[0]) => {
+      calls.build += 1;
+      return actual.buildCallItems(input);
+    },
+  };
 });
 
 vi.mock("@/hooks/useAdvanceTime", () => ({
@@ -119,24 +154,37 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/FiredModal", () => ({
 vi.mock("@/ui-v2/dashboard/DashboardHeaderV2", () => ({
   DashboardHeaderV2: (props: Record<string, unknown>) => {
     shell.header = props;
-    return null;
+    return <div data-testid="dashboard-header" />;
   },
 }));
 
-vi.mock("@/ui-v2/dashboard/DashboardSidebarV2", () => ({
-  DashboardSidebarV2: (props: Record<string, unknown>) => {
-    shell.sidebar = props;
-    const onNavClick = props.onNavClick as (tab: string) => void;
-    return <button onClick={() => onNavClick("Training")}>Training</button>;
-  },
-}));
+vi.mock("@/ui-v2/dashboard/DashboardSidebarV2", async () => {
+  // The real Go control, wired as the sidebar wires it, so the opener test runs end to end.
+  const { GO_ID, GoButton } = await import("@/ui-v2/shell/GoButton");
+  const { usePaletteStore: palettes } = await import("@/store/paletteStore");
+  return {
+    DashboardSidebarV2: (props: Record<string, unknown>) => {
+      shell.sidebar = props;
+      const onNavClick = props.onNavClick as (tab: string) => void;
+      return (
+        <>
+          <GoButton variant="cell" onClick={() => palettes.getState().openPalette(GO_ID)} />
+          <button onClick={() => onNavClick("Training")}>Training</button>
+        </>
+      );
+    },
+  };
+});
 
 vi.mock("@/ui-v2/dashboard/tabs/HomeTabV2", () => ({
-  HomeTabV2: () => (
-    <div data-testid="home-tab-v2">
-      <section id="needs-your-call" tabIndex={-1} aria-label="calls" />
-    </div>
-  ),
+  HomeTabV2: (props: Record<string, unknown>) => {
+    shell.home = props;
+    return (
+      <div data-testid="home-tab-v2">
+        <section id="needs-your-call" tabIndex={-1} aria-label="calls" />
+      </div>
+    );
+  },
 }));
 vi.mock("@/ui-v2/dashboard/tabs/InboxTabV2", () => ({ InboxTabV2: () => null }));
 vi.mock("@/ui-v2/dashboard/tabs/ScheduleTabV2", () => ({ ScheduleTabV2: () => null }));
@@ -172,12 +220,25 @@ vi.mock("@/ui-v2/dashboard/tabs/MetaTabV2", () => ({ MetaTabV2: () => null }));
 
 vi.mock("@/ui-v2/pages/TeamProfileV2", () => ({ default: () => null }));
 vi.mock("@/ui-v2/pages/ChampionPageV2", () => ({ default: () => null }));
+/** Numbers each renewal request the profile receives, so a test can tell a new one from the last. */
+const renewalRequests = vi.hoisted(() => ({ ids: new WeakMap<object, number>(), next: 0 }));
+function renewalRequestId(request: object | null | undefined): string {
+  if (!request) return "none";
+  if (!renewalRequests.ids.has(request)) renewalRequests.ids.set(request, ++renewalRequests.next);
+  return String(renewalRequests.ids.get(request));
+}
 vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
-  default: ({ startWithRenewalModal }: { startWithRenewalModal?: boolean }) => (
-    <div data-testid="player-profile" data-renewal={String(startWithRenewalModal)} />
+  default: ({ startWithRenewalModal, renewalRequest }: { startWithRenewalModal?: boolean; renewalRequest?: object | null }) => (
+    <div
+      data-testid="player-profile"
+      data-renewal={String(startWithRenewalModal)}
+      data-request={renewalRequestId(renewalRequest)}
+    />
   ),
 }));
-vi.mock("@/ui-v2/pages/StaffProfileV2", () => ({ default: () => null }));
+vi.mock("@/ui-v2/pages/StaffProfileV2", () => ({
+  default: ({ staffId }: { staffId: string }) => <div data-testid="staff-profile" data-staff={staffId} />,
+}));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -214,8 +275,11 @@ function minimalGameState(): GameStateData {
 
 // ─── Tests ───────────────────────────────────────────────────────────────
 
-// The remembered tab outlives a render on purpose, so each test starts a fresh game.
-beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
+// The location, the rail memory and the blocker cache outlive a render on purpose, so each test starts a fresh session.
+beforeEach(() => {
+  resetSessionNavigation();
+  shell.activeGame = null;
+});
 
 describe("DashboardV2 tab sync", () => {
   beforeEach(() => {
@@ -276,6 +340,19 @@ describe("DashboardV2 tab sync", () => {
 
     const profile = await screen.findByTestId("player-profile");
     expect(profile.getAttribute("data-renewal")).toBe("true");
+  });
+  it("shows a staff profile opened while on Home, not the Home tab", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useDashboardLocationStore.getState().go({ kind: "staff", id: "staff-1" });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+
+    expect((await screen.findByTestId("staff-profile")).getAttribute("data-staff")).toBe("staff-1");
+    expect(screen.queryByTestId("home-tab-v2")).toBeNull();
   });
 });
 
@@ -732,6 +809,85 @@ describe("DashboardV2 shell wiring", () => {
   });
 });
 
+describe("DashboardV2 Needs your call source (R18)", () => {
+  const ROLES = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"] as const;
+
+  /** Five starters whose contracts all end within 180 days: five decisions, two hidden by the cap of 3. */
+  function expiringStartersState(): GameStateData {
+    const base = minimalGameState();
+    const players = ROLES.map(
+      (role, i) =>
+        ({
+          id: `p-${role}`,
+          match_name: role,
+          full_name: `Player ${role}`,
+          team_id: "team-1",
+          position: role,
+          natural_position: role,
+          lol_ovr: 70,
+          condition: 100,
+          contract_end: `2025-0${7 + (i % 3)}-1${i}`,
+        }) as unknown as PlayerData,
+    );
+    return {
+      ...base,
+      teams: [{ id: "team-1", name: "Test Team", active_lineup_ids: players.map((p) => p.id) }],
+      players,
+    } as unknown as GameStateData;
+  }
+
+  beforeEach(() => {
+    shell.home = null;
+    shell.header = null;
+    shell.blockerModal = null;
+    shell.checkBlockingActions.mockReset();
+    shell.checkBlockingActions.mockResolvedValue([]);
+    shell.activeGame = expiringStartersState();
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: shell.activeGame,
+      pendingSeasonSummary: null,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+  });
+
+  async function renderDashboard() {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    const tree = () => (
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>
+    );
+    return { view: render(tree()), tree };
+  }
+
+  it("gives the header chip the count of the call state Home renders, hidden contracts included", async () => {
+    await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+
+    const homeCalls = shell.home?.calls as CallState;
+    expect(homeCalls.count).toBe(5);
+    expect(homeCalls.hiddenContracts).toBe(2);
+    expect(homeCalls.items.filter((item) => item.kind === "contract")).toHaveLength(3);
+    expect(shell.header?.callCount).toBe(homeCalls.count);
+  });
+
+  it("does not build the call items again on a render that changes none of their inputs", async () => {
+    const { view, tree } = await renderDashboard();
+    await screen.findByTestId("home-tab-v2");
+    await waitFor(() => expect(shell.checkBlockingActions).toHaveBeenCalled());
+    const before = calls.build;
+
+    view.rerender(tree());
+    view.rerender(tree());
+
+    expect(calls.build).toBe(before);
+  });
+});
+
 describe("DashboardV2 rail mode", () => {
   class MockResizeObserver {
     static all: MockResizeObserver[] = [];
@@ -810,12 +966,13 @@ describe("DashboardV2 rail mode", () => {
     }
   });
 
-  it("passes Tree to the sidebar when the body fits the tree", async () => {
+  it("passes Tree to the sidebar when the body fits the tree, with the Go row's reserve in the need (R30)", async () => {
     await renderDashboard();
     measure(1280, 764);
+    // Root 16: 622 for the tree plus 50 for the Go row.
     expect(shell.sidebar).toMatchObject({
       railMode: "tree",
-      railSlot: { slotW: 1280, slotH: 764, need: 622 },
+      railSlot: { slotW: 1280, slotH: 764, need: 672 },
     });
   });
 
@@ -824,5 +981,450 @@ describe("DashboardV2 rail mode", () => {
     measure(1280, 764);
     measure(960, 595);
     expect(shell.sidebar).toMatchObject({ railMode: "split" });
+  });
+});
+
+describe("DashboardV2 attention lane (NR2.6)", () => {
+  class MockResizeObserver {
+    static all: MockResizeObserver[] = [];
+    constructor(private cb: (entries: Array<{ contentRect: { width: number; height: number } }>) => void) {
+      MockResizeObserver.all.push(this);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    emit(width: number, height: number) {
+      this.cb([{ contentRect: { width, height } }]);
+    }
+  }
+
+  const academy = { id: "academy_missing_roles", severity: "warn", text: "Academy incomplete", tab: "YouthAcademy" };
+
+  beforeEach(() => {
+    MockResizeObserver.all = [];
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    document.documentElement.style.fontSize = "16px";
+    Element.prototype.scrollIntoView = vi.fn();
+    shell.header = null;
+    shell.blockerModal = null;
+    shell.scrimResultNotice = null;
+    shell.checkBlockingActions.mockReset();
+    shell.checkBlockingActions.mockResolvedValue([academy]);
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: minimalGameState(),
+      pendingSeasonSummary: null,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+    resetSessionNavigation();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.documentElement.style.fontSize = "";
+  });
+
+  const lane = () => document.querySelector<HTMLElement>('[data-slot="attention-lane"]');
+
+  /** Opens the dashboard on a tab (keeping what is open over it), with a 1280 x `bodyHeight` body and one decision. */
+  async function renderOn(tab: string, bodyHeight = 764) {
+    const location = useDashboardLocationStore.getState();
+    if (location.nav.activeTab !== tab) location.go({ kind: "tab", tab });
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    act(() => MockResizeObserver.all.forEach((o) => o.emit(1280, bodyHeight)));
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+  }
+
+  it("is absent on Home, whose panel lists the decisions", async () => {
+    await renderOn("Home");
+    expect(lane()).toBeNull();
+  });
+
+  it("shows off Home, after the header and before the scrim notice and the main region", async () => {
+    shell.scrimResultNotice = ["Scrim won 2-1"];
+    await renderOn("Training");
+    await waitFor(() => expect(lane()).not.toBeNull());
+    const header = screen.getByTestId("dashboard-header");
+    const notice = document.querySelector('[data-slot="scrim-result-notice"]')!;
+    const main = document.getElementById("main-content")!;
+    const follows = (a: Node, b: Node) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(notice).not.toBeNull();
+    expect(follows(header, lane()!)).toBe(true);
+    expect(follows(lane()!, notice)).toBe(true);
+    expect(follows(notice, main)).toBe(true);
+  });
+
+  it("gives way below 380 px of body", async () => {
+    await renderOn("Training", 379);
+    expect(lane()).toBeNull();
+  });
+
+  it("acting on a pill goes to the call's tab and puts focus on the main region", async () => {
+    await renderOn("Training");
+    const pill = await screen.findByRole("button", { name: /Academy incomplete/ });
+    fireEvent.click(pill);
+    // The academy rule sends the call to the Youth tab.
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Youth"));
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
+  });
+
+  it("leaves focus on Home's panel after its pinned pill, not on the main region (R47)", async () => {
+    await renderOn("Training");
+    await waitFor(() => expect(lane()).not.toBeNull());
+    const pin = lane()!.querySelector<HTMLButtonElement>('[data-pill-id="lane:home"]')!;
+    act(() => pin.focus());
+    fireEvent.click(pin);
+    await screen.findByTestId("home-tab-v2");
+    expect(lane()).toBeNull();
+    await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
+  });
+
+  it("focuses the main region and says where it is even when the call's place is the current one (R64)", async () => {
+    await renderOn("Youth");
+    fireEvent.click(await screen.findByRole("button", { name: /Academy incomplete/ }));
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
+    await waitFor(() =>
+      // This file's t returns the key: "Now on {{place}}" (onAir.route.now) was posted.
+      expect(document.querySelector('[data-slot="route-announcer"]')?.textContent).toBe("onAir.route.now"),
+    );
+  });
+
+  /** One starter whose contract ends in three weeks: the only decision, a renewal. */
+  function withExpiringStarter() {
+    const starter = {
+      id: "p-mid",
+      match_name: "Faker",
+      full_name: "Lee Sang-hyeok",
+      team_id: "team-1",
+      position: "MID",
+      natural_position: "MID",
+      lol_ovr: 80,
+      condition: 100,
+      contract_end: "2025-07-10",
+    } as unknown as PlayerData;
+    const game = {
+      ...minimalGameState(),
+      teams: [{ id: "team-1", name: "Test Team", active_lineup_ids: [starter.id] }],
+      players: [starter],
+    } as unknown as GameStateData;
+    shell.activeGame = game;
+    useGameStore.setState({ gameState: game });
+    shell.checkBlockingActions.mockResolvedValue([]);
+  }
+
+  it("moves focus to main and says where for the renewal a contract pill opens (R69)", async () => {
+    withExpiringStarter();
+    await renderOn("Training");
+
+    const pill = await screen.findByRole("button", { name: /Faker/ });
+    act(() => pill.focus());
+    fireEvent.click(pill);
+
+    expect((await screen.findByTestId("player-profile")).getAttribute("data-renewal")).toBe("true");
+    // The legacy renewal frame takes no focus and says nothing, so the pill hands off as any other does.
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
+    await act(() => new Promise((resolve) => setTimeout(resolve, ROUTE_ANNOUNCE_DEBOUNCE_MS + 50)));
+    expect(document.querySelector('[data-slot="route-announcer"]')?.textContent).not.toBe("");
+  });
+
+  it("shows over a profile opened from Home, and its pinned pill still lands on Home's panel (R58)", async () => {
+    withExpiringStarter();
+    useDashboardLocationStore.getState().go({ kind: "player", id: "p-mid" });
+    await renderOn("Home");
+    expect(screen.getByTestId("player-profile")).toBeInTheDocument();
+    await waitFor(() => expect(lane()).not.toBeNull());
+
+    const pin = lane()!.querySelector<HTMLButtonElement>('[data-pill-id="lane:home"]')!;
+    act(() => pin.focus());
+    fireEvent.click(pin);
+    await screen.findByTestId("home-tab-v2");
+    expect(lane()).toBeNull();
+    await waitFor(() => expect(document.activeElement?.id).toBe("needs-your-call"));
+  });
+
+  it("asks the open profile for the renewal again, and hands focus to main (R57, R69)", async () => {
+    withExpiringStarter();
+    useDashboardLocationStore.getState().go({ kind: "tab", tab: "Training" });
+    useDashboardLocationStore.getState().go({ kind: "player", id: "p-mid", openRenewal: true });
+    await renderOn("Training");
+    const profile = screen.getByTestId("player-profile");
+    const first = profile.getAttribute("data-request");
+    expect(first).not.toBe("none");
+
+    const pill = await screen.findByRole("button", { name: /Faker/ });
+    act(() => pill.focus());
+    fireEvent.click(pill);
+
+    // A dialog closed since then opens again: the press is a new request, not a no-op.
+    await waitFor(() => expect(profile.getAttribute("data-request")).not.toBe(first));
+    expect(document.activeElement).toBe(document.getElementById("main-content"));
+  });
+});
+
+describe("DashboardV2 Go palette (NR2.8)", () => {
+  class MockResizeObserver {
+    static all: MockResizeObserver[] = [];
+    constructor(private cb: (entries: Array<{ contentRect: { width: number; height: number } }>) => void) {
+      MockResizeObserver.all.push(this);
+    }
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    emit(width: number, height: number) {
+      this.cb([{ contentRect: { width, height } }]);
+    }
+  }
+
+  beforeEach(() => {
+    MockResizeObserver.all = [];
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    Element.prototype.scrollIntoView = vi.fn();
+    shell.header = null;
+    shell.blockerModal = null;
+    shell.scrimResultNotice = null;
+    shell.checkBlockingActions.mockReset();
+    shell.checkBlockingActions.mockResolvedValue([]);
+    useGameStore.setState({
+      hasActiveGame: true,
+      managerName: "Coach",
+      gameState: minimalGameState(),
+      pendingSeasonSummary: null,
+      isDirty: false,
+      showFiredModal: false,
+    });
+    useSettingsStore.setState({ loaded: true });
+    resetSessionNavigation();
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  function SettingsProbe() {
+    const { state } = useLocation();
+    return <div data-testid="settings-page">{(state as { from?: string } | null)?.from ?? "none"}</div>;
+  }
+
+  /** Every router location key the dashboard route has had: a navigate, even a replace, adds one. */
+  const routeKeys: string[] = [];
+  function RouteKeyProbe() {
+    const { key } = useLocation();
+    if (routeKeys[routeKeys.length - 1] !== key) routeKeys.push(key);
+    return null;
+  }
+
+  async function renderOn(tab: string) {
+    routeKeys.length = 0;
+    const location = useDashboardLocationStore.getState();
+    if (location.nav.activeTab !== tab) location.go({ kind: "tab", tab });
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <Routes>
+          <Route
+            path="/dashboard"
+            element={
+              <>
+                <DashboardV2 />
+                <RouteKeyProbe />
+              </>
+            }
+          />
+          <Route path="/settings" element={<SettingsProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    act(() => MockResizeObserver.all.forEach((o) => o.emit(1280, 764)));
+    await waitFor(() => expect(shell.header).not.toBeNull());
+  }
+
+  const announcer = () => document.querySelector('[data-slot="route-announcer"]');
+
+  /** Opens the palette, types the query and presses Enter on the best row. */
+  async function goTo(query: string) {
+    act(() => usePaletteStore.getState().openPalette(null));
+    const input = await screen.findByRole("combobox");
+    fireEvent.change(input, { target: { value: query } });
+    fireEvent.keyDown(input, { key: "Enter" });
+  }
+
+  it("lands on main after a Sections row, with nothing over main aria-hidden, then says where (R27, R37)", async () => {
+    await renderOn("Home");
+    const main = document.getElementById("main-content")!;
+    const atFocus: { hidden: boolean; said: string }[] = [];
+    main.addEventListener("focus", () =>
+      atFocus.push({
+        hidden: main.closest('[aria-hidden="true"], [inert]') !== null,
+        said: announcer()?.textContent ?? "",
+      }),
+    );
+
+    await goTo("inbox");
+
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Inbox"));
+    await waitFor(() => expect(document.activeElement).toBe(main));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(atFocus[0]).toEqual({ hidden: false, said: "" });
+    // This file's t returns the key: Inbox is a direct stop, so "Now on {{title}}" was posted after the focus.
+    await waitFor(() => expect(announcer()?.textContent).toBe("onAir.route.nowNoGroup"));
+  });
+
+  it("writes a Views row's view, then goes to its tab", async () => {
+    await renderOn("Home");
+    await goTo("offers");
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Transfers"));
+    expect(useTabUiStore.getState().tabs.transfers.view).toBe("offers");
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById("main-content")));
+  });
+
+  it("names the view after the place when a Views row moves to its tab (R96)", async () => {
+    await renderOn("Home");
+    await goTo("offers");
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Transfers"));
+    // This file's t returns the key: the view's label is the row's visible text.
+    await waitFor(() => expect(announcer()?.textContent).toMatch(/^onAir\.route\.now.*, transfers\.offers$/));
+  });
+
+  it("names the view too when the Views row is on the tab already open (R96)", async () => {
+    await renderOn("Transfers");
+    await goTo("offers");
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById("main-content")));
+    await waitFor(() => expect(announcer()?.textContent).toMatch(/^onAir\.route\.now.*, transfers\.offers$/));
+  });
+
+  it("writes a Competitions view and the manager's league in one update (R67)", async () => {
+    const game = {
+      ...minimalGameState(),
+      user_competition_id: "lec",
+      leagues: [{ id: "league-lec", competition_id: "lec", name: "LEC" }],
+    } as unknown as GameStateData;
+    shell.activeGame = game;
+    useGameStore.setState({ gameState: game });
+    await renderOn("Home");
+    const writes: { view: string; selectedCid: string | null }[] = [];
+    const unsubscribe = useTabUiStore.subscribe((s, prev) => {
+      if (s.tabs.competitions !== prev.tabs.competitions) writes.push({ ...s.tabs.competitions });
+    });
+
+    await goTo("standings");
+
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Competitions"));
+    unsubscribe();
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({ view: "standings", selectedCid: "lec" });
+  });
+
+  it("hands focus to main and says where for a renewal call row (R69)", async () => {
+    const starter = {
+      id: "p-mid",
+      match_name: "Faker",
+      full_name: "Lee Sang-hyeok",
+      team_id: "team-1",
+      position: "MID",
+      natural_position: "MID",
+      lol_ovr: 80,
+      condition: 100,
+      contract_end: "2025-07-10",
+    } as unknown as PlayerData;
+    const game = {
+      ...minimalGameState(),
+      teams: [{ id: "team-1", name: "Test Team", active_lineup_ids: [starter.id] }],
+      players: [starter],
+    } as unknown as GameStateData;
+    shell.activeGame = game;
+    useGameStore.setState({ gameState: game });
+    await renderOn("Training");
+    await waitFor(() => expect(shell.header?.callCount).toBe(1));
+
+    act(() => usePaletteStore.getState().openPalette(null));
+    const input = await screen.findByRole("combobox");
+    // The decision is the first row, active on open.
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect((await screen.findByTestId("player-profile")).getAttribute("data-renewal")).toBe("true");
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById("main-content")));
+    await waitFor(() => expect(announcer()?.textContent).not.toBe(""));
+  });
+
+  it("leaves for Settings with where it came from, and moves no focus itself", async () => {
+    await renderOn("Home");
+    await goTo("settings");
+    expect((await screen.findByTestId("settings-page")).textContent).toBe("/dashboard");
+  });
+
+  it("builds the index only while the palette is open, so moves in the background never rebuild it", async () => {
+    palette.builds = 0;
+    await renderOn("Home");
+    fireEvent.click(screen.getByRole("button", { name: "Training" }));
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Training"));
+    expect(palette.builds).toBe(0);
+    act(() => usePaletteStore.getState().openPalette(null));
+    await screen.findByRole("combobox");
+    expect(palette.builds).toBe(1);
+  });
+
+  it("returns focus to Go when the palette it opened closes by Escape (NR2.9)", async () => {
+    await renderOn("Home");
+    const go = document.getElementById("util:go")!;
+    act(() => go.focus());
+    fireEvent.click(go);
+    expect(usePaletteStore.getState().openerId).toBe("util:go");
+    const input = await screen.findByRole("combobox");
+    await waitFor(() => expect(input).toHaveFocus());
+    fireEvent.keyDown(input, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(go).toHaveFocus());
+  });
+
+  describe("on Android, with the palette's own history entry (R87, R79)", () => {
+    let before: Record<string, unknown>;
+    beforeEach(() => {
+      document.documentElement.dataset.platform = "android";
+      before = { idx: 0, key: `dash-${Math.random()}` };
+      window.history.replaceState(before, "");
+    });
+    afterEach(() => {
+      delete document.documentElement.dataset.platform;
+    });
+
+    it.each(["Back", "Escape"])(
+      "closes by %s, runs no navigate for the pop that takes the entry off, and leaves history as it was",
+      async (how) => {
+        await renderOn("Home");
+        const keys = routeKeys.length;
+        act(() => usePaletteStore.getState().openPalette(null));
+        const input = await screen.findByRole("combobox");
+        expect(window.history.state).toEqual({ ...before, olmPalette: true });
+        if (how === "Back") act(() => window.history.back());
+        else fireEvent.keyDown(input, { key: "Escape" });
+        await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+        await waitFor(() => expect(window.history.state).toEqual(before));
+        await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+        expect(routeKeys).toHaveLength(keys);
+        expect(window.history.state).toEqual(before);
+      },
+    );
+
+    it("still keeps a Back with the palette closed on the dashboard", async () => {
+      await renderOn("Home");
+      const keys = routeKeys.length;
+      act(() => window.dispatchEvent(new PopStateEvent("popstate", { state: null })));
+      await waitFor(() => expect(routeKeys).toHaveLength(keys + 1));
+    });
+  });
+
+  it("does not rebuild the index while the user types", async () => {
+    await renderOn("Home");
+    act(() => usePaletteStore.getState().openPalette(null));
+    const input = await screen.findByRole("combobox");
+    const before = palette.builds;
+    for (const query of ["s", "sq", "squ"]) fireEvent.change(input, { target: { value: query } });
+    expect(palette.builds).toBe(before);
   });
 });

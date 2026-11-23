@@ -4,6 +4,7 @@ import type { ReactNode, Ref } from "react";
 import { IconTip } from "@/ui-v2/components/ui/icon-tip";
 import { cn } from "@/ui-v2/lib/utils";
 
+import { RAIL_FOCUS_CLASS } from "./RailItem";
 import { RAIL_CLUSTER_COLUMNS } from "./railMode";
 
 /**
@@ -13,7 +14,7 @@ import { RAIL_CLUSTER_COLUMNS } from "./railMode";
 export function railCellClass(tone: "default" | "danger" = "default"): string {
   return cn(
     "relative flex h-[var(--nav-cell)] w-full items-center justify-center rounded-[0.625rem] transition-colors",
-    "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring",
+    RAIL_FOCUS_CLASS,
     tone === "danger"
       ? "text-negative hover:bg-negative/10"
       : "text-muted-foreground hover:bg-accent hover:text-foreground",

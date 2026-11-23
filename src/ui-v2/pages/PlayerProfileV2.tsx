@@ -54,6 +54,8 @@ interface PlayerProfileV2Props {
   gameState: GameStateData;
   playerId: string;
   startWithRenewalModal?: boolean;
+  /** The renewal request's identity: a new one opens the dialog again, even for the same player (R57). */
+  renewalRequest?: object | null;
   onClose: () => void;
   onGameUpdate?: (state: GameStateData) => void;
   onSelectPlayer?: (id: string, options?: PlayerSelectionOptions) => void;
@@ -76,6 +78,7 @@ export default function PlayerProfileV2({
   gameState,
   playerId,
   startWithRenewalModal = false,
+  renewalRequest,
   onClose,
   onGameUpdate,
   onSelectTeam,
@@ -90,6 +93,7 @@ export default function PlayerProfileV2({
         gameState={gameState}
         player={player}
         startWithRenewalModal={startWithRenewalModal}
+        renewalRequest={renewalRequest}
         onClose={onClose}
         onGameUpdate={onGameUpdate}
         onSelectTeam={onSelectTeam}
@@ -103,6 +107,7 @@ interface PlayerProfileContentProps {
   gameState: GameStateData;
   player: PlayerData;
   startWithRenewalModal: boolean;
+  renewalRequest?: object | null;
   onClose: () => void;
   onGameUpdate?: (state: GameStateData) => void;
   onSelectTeam?: (id: string) => void;
@@ -113,6 +118,7 @@ function PlayerProfileContent({
   gameState,
   player,
   startWithRenewalModal,
+  renewalRequest,
   onClose,
   onGameUpdate,
   onSelectTeam,
@@ -192,6 +198,7 @@ function PlayerProfileContent({
     player,
     canRenew: isOwnClub,
     startWithRenewalModal,
+    renewalRequest,
     onGameUpdate,
     t,
   });

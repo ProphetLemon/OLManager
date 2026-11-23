@@ -3699,7 +3699,14 @@
       "manager": "Menajer profili",
       "needsCall_one": "{{label}}, kararını bekliyor",
       "needsCall_other": "{{label}}, {{count}} öğe kararını bekliyor",
-      "more": "Daha fazla"
+      "more": "Daha fazla",
+      "go": "Şuraya git…",
+      "goShort": "Git"
+    },
+    "lane": {
+      "title": "Devam etmeden önce",
+      "allOnHome_one": "Ana Sayfa'da gör",
+      "allOnHome_other": "{{count}} kararın tümü Ana Sayfa'da"
     },
     "bar": {
       "phase": {
@@ -3715,7 +3722,27 @@
       "matchDay": "Maç günü",
       "skipToMatchDay": "Sonraki maça kadar simüle et",
       "skipToNextDay": "Sonraki güne atla",
-      "clock": "Oyun tarihi ve aşaması"
+      "clock": "Oyun tarihi ve aşaması",
+      "backTo": "Geri: {{destination}}",
+      "backNone": "Geri dönülecek yer yok"
+    },
+    "route": {
+      "now": "Şimdi: {{title}}, {{group}}",
+      "nowNoGroup": "Şimdi: {{title}}"
+    },
+    "palette": {
+      "title": "Şuraya git",
+      "placeholder": "Bölüm ve yer ara",
+      "close": "Kapat",
+      "groups": {
+        "recent": "Son gezilenler",
+        "sections": "Bölümler",
+        "views": "Görünümler"
+      },
+      "results_one": "{{count}} sonuç",
+      "results_other": "{{count}} sonuç",
+      "empty": "“{{query}}” için sonuç yok",
+      "nothing": "Gidilecek bir yer yok"
     },
     "tags": {
       "blocker": "Engel",

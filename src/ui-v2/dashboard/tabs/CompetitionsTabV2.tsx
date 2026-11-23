@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Building2, Calendar, ChevronLeft, ChevronRight, Globe, ListOrdered, Search, Users } from "lucide-react";
 
 import type { GameStateData, LeagueData } from "@/store/gameStore";
+import { useOneShotOverride, useTabUiField, useValidTabUiField } from "@/store/tabUiStore";
 import { compareStandingsByLolScore, getStandingKillDiff } from "@/store/gameStore";
 import { getTeamLogoPath } from "@/lib/schedule/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
@@ -20,7 +21,6 @@ interface Props {
   /** Competition selected on open (for example the user's league from a message action). */
   initialCompetitionId?: string | null;
 }
-type View = "standings" | "calendar" | "teams" | "players";
 
 const REGION_GRADIENT: Record<string, string> = {
   lec: "from-blue-600 to-blue-900", lcs: "from-red-600 to-red-900",
@@ -33,16 +33,35 @@ const PLAYER_PAGE_SIZE = 50;
 
 export function CompetitionsTabV2({ gameState, onSelectTeam, initialCompetitionId = null }: Props) {
   const { t } = useTranslation();
-  const [selectedCid, setSelectedCid] = useState<string | null>(initialCompetitionId);
-  const [view, setView] = useState<View>("standings");
-  const [teamPage, setTeamPage] = useState(0);
-  const [playerPage, setPlayerPage] = useState(0);
-  const [playerSearch, setPlayerSearch] = useState("");
-  const [teamSearch, setTeamSearch] = useState("");
+  // The selection, view, searches and pages survive a team visit (R23).
+  const [view, setView] = useTabUiField("competitions", "view");
+  const [storedTeamPage, setTeamPage] = useTabUiField("competitions", "teamPage");
+  const [storedPlayerPage, setPlayerPage] = useTabUiField("competitions", "playerPage");
+  const [playerSearch, setPlayerSearch] = useTabUiField("competitions", "playerSearch");
+  const [teamSearch, setTeamSearch] = useTabUiField("competitions", "teamSearch");
   const [visible, setVisible] = useState(false);
   useEffect(() => setVisible(true), []);
 
   const leagues = useMemo(() => listCompetitionLeagues(gameState.leagues ?? []), [gameState.leagues]);
+  const isCompetition = useCallback(
+    (cid: string) => leagues.some((l) => (l.competition_id ?? l.id) === cid),
+    [leagues],
+  );
+  const [storedCid, setSelectedCid] = useValidTabUiField("competitions", "selectedCid", isCompetition);
+  // A link to a competition (a message action) opens it once over the stored one,
+  // on its standings with no stored search or page, as a fresh mount did.
+  const openLinkedCompetition = useCallback(
+    (cid: string) => {
+      setSelectedCid(cid);
+      setView("standings");
+      setTeamPage(0);
+      setPlayerPage(0);
+      setTeamSearch("");
+      setPlayerSearch("");
+    },
+    [setSelectedCid, setView, setTeamPage, setPlayerPage, setTeamSearch, setPlayerSearch],
+  );
+  const selectedCid = useOneShotOverride(initialCompetitionId, storedCid, openLinkedCompetition);
   const selectedLeague = selectedCid ? leagues.find((l) => (l.competition_id ?? l.id) === selectedCid) ?? null : null;
   const selectedTeamIds = selectedCid ? gameState.teams.filter((t) => t.competition_id === selectedCid).map((t) => t.id) : [];
   const selectedPlayers = selectedTeamIds.length > 0 ? gameState.players.filter((p) => p.team_id != null && selectedTeamIds.includes(p.team_id)) : [];
@@ -63,6 +82,9 @@ export function CompetitionsTabV2({ gameState, onSelectTeam, initialCompetitionI
 
   const teamTotalPages = Math.max(1, Math.ceil(filteredTeams.length / TEAM_PAGE_SIZE));
   const playerTotalPages = Math.max(1, Math.ceil(filteredPlayers.length / PLAYER_PAGE_SIZE));
+  // A stored page past the end (the list shrank while away) shows the last page.
+  const teamPage = Math.min(storedTeamPage, teamTotalPages - 1);
+  const playerPage = Math.min(storedPlayerPage, playerTotalPages - 1);
 
   const cid = selectedCid;
   const region = cid ? Object.keys(REGION_GRADIENT).find((k) => cid.includes(k) || k === cid) ?? null : null;

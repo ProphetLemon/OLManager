@@ -1,20 +1,41 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import type { TFunction } from "i18next";
 import type { FixtureData, GameStateData, PlayerData, TeamData } from "@/store/gameStore";
 import type { BlockerData } from "@/services/advanceTimeService";
 import type { DashboardAlert } from "@/lib/dashboard/helpers";
+import {
+  buildCallItems,
+  deriveCallState,
+  type BuildCallItemsInput,
+  type CallState,
+} from "@/lib/dashboard/needsYourCall";
 import { HomeTabV2 } from "./HomeTabV2";
 
+const translate = vi.hoisted(() => (key: string, opts?: Record<string, unknown>) => {
+  const template = typeof opts?.defaultValue === "string" ? opts.defaultValue : key;
+  return template.replace(/\{\{(\w+)\}\}/g, (_, name) => String(opts?.[name] ?? ""));
+});
+
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string, opts?: Record<string, unknown>) => {
-      const template = typeof opts?.defaultValue === "string" ? opts.defaultValue : key;
-      return template.replace(/\{\{(\w+)\}\}/g, (_, name) => String(opts?.[name] ?? ""));
-    },
-    i18n: { language: "en" },
-  }),
+  useTranslation: () => ({ t: translate, i18n: { language: "en" } }),
 }));
+
+/** The call state DashboardV2 hands Home: Home renders it and never builds its own. */
+function callsFor(input: Partial<BuildCallItemsInput>): CallState {
+  return deriveCallState(
+    buildCallItems({
+      alerts: [],
+      blockers: [],
+      canContinueAnyway: false,
+      startingFive: [],
+      currentDate: "2025-03-15",
+      t: translate as unknown as TFunction,
+      ...input,
+    }),
+  );
+}
 
 vi.mock("@/lib/teams/teamLogos", () => ({
   resolveTeamLogo: () => null,
@@ -176,7 +197,7 @@ describe("HomeTabV2", () => {
     const alerts: DashboardAlert[] = [
       { id: "finance_runway", text: "Cash is running low", tab: "Finances", severity: "warn" },
     ];
-    render(<HomeTabV2 gameState={stateWithFixture()} blockers={blockers} alerts={alerts} />);
+    render(<HomeTabV2 gameState={stateWithFixture()} calls={callsFor({ blockers, alerts })} />);
     const panel = document.getElementById("needs-your-call");
     expect(panel).not.toBeNull();
     expect(panel).toHaveAttribute("tabindex", "-1");
@@ -194,13 +215,39 @@ describe("HomeTabV2", () => {
     const blockers: BlockerData[] = [
       { id: "incomplete_lineup", severity: "warn", text: "Starting five is incomplete", tab: "Squad" },
     ];
-    render(<HomeTabV2 gameState={stateWithFixture()} blockers={blockers} onNavigate={onNavigate} />);
+    render(
+      <HomeTabV2 gameState={stateWithFixture()} calls={callsFor({ blockers })} onNavigate={onNavigate} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Fix lineup" }));
     expect(onNavigate).toHaveBeenCalledWith("Squad", undefined);
   });
 
+  function expiringContractCalls(): CallState {
+    const players = roster("team-1");
+    players[0] = { ...players[0], contract_end: "2025-04-01" } as PlayerData;
+    return callsFor({ startingFive: players });
+  }
+
   it("opens the profile with the renewal flow for a contract call", () => {
     const onSelectPlayer = vi.fn();
+    render(
+      <HomeTabV2 gameState={stateWithFixture()} calls={expiringContractCalls()} onSelectPlayer={onSelectPlayer} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Renew" }));
+    expect(onSelectPlayer).toHaveBeenCalledWith("team-1-TOP", { openRenewal: true });
+  });
+
+  it("sends a contract call to its tab when no profile can be opened", () => {
+    const onNavigate = vi.fn();
+    render(
+      <HomeTabV2 gameState={stateWithFixture()} calls={expiringContractCalls()} onNavigate={onNavigate} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Renew" }));
+    expect(onNavigate).toHaveBeenCalledWith("Squad", { playerId: "team-1-TOP" });
+  });
+
+  it("renders the call state it is given, not one built from the game state", () => {
+    // The game state has an expiring starter, but Home shows only what it is handed.
     const players = roster("team-1");
     players[0] = { ...players[0], contract_end: "2025-04-01" } as PlayerData;
     const gs = stateWithFixture({
@@ -210,9 +257,9 @@ describe("HomeTabV2", () => {
         createTeam("team-2", "Opponent FC", "OPP"),
       ],
     });
-    render(<HomeTabV2 gameState={gs} onSelectPlayer={onSelectPlayer} />);
-    fireEvent.click(screen.getByRole("button", { name: "Renew" }));
-    expect(onSelectPlayer).toHaveBeenCalledWith("team-1-TOP", { openRenewal: true });
+    render(<HomeTabV2 gameState={gs} />);
+    expect(screen.queryByRole("button", { name: "Renew" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("Nothing needs your call").length).toBeGreaterThan(0);
   });
 
   it("shows the latest five messages and marks High priority as urgent", () => {

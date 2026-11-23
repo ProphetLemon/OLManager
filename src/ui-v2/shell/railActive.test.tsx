@@ -41,6 +41,19 @@ describe("the shared active-row style", () => {
     for (const bar of bars) expect(bar.className).toContain("bg-club-text");
   });
 
+  it("keeps the bar in forced colours, where backgrounds are dropped (R97)", () => {
+    const { container } = render(
+      <>
+        <RailActiveBar size="stop" />
+        <RailActiveBar size="row" />
+      </>,
+    );
+    for (const bar of container.querySelectorAll('[data-slot="rail-item-bar"]')) {
+      expect(bar.className).toContain("forced-color-adjust-none");
+      expect(bar.className).toContain("forced-colors:bg-[Highlight]");
+    }
+  });
+
   it("caps a badge at 99+ in one place", () => {
     expect(BADGE_CAP).toBe(99);
     expect(badgeText(7)).toBe("7");

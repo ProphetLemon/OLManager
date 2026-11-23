@@ -1,20 +1,23 @@
 import { ArrowLeft, ChevronRight, Loader2, Play, Save, SkipForward, Swords } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { backControlLabel, groupTitle } from "@/lib/dashboard/describeLocation";
 import { Button } from "@/ui-v2/components/ui/button";
 import { ClubShield } from "@/ui-v2/components/ui/club-shield";
+import { IconTip } from "@/ui-v2/components/ui/icon-tip";
 import { Separator } from "@/ui-v2/components/ui/separator";
 import { cn } from "@/ui-v2/lib/utils";
 import { SplitButton } from "@/ui-v2/components/ui/split-button";
 import { ClockPlate } from "@/ui-v2/shell/ClockPlate";
-import { RAIL_GROUPS, groupForTab } from "@/ui-v2/shell/navModel";
 import type { DashboardAlert } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 
 interface Props {
-  activeTabLabel: string;
+  /** The location's own title (R21): the tab's label, or the entity's name on a profile or champion page. */
+  title: string;
   currentDate: string;
   /** The same date, abbreviated (weekday, month, day): taken when the bar is narrow. Falls back to `currentDate`. */
   currentDateShort?: string;
-  hasProfileHistory: boolean;
+  /** The title of where Back lands, or null when Back has nowhere to go (R20). */
+  backTo: string | null;
   isAdvancing: boolean;
   /** The split is over: the clock stays put until the next season starts. */
   seasonComplete?: boolean;
@@ -42,10 +45,10 @@ interface Props {
 
 /** Broadcast bar: crumb (team, group) over the title, clock, decisions chip, save and advance. */
 export function DashboardHeaderV2({
-  activeTabLabel,
+  title,
   currentDate,
   currentDateShort,
-  hasProfileHistory,
+  backTo,
   isAdvancing,
   seasonComplete = false,
   endsSplit = false,
@@ -74,11 +77,12 @@ export function DashboardHeaderV2({
   };
   const phase = dayPhase ? { key: dayPhase, label: phaseLabels[dayPhase] ?? dayPhase } : undefined;
 
-  const group = groupForTab(activeTab);
-  const groupDef = RAIL_GROUPS.find((g) => g.id === group);
   // The crumb: the team (not while unemployed) and the group of the tab, when it has one.
+  // On a profile it is the tab the profile was opened from.
   const crumbTeam = !isUnemployed && teamName ? teamName : "";
-  const crumbGroup = groupDef ? t(groupDef.labelKey, { defaultValue: groupDef.defaultLabel }) : "";
+  const crumbGroup = groupTitle(activeTab, t) ?? "";
+  const canGoBack = backTo !== null;
+  const backLabel = backControlLabel(t, backTo);
 
   const saveLabel = t("onAir.bar.save", { defaultValue: "Save" });
   const continueLabel = seasonComplete
@@ -102,14 +106,30 @@ export function DashboardHeaderV2({
           data-slot="bar-title"
           className="flex min-w-0 basis-full items-center gap-3 @min-[58rem]:basis-0 @min-[58rem]:flex-1"
         >
-          {hasProfileHistory && (
-            <>
-              <Button variant="ghost" size="icon-touch" onClick={onBack} aria-label={t("common.back")} className="shrink-0">
-                <ArrowLeft aria-hidden="true" className="size-4" />
-              </Button>
-              <Separator orientation="vertical" className="h-5 shrink-0" />
-            </>
-          )}
+          {/* Back is always here, so the title never moves (R20). With nowhere to go it stays
+              focusable and named, but aria-disabled: never `disabled`, which would drop it from
+              the tab order and kill its tip. One element throughout, so focus survives its rename. */}
+          <Button
+            variant="ghost"
+            size="icon-touch"
+            onClick={canGoBack ? onBack : undefined}
+            aria-label={backLabel}
+            aria-disabled={canGoBack ? undefined : true}
+            data-slot="bar-back"
+            // Dimmed, it gives no hover wash or press nudge (the ghost variant's dark hover and the
+            // base press each need their own override), and forced colours show it as GrayText,
+            // which they give only to :disabled, on hover too, or `hover:text-dim` would win (R53).
+            className={cn(
+              "shrink-0",
+              !canGoBack &&
+                "cursor-default text-dim hover:bg-transparent hover:text-dim dark:hover:bg-transparent active:not-aria-[haspopup]:translate-y-0 forced-colors:text-[color:GrayText] forced-colors:hover:text-[color:GrayText]",
+            )}
+          >
+            <IconTip label={backLabel} followFocus className="inline-flex">
+              <ArrowLeft aria-hidden="true" className="size-4" />
+            </IconTip>
+          </Button>
+          <Separator orientation="vertical" className="h-5 shrink-0" />
           {teamName && <ClubShield name={teamName} logoUrl={teamLogo} size="md" className="shrink-0" />}
           <div className="min-w-0 flex-1">
             {(crumbTeam || crumbGroup) && (
@@ -125,11 +145,8 @@ export function DashboardHeaderV2({
                 {crumbGroup && <span>{crumbGroup}</span>}
               </p>
             )}
-            <h1
-              title={activeTabLabel}
-              className="truncate font-heading text-title font-bold leading-tight text-foreground"
-            >
-              {activeTabLabel}
+            <h1 title={title} className="truncate font-heading text-title font-bold leading-tight text-foreground">
+              {title}
             </h1>
           </div>
         </div>

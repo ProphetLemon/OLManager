@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 
 import type { GameStateData } from "@/store/gameStore";
+import { useTabUiField, type MarketTabUiState } from "@/store/tabUiStore";
 import { formatVal, getLocale, getTeamName } from "@/lib/common/helpers";
 import { resolvePlayerPhoto } from "@/lib/players/playerPhotos";
 import { resolveTransferTeamLogo } from "@/lib/teams/transferLogos";
@@ -44,12 +45,13 @@ interface MarketTabV2Props {
   gameState: GameStateData;
 }
 
-type FilterType = "all" | "user" | "ai";
+type FilterType = MarketTabUiState["filter"];
 
 export function MarketTabV2({ gameState }: MarketTabV2Props) {
   const { t, i18n } = useTranslation();
   const [entries, setEntries] = useState<TransferHistoryEntryData[]>([]);
-  const [filter, setFilter] = useState<FilterType>("all");
+  // The filter survives a profile visit (R23).
+  const [filter, setFilter] = useTabUiField("market", "filter");
 
   useEffect(() => {
     invoke<TransferHistoryEntryData[]>("get_transfer_history_cmd")

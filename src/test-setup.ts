@@ -43,4 +43,8 @@ beforeEach(async () => {
   const { setApiClient } = await import("./api/client");
   const { tauriAdapter } = await import("./api/adapters/tauri.adapter");
   setApiClient(tauriAdapter);
+  // Tabs keep their view, filters and selection in this store so they survive
+  // a remount (R23). Without a reset, one test's filter would leak into the next.
+  const { useTabUiStore } = await import("./store/tabUiStore");
+  useTabUiStore.getState().resetTabUi();
 });

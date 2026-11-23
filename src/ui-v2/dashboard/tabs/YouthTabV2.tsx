@@ -16,6 +16,7 @@ import {
 
 import type { GameStateData, PlayerData, AcademyAcquisitionOptionData } from "@/store/gameStore";
 import { findAcademyTeamForParent, getTeamAcademyRoster } from "@/store/academySelectors";
+import { useTabUiField, type YouthTabUiState } from "@/store/tabUiStore";
 import {
   acquireAcademyTeam,
   getAcademyAcquisitionOptions,
@@ -67,7 +68,7 @@ const ROLE_ICON_MAP: Record<string, string> = {
   SUPPORT: ROLE_ICON_PATHS.SUPPORT,
 };
 
-type SortKey = "name" | "pos" | "age" | "ovr" | "potential" | "condition";
+type SortKey = YouthTabUiState["sortKey"];
 
 function getLolOvr(player: PlayerData): number {
   const attrs = player.attributes;
@@ -195,8 +196,9 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
     (staff) => staff.team_id === myTeam?.id && staff.specialization === "Youth",
   );
 
-  const [sortKey, setSortKey] = useState<SortKey>("pos");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  // Sort and search survive a profile visit (R23).
+  const [sortKey, setSortKey] = useTabUiField("youth", "sortKey");
+  const [sortDir, setSortDir] = useTabUiField("youth", "sortDir");
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -232,7 +234,7 @@ export function YouthTabV2({ gameState, onSelectPlayer, onSelectTeam, onGameUpda
     });
   }, [youthPlayers, sortKey, sortDir]);
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useTabUiField("youth", "searchQuery");
   const filteredPlayers = useMemo(
     () => sortedPlayers.filter((p) => {
       if (!searchQuery.trim()) return true;

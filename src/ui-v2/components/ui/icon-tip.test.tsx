@@ -205,8 +205,13 @@ describe("cleanup", () => {
     expect(tip()).not.toBeNull();
     unmount();
     expect(tip()).toBeNull();
-    // The hide timer is cleared; only the one-shot click swallow timer may remain.
-    expect(vi.getTimerCount()).toBeLessThanOrEqual(1);
+    // The click swallow's timer goes too, and its listener, so a later click is not eaten.
+    expect(vi.getTimerCount()).toBe(0);
+    const onClick = vi.fn();
+    window.addEventListener("click", onClick);
+    fireEvent.click(document.body);
+    window.removeEventListener("click", onClick);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -341,5 +346,150 @@ describe("an icon inside a button (followFocus)", () => {
     advance(ICON_TIP_HOVER_DELAY_MS);
     expect(tip()!.style.top).toBe("83px");
     vi.restoreAllMocks();
+  });
+});
+
+describe("two tips: one at a time (NR2.10)", () => {
+  // Two rail cells: A takes keyboard focus, B is hovered.
+  function pair() {
+    render(
+      <>
+        <button type="button" data-testid="a">
+          <IconTip label="Settings" followFocus>
+            <i />
+          </IconTip>
+        </button>
+        <button type="button" data-testid="b">
+          <IconTip label="Exit" followFocus>
+            <i />
+          </IconTip>
+        </button>
+      </>,
+    );
+    return { a: screen.getByTestId("a"), b: screen.getByTestId("b") };
+  }
+
+  /** The most tooltips the document ever held at once while `run` ran. */
+  function maxTips(run: () => void): number {
+    let max = document.querySelectorAll('[role="tooltip"]').length;
+    const observer = new MutationObserver(() => {
+      max = Math.max(max, document.querySelectorAll('[role="tooltip"]').length);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    run();
+    // Records are delivered on a microtask; take them now.
+    observer.takeRecords();
+    max = Math.max(max, document.querySelectorAll('[role="tooltip"]').length);
+    observer.disconnect();
+    return max;
+  }
+  const tips = () => screen.queryAllByRole("tooltip");
+
+  // jsdom has no :focus-visible; stand in for a browser that decides it.
+  let visible = true;
+  beforeEach(() => {
+    visible = true;
+    vi.stubGlobal("CSS", { supports: () => true });
+    const real = Element.prototype.matches;
+    vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, selector: string) {
+      return selector === ":focus-visible" ? visible : real.call(this, selector);
+    });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("closes A, opened by focus, when B opens by hover, so only one tooltip ever exists", () => {
+    const { a, b } = pair();
+    const max = maxTips(() => {
+      act(() => a.focus());
+      expect(tip()).toHaveTextContent("Settings");
+      fireEvent.pointerEnter(b, { pointerType: "mouse" });
+      advance(ICON_TIP_HOVER_DELAY_MS);
+    });
+    expect(tips()).toHaveLength(1);
+    expect(tip()).toHaveTextContent("Exit");
+    expect(max).toBe(1);
+    expect(a).toHaveFocus();
+  });
+
+  it("reopens A when B's hover ends while A's trigger still holds :focus-visible", () => {
+    const { a, b } = pair();
+    act(() => a.focus());
+    fireEvent.pointerEnter(b, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    const max = maxTips(() => {
+      fireEvent.pointerLeave(b, { pointerType: "mouse" });
+      advance(ICON_TIP_LEAVE_GRACE_MS);
+    });
+    expect(tips()).toHaveLength(1);
+    expect(tip()).toHaveTextContent("Settings");
+    expect(max).toBe(1);
+  });
+
+  it("does not reopen A once its trigger has lost :focus-visible or focus", () => {
+    const { a, b } = pair();
+    act(() => a.focus());
+    fireEvent.pointerEnter(b, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    visible = false;
+    fireEvent.pointerLeave(b, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS);
+    expect(tip()).toBeNull();
+
+    visible = true;
+    fireEvent.pointerEnter(b, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    act(() => a.blur());
+    fireEvent.pointerLeave(b, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS);
+    expect(tip()).toBeNull();
+  });
+
+  it("does not bring A back after Escape dismissed the tips", () => {
+    const { a, b } = pair();
+    act(() => a.focus());
+    fireEvent.pointerEnter(b, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(tip()).toBeNull();
+    fireEvent.pointerLeave(b, { pointerType: "mouse" });
+    advance(ICON_TIP_LEAVE_GRACE_MS);
+    expect(tip()).toBeNull();
+    expect(a).toHaveFocus();
+  });
+
+  it("keeps one tooltip when a touch long press opens B over A's focus tip", () => {
+    const { a, b } = pair();
+    act(() => a.focus());
+    const icon = b.querySelector("span")!;
+    const max = maxTips(() => {
+      fireEvent.pointerDown(icon, { pointerType: "touch" });
+      advance(ICON_TIP_LONG_PRESS_MS);
+    });
+    expect(tips()).toHaveLength(1);
+    expect(tip()).toHaveTextContent("Exit");
+    expect(max).toBe(1);
+  });
+
+  it("closes the hover tip of A when B opens by keyboard focus", () => {
+    const { a, b } = pair();
+    fireEvent.pointerEnter(a, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    expect(tip()).toHaveTextContent("Settings");
+    act(() => b.focus());
+    expect(tips()).toHaveLength(1);
+    expect(tip()).toHaveTextContent("Exit");
+  });
+});
+
+describe("the plate", () => {
+  it("sets its text in text-nav, the navigation labels' size, floored at 10 px", () => {
+    const { icon } = setup();
+    fireEvent.pointerEnter(icon, { pointerType: "mouse" });
+    advance(ICON_TIP_HOVER_DELAY_MS);
+    expect(tip()).toHaveClass("text-nav");
+    expect(tip()).not.toHaveClass("text-caption");
   });
 });

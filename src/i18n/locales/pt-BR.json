@@ -3699,7 +3699,14 @@
       "manager": "Perfil do técnico",
       "needsCall_one": "{{label}}, precisa da sua decisão",
       "needsCall_other": "{{label}}, {{count}} precisam da sua decisão",
-      "more": "Mais"
+      "more": "Mais",
+      "go": "Ir para…",
+      "goShort": "Ir"
+    },
+    "lane": {
+      "title": "Antes de continuar",
+      "allOnHome_one": "Ver na tela Início",
+      "allOnHome_other": "Todas as {{count}} na tela Início"
     },
     "bar": {
       "phase": {
@@ -3715,7 +3722,27 @@
       "matchDay": "Dia de jogo",
       "skipToMatchDay": "Simular até a próxima partida",
       "skipToNextDay": "Pular para o próximo dia",
-      "clock": "Data e fase do jogo"
+      "clock": "Data e fase do jogo",
+      "backTo": "Voltar para {{destination}}",
+      "backNone": "Não há para onde voltar"
+    },
+    "route": {
+      "now": "Agora: {{title}}, {{group}}",
+      "nowNoGroup": "Agora: {{title}}"
+    },
+    "palette": {
+      "title": "Ir para",
+      "placeholder": "Buscar seções e lugares",
+      "close": "Fechar",
+      "groups": {
+        "recent": "Recentes",
+        "sections": "Seções",
+        "views": "Visualizações"
+      },
+      "results_one": "{{count}} resultado",
+      "results_other": "{{count}} resultados",
+      "empty": "Nenhum resultado para “{{query}}”",
+      "nothing": "Nenhum destino"
     },
     "tags": {
       "blocker": "Bloqueio",

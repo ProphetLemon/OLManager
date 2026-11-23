@@ -3699,7 +3699,14 @@
       "manager": "Profilo manager",
       "needsCall_one": "{{label}}, richiede una tua decisione",
       "needsCall_other": "{{label}}, {{count}} richiedono una tua decisione",
-      "more": "Altro"
+      "more": "Altro",
+      "go": "Vai a…",
+      "goShort": "Vai"
+    },
+    "lane": {
+      "title": "Prima di continuare",
+      "allOnHome_one": "Vedila in Casa",
+      "allOnHome_other": "Tutte e {{count}} in Casa"
     },
     "bar": {
       "phase": {
@@ -3715,7 +3722,27 @@
       "matchDay": "Giorno di gara",
       "skipToMatchDay": "Simula fino alla prossima partita",
       "skipToNextDay": "Salta al giorno successivo",
-      "clock": "Data e fase di gioco"
+      "clock": "Data e fase di gioco",
+      "backTo": "Indietro: {{destination}}",
+      "backNone": "Niente a cui tornare indietro"
+    },
+    "route": {
+      "now": "Ora: {{title}}, {{group}}",
+      "nowNoGroup": "Ora: {{title}}"
+    },
+    "palette": {
+      "title": "Vai a",
+      "placeholder": "Cerca sezioni e luoghi",
+      "close": "Chiudi",
+      "groups": {
+        "recent": "Recenti",
+        "sections": "Sezioni",
+        "views": "Viste"
+      },
+      "results_one": "{{count}} risultato",
+      "results_other": "{{count}} risultati",
+      "empty": "Nessun risultato per «{{query}}»",
+      "nothing": "Nessuna destinazione"
     },
     "tags": {
       "blocker": "Blocco",

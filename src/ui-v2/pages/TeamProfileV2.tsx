@@ -2,6 +2,7 @@ import { ChevronLeft } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { inPageBack } from "@/lib/dashboard/describeLocation";
 import { buildTeamProfileViewModel } from "@/lib/teamProfile/viewModel";
 import { isUserAcademyClub } from "@/store/academySelectors";
 import type { GameStateData, TeamData } from "@/store/gameStore";
@@ -21,6 +22,8 @@ import { useTeamProfileStats } from "@/ui-v2/pages/teamProfile/useTeamProfileSta
 interface TeamProfileV2Props {
   gameState: GameStateData;
   teamId: string;
+  /** Where Back lands, as the header names it (R41); omitted when the page is shown on its own. */
+  backTo?: string | null;
   onClose: () => void;
   onSelectPlayer?: (id: string) => void;
 }
@@ -28,11 +31,13 @@ interface TeamProfileV2Props {
 function TeamProfileContent({
   team,
   gameState,
+  backTo,
   onClose,
   onSelectPlayer,
 }: {
   team: TeamData;
   gameState: GameStateData;
+  backTo?: string | null;
   onClose: () => void;
   onSelectPlayer?: (id: string) => void;
 }) {
@@ -40,16 +45,19 @@ function TeamProfileContent({
   const viewModel = useMemo(() => buildTeamProfileViewModel(team, gameState), [team, gameState]);
   const { recentMatches } = useTeamProfileStats(team.id);
   const isOwnTeam = team.id === gameState.manager.team_id;
+  const back = inPageBack(t, backTo);
 
   return (
     <div className="flex h-full flex-col overflow-y-auto scrollbar-v2 p-6">
       <div className="mx-auto w-full max-w-[2000px]">
         <button
           type="button"
-          onClick={onClose}
-          className="mb-4 inline-flex w-fit items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+          onClick={back.disabled ? undefined : onClose}
+          aria-label={back.label}
+          aria-disabled={back.disabled || undefined}
+          className="mb-4 inline-flex w-fit items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground aria-disabled:cursor-default aria-disabled:text-dim aria-disabled:hover:text-dim aria-disabled:forced-colors:text-[color:GrayText]"
         >
-          <ChevronLeft className="size-4" />
+          <ChevronLeft aria-hidden="true" className="size-4" />
           {t("common.back")}
         </button>
 
@@ -80,6 +88,7 @@ function TeamProfileContent({
 export default function TeamProfileV2({
   gameState,
   teamId,
+  backTo,
   onClose,
   onSelectPlayer,
 }: TeamProfileV2Props) {
@@ -90,6 +99,7 @@ export default function TeamProfileV2({
     <TeamProfileContent
       team={team}
       gameState={gameState}
+      backTo={backTo}
       onClose={onClose}
       onSelectPlayer={onSelectPlayer}
     />

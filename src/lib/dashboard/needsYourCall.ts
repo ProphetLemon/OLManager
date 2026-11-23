@@ -292,3 +292,42 @@ export function buildCallItems(input: BuildCallItemsInput): BuildCallItemsResult
   const decisions = sorted.filter((item) => item.severity !== "info").length + hiddenDecisions;
   return { items: sorted, total: sorted.length + hiddenContracts, hiddenContracts, decisions };
 }
+
+/**
+ * The one view of "Needs your call" every surface reads (R18): DashboardV2
+ * derives it once per change, and the header chip, the rail markers and Home
+ * take their numbers and rows from it, so they can never disagree.
+ */
+export interface CallState {
+  /** Every visible row, hard then soft then info. */
+  items: CallItem[];
+  /** The hard and soft rows, in the order of `items`. */
+  decisionItems: CallItem[];
+  /** The info rows, which never count as a decision. */
+  notices: CallItem[];
+  /** Decisions, contract renewals hidden by the cap included: the chip's number. */
+  count: number;
+  hiddenContracts: number;
+  /** Everything that needs a call, hidden contract rows included. */
+  total: number;
+}
+
+export const EMPTY_CALL_STATE: CallState = {
+  items: [],
+  decisionItems: [],
+  notices: [],
+  count: 0,
+  hiddenContracts: 0,
+  total: 0,
+};
+
+export function deriveCallState(result: BuildCallItemsResult): CallState {
+  return {
+    items: result.items,
+    decisionItems: result.items.filter((item) => item.severity !== "info"),
+    notices: result.items.filter((item) => item.severity === "info"),
+    count: result.decisions,
+    hiddenContracts: result.hiddenContracts,
+    total: result.total,
+  };
+}

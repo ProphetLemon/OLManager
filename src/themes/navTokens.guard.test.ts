@@ -103,3 +103,70 @@ describe("the active row tint", () => {
     expect(ruleBody(":root")).toContain("--row-wash: color-mix(in srgb, var(--club) 16%, transparent);");
   });
 });
+
+describe("attention lane tokens (NR2.6, R24, R35)", () => {
+  it("sizes the band at max(2.875rem, 46px) on desktop and at the touch hit plus the band's border on Android (R62)", () => {
+    expect(ruleBody(":root")).toContain("--lane-h: max(2.875rem, 46px);");
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--lane-h: calc(var(--hit) + 1px);");
+  });
+
+  it("sizes the pills as a rail row on desktop and at the touch hit on Android", () => {
+    expect(ruleBody(":root")).toContain("--lane-pill-h: var(--nav-row);");
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--lane-pill-h: var(--hit);");
+  });
+
+  it("floors --text-entry at 12px, so pill headlines never fall to 7.9 px on Android", () => {
+    expect(css).toMatch(/--text-entry:\s*max\(0\.875rem,\s*12px\);/);
+  });
+
+  it("gives --text-entry and the lane tokens no --color-* or --text-* twin", () => {
+    const colours = new Set([...css.matchAll(/^\s*--color-([a-z0-9-]+):/gm)].map((m) => m[1]));
+    expect(colours.has("entry")).toBe(false);
+    const taken = new Set([...css.matchAll(/^\s*--(?:color|text)-([a-z0-9-]+):/gm)].map((m) => m[1]));
+    expect(["lane-h", "lane-pill-h"].filter((name) => taken.has(name))).toEqual([]);
+  });
+});
+
+describe("Go row token (NR2.9, R30)", () => {
+  it("declares --go-row as max(2.5rem, 40px), raised to the touch hit on Android", () => {
+    expect(ruleBody(":root")).toContain("--go-row: max(2.5rem, 40px);");
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--go-row: var(--hit);");
+  });
+
+  it("is what railMode's goRow mirrors", async () => {
+    const { goRow } = await import("@/ui-v2/shell/railMode");
+    const [, rem, px] = ruleBody(":root").match(/--go-row: max\(([\d.]+)rem, (\d+)px\);/) ?? [];
+    for (const r of [9, 12, 16, 18, 20]) expect(goRow(r)).toBe(Math.max(Number(rem) * r, Number(px)));
+  });
+});
+
+describe("Go palette tokens (NR2.8, spec §5.7, R29)", () => {
+  it("caps the desktop panel to the window and floors its rows like a rail row", () => {
+    const root = ruleBody(":root");
+    expect(root).toContain("--palette-w: min(36rem, calc(100vw - 2rem));");
+    expect(root).toContain("--palette-h: min(32rem, calc(100dvh - 6rem));");
+    expect(root).toContain("--palette-row: max(2.5rem, 40px);");
+    expect(root).toContain("--palette-sheet-w: max(22rem, 320px);");
+  });
+
+  it("raises the rows to the touch hit on Android", () => {
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--palette-row: var(--hit);");
+  });
+
+  it("gives a short window the whole height and a top near the edge, so the list keeps room at 400% zoom (R80)", () => {
+    expect(ruleBody(":root")).toContain("--palette-top: 15vh;");
+    const short = css.match(/@media \(max-height: 30rem\) \{\s*:root \{([^}]*)\}\s*\}/);
+    expect(short, "@media (max-height: 30rem)").not.toBeNull();
+    expect(short![1]).toContain("--palette-h: calc(100dvh - 1rem);");
+    expect(short![1]).toContain("--palette-top: min(15vh, 0.5rem);");
+    // After the base block, so it wins over it.
+    expect(css.indexOf("@media (max-height: 30rem)")).toBeGreaterThan(css.indexOf("--palette-h: min("));
+  });
+
+  it("gives the palette tokens no --color-* or --text-* twin", () => {
+    const taken = new Set([...css.matchAll(/^\s*--(?:color|text)-([a-z0-9-]+):/gm)].map((m) => m[1]));
+    const names = [...css.matchAll(/^\s*--(palette-[a-z-]+):/gm)].map((m) => m[1]);
+    expect(names.length).toBeGreaterThanOrEqual(4);
+    expect(names.filter((name) => taken.has(name))).toEqual([]);
+  });
+});

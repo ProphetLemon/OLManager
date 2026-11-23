@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import type { ChampionData } from "@/store/types";
+import { useTabUiField, type ChampionsTabUiState } from "@/store/tabUiStore";
 import { resolveChampionTile } from "@/lib/champions/championImages";
 import { championDisplayName } from "@/lib/champions/championNames";
 import { cn } from "@/ui-v2/lib/utils";
@@ -17,7 +18,7 @@ interface ChampionsGridV2Props {
   onChampionClick: (championKey: string) => void;
 }
 
-type DraftRole = "TOP" | "JUNGLE" | "MID" | "ADC" | "SUPPORT";
+type DraftRole = Exclude<ChampionsTabUiState["roleFilter"], "ALL">;
 
 const LOL_ROLE_ORDER: DraftRole[] = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"];
 const PAGE_SIZE = 48;
@@ -36,9 +37,10 @@ function normalizeRole(role: string): DraftRole {
 
 export default function ChampionsGridV2({ champions, onChampionClick }: ChampionsGridV2Props) {
   const { t } = useTranslation();
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"ALL" | DraftRole>("ALL");
-  const [page, setPage] = useState(0);
+  // Search, role and page survive a champion visit (R23).
+  const [search, setSearch] = useTabUiField("champions", "search");
+  const [roleFilter, setRoleFilter] = useTabUiField("champions", "roleFilter");
+  const [page, setPage] = useTabUiField("champions", "page");
   const gridRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 

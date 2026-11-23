@@ -1,7 +1,8 @@
 import { useId, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import type { CallItem, CallKind } from "@/lib/dashboard/needsYourCall"
+import { callActionLabel, callTagLabel } from "@/lib/dashboard/callLabels"
+import type { CallItem } from "@/lib/dashboard/needsYourCall"
 import { Button } from "@/ui-v2/components/ui/button"
 import { TagBlock, type TagTone } from "@/ui-v2/components/ui/tag-block"
 import { cn } from "@/ui-v2/lib/utils"
@@ -16,24 +17,6 @@ export interface NeedsYourCallPanelProps {
 }
 
 const VISIBLE_LIMIT = 4
-
-const TAG_DEFAULTS: Record<CallKind, string> = {
-  blocker: "Blocker",
-  contract: "Contract",
-  alert: "Alert",
-}
-
-// English fallbacks for the pre-registered onAir.calls.actions.* keys.
-const ACTION_DEFAULTS: Record<string, string> = {
-  fixLineup: "Fix lineup",
-  openSquad: "Open squad",
-  openScrims: "Open scrims",
-  openFinances: "Open finances",
-  openContracts: "Open contracts",
-  openInbox: "Open inbox",
-  renew: "Renew",
-  review: "Review",
-}
 
 // Slanted word tag at the head of a row. Text always uses the paired foreground token.
 const ROW_TAG_TONE: Record<TagTone, string> = {
@@ -51,11 +34,6 @@ const ROW_SEVERITY: Record<CallItem["severity"], string> = {
   hard: "border-s-[0.1875rem] border-s-foreground [border-inline-start-style:solid]",
   soft: "border-s-[0.1875rem] border-s-foreground [border-inline-start-style:dashed]",
   info: "border-s-2 border-s-muted-foreground [border-inline-start-style:dotted]",
-}
-
-function actionDefault(key: string): string {
-  const leaf = key.slice(key.lastIndexOf(".") + 1)
-  return ACTION_DEFAULTS[leaf] ?? "Review"
 }
 
 /** Home panel listing everything that needs a decision before the game can move on. */
@@ -147,7 +125,7 @@ export function NeedsYourCallPanel({ items, total, decisions = total, hiddenCont
                   ROW_TAG_TONE[item.tagTone],
                 )}
               >
-                {t(item.tagKey, { defaultValue: TAG_DEFAULTS[item.kind] })}
+                {callTagLabel(item, t)}
               </span>
               <div className="flex min-w-0 flex-1 basis-48 flex-col justify-center gap-0.5 py-2">
                 <div data-slot="lower-third-headline" className="font-heading text-lg font-semibold leading-tight">
@@ -161,7 +139,7 @@ export function NeedsYourCallPanel({ items, total, decisions = total, hiddenCont
               </div>
               <div className="flex items-center py-2 pe-3">
                 <Button type="button" variant="club" size="touch" onClick={() => onAct(item)}>
-                  {t(item.actionLabelKey, { defaultValue: actionDefault(item.actionLabelKey) })}
+                  {callActionLabel(item, t)}
                 </Button>
               </div>
             </li>
