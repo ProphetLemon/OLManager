@@ -480,7 +480,7 @@ export default function Settings() {
             >
               <GameButton
                 tone="primary"
-                disabled={checkingUpdate}
+                busy={checkingUpdate}
                 onClick={checkUpdate}
               >
                 {checkingUpdate ? (
@@ -791,11 +791,14 @@ function GameButton({
   children,
   tone = "neutral",
   disabled,
+  busy,
 }: {
   onClick: () => void;
   children: React.ReactNode;
   tone?: "neutral" | "primary" | "danger";
   disabled?: boolean;
+  // Looks disabled and ignores presses, but stays focusable so keyboard focus survives the wait.
+  busy?: boolean;
 }) {
   const tones = {
     neutral:
@@ -807,9 +810,10 @@ function GameButton({
   };
   return (
     <button
-      onClick={onClick}
+      onClick={busy ? undefined : onClick}
       disabled={disabled}
-      className={`flex items-center gap-2 px-4 py-2 rounded-lg border bg-transparent text-sm font-heading font-bold uppercase tracking-wider transition-colors disabled:opacity-50 ${tones[tone]}`}
+      aria-disabled={busy || undefined}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg border bg-transparent text-sm font-heading font-bold uppercase tracking-wider transition-colors disabled:opacity-50 aria-disabled:opacity-50 ${tones[tone]}`}
     >
       {children}
     </button>
