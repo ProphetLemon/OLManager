@@ -47,16 +47,18 @@ export async function cargoAll(client, params) {
  * @param {object} input
  * @param {{get(params: object): Promise<any>}} input.client
  * @param {string} [input.since] first tournament start date
+ * @param {string} [input.listedFrom] first start date of the listed events (pool-events.mjs); the earlier of `since` and 2023-06-01 by default.
+ *   An explicit `--pool-since` is passed as both: it is then the limit for everything
  * @param {number} [input.cap] largest roster a qualifier-flagged tournament may have
  * @param {string} [input.probe] Leaguepedia page of a person whose roster entries the report explains
  * @param {(message: string) => void} [input.log]
  */
-export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap = DEFAULT_QUALIFIER_CAP, probe = "", log = () => {} }) {
+export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, listedFrom = listedSince(since), cap = DEFAULT_QUALIFIER_CAP, probe = "", log = () => {} }) {
   const warnings = [];
 
   // The listed events (pool-events.mjs) are read from their own, earlier date; everything else from `since`. Both lists are asked for
   // from the earlier one, and the tournaments of other leagues before `since` are dropped before anything is counted.
-  const from = listedSince(since);
+  const from = listedFrom < since ? listedFrom : since;
   const tournamentRows = await cargoAll(client, {
     tables: "Tournaments=T,Leagues=L",
     join_on: "T.League=L.League",
@@ -64,7 +66,7 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap 
     where: `T.DateStart >= "${from}"`,
     order_by: "T.DateStart,T.OverviewPage",
   });
-  const tournaments = inPoolWindow([...new Map(tournamentRows.map((row) => [row.OverviewPage, normalizeTournament(row)])).values()], since);
+  const tournaments = inPoolWindow([...new Map(tournamentRows.map((row) => [row.OverviewPage, normalizeTournament(row)])).values()], since, listedFrom);
   const classes = classifyTournaments(tournaments);
   log(`pool: ${tournaments.length} tournaments since ${since}`);
 
@@ -81,7 +83,7 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap 
 
   // Disjoint classes: official tournaments that are not qualifier-flagged, unflagged seasonal-league tournaments (second
   // divisions), the unflagged tournaments of the listed events, and the small qualifier-flagged ones (promotions, closed stages) picked by page.
-  const parts = cargoClasses(tournaments, since);
+  const parts = cargoClasses(tournaments, since, listedFrom);
   const classClauses = {
     official: parts.official.map((where) => `${where} AND ${NOT_QUALIFIER_CLAUSE}`),
     seasonal: parts.seasonal,
@@ -102,16 +104,17 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap 
     }
   }
 
-  // Old names: roster and scoreboard rows keep the name used at the time. One paged read of the redirects (only the old names),
-  // then the people query again through them. A failed read turns the whole step off, with a warning.
-  const aliases = { names: 0, ambiguous: [], rosterRows: 0, dropped: 0 };
+  // Old names: roster and scoreboard rows keep the name used at the time. One paged read of the whole redirects table (a page's own
+  // name has a row, which is how a name that is someone else's page is told from an old name), then the people query again through them. A failed read turns the whole step off, with a warning.
+  const aliases = { names: 0, ambiguous: [], rosterRows: 0, dropped: 0, targets: new Map() };
   let targets = new Map();
   try {
     const redirectRows = await cargoAll(client, {
-      tables: "PlayerRedirects=PR", fields: "PR.AllName=AllName,PR.OverviewPage=OverviewPage", where: ALIAS_ONLY, order_by: "PR.AllName,PR.OverviewPage",
+      tables: "PlayerRedirects=PR", fields: "PR.AllName=AllName,PR.OverviewPage=OverviewPage", order_by: "PR.AllName,PR.OverviewPage",
     });
     ({ targets, ambiguous: aliases.ambiguous } = aliasTargets(redirectRows));
     aliases.names = targets.size;
+    aliases.targets = targets;
   } catch (error) {
     if (isFatal(error)) throw error;
     warnings.push(`pool: redirects unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); old names are not followed`);

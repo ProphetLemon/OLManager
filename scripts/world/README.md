@@ -196,7 +196,7 @@ npm run world:refresh -- --login --pool --dry-run --out /tmp/overlay.json --repo
 npm run world:refresh -- --offline --pool --pool-cap 60 --pool-probe Send0o      # replays the cache of an earlier live run
 ```
 
-Flags: `--pool` `--pool-since YYYY-MM-DD` (default 2023-11-12, three years) `--pool-cap n` (default 60) `--pool-probe <page>`
+Flags: `--pool` `--pool-since YYYY-MM-DD` (default 2023-11-12, three years; the listed events start at 2023-06-01 unless it is given, see "Listed events") `--pool-cap n` (default 60) `--pool-probe <page>`
 (default `Send0o`; `""` for none) `--pool-stats <rows.json>` (rate from stats, anchored to the game's league levels, see Ratings). Code: `lib/pool-fetch.mjs` (queries), `lib/pool.mjs` (selection, ids, ops), `lib/pool-rating.mjs` (ratings),
 `lib/pool-gates.mjs`, `lib/pool-report.mjs`. Tests: `src/lib/world/pool.test.ts`, `pool-rating.test.ts`, `pool-refresh.test.ts` with the recorded rows in
 `scripts/world/fixtures/pool/`.
@@ -212,17 +212,27 @@ matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision
 **Listed events.** `lib/pool-events.mjs` is the one place that names events the pool takes on the owner's word: the 14 events of the
 women's and marginalised-genders research (each entry says which page text or source describes it; Leaguepedia has no gender field, so
 nothing here says who a person is), by `Tournaments.League` or, for GIRLGAMER's Mexico City edition, by page. Their tournaments skip the
-"official or seasonal" and "at least three tournaments" tests, are read from their own date limit (`LISTED_SINCE`, 2023-06-01; the rest of the
-pool keeps `--pool-since`, and an earlier `--pool-since` wins for both), and are fetched as their own Cargo class (`listed`). The same file lists
+"official or seasonal" and "at least three tournaments" tests and are fetched as their own Cargo class (`listed`). The same file lists
 the four Goddess Tour qualifier pages whose roster is over the cap and which the cap does not drop (`CAP_EXEMPT_PAGES`); nothing else is exempt.
 To add an event, append an entry and its source. Tests: `src/lib/world/pool-women-events.test.ts`, rows in `scripts/world/fixtures/pool-women/`.
 
+- **Date limit.** Without `--pool-since` the listed events start at `LISTED_SINCE` (2023-06-01) and the rest of the pool at 2023-11-12. A
+  `--pool-since` given explicitly is the limit for everything, the listed events included, whether it is earlier or later than 2023-06-01.
+- **What the earlier date lets in.** Every page of a listed league from 2023-06-01 on, which the research did not confirm one by one: the
+  Equal Esports Cup 2023 pages and its qualifiers, and Liga Valkyria's two 2023 pages (LAN and LAS). Their qualifier-flagged pages stay under the cap.
+- **Games window unchanged.** Scoreboard games count from `--pool-since` (default 2023-11-12), not from the listed date, so a person who
+  enters only through a 2023 edition has no games in the window and takes the default rating.
+- **Default rating.** Unchanged: the tier comes from Leaguepedia's own flags, so a listed league it does not call official is tier 3 and
+  Game Changers (official) is tier 2; anybody without 8 games in the window takes the default of that tier.
+
 **Old names.** Leaguepedia keeps a player's earlier names in `PlayerRedirects`, and roster rows (`TournamentPlayers.Player`) and
-scoreboard rows (`ScoreboardPlayers.Link`) keep the name used at the time. The pool reads the old names once (one paged
-`PlayerRedirects` read, `AllName<>OverviewPage`), runs each people clause a second time joined through them, and adds the games under
-an old name to the player's page. A name that two pages claim, and a name that is a page of its own, is left alone (never merged);
-a redirect to a page with no `Players` row adds nobody. If the read fails, the run warns ("redirects unavailable") and follows nothing.
-Tests: `src/lib/world/pool-aliases.test.ts`.
+scoreboard rows (`ScoreboardPlayers.Link`) keep the name used at the time. The pool reads the whole redirects table once (a page's own
+name has a row too: a name that is a page of its own and also redirects elsewhere, or that two pages claim, is ambiguous and is never
+followed, whether or not its owner is in the pool), runs each people clause a second time joined through the old names, adds the games
+under an old name to the player's page, and reads the per-game stats rows (`--pool-stats`, keyed by the scoreboard link) by the same
+map, so a renamed player's games count for the position and the stats rating. A redirect to a page with no `Players` row adds nobody. If
+the read fails, the run warns ("redirects unavailable") and follows nothing. Residual: a page with no self row in the table is not seen as
+a page of its own. Tests: `src/lib/world/pool-aliases.test.ts`.
 
 **Op shape** (the game's `Player`/`Staff` record, `team_id: null`, plus a `pool` object the game ignores; `Bot` becomes `ADC`). The `pool` object is review data: the gates and the report read it in memory, but the file written (`serializeOverlay`) is compact JSON without it, because about 4.7k adds pretty-printed with it come to about 5 MB and the app rejects more than 4 MiB. A roster-only overlay is still 2-space JSON, byte-identical to before. The example below is the in-memory op:
 

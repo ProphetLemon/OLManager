@@ -20,7 +20,7 @@ import { EMPTY_ID_MAP, buildIndex, playerEntity, staffEntity } from "./match.mjs
 import { fetchPoolInputs } from "./pool-fetch.mjs";
 import { runPoolGates } from "./pool-gates.mjs";
 import { explainProbe } from "./pool-report.mjs";
-import { gameTeamKeys } from "./pool-scope.mjs";
+import { foldPlayerKeys, gameTeamKeys } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, dropWorldBuildTwins, selectPool } from "./pool.mjs";
 import { contractedPlayers } from "./same-person.mjs";
 import { poolSkillFromRows, recentRolesFromRows } from "./pool-rating.mjs";
@@ -136,7 +136,8 @@ export async function runRefresh(options) {
     const settings = { since: options.pool.since ?? DEFAULT_POOL_SINCE, cap: options.pool.cap ?? DEFAULT_QUALIFIER_CAP };
     if (!/^\d{4}-\d{2}-\d{2}$/.test(settings.since)) throw new Error(`pool: --pool-since must be YYYY-MM-DD, got "${settings.since}"`);
     if (!Number.isInteger(settings.cap) || settings.cap < 0) throw new Error(`pool: --pool-cap must be a non-negative integer, got "${settings.cap}"`);
-    const inputs = options.pool.inputs ?? (await fetchPoolInputs({ client: options.client, ...settings, probe: options.pool.probe ?? "", log }));
+    // An explicit `since` is the limit for the listed events too; without one they start at their own date (pool-events.mjs).
+    const inputs = options.pool.inputs ?? (await fetchPoolInputs({ client: options.client, ...settings, ...(options.pool.since ? { listedFrom: options.pool.since } : {}), probe: options.pool.probe ?? "", log }));
     warnings.push(...inputs.warnings);
     const context = {
       playerIndex: buildIndex(world.players.map(playerEntity)),
@@ -148,7 +149,9 @@ export async function runRefresh(options) {
     // Titles too: the same person can be spelled differently on a team page and in the pool query, which hashes to another id.
     const addedPages = (entries) => new Set(entries.filter((entry) => entry.op.op === "add" && entry.page).map((entry) => entry.page));
     const rosterTitles = { player: addedPages(ops.players), staff: addedPages(ops.staff) };
-    const recentRoles = options.pool.statsRows ? recentRolesFromRows(options.pool.statsRows, { since: settings.since }) : null;
+    // The stats rows are keyed by the scoreboard link, which is the name used at the time: read old names as the page they belong to.
+    const statsRows = options.pool.statsRows ? foldPlayerKeys(options.pool.statsRows, inputs.aliases?.targets ?? new Map(), (name) => inputs.people.has(name)) : null;
+    const recentRoles = statsRows ? recentRolesFromRows(statsRows, { since: settings.since }) : null;
     const addedRecords = (entries, kind) => entries.filter((entry) => entry.op.op === "add").map((entry) => entry.op[kind]);
     const rosterRecords = { player: addedRecords(ops.players, "player"), staff: addedRecords(ops.staff, "staff") };
     const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles });
@@ -156,7 +159,7 @@ export async function runRefresh(options) {
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;
     const poolOf = anchors ? poolOfLevels(anchors.levels) : undefined;
-    const skill = options.pool.skill ?? (options.pool.statsRows ? poolSkillFromRows(options.pool.statsRows, positions, { poolOf }) : null);
+    const skill = options.pool.skill ?? (statsRows ? poolSkillFromRows(statsRows, positions, { poolOf }) : null);
     const builtPoolOps = buildPoolOps({
       selection, baselines, games: inputs.games, skill, anchors, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
     });

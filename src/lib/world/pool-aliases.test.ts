@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { fetchPoolInputs } from "../../../scripts/world/lib/pool-fetch.mjs";
 import * as scope from "../../../scripts/world/lib/pool-scope.mjs";
+import { PEOPLE_FILTER } from "../../../scripts/world/lib/pool-fetch.mjs";
 import { row, stubClient, type Row } from "./poolFixtures";
 
 const redirects: Row[] = [
@@ -12,13 +13,13 @@ const redirects: Row[] = [
   { AllName: "Sakkuromi", OverviewPage: "Sakkuromi", ID: "Sakkuromi" },
   { AllName: "Vicky", OverviewPage: "Vicky", ID: "Vicky" },
 ];
-// Games since 2023-11-12 per scoreboard link: 6 under her page, 17 and 3 under the old names (26 in all).
+// Games since 2023-11-12 per scoreboard link: 6 under the player's own page, 17 and 3 under the old names (26 in all).
 const games: Row[] = [{ Link: "Indiff", n: "17" }, { Link: "Indifferent", n: "3" }, { Link: "Sakkuromi", n: "12" }, { Link: "Vicky", n: "6" }];
 const vicky = (n: string, extra: Row = {}) => row({ player: "Vicky", ign: "Vicky", name: "Victoria de la Torre Serna", country: "Spain", birth: "1998-11-03", prole: "Support", rmin: "Support", rmax: "Support", n, last: "2026-11-14", lmin: "", tmin: "Secondary", toff: "0", loff: "", ...extra });
 const sakkuromi = row({ player: "Sakkuromi", ign: "Sakkuromi", name: "Sonia Nieto Fonte", country: "Spain", birth: "2002-04-25", prole: "Bot", rmin: "Bot", rmax: "Bot", n: "5", last: "2026-06-20", lmin: "", tmin: "Secondary", toff: "0", loff: "" });
 /** The people rows of the official class only, so a person is counted once. */
 const official = (rows: Row[]) => (params: Row) => (params.where.includes('T.IsOfficial="1"') ? rows : []);
-// Five roster entries under her own name; ten under "Indifferent" (8) and "Indiff" (2), which the join through PlayerRedirects returns.
+// Five roster entries under the player's own name; ten under "Indifferent" (8) and "Indiff" (2), which the join through PlayerRedirects returns.
 const aliasRows = [vicky("8", { alias: "Indifferent" }), vicky("2", { alias: "Indiff" })];
 const run = (options: Parameters<typeof stubClient>[0] = {}) => fetchPoolInputs({ client: stubClient({ redirects, games, peopleFor: official([vicky("5"), sakkuromi]), aliasPeople: aliasRows, ...options }) });
 
@@ -45,7 +46,7 @@ describe("foldGames", () => {
     expect(folded().has("Indiff")).toBe(false);
   });
 
-  it("leaves a player who was never renamed as she was", () => {
+  it("leaves a player who was never renamed as they were", () => {
     expect(folded().get("Sakkuromi")).toBe(12);
   });
 
@@ -58,7 +59,7 @@ describe("foldGames", () => {
 });
 
 describe("fetchPoolInputs with old names", () => {
-  it("counts Vicky's roster entries and games under every name she used", async () => {
+  it("counts Vicky's roster entries and games under every name the player used", async () => {
     const inputs = await run();
     expect(inputs.people.get("Vicky")).toMatchObject({ entries: 15, kind: "player", position: "Support" });
     expect(inputs.games!.get("Vicky")).toBe(26);
@@ -95,10 +96,38 @@ describe("fetchPoolInputs with old names", () => {
     expect(inputs.games!.get("Vicky")).toBe(26);
   });
 
-  it("makes no person of a redirect that points at a page with no Players row", async () => {
-    const inputs = await run({ redirects: [...redirects, { AllName: "Ghost Name", OverviewPage: "No Page" }], games: [...games, { Link: "Ghost Name", n: "3" }] });
+  it("makes no person of a redirect that points at a page with no Players row: the joined query carries the Players-page filter", async () => {
+    const client = stubClient({ redirects: [...redirects, { AllName: "Ghost Name", OverviewPage: "No Page" }], games: [...games, { Link: "Ghost Name", n: "3" }], peopleFor: official([vicky("5")]), aliasPeople: aliasRows });
+    const inputs = await fetchPoolInputs({ client });
+    const joined = client.calls.filter((c) => c.tables.includes("PlayerRedirects=PR,"));
+    expect(joined.length).toBeGreaterThan(0);
+    for (const call of joined) expect(call.where).toContain(PEOPLE_FILTER);
     expect(inputs.people.has("No Page")).toBe(false);
     expect(inputs.people.has("Ghost Name")).toBe(false);
+    expect(inputs.people.get("Vicky")!.entries).toBe(15);
+  });
+
+  it("does not merge a name that is a page of its own, even when that person is outside the pool", async () => {
+    // Y is the only claimant of "Foo" in the alias rows, but Foo is also the page of someone retired (their self row is a redirect row too).
+    const y = (n: string, extra: Row = {}) => row({ player: "Y", ign: "Y", n, ...extra });
+    const inputs = await fetchPoolInputs({
+      client: stubClient({
+        redirects: [{ AllName: "Foo", OverviewPage: "Y" }, { AllName: "Foo", OverviewPage: "Foo" }, { AllName: "Y", OverviewPage: "Y" }],
+        peopleFor: official([y("3")]), aliasPeople: [y("7", { alias: "Foo" })], games: [{ Link: "Foo", n: "120" }, { Link: "Y", n: "4" }],
+      }),
+    });
+    expect(inputs.people.get("Y")!.entries).toBe(3);
+    expect(inputs.games!.get("Y")).toBe(4);
+    expect(inputs.games!.get("Foo")).toBe(120);
+    expect(inputs.aliases.ambiguous).toEqual(["Foo"]);
+    expect(inputs.aliases.targets.has("Foo")).toBe(false);
+  });
+
+  it("reads the redirects whole, self rows included, so a page of its own can be told from an old name", async () => {
+    const client = stubClient({ redirects });
+    await fetchPoolInputs({ client });
+    const read = client.calls.find((c) => c.tables === "PlayerRedirects=PR")!;
+    expect(read.where ?? "").not.toContain("<>");
   });
 
   it("falls back to the old behaviour with a warning when the redirects cannot be read", async () => {

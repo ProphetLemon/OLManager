@@ -3,11 +3,11 @@
 // rows of the research (women-events-2026-11-23); the 2023 Equal Esports Cup rows had no IsQualifier column there, so it is set from their names.
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { fetchPoolInputs } from "../../../scripts/world/lib/pool-fetch.mjs";
+import { PEOPLE_FILTER, fetchPoolInputs } from "../../../scripts/world/lib/pool-fetch.mjs";
 import { CAP_EXEMPT_PAGES, LISTED_EVENTS, LISTED_SINCE } from "../../../scripts/world/lib/pool-events.mjs";
-import { cargoClasses, classifyTournaments, normalizeTournament, qualifierSplit } from "../../../scripts/world/lib/pool-scope.mjs";
-import { DEFAULT_POOL_SINCE } from "../../../scripts/world/lib/pool.mjs";
-import { read, root, row, select, stubClient, type Row } from "./poolFixtures";
+import { cargoClasses, classifyTournaments, normalizeTournament, personFromRow, qualifierSplit } from "../../../scripts/world/lib/pool-scope.mjs";
+import { DEFAULT_POOL_SINCE, selectPool } from "../../../scripts/world/lib/pool.mjs";
+import { context, read, root, row, stubClient, world, type Row } from "./poolFixtures";
 
 const rows = read<Row[]>(path.join(root, "scripts/world/fixtures/pool-women/tournaments.json"));
 const page = (name: string) => rows.find((r) => r.OverviewPage === name)!;
@@ -92,10 +92,27 @@ describe("the earlier date", () => {
     for (const call of official) expect(call.where).toContain(`T.DateStart >= "${DEFAULT_POOL_SINCE}"`);
   });
 
-  it("moves with --pool-since only when that goes further back", async () => {
-    const early = stubClient({ tournaments: rows, entries });
-    await fetchPoolInputs({ client: early, since: "2022-01-01" });
-    expect(early.calls[0].where).toContain('"2022-01-01"');
+  it("is the limit for everything when --pool-since is given, earlier or later than the listed date", async () => {
+    for (const since of ["2022-01-01", "2025-01-01"]) {
+      const client = stubClient({ tournaments: rows, entries });
+      const { tournaments } = await fetchPoolInputs({ client, since, listedFrom: since });
+      for (const call of client.calls.filter((c) => c.where?.includes("DateStart"))) {
+        expect(call.where).toContain(`"${since}"`);
+        expect(call.where).not.toContain(`"${LISTED_SINCE}"`);
+        expect(call.where).not.toContain(`"${DEFAULT_POOL_SINCE}"`);
+      }
+      const pages = tournaments.map((t: { page: string }) => t.page);
+      expect(pages.includes("Equal Esports Cup 2024/League Phase")).toBe(since < "2024-05-03");
+      expect(pages.includes("Equal Esports Cup 2023")).toBe(since < "2023-09-20");
+    }
+  });
+
+  it("starts the listed events at 2023-06-01 and the rest at the default when no --pool-since is given", async () => {
+    const client = stubClient({ tournaments: rows, entries });
+    await fetchPoolInputs({ client });
+    const dates = client.calls.map((c) => c.where ?? "");
+    expect(dates.some((w) => w.includes(`"${LISTED_SINCE}"`))).toBe(true);
+    expect(dates.some((w) => w.includes(`"${DEFAULT_POOL_SINCE}"`))).toBe(true);
   });
 });
 
@@ -154,16 +171,37 @@ describe("the Cargo clauses", () => {
 });
 
 describe("the people of those events", () => {
-  const staffRow = row({ player: "A Coach", ign: "A Coach", rmin: "Head Coach", rmax: "Head Coach", prole: "", lmin: "", tmin: "Secondary", toff: "0", loff: "" });
-  const noPage = row({ player: "No Page", ign: "", lmin: "", tmin: "Secondary", toff: "0", loff: "" });
+  // Rows as the people query returns them for the listed class (a non-official league) and for the official class (Game Changers).
+  const coach = row({ player: "A Coach", ign: "A Coach", rmin: "Head Coach", rmax: "Head Coach", prole: "", lmin: "", tmin: "Secondary", toff: "0", loff: "" });
+  const gameChanger = row({ player: "A Player", ign: "A Player", lmin: "", tmin: "Secondary", toff: "1", loff: "" });
+  const peopleFor = (params: Row) => (params.where.includes('"Equal Esports Cup"') ? [coach] : params.where.includes('"League of Legends Game Changers"') ? [gameChanger] : []);
+  const read = async () => {
+    const client = stubClient({ tournaments: rows, entries, peopleFor });
+    return { client, inputs: await fetchPoolInputs({ client }) };
+  };
 
-  it("include their staff by the path the pool already has, and nobody without a Players page", () => {
-    const selection = select([staffRow, noPage]);
-    expect(selection.staff.map((e: { page: string }) => e.page)).toEqual(["A Coach"]);
-    expect(selection.statuses.get("No Page")).toMatchObject({ state: "excluded", code: "no-players-page" });
+  it("are asked for with the Players-page filter, so nobody without a Players page is returned", async () => {
+    const { client } = await read();
+    const listed = client.calls.filter((c) => c.tables.includes("Players=P") && c.where.includes('"Equal Esports Cup"'));
+    expect(listed.length).toBeGreaterThan(0);
+    for (const call of listed) expect(call.where).toContain(PEOPLE_FILTER);
+    expect(PEOPLE_FILTER).toContain("P.ID IS NOT NULL");
   });
 
-  it("take the lowest tier's default rating, since these events are not official", () => {
-    expect(select([staffRow]).staff[0].person.tier).toBe(3);
+  it("include their staff by the path the pool already has", async () => {
+    const { inputs } = await read();
+    const selection = selectPool({ people: inputs.people, context, world });
+    expect(selection.staff.map((e: { page: string }) => e.page)).toContain("A Coach");
+  });
+
+  it("keep the pool's default rating rule: the tier follows Leaguepedia's own flags, 3 for a league it does not call official, 2 for Game Changers", async () => {
+    const { inputs } = await read();
+    expect(inputs.people.get("A Coach")!.tier).toBe(3);
+    expect(inputs.people.get("A Player")!.tier).toBe(2);
+  });
+
+  it("refuses a roster row that has no Players page, if one ever comes back", () => {
+    const selection = selectPool({ people: new Map([["No Page", personFromRow(row({ player: "No Page", ign: "" }))]]), context, world });
+    expect(selection.statuses.get("No Page")).toMatchObject({ state: "excluded", code: "no-players-page" });
   });
 });

@@ -123,6 +123,20 @@ describe("refresh with --pool", () => {
     inputs = await fetchPoolInputs({ client: stubClient(), probe: "Send0o" });
   });
 
+  it("passes an explicit --pool-since to the listed events too, and leaves their own date alone without it", async () => {
+    const stub = stubClient();
+    const real = new MediaWikiClient({ cacheDir: FIXTURES.cacheDir, offline: true });
+    const client = new Proxy(real, { get: (target, key) => (key === "get" ? (params: Record<string, string>) => (/Tournament|Player|Scoreboard/.test(params.tables ?? "") ? stub.get(params) : target.get(params)) : (target as never)[key]) });
+    const since = (calls: Record<string, string>[]) => calls.map((c) => c.where ?? "").filter((w) => w.includes("DateStart >=") || w.includes("DateTime_UTC >="));
+    await runRefresh({ dataDir: FIXTURES.dataDir, teamMapPath: FIXTURES.teamMap, idMapPath: FIXTURES.idMap, client: client as never, asOf: "2026-11-07", pool: { since: "2025-01-01" } as never });
+    expect(since(stub.calls).every((w) => !w.includes("2023-06-01") && !w.includes("2023-11-12"))).toBe(true);
+    const plain = stubClient();
+    const plainClient = new Proxy(real, { get: (target, key) => (key === "get" ? (params: Record<string, string>) => (/Tournament|Player|Scoreboard/.test(params.tables ?? "") ? plain.get(params) : target.get(params)) : (target as never)[key]) });
+    await runRefresh({ dataDir: FIXTURES.dataDir, teamMapPath: FIXTURES.teamMap, idMapPath: FIXTURES.idMap, client: plainClient as never, asOf: "2026-11-07", pool: {} as never });
+    expect(since(plain.calls).some((w) => w.includes("2023-06-01"))).toBe(true);
+    expect(since(plain.calls).some((w) => w.includes("2023-11-12"))).toBe(true);
+  });
+
   it("adds the free agents next to the unchanged roster operations, and every gate passes", async () => {
     const plain = await run();
     const withPool = await run({ inputs });
@@ -287,6 +301,31 @@ describe("refresh with --pool", () => {
       expect(judgment.length + tierDefault.length + tops.length).toBe(35);
       expect(pooled.report).toContain(`${judgment.length} the judgment default`);
       expect(pooled.report).toContain(`${tierDefault.length + 14} the tier default (staff, and tier-3 people with no mapped league)`);
+    });
+
+    it("rates a renamed player from the games under the old name, and leaves everybody else's rating alone", async () => {
+      const plain = await run({ inputs });
+      const tops = plain.pool!.selection.players.filter((e) => e.role === "Top").map((e) => e.page);
+      const pages = [...tops, ...Array.from({ length: 15 }, (_, i) => `Filler ${i}`)];
+      // The scoreboard keeps the old link: every game of the star is keyed "Old Name", and the redirects say it is the star's page.
+      const rows = rowsFor(pages, tops[0]).map((r) => (r.playerKey === tops[0] ? { ...r, playerKey: "Old Name" } : r));
+      const followed = { ...inputs, aliases: { ...inputs.aliases, targets: new Map([["Old Name", tops[0]]]) } };
+      const op = (result: typeof plain, page: string) => (result.overlay.players as Array<Record<string, any>>).find((o) => o.op === "add" && o.pool?.page === page)!;
+      const before = await run({ inputs, statsRows: rows });
+      const after = await run({ inputs: followed, statsRows: rows });
+      expect(op(before, tops[0]).pool.rating).toBe("tier-default");
+      expect(op(after, tops[0]).pool).toMatchObject({ rating: "stats", rating_games: 12 });
+      for (const page of tops.slice(1)) expect(op(after, page)).toEqual(op(before, page));
+    });
+
+    it("does not fold the stats rows of a name that is a page of the pool", async () => {
+      const plain = await run({ inputs });
+      const tops = plain.pool!.selection.players.filter((e) => e.role === "Top").map((e) => e.page);
+      const pages = [...tops, ...Array.from({ length: 15 }, (_, i) => `Filler ${i}`)];
+      const followed = { ...inputs, aliases: { ...inputs.aliases, targets: new Map([[tops[1], tops[0]]]) } };
+      const rows = rowsFor(pages, tops[0]);
+      const op = (result: typeof plain, page: string) => (result.overlay.players as Array<Record<string, any>>).find((o) => o.op === "add" && o.pool?.page === page)!;
+      expect(op(await run({ inputs: followed, statsRows: rows }), tops[1])).toEqual(op(await run({ inputs, statsRows: rows }), tops[1]));
     });
 
     it("rates nobody when the rows give no cohort", async () => {

@@ -44,10 +44,10 @@ const LISTED_LEAGUES = new Set(LISTED_EVENTS.map((event) => event.league).filter
 const LISTED_PAGES = new Set(LISTED_EVENTS.map((event) => event.page).filter(Boolean));
 /** Is this tournament one of the events the pool takes on the owner's word (pool-events.mjs)? */
 export const isListedTournament = (t) => LISTED_LEAGUES.has(t.league) || LISTED_PAGES.has(t.page);
-/** The date a listed event's tournaments are read from: its own limit, or the pool's when that goes further back. */
+/** The date a listed event's tournaments are read from when no `--pool-since` was given: its own limit, or the pool's when that goes further back. */
 export const listedSince = (since) => (since < LISTED_SINCE ? since : LISTED_SINCE);
 /** The tournaments of the pool's window: those starting on or after `since`, and the listed events' from their own, earlier date. */
-export const inPoolWindow = (tournaments, since) => tournaments.filter((t) => t.start >= since || (isListedTournament(t) && t.start >= listedSince(since)));
+export const inPoolWindow = (tournaments, since, listedFrom = listedSince(since)) => tournaments.filter((t) => t.start >= since || (isListedTournament(t) && t.start >= listedFrom));
 
 const isShowmatch = (t) => /show\s*match/i.test(t.level);
 /** Cup qualifiers and showmatches never count, whatever else the page says. */
@@ -142,9 +142,9 @@ export const NOT_QUALIFIER_CLAUSE = NOT_QUALIFIER;
  * else, except its official tournaments, which the `official` class reads from the same earlier date; a listed page is excluded from
  * every other class. Their tournament counts add up to the local predicate's counts.
  */
-export function cargoClasses(tournaments, since) {
+export function cargoClasses(tournaments, since, listedFrom = listedSince(since)) {
   const classes = classifyTournaments(tournaments);
-  const from = listedSince(since);
+  const from = listedFrom;
   const leaguesWhere = (pick) => new Set(tournaments.filter((t) => t.league && pick(classes.get(t.page))).map((t) => t.league));
   const listedLeagues = new Set(tournaments.filter((t) => classes.get(t.page).listed && LISTED_LEAGUES.has(t.league)).map((t) => t.league));
   const listedPages = tournaments.filter((t) => classes.get(t.page).listed && !LISTED_LEAGUES.has(t.league) && LISTED_PAGES.has(t.page)).map((t) => t.page);
@@ -410,9 +410,10 @@ export function share(items, test) {
 // --- Old names -------------------------------------------------------------------------------------
 
 /**
- * The old names Leaguepedia keeps in `PlayerRedirects` (rows `{AllName, OverviewPage}`), each mapped to the one page that claims it.
- * A page's own name is not an old name. A name that two or more pages claim is returned in `ambiguous` and has no target:
- * following it would hand one person's games to another.
+ * The old names Leaguepedia keeps in `PlayerRedirects` (rows `{AllName, OverviewPage}`, the whole table: a page's own name has a row
+ * too), each mapped to the one page that claims it. A page's own row counts as a claim: a name that is a page of its own and also
+ * redirects to another page, or that two or more pages claim, is returned in `ambiguous` and has no target. Following it would hand
+ * one person's rows and games to another, whether or not the owner of the name is in the pool.
  * @returns {{targets: Map<string, string>, ambiguous: string[]}}
  */
 export function aliasTargets(rows) {
@@ -420,15 +421,15 @@ export function aliasTargets(rows) {
   for (const row of rows) {
     const alias = text(row.AllName);
     const page = text(row.OverviewPage);
-    if (!alias || !page || alias === page) continue;
+    if (!alias || !page) continue;
     if (!claims.has(alias)) claims.set(alias, new Set());
     claims.get(alias).add(page);
   }
   const targets = new Map();
   const ambiguous = [];
   for (const [alias, pages] of claims) {
-    if (pages.size === 1) targets.set(alias, [...pages][0]);
-    else ambiguous.push(alias);
+    if (pages.size > 1) ambiguous.push(alias);
+    else if (!pages.has(alias)) targets.set(alias, [...pages][0]);
   }
   return { targets, ambiguous: ambiguous.sort() };
 }
@@ -447,6 +448,15 @@ export function foldGames(games, targets, isPage = () => false) {
     folded.set(key, (folded.get(key) ?? 0) + n);
   }
   return folded;
+}
+
+/**
+ * Per-game stats rows (`scripts/stats/pro-stats.mjs`, keyed by the scoreboard link) with the old names read as the page they belong to,
+ * by the same map and the same rule as `foldGames`; rows of other players are returned as they are.
+ */
+export function foldPlayerKeys(rows, targets, isPage = () => false) {
+  if (targets.size === 0) return rows;
+  return rows.map((row) => (!isPage(row.playerKey) && targets.has(row.playerKey) ? { ...row, playerKey: targets.get(row.playerKey) } : row));
 }
 
 // --- Subtracting what the game has ----------------------------------------------------------------
