@@ -51,7 +51,7 @@ export function ScrimDecisionPane({
       data-slot="scrim-decision-pane"
       role="group"
       aria-labelledby={headingId}
-      className="flex h-full min-h-0 flex-col gap-2 pb-2"
+      className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto pb-2"
     >
       <h2 id={headingId} tabIndex={-1} data-pane-heading="" className="sr-only">
         {title}

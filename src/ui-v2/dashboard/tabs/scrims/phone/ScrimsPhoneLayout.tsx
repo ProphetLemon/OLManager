@@ -93,6 +93,12 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   // The career's first week has nothing to plan: open where its sentence is instead of on the report.
   const initialRow = week.setupLockedReason === "career_started_late" && model.openRow === "report" ? "volume" : model.openRow;
   const [selected, setSelected] = useState<PhoneRowId>(initialRow);
+  // A move the player asked for (Done, Decide <slot>) unmounts the button that had focus: focus goes to the new pane's heading.
+  const [movedTick, setMovedTick] = useState(0);
+  const goTo = (id: PhoneRowId) => {
+    setSelected(id);
+    setMovedTick((tick) => tick + 1);
+  };
   const current = cells.some((cell) => cell.id === selected) ? selected : model.openRow;
   const resultRow = result && resultSlotIndex != null ? slotRowId(resultSlotIndex) : null;
 
@@ -107,9 +113,15 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     setSelected(tagged.id);
   }, [tagKey, tagged, current, resultRow]);
 
+  // The result belongs on the block it was taken on, even if the player tapped another row during the save.
+  // After the tag effect above, so it wins when both fire for the same change.
   useEffect(() => {
-    if (focusTick > 0) paneRef.current?.querySelector<HTMLElement>("[data-pane-heading]")?.focus();
-  }, [focusTick]);
+    if (result && resultSlotIndex != null) setSelected(slotRowId(resultSlotIndex));
+  }, [result, resultSlotIndex]);
+
+  useEffect(() => {
+    if (focusTick > 0 || movedTick > 0) paneRef.current?.querySelector<HTMLElement>("[data-pane-heading]")?.focus();
+  }, [focusTick, movedTick]);
 
   const decisionSlot = props.panel === "decision" && props.decisionReport ? props.decisionReport.slot_index : null;
   const ghostReputation = Math.max(0, week.reputation + NEXT_BLOCK_CANCELLATION.reputation);
@@ -170,7 +182,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           result={result}
           statusText={props.liveText}
           nextSlotLabel={waiting != null ? slotLabelOf(week.slots.find((entry) => entry.slotIndex === waiting)) : null}
-          onDecideNext={() => waiting != null && setSelected(slotRowId(waiting))}
+          onDecideNext={() => waiting != null && goTo(slotRowId(waiting))}
         />
       );
     }
@@ -218,13 +230,17 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
         resolvedTeamId={slot.resolvedOpponentTeamId}
         cleared={isPlanClearedToday(slot, week)}
         onPick={(priorityIndex, teamId) => setSlotPlan(slotIndex, priorityIndex, teamId)}
-        onDone={() => setSelected(target)}
+        onDone={() => goTo(target)}
       />
     );
   })();
 
   return (
-    <div data-phone-fixed="" className="grid h-full min-h-0 grid-cols-[17rem_minmax(0,1fr)] gap-2 p-2">
+    // 8 px margins and gap, 4 px on top and none under: two panes of 282 in a content area of 286.
+    <div className="grid h-full min-h-0 grid-cols-[17rem_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] gap-2 px-2 pb-0 pt-1">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {props.liveText}
+      </div>
       <ScrimWeekList
         model={model}
         selectedId={current}
@@ -233,7 +249,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
         ghostReputation={showCancelFollowups ? ghostReputation : null}
         onSelect={setSelected}
       />
-      <div ref={paneRef} className="min-h-0 min-w-0 overflow-hidden rounded-lg border border-line bg-card text-card-foreground">
+      <div ref={paneRef} className="min-h-0 min-w-0 overflow-hidden rounded-lg bg-card text-card-foreground shadow-[inset_0_0_0_1px_var(--line)]">
         {body}
       </div>
     </div>

@@ -45,7 +45,7 @@ export function ScrimTodayPane({ slotLabel, dayState, message, facts, plans, loc
       data-slot="scrim-today-pane"
       role="group"
       aria-labelledby={headingId}
-      className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-4"
+      className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2"
     >
       <div className="flex shrink-0 items-center justify-between gap-2">
         <PaneHeading id={headingId}>

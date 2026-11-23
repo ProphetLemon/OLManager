@@ -26,7 +26,7 @@ export function ScrimResultPane({ result, statusText, nextSlotLabel, onDecideNex
       data-slot="scrim-result-pane"
       role="group"
       aria-labelledby={headingId}
-      className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-4"
+      className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2"
     >
       <ScrimDecisionResult
         compact

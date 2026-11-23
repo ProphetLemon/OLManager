@@ -45,11 +45,10 @@ function setup(props: Partial<ScrimResultPaneProps> = {}) {
 }
 
 describe("ScrimResultPane", () => {
-  it("has the live line as the only live region, saying the decision once", () => {
+  it("shows the decision line but leaves announcing it to the tab's one live region", () => {
     const { container } = setup();
-    const live = container.querySelectorAll("[aria-live]");
-    expect(live).toHaveLength(1);
-    expect(live[0]).toHaveTextContent("Decision applied to scrim block: Push through");
+    expect(container.querySelectorAll("[aria-live]")).toHaveLength(0);
+    expect(screen.getByText("Decision applied to scrim block: Push through")).toBeInTheDocument();
   });
 
   it("titles the pane What changed, names it, and lets the parent focus the heading", () => {

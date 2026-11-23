@@ -31,8 +31,8 @@ describe("ScrimVolumePane volumes", () => {
   it("has the heading and the three volumes with their weekdays", () => {
     setup();
     expect(screen.getByRole("heading", { name: "Weekly Volume" })).toBeInTheDocument();
-    const group = screen.getByRole("radiogroup", { name: "Weekly Volume" });
-    expect(within(group).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual([
+    const group = screen.getByRole("group", { name: "Weekly Volume" });
+    expect(within(group).getAllByRole("button").map((button) => button.textContent)).toEqual([
       "2Wed",
       "4Wed, Thu",
       "6Wed, Thu, Fri",
@@ -41,9 +41,19 @@ describe("ScrimVolumePane volumes", () => {
 
   it("marks the chosen volume with a check and saves another with one tap", () => {
     const { onVolume, container } = setup();
-    expect(screen.getByRole("radio", { name: /^6/ })).toBeChecked();
+    expect(screen.getByRole("button", { name: /^6/ })).toHaveAttribute("aria-pressed", "true");
     expect(container.querySelectorAll('[data-slot="choice-check"]')).toHaveLength(1);
-    fireEvent.click(screen.getByRole("radio", { name: /^4/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^4/ }));
+    expect(onVolume).toHaveBeenCalledWith(4);
+  });
+
+  it("does not choose a volume on an arrow key: only a press does", () => {
+    const { onVolume } = setup();
+    const choice = screen.getByRole("button", { name: /^4/ });
+    choice.focus();
+    for (const key of ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"]) fireEvent.keyDown(choice, { key });
+    expect(onVolume).not.toHaveBeenCalled();
+    fireEvent.click(choice);
     expect(onVolume).toHaveBeenCalledWith(4);
   });
 });
@@ -53,7 +63,7 @@ describe("ScrimVolumePane Autofill", () => {
     const { onAutofill } = setup();
     const button = screen.getByRole("button", { name: "Autofill" });
     expect(button.className).toContain("w-full");
-    expect(button.className).toContain("min-h-[var(--hit)]");
+    expect(button.className).toContain("h-[var(--hit)]");
     fireEvent.click(button);
     expect(onAutofill).toHaveBeenCalledTimes(1);
   });
@@ -138,7 +148,7 @@ describe("ScrimVolumePane locked", () => {
     const heading = screen.getByRole("heading", { name: "Weekly Volume" });
     const lock = screen.getByText("Setup locked once block starts");
     expect(heading.compareDocumentPosition(lock) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const radio = screen.getByRole("radio", { name: /^4/ });
+    const radio = screen.getByRole("button", { name: /^4/ });
     const finalize = screen.getByRole("button", { name: /Finalize Setup/ });
     for (const control of [radio, finalize, screen.getByRole("button", { name: "Autofill" })]) {
       expect(control).toHaveAttribute("aria-disabled", "true");

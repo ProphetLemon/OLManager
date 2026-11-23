@@ -75,8 +75,8 @@ function SlotValue({ cell, teamNameById }: { cell: PhoneSlotCell; teamNameById: 
         {rivalName ? <span className="sr-only">, {rivalName}</span> : null}
         {cell.quality != null ? (
           <>
-            <span aria-hidden="true" className="text-entry tabular-nums">Q{cell.quality}</span>
-            <span className="sr-only">, {t("scrims.reportQuality")} {cell.quality}</span>
+            {/* Read as it is drawn, so the visible "Q73" is part of the cell's name. */}
+            <span className="text-entry tabular-nums">Q{cell.quality}</span>
           </>
         ) : null}
       </span>
@@ -137,11 +137,12 @@ function Gauges({ model, ghostReputation }: Pick<ScrimWeekListProps, "model" | "
   const { planned, capacity, plannedSlots, wins, losses, reputation, cancellations } = model.gauges;
   const repPercent = Math.min(100, Math.max(0, reputation));
   const ghost = ghostReputation != null && ghostReputation !== reputation ? ghostReputation : null;
-  const line = "flex min-h-[1.3125rem] min-w-0 flex-col justify-end px-3 py-0.5";
+  const line = "flex h-[1.3125rem] min-w-0 flex-col justify-end px-3 py-0.5";
   const head = "flex items-baseline justify-between gap-2 font-heading text-caption uppercase leading-none";
 
   return (
-    <div data-slot="phone-week-gauges" className="grid grid-cols-2 border-t border-line">
+    // Two lines of 21 px, 42 in all: the borders are inset shadows, so they take no height.
+    <div data-slot="phone-week-gauges" className="mt-auto grid h-[2.625rem] shrink-0 grid-cols-2 shadow-[inset_0_1px_0_0_var(--line)]">
       <div className={line}>
         <div className={head}>
           <span className="truncate text-muted-foreground">{t("scrims.planned")}</span>
@@ -167,7 +168,7 @@ function Gauges({ model, ghostReputation }: Pick<ScrimWeekListProps, "model" | "
           <span className="tabular-nums text-foreground">{wins}-{losses}</span>
         </div>
       </div>
-      <div className={cn(line, "border-t border-line")}>
+      <div className={cn(line, "shadow-[inset_0_1px_0_0_var(--line)]")}>
         <div className={head}>
           <span className="truncate text-muted-foreground">{t("scrims.reputation")}</span>
           <span className="tabular-nums text-foreground">{reputation}</span>
@@ -187,14 +188,14 @@ function Gauges({ model, ghostReputation }: Pick<ScrimWeekListProps, "model" | "
             <div
               data-slot="scrim-rep-ghost"
               aria-hidden="true"
-              className="absolute -inset-y-1 w-0 border-s-2 border-dashed border-warning"
+              className="absolute -inset-y-0.5 w-0 border-s-2 border-dashed border-warning"
               style={{ insetInlineStart: `${Math.min(100, Math.max(0, ghost))}%` }}
             />
           ) : null}
         </div>
         {ghost != null ? <span id={noteId} className="sr-only">{t("scrims.repGhostNote", { value: ghost })}</span> : null}
       </div>
-      <div className={cn(line, "border-s border-t border-line")}>
+      <div className={cn(line, "border-s border-line shadow-[inset_0_1px_0_0_var(--line)]")}>
         <div className={head}>
           <span className="truncate text-muted-foreground">{t("scrims.cancellations")}</span>
           <span className="tabular-nums text-foreground">{cancellations}</span>
@@ -244,16 +245,16 @@ export function ScrimWeekList({ model, selectedId, teamNameById, weekdayLabels, 
 
   let flat = -1;
   return (
-    <div data-slot="phone-week-list" className="flex min-h-0 flex-col overflow-hidden bg-card text-card-foreground">
+    <div data-slot="phone-week-list" className="flex h-full min-h-0 flex-col overflow-hidden bg-card text-card-foreground shadow-[inset_0_0_0_1px_var(--line)]">
       <div
         ref={listRef}
         role="group"
         aria-label={t("scrims.phone.weekList", { defaultValue: "Scrims week" })}
         onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => handleKeyDown(event)}
-        className="flex flex-col divide-y divide-line"
+        className="flex flex-col"
       >
         {model.rows.map((row, r) => (
-          <div key={r} className={cn("grid divide-x divide-line", row.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+          <div key={r} className={cn("grid h-[var(--hit)] shadow-[inset_0_-1px_0_0_var(--line)]", row.length > 1 ? "grid-cols-2 divide-x divide-line" : "grid-cols-1")}>
             {row.map((cell) => {
               const index = ++flat;
               const selected = cell.id === selectedId;

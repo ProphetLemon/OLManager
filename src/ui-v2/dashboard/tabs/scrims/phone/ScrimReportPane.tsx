@@ -24,7 +24,7 @@ export function ScrimReportPane({ week, teamNameById, suggestions }: ScrimReport
       data-slot="scrim-report-pane"
       role="group"
       aria-labelledby={headingId}
-      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-4"
+      className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-2"
     >
       <PaneHeading id={headingId}>{t("scrims.weeklyReportInline")}</PaneHeading>
       <dl data-slot="report-stats" className="grid shrink-0 grid-cols-2 gap-x-4 gap-y-2">

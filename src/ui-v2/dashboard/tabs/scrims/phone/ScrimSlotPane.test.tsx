@@ -43,7 +43,8 @@ function setup(props: Partial<ScrimSlotPaneProps> = {}) {
   return { onPick, onDone, ...utils };
 }
 
-const tab = (name: RegExp | string) => screen.getByRole("tab", { name });
+const plans = () => screen.getByRole("group", { name: "Opponent plans" });
+const tab = (name: RegExp | string) => within(plans()).getByRole("button", { name });
 const grid = () => screen.getByRole("group", { name: "Rivals by overall rating" });
 const cells = () => within(grid()).getAllByRole("button");
 const lastCell = () => cells()[cells().length - 1];
@@ -53,15 +54,15 @@ describe("ScrimSlotPane tab row", () => {
     const { onDone } = setup();
     const done = screen.getByRole("button", { name: /Done/ });
     expect(done).toHaveTextContent("DoneThu B");
-    expect(done.className).toContain("min-h-[var(--hit)]");
+    expect(done.parentElement?.className).toContain("h-[var(--hit)]");
     fireEvent.click(done);
     expect(onDone).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByRole("tab")).toHaveLength(3);
+    expect(within(plans()).getAllByRole("button")).toHaveLength(3);
     expect(tab(/Plan A/)).toHaveTextContent("Plan AChoosing");
     expect(tab(/Plan B/)).toHaveTextContent("Plan BNo fallback");
     expect(tab(/Plan C/)).toHaveTextContent("Plan CNo fallback");
-    expect(tab(/Plan A/)).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tablist").contains(done)).toBe(false);
+    expect(tab(/Plan A/)).toHaveAttribute("aria-pressed", "true");
+    expect(plans().contains(done)).toBe(false);
   });
 
   it("shows the rival's name under a plan once it is set", () => {
@@ -71,20 +72,22 @@ describe("ScrimSlotPane tab row", () => {
     expect(tab(/Plan C/)).toHaveTextContent("No fallback");
   });
 
-  it("moves between the tabs with the arrow keys", () => {
+  it("is a labelled group of buttons, not tabs without a panel, and all three can be reached with Tab", () => {
     setup();
-    tab(/Plan A/).focus();
-    fireEvent.keyDown(tab(/Plan A/), { key: "ArrowRight" });
-    expect(tab(/Plan B/)).toHaveAttribute("aria-selected", "true");
-    expect(tab(/Plan B/)).toHaveFocus();
-    fireEvent.keyDown(tab(/Plan B/), { key: "ArrowLeft" });
-    expect(tab(/Plan A/)).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("tablist")).toBeNull();
+    for (const button of within(plans()).getAllByRole("button")) expect(button.tabIndex).toBe(0);
+    fireEvent.click(tab(/Plan C/));
+    expect(tab(/Plan C/)).toHaveAttribute("aria-pressed", "true");
+    expect(tab(/Plan A/)).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("keeps only the active tab in the tab order", () => {
+  it("has a heading with the slot's name that the parent can focus", () => {
     setup();
-    expect(screen.getAllByRole("tab").filter((t) => t.tabIndex === 0)).toHaveLength(1);
-    expect(tab(/Plan A/).tabIndex).toBe(0);
+    const heading = screen.getByRole("heading", { level: 2, name: "Thu A" });
+    expect(heading).toHaveAttribute("data-pane-heading");
+    expect(heading.tabIndex).toBe(-1);
+    expect(screen.getByRole("group", { name: "Thu A" })).toContainElement(heading);
   });
 });
 
@@ -99,49 +102,49 @@ describe("ScrimSlotPane rivals", () => {
     expect(first).toHaveTextContent("Accepts 52%");
     expect(second).toHaveTextContent("GAM Esports");
     expect(third).toHaveTextContent("MVK Esports");
-    expect(first.className).toContain("min-h-[var(--hit)]");
+    expect(first.className).toContain("h-[var(--hit)]");
     expect(first.innerHTML).toContain("tabular-nums");
   });
 
   it("saves a pick at once and moves the tab from A to B to C and stays on C", () => {
     const { onPick } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /Team Secret Whales/ }));
+    fireEvent.click(within(grid()).getByRole("button", { name: /Team Secret Whales/ }));
     expect(onPick).toHaveBeenLastCalledWith(0, "tsw");
-    expect(tab(/Plan B/)).toHaveAttribute("aria-selected", "true");
-    fireEvent.click(screen.getByRole("button", { name: /GAM Esports/ }));
+    expect(tab(/Plan B/)).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(grid()).getByRole("button", { name: /GAM Esports/ }));
     expect(onPick).toHaveBeenLastCalledWith(1, "gam");
-    expect(tab(/Plan C/)).toHaveAttribute("aria-selected", "true");
-    fireEvent.click(screen.getByRole("button", { name: /MVK Esports/ }));
+    expect(tab(/Plan C/)).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(grid()).getByRole("button", { name: /MVK Esports/ }));
     expect(onPick).toHaveBeenLastCalledWith(2, "mvk");
-    expect(tab(/Plan C/)).toHaveAttribute("aria-selected", "true");
+    expect(tab(/Plan C/)).toHaveAttribute("aria-pressed", "true");
   });
 
   it("marks the rival the active plan already holds as chosen, by a check", () => {
-    const { container } = setup({ plan: ["gam", "", ""] });
-    const chosen = screen.getByRole("button", { name: /GAM Esports/ });
+    setup({ plan: ["gam", "", ""] });
+    const chosen = within(grid()).getByRole("button", { name: /GAM Esports/ });
     expect(chosen).toHaveAttribute("aria-pressed", "true");
     expect(chosen.querySelector('[data-slot="choice-check"]')).not.toBeNull();
-    expect(container.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
+    expect(grid().querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
   });
 
   it("shows which plan holds a rival already used in this slot and cannot pick it again", () => {
     const { onPick } = setup({ plan: ["tsw", "gam", ""] });
     fireEvent.click(tab(/Plan C/));
-    const held = screen.getByRole("button", { name: /Team Secret Whales/ });
+    const held = within(grid()).getByRole("button", { name: /Team Secret Whales/ });
     expect(held).toHaveTextContent("Plan A");
     expect(held).not.toHaveTextContent("Win");
     expect(held).toHaveAttribute("aria-disabled", "true");
     expect(held).not.toBeDisabled();
     expect(held.querySelector('[data-slot="choice-check"]')).not.toBeNull();
-    expect(screen.getByRole("button", { name: /GAM Esports/ })).toHaveTextContent("Plan B");
+    expect(within(grid()).getByRole("button", { name: /GAM Esports/ })).toHaveTextContent("Plan B");
     fireEvent.click(held);
     expect(onPick).not.toHaveBeenCalled();
-    expect(tab(/Plan C/)).toHaveAttribute("aria-selected", "true");
+    expect(tab(/Plan C/)).toHaveAttribute("aria-pressed", "true");
   });
 
   it("does not save the rival the active plan already holds again", () => {
     const { onPick } = setup({ plan: ["gam", "", ""] });
-    fireEvent.click(screen.getByRole("button", { name: /GAM Esports/ }));
+    fireEvent.click(within(grid()).getByRole("button", { name: /GAM Esports/ }));
     expect(onPick).not.toHaveBeenCalled();
   });
 });
@@ -161,7 +164,7 @@ describe("ScrimSlotPane clearing", () => {
     fireEvent.click(tab(/Plan B/));
     fireEvent.click(lastCell());
     expect(onPick).toHaveBeenCalledWith(1, "");
-    expect(tab(/Plan B/)).toHaveAttribute("aria-selected", "true");
+    expect(tab(/Plan B/)).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows the clear cell as chosen while the plan is empty and does not save it again", () => {
@@ -187,7 +190,7 @@ describe("ScrimSlotPane note and scrolling", () => {
   it("scrolls the grid inside the pane while the tab row and the note stay outside the scroller", () => {
     setup();
     expect(grid().className).toContain("overflow-y-auto");
-    expect(grid().contains(screen.getByRole("tablist"))).toBe(false);
+    expect(grid().contains(plans())).toBe(false);
     expect(grid().contains(screen.getByRole("note"))).toBe(false);
     expect(grid().className).toContain("min-h-0");
   });
@@ -196,7 +199,7 @@ describe("ScrimSlotPane note and scrolling", () => {
 describe("ScrimSlotPane saving", () => {
   it("keeps the cells in place but cannot pick while a save is running", () => {
     const { onPick } = setup({ disabled: true });
-    const cell = screen.getByRole("button", { name: /Team Secret Whales/ });
+    const cell = within(grid()).getByRole("button", { name: /Team Secret Whales/ });
     expect(cell).toHaveAttribute("aria-disabled", "true");
     expect(cell).not.toBeDisabled();
     fireEvent.click(cell);

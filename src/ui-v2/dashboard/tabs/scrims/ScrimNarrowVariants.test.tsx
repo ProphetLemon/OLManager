@@ -87,9 +87,10 @@ describe("shared pieces that have a narrow form", () => {
         }}
       />,
     );
-    const live = container.querySelector("[aria-live]") as HTMLElement;
+    const line = screen.getByText("Decision applied to scrim block: Push through");
     const heading = screen.getByRole("heading", { name: "What changed" });
-    expect(live.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(container.querySelectorAll("[aria-live]")).toHaveLength(1);
+    expect(line.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The phone keeps one live region for the whole tab, so the compact line is not live.
+    expect(container.querySelectorAll("[aria-live]")).toHaveLength(0);
   });
 });

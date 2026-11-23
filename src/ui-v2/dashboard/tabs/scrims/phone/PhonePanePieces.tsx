@@ -20,7 +20,7 @@ export function PaneHeading({ id, children }: { id: string; children: ReactNode 
 /** Why the pane cannot be edited: one line, ellipsis when it does not fit, the full sentence stays in the text. */
 export function LockLine({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p data-slot="phone-lock-line" className={cn("flex shrink-0 items-center gap-2 text-entry text-muted-foreground", className)}>
+    <p data-slot="phone-lock-line" className={cn("flex h-[1.125rem] shrink-0 items-center gap-2 text-entry leading-none text-muted-foreground", className)}>
       <Lock aria-hidden="true" className="size-4 shrink-0" />
       <span className="min-w-0 truncate">{children}</span>
     </p>
@@ -28,10 +28,8 @@ export function LockLine({ children, className }: { children: ReactNode; classNa
 }
 
 interface PhoneChoiceProps {
-  name: string;
-  value: string;
   checked: boolean;
-  /** Locked: the card keeps its place and stays focusable (`aria-disabled`), but a tap does nothing. */
+  /** Locked: the card keeps its place and stays focusable (`aria-disabled`), but a press does nothing. */
   disabled: boolean;
   onSelect: () => void;
   children: ReactNode;
@@ -41,35 +39,30 @@ interface PhoneChoiceProps {
 }
 
 /**
- * A radio that looks like a card, at least `--hit` high. The native input is the target, so the arrow
- * keys move through the group; the chosen card has a club outline and a check, never colour alone.
+ * A choice that looks like a card, at least `--hit` high: a button with `aria-pressed` inside a labelled
+ * group. Unlike a radio, an arrow key never chooses it (a choice saves at once); Enter or Space does.
+ * The chosen card has a club outline and a check, never colour alone.
  */
-export function PhoneChoice({ name, value, checked, disabled, onSelect, children, mark, className }: PhoneChoiceProps) {
+export function PhoneChoice({ checked, disabled, onSelect, children, mark, className }: PhoneChoiceProps) {
   const check = <Check data-slot="choice-check" aria-hidden="true" className="size-5 shrink-0" />;
   return (
-    <label className={cn("relative block min-w-0", className)}>
-      <input
-        type="radio"
-        name={name}
-        value={value}
-        checked={checked}
-        aria-disabled={disabled || undefined}
-        onChange={() => {
-          if (!disabled) onSelect();
-        }}
-        className="peer sr-only"
-      />
-      <span
-        className={cn(
-          "flex h-full min-h-[var(--hit)] items-center gap-2 rounded-lg border border-line bg-muted px-3 py-1 transition-colors",
-          "peer-checked:bg-card peer-checked:outline-2 peer-checked:-outline-offset-2 peer-checked:outline-solid peer-checked:outline-club",
-          "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-aria-disabled:opacity-65",
-        )}
-      >
-        {mark === "start" ? (checked ? check : <Circle aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />) : null}
-        <span className="flex min-w-0 flex-1 flex-col justify-center">{children}</span>
-        {mark === "end" && checked ? check : null}
-      </span>
-    </label>
+    <button
+      type="button"
+      aria-pressed={checked}
+      aria-disabled={disabled || undefined}
+      onClick={() => {
+        if (!disabled) onSelect();
+      }}
+      className={cn(
+        "flex h-full min-h-[var(--hit)] w-full min-w-0 items-center gap-2 rounded-lg border border-line bg-muted px-3 py-1 text-start outline-hidden transition-colors",
+        "focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-default aria-disabled:opacity-65",
+        checked && "bg-card outline-2 -outline-offset-2 outline-solid outline-club",
+        className,
+      )}
+    >
+      {mark === "start" ? (checked ? check : <Circle aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />) : null}
+      <span className="flex min-w-0 flex-1 flex-col justify-center">{children}</span>
+      {mark === "end" && checked ? check : null}
+    </button>
   );
 }

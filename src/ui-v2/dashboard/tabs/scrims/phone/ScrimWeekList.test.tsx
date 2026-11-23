@@ -129,9 +129,9 @@ describe("ScrimWeekList cells", () => {
       slot(5),
     ];
     setup({ model: model({}, slots) });
-    const lost = screen.getByRole("button", { name: /Wed A.*Reviewed.*Loss.*Quality 73/ });
+    const lost = screen.getByRole("button", { name: /Wed A.*Reviewed.*Loss.*Q73/ });
     expect(lost).toHaveTextContent("Q73");
-    expect(screen.getByRole("button", { name: /Wed B.*Played.*Win.*Quality 64/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Wed B.*Played.*Win.*Q64/ })).toBeInTheDocument();
   });
 
   it("locks the objective and volume cells with an icon and their word", () => {

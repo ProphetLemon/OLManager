@@ -56,8 +56,9 @@ export function ScrimDecisionResult({ result, statusText, compact = false, headi
       className={cn(result && (compact ? "flex flex-col gap-2" : "flex flex-col gap-3 border-b border-line p-4 sm:p-5"))}
     >
       <p
-        aria-live="polite"
-        aria-atomic="true"
+        // The phone keeps one live region for the whole tab (a region that mounts with its text is often skipped).
+        aria-live={compact ? undefined : "polite"}
+        aria-atomic={compact ? undefined : "true"}
         className={cn(
           statusText
             ? compact

@@ -25,7 +25,7 @@ export interface ScrimVolumePaneProps {
 
 const VOLUMES = [2, 4, 6];
 
-const BUTTON = "flex min-h-[var(--hit)] w-full items-center gap-2 rounded-lg border px-3 py-1 text-start transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-ring aria-disabled:opacity-65 aria-disabled:cursor-default";
+const BUTTON = "flex h-[var(--hit)] w-full items-center gap-2 rounded-lg border px-3 py-1 text-start transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-ring aria-disabled:opacity-65 aria-disabled:cursor-default";
 
 /** Moment 1: the three volumes, Autofill, the assistant toggle and Finalize setup, in that order. */
 export function ScrimVolumePane({
@@ -44,18 +44,20 @@ export function ScrimVolumePane({
   const headingId = useId();
 
   return (
-    <div data-slot="scrim-volume-pane" className="flex h-full min-h-0 flex-col gap-2 p-4">
+    <div
+      data-slot="scrim-volume-pane"
+      // 22 + 48 + 48 + 48 + 56 and four gaps of 8 = 254 in the 266 the pane has; a lock line of 18 takes 4 px gaps instead.
+      className={cn("flex h-full min-h-0 flex-col overflow-y-auto p-2", blockedText && !assistant ? "gap-1" : "gap-2")}
+    >
       <PaneHeading id={headingId}>{t("scrims.weeklyVolume")}</PaneHeading>
       {blockedText && !assistant ? <LockLine>{blockedText}</LockLine> : null}
 
-      <div role="radiogroup" aria-labelledby={headingId} className="grid shrink-0 grid-cols-3 gap-2">
+      <div role="group" aria-labelledby={headingId} className="grid shrink-0 grid-cols-3 gap-2">
         {VOLUMES.map((slots) => {
           const days = [...new Set(scrimSlotWeekdays(slots))].map((day) => weekdayLabels[day]).join(", ");
           return (
             <PhoneChoice
               key={slots}
-              name="phone-volume"
-              value={String(slots)}
               mark="end"
               checked={capacity === slots}
               disabled={disabled}

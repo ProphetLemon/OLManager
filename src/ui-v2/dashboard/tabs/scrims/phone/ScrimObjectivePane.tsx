@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { SCRIM_FOCUS_IMPACT_KEYS, SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import type { ScrimFocus } from "@/store/gameStore";
+import { cn } from "@/ui-v2/lib/utils";
 import { LockLine, PaneHeading, PhoneChoice } from "./PhonePanePieces";
 
 export interface ScrimObjectivePaneProps {
@@ -25,19 +26,25 @@ export function ScrimObjectivePane({ objective, disabled, blockedText, onSelect 
   const impact = objective ? t(SCRIM_FOCUS_IMPACT_KEYS[objective]) : t("scrims.noFocusImpactText");
 
   return (
-    <div data-slot="scrim-objective-pane" className="flex h-full min-h-0 flex-col gap-2 p-4">
+    <div data-slot="scrim-objective-pane" className="flex h-full min-h-0 flex-col overflow-y-auto p-2">
       <PaneHeading id={headingId}>{t("training.scrims.weeklyObjective")}</PaneHeading>
       {blockedText ? <LockLine>{blockedText}</LockLine> : null}
-      <p className="line-clamp-2 shrink-0 text-entry text-muted-foreground">{t("training.scrims.weeklyObjectiveDescription")}</p>
-      <div role="radiogroup" aria-labelledby={headingId} className="grid min-h-0 grid-cols-2 gap-2">
-        <PhoneChoice name="phone-objective" value="" mark="start" checked={objective === null} disabled={disabled} onSelect={() => onSelect(null)}>
+      <p
+        className={cn(
+          "mb-1.5 shrink-0 text-entry leading-[0.9375rem] text-muted-foreground",
+          // 22 + 30 + 6 + four rows of 48 and three gaps of 4 = 262 in the 266 the pane has; the lock line takes the second intro line.
+          blockedText ? "line-clamp-1 h-[0.9375rem]" : "line-clamp-2 h-[1.875rem]",
+        )}
+      >
+        {t("training.scrims.weeklyObjectiveDescription")}
+      </p>
+      <div role="group" aria-labelledby={headingId} className="grid shrink-0 grid-cols-2 auto-rows-[var(--hit)] gap-1">
+        <PhoneChoice mark="start" checked={objective === null} disabled={disabled} onSelect={() => onSelect(null)}>
           <span className="text-entry font-medium leading-tight">{t("training.scrims.objectives.none")}</span>
         </PhoneChoice>
         {OBJECTIVES.map((focus) => (
           <PhoneChoice
             key={focus}
-            name="phone-objective"
-            value={focus}
             mark="start"
             checked={objective === focus}
             disabled={disabled}
@@ -46,7 +53,7 @@ export function ScrimObjectivePane({ objective, disabled, blockedText, onSelect 
             <span className="text-entry font-medium leading-tight">{t(SCRIM_FOCUS_OBJECTIVE_KEYS[focus])}</span>
           </PhoneChoice>
         ))}
-        <p className="flex min-w-0 items-center px-3 text-entry leading-tight text-muted-foreground">
+        <p className="flex min-w-0 items-center px-3 text-entry leading-[0.9375rem] text-muted-foreground [&_span]:line-clamp-3">
           <span>
             <strong className="font-semibold text-foreground">{t("scrims.impactLabel")}:</strong> {impact}
           </span>

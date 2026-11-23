@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronRight } from "lucide-react";
 
@@ -47,7 +47,7 @@ function ReadOnlySlot({ slotLabel, plan, teamNameById, blockedText, resolvedTeam
   const { t } = useTranslation();
   const headingId = useId();
   return (
-    <div data-slot="scrim-slot-pane" role="group" aria-labelledby={headingId} className="flex h-full min-h-0 flex-col gap-2 p-4">
+    <div data-slot="scrim-slot-pane" role="group" aria-labelledby={headingId} className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2">
       <PaneHeading id={headingId}>{slotLabel}</PaneHeading>
       {blockedText ? <LockLine>{blockedText}</LockLine> : null}
       <ul className="flex flex-col gap-2">
@@ -76,20 +76,8 @@ function ReadOnlySlot({ slotLabel, plan, teamNameById, blockedText, resolvedTeam
 function EditableSlot({ slotLabel, plan, rivals, teamNameById, disabled, doneTo, onPick, onDone }: ScrimSlotPaneProps) {
   const { t } = useTranslation();
   const [active, setActive] = useState(0);
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const headingId = useId();
   const own = plan[active] ?? "";
-
-  const select = (index: number) => {
-    setActive(index);
-    tabRefs.current[index]?.focus();
-  };
-  const onTabKey = (event: KeyboardEvent<HTMLDivElement>) => {
-    const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-    const target = event.key === "Home" ? 0 : event.key === "End" ? 2 : (active + step + 3) % 3;
-    if (step === 0 && event.key !== "Home" && event.key !== "End") return;
-    event.preventDefault();
-    select(target);
-  };
 
   const pick = (teamId: string) => {
     if (disabled || own === teamId) return;
@@ -104,16 +92,20 @@ function EditableSlot({ slotLabel, plan, rivals, teamNameById, disabled, doneTo,
     return index === 0 ? t("scrims.notPlanned") : t("training.scrims.noFallback");
   };
 
-  const cell = "flex min-h-[var(--hit)] min-w-0 flex-col justify-center rounded-lg border px-3 py-1 text-start outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-default";
+  const cell = "flex h-[var(--hit)] min-w-0 flex-col justify-center rounded-none border px-3 py-1 text-start outline-hidden transition-colors focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-default";
   const mark = <Check data-slot="choice-check" aria-hidden="true" className="size-5 shrink-0" />;
 
   return (
-    <div data-slot="scrim-slot-pane" role="group" aria-label={slotLabel} className="flex h-full min-h-0 flex-col gap-1 p-1">
-      <div className="flex shrink-0 gap-1">
+    <div data-slot="scrim-slot-pane" role="group" aria-labelledby={headingId} className="flex h-full min-h-0 flex-col overflow-y-auto">
+      {/* 48 tab row + four grid rows of 48 + a 42 note = 282: no padding and no gaps, as drawn. The heading is only for focus and names. */}
+      <h2 id={headingId} tabIndex={-1} data-pane-heading="" className="sr-only">
+        {slotLabel}
+      </h2>
+      <div className="flex h-[var(--hit)] shrink-0 gap-1">
         <button
           type="button"
           onClick={onDone}
-          className="flex min-h-[var(--hit)] w-[6.25rem] shrink-0 items-center justify-between gap-1 rounded-lg border border-border bg-background px-2 text-start outline-hidden hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex h-full w-[6.25rem] shrink-0 items-center justify-between gap-1 rounded-lg border border-border bg-background px-2 text-start outline-hidden hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span className="flex min-w-0 flex-col leading-tight">
             <span className="font-heading text-entry font-bold uppercase tracking-wide">{t("common.done")}</span>
@@ -121,20 +113,15 @@ function EditableSlot({ slotLabel, plan, rivals, teamNameById, disabled, doneTo,
           </span>
           <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
         </button>
-        <div role="tablist" aria-label={t("scrims.opponentPlans")} onKeyDown={onTabKey} className="grid min-w-0 flex-1 grid-cols-3 gap-1">
+        <div role="group" aria-label={t("scrims.opponentPlans")} className="grid min-w-0 flex-1 grid-cols-3 gap-1">
           {PLANS.map((index) => (
             <button
               key={index}
-              ref={(el) => {
-                tabRefs.current[index] = el;
-              }}
               type="button"
-              role="tab"
-              aria-selected={active === index}
-              tabIndex={active === index ? 0 : -1}
+              aria-pressed={active === index}
               onClick={() => setActive(index)}
               className={cn(
-                "flex min-h-[var(--hit)] min-w-0 flex-col justify-center border-b-2 px-2 text-start leading-tight outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+                "flex h-full min-w-0 flex-col justify-center border-b-2 px-2 text-start leading-tight outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
                 active === index ? "border-club bg-card" : "border-transparent",
               )}
             >
@@ -151,7 +138,7 @@ function EditableSlot({ slotLabel, plan, rivals, teamNameById, disabled, doneTo,
         role="group"
         aria-label={t("scrims.rivalsTable")}
         data-slot="slot-rivals-grid"
-        className="grid min-h-0 flex-1 grid-cols-2 content-start gap-1 overflow-y-auto"
+        className="grid min-h-0 flex-1 grid-cols-2 content-start overflow-y-auto"
       >
         {rivals.map((rival) => {
           const heldBy = plan.findIndex((id, index) => index !== active && id === rival.teamId);
@@ -207,7 +194,7 @@ function EditableSlot({ slotLabel, plan, rivals, teamNameById, disabled, doneTo,
         </button>
       </div>
 
-      <p role="note" className="shrink-0 px-2 pb-1 text-caption leading-snug text-muted-foreground">
+      <p role="note" className="min-h-[2.625rem] shrink-0 px-2 py-0 text-caption leading-[0.875rem] text-muted-foreground">
         {active === 0
           ? t("scrims.phone.noteWinAccepts", { defaultValue: "Win is your chance to win the scrim. Accepts is the chance this rival takes a slot with two or more plans." })
           : t("scrims.phone.notePlans", { defaultValue: "A slot with one plan always plays it, and Plan A plays if every plan declines." })}

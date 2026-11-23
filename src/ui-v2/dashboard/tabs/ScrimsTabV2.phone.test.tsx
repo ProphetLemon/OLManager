@@ -234,12 +234,44 @@ afterEach(() => {
 });
 
 describe("ScrimsTabV2 on a phone: the frame", () => {
-  it("renders the list and one pane, and its root opts out of the page scroll", () => {
+  it("renders the list and one pane, filling its wrapper, and the CSS rule lets the wrapper go", () => {
     const { container } = mount(monday());
     expect(document.querySelector('[data-slot="phone-week-list"]')).not.toBeNull();
-    expect(container.firstElementChild).toHaveAttribute("data-phone-fixed");
-    // The tab is the first that must not grow with its content: a rule beside the page-scroll one says so.
+    // The wrapper that DashboardV2 renders carries the attribute (see DashboardV2.phoneFixed.test); the root only fills it.
+    expect(container.firstElementChild).not.toHaveAttribute("data-phone-fixed");
+    expect(container.firstElementChild?.className).toContain("h-full");
+    expect(container.firstElementChild?.className).toContain("min-h-0");
     expect(appCss).toMatch(/\[data-form="phone"\] #main-content > \[data-phone-fixed\]/);
+  });
+
+  it("uses the specification's frame: 8 px margins and gap, 4 px on top, none under", () => {
+    const { container } = mount(monday());
+    const root = container.firstElementChild as HTMLElement;
+    for (const token of ["px-2", "pt-1", "pb-0", "gap-2"]) expect(root.className.split(" ")).toContain(token);
+    expect(root.className).toContain("grid-cols-[17rem_minmax(0,1fr)]");
+  });
+
+  it("gives the list rows of exactly 48 px and gauges of exactly 42 px, pinned to the bottom", () => {
+    mount(monday());
+    for (const id of ["objective", "volume", "slot:0"]) expect(cell(id).parentElement?.className).toContain("h-[var(--hit)]");
+    const gauges = document.querySelector('[data-slot="phone-week-gauges"]') as HTMLElement;
+    expect(gauges.className).toContain("h-[2.625rem]");
+    expect(gauges.className).toContain("mt-auto");
+  });
+
+  it("lets every pane scroll inside itself as a safety net, and the slot pane has no padding around its grid", () => {
+    mount(planning());
+    const check = () => {
+      const el = document.querySelector('[data-slot^="scrim-"][data-slot$="-pane"]') as HTMLElement;
+      expect(el.className).toContain("overflow-y-auto");
+      return el;
+    };
+    const editable = check();
+    expect(editable.className).not.toMatch(/(^| )p-\d/);
+    for (const id of ["objective", "volume", "report", "slot:0"]) {
+      fireEvent.click(cell(id));
+      check();
+    }
   });
 
   it("keeps the early states: no team and loading", () => {
@@ -272,6 +304,7 @@ describe("ScrimsTabV2 on a phone: which pane a row shows", () => {
     mount(afterBlockA());
     expect(cell("slot:0")).toHaveAttribute("aria-current", "true");
     expect(pane("decision")).not.toBeNull();
+    expect(pane("decision")?.className).toContain("overflow-y-auto");
     expect(screen.getByRole("button", { name: /Push through/ })).toBeInTheDocument();
   });
 
@@ -307,7 +340,7 @@ describe("ScrimsTabV2 on a phone: what moves by itself", () => {
   it("opens the Volume row once after the objective is chosen", async () => {
     trainingMocks.setWeeklyScrimObjective.mockResolvedValue(game());
     mount(monday());
-    fireEvent.click(screen.getByRole("radio", { name: /Fix early game/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Fix early game/ }));
     expect(pane("volume")).not.toBeNull();
     expect(trainingMocks.setWeeklyScrimObjective).toHaveBeenCalledWith("EarlyGame");
     await waitFor(() => expect(trainingMocks.setWeeklyScrimObjective).toHaveBeenCalledTimes(1));
@@ -333,7 +366,7 @@ describe("ScrimsTabV2 on a phone: what moves by itself", () => {
     expect(saved[1][0]).not.toBe("");
     expect(saved[0][0]).toBe("alpha");
     expect(cell("slot:1")).toHaveAttribute("aria-current", "true");
-    expect(screen.getByRole("tab", { name: /Plan B/ })).toHaveTextContent("Choosing");
+    expect(within(screen.getByRole("group", { name: "Opponent plans" })).getByRole("button", { name: /Plan B/ })).toHaveTextContent("Choosing");
   });
 });
 
@@ -362,14 +395,13 @@ describe("ScrimsTabV2 on a phone: after a decision", () => {
     return utils;
   }
 
-  it("replaces the cards with the result, moves focus to its heading and keeps one live line", async () => {
+  it("replaces the cards with the result, moves focus to its heading", async () => {
     await decide();
     expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledWith(0, "PushThrough");
     expect(pane("decision")).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(pane("result")?.querySelector("[data-pane-heading]")));
-    const live = pane("result")?.querySelectorAll("[aria-live]");
-    expect(live).toHaveLength(1);
-    expect(live?.[0]).toHaveTextContent("Push through");
+    expect(pane("result")?.querySelector("[aria-live]")).toBeNull();
+    expect(pane("result")).toHaveTextContent("Decision applied to scrim block: Push through");
   });
 
   it("stays on the result when the tag moves to the block that waits, and Decide <slot> selects that block", async () => {
@@ -407,9 +439,9 @@ describe("ScrimsTabV2 on a phone: the same actions as desktop", () => {
     useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, scrim_review_mode: "assistant" } });
     mount(planning());
     fireEvent.click(cell("objective"));
-    const radios = screen.getAllByRole("radio");
-    expect(radios.every((radio) => radio.getAttribute("aria-disabled") === "true")).toBe(true);
-    fireEvent.click(radios[1]);
+    const choices = within(screen.getByRole("group", { name: "Weekly objective" })).getAllByRole("button");
+    expect(choices.every((choice) => choice.getAttribute("aria-disabled") === "true")).toBe(true);
+    fireEvent.click(choices[1]);
     expect(trainingMocks.setWeeklyScrimObjective).not.toHaveBeenCalled();
     fireEvent.click(cell("slot:1"));
     expect(screen.queryByRole("group", { name: "Rivals by overall rating" })).toBeNull();
@@ -440,3 +472,55 @@ describe("ScrimsTabV2 on a phone: the shared decision text map", () => {
     expect(Object.keys(DECISION_TEXT_KEY)).toHaveLength(8);
   });
 });
+
+describe("ScrimsTabV2 on a phone: focus after a move the player asked for", () => {
+  it("moves focus to the new pane's heading after Done", async () => {
+    mount(planning());
+    fireEvent.click(screen.getByRole("button", { name: /Done/ }));
+    expect(cell("slot:2")).toHaveAttribute("aria-current", "true");
+    await waitFor(() => expect(document.activeElement).toBe(pane("slot")?.querySelector("[data-pane-heading]")));
+  });
+
+  it("moves focus to the decision pane's heading after Decide <slot>", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    const { swap } = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    swap(afterPushThrough());
+    fireEvent.click(screen.getByRole("button", { name: "Decide Wed B" }));
+    await waitFor(() => expect(document.activeElement).toBe(pane("decision")?.querySelector("[data-pane-heading]")));
+  });
+});
+
+describe("ScrimsTabV2 on a phone: the live line", () => {
+  const liveRegions = () => [...document.querySelectorAll('[aria-live], [role="status"]')] as HTMLElement[];
+  const holding = (text: string) => liveRegions().filter((el) => el.textContent?.includes(text));
+
+  it("has one polite region mounted before any decision, and the result pane's own line is not live", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    mount(afterBlockA());
+    const before = liveRegions();
+    expect(before).toHaveLength(1);
+    expect(before[0]).toHaveAttribute("aria-live", "polite");
+    expect(before[0].textContent).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    // The same node, now holding the text once in the document's live regions.
+    expect(liveRegions()[0]).toBe(before[0]);
+    expect(holding("Push through")).toHaveLength(1);
+    expect(pane("result")?.querySelector("[aria-live]")).toBeNull();
+  });
+
+  it("shows the result of the block the decision was taken on even if another row was tapped during the save", async () => {
+    let resolve!: (state: GameStateData) => void;
+    trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    fireEvent.click(cell("report"));
+    expect(pane("report")).not.toBeNull();
+    resolve(updatedAfterPush());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    expect(cell("slot:0")).toHaveAttribute("aria-current", "true");
+  });
+});
+

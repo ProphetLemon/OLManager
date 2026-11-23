@@ -34,13 +34,13 @@ export function ScrimFollowUpPane({ options, savingId, onDecide, onBack }: Scrim
       data-slot="scrim-followup-pane"
       role="group"
       aria-labelledby={headingId}
-      className="flex h-full min-h-0 flex-col gap-2 p-2"
+      className="flex h-full min-h-0 flex-col gap-1 overflow-y-auto px-2"
     >
-      <div className="flex shrink-0 flex-col gap-0.5 px-2">
+      <div className="flex shrink-0 flex-col px-2">
         <PaneHeading id={headingId}>{t("scrims.cancelFollowupTitle")}</PaneHeading>
         {cancel?.kind === "cancelsNext" ? (
           <div className="flex items-center justify-between gap-2">
-            <p className="min-w-0 text-entry leading-tight text-muted-foreground">
+            <p className="min-w-0 text-caption leading-3 text-muted-foreground">
               {t("scrims.effect.cancelsNext", { label: cancel.label, rep: signed(cancel.reputation), count: cancel.cancellations })}
             </p>
             <CostMark className="shrink-0" />
@@ -48,7 +48,7 @@ export function ScrimFollowUpPane({ options, savingId, onDecide, onBack }: Scrim
         ) : null}
       </div>
       <div data-slot="decision-scroll" className="min-h-0 flex-1 overflow-y-auto">
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-1">
           {options.map((option) => (
             <PhoneDecisionCard
               key={option.id}
