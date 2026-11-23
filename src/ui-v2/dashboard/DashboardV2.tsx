@@ -886,6 +886,7 @@ export default function DashboardV2() {
         railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need, rootPx: rail.rootPx }}
         attention={attention}
         platform={rail.platform}
+        onSheetNavigate={(tab) => handleLaneCall({ kind: "tab", tab })}
       />
 
       <DashboardOverlays

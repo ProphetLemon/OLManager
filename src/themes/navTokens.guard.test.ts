@@ -98,6 +98,13 @@ describe("rail tree tokens", () => {
   });
 });
 
+describe("the phone rail token", () => {
+  it("declares --rail-w-phone as max(4rem, 64px) on Android only: 64 px at the phone's 16 px root, where a side sheet begins", () => {
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--rail-w-phone: max(4rem, 64px);");
+    expect(ruleBody(":root")).not.toContain("--rail-w-phone");
+  });
+});
+
 describe("the active row tint", () => {
   it("is one token, 16% of the club colour", () => {
     expect(ruleBody(":root")).toContain("--row-wash: color-mix(in srgb, var(--club) 16%, transparent);");

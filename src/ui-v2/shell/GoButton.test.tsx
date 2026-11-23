@@ -116,6 +116,6 @@ describe("GoButton", () => {
     expect(screen.getByRole("button")).toHaveClass("h-[var(--nav-cell)]");
     unmount();
     render(<GoButton variant="stop" onClick={() => {}} />);
-    expect(screen.getByRole("button")).toHaveClass("min-h-[var(--hit)]");
+    expect(screen.getByRole("button")).toHaveClass("h-[var(--hit)]");
   });
 });

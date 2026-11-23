@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { LogOut, Settings } from "lucide-react";
 
 import { useRovingFocus } from "@/hooks/useRovingFocus";
+import { SideSheet } from "@/ui-v2/sheet/SideSheet";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { GO_ID, GoButton } from "@/ui-v2/shell/GoButton";
 import { ANDROID_DIRECT, RailSplitPanel, RailSplitStops } from "@/ui-v2/shell/RailSplit";
@@ -52,6 +53,8 @@ interface Props {
   platform?: RailPlatform;
   /** What needs a call, per tab; drawn on the Tree rows and the panel rows. */
   attention?: AttentionMap;
+  /** Android: a section chosen in a group sheet, run once the sheet has closed. Defaults to `onNavClick`. */
+  onSheetNavigate?: (tab: string) => void;
 }
 
 interface Stop {
@@ -78,6 +81,7 @@ export function DashboardSidebarV2({
   railSlot,
   platform = "desktop",
   attention,
+  onSheetNavigate,
 }: Props) {
   const { t, i18n } = useTranslation();
   // The end-of-season screen keeps the icon rail whatever the size says.
@@ -105,6 +109,10 @@ export function DashboardSidebarV2({
 
   // The bug report is opened from the roving widget (Enter on its cell), so its modal is controlled here.
   const [bugOpen, setBugOpen] = useState(false);
+  // Android: the group whose sections are open in the side sheet (the rail docks no panel there).
+  const [sheetGroup, setSheetGroup] = useState<RailGroupId | null>(null);
+  const sheetActivate = useRef<((payload: unknown) => void) | null>(null);
+  const landingRef = useRef<HTMLElement | null>(null);
   const openPalette = usePaletteStore((s) => s.openPalette);
   const openGroups = useNavMemoryStore((s) => s.openGroups);
   const toggleGroup = useNavMemoryStore((s) => s.toggleGroup);
@@ -115,10 +123,11 @@ export function DashboardSidebarV2({
   );
 
   const panelGroup = useMemo(() => {
+    if (android) return groups.find((g) => g.id === sheetGroup) ?? null;
     if (tree || compact) return null;
     const id = groupForTab(activeTab);
     return groups.find((g) => g.id === id) ?? null;
-  }, [tree, compact, activeTab, groups]);
+  }, [android, sheetGroup, tree, compact, activeTab, groups]);
 
   // The visible rows in DOM order, with ids that mean the same in both modes
   // (`tab:Squad`, `group:club`, `util:settings`) so focus can follow a flip.
@@ -177,7 +186,11 @@ export function DashboardSidebarV2({
           const id = r.id.slice("group:".length) as RailGroupId;
           return {
             id: r.id,
-            activate: tree ? () => toggleGroup(id) : () => onNavClick(resolveGroupLanding(id, lastVisited)),
+            activate: tree
+              ? () => toggleGroup(id)
+              : android
+                ? () => setSheetGroup(id)
+                : () => onNavClick(resolveGroupLanding(id, lastVisited)),
           };
         }
         if (r.id === GO_ID) return { id: r.id, activate: () => openPalette(GO_ID) };
@@ -185,9 +198,11 @@ export function DashboardSidebarV2({
         if (r.id === "util:settings") return { id: r.id, activate: onNavigateSettings };
         if (r.id === "util:exit") return { id: r.id, activate: onExitClick };
         if (r.id === "util:manager") return { id: r.id, activate: () => onNavClick("Manager") };
+        // A section in the sheet closes it first; the owner navigates once it has closed.
+        if (android && r.column === "panel") return { id: r.id, activate: () => sheetActivate.current?.(r.id.slice("tab:".length)) };
         return { id: r.id, activate: () => onNavClick(r.id.slice("tab:".length)) };
       }),
-    [rows, tree, toggleGroup, lastVisited, onNavClick, onNavigateSettings, onExitClick, openPalette],
+    [rows, tree, android, toggleGroup, lastVisited, onNavClick, onNavigateSettings, onExitClick, openPalette],
   );
 
   // The row the user last moved to wins until the active tab changes; else the active tab's
@@ -243,6 +258,11 @@ export function DashboardSidebarV2({
     // Browser and OS shortcuts (Alt+Left = back) are not ours: skip the roving default too.
     if (e.altKey || e.ctrlKey || e.metaKey) return true;
     const action = treeKeyAction(rows, i, e.key, tree ? "tree" : "split");
+    // The sheet is modal: a key never leaves its list for the (inert) rail. Escape is left to the sheet, which closes.
+    if (android && action.type === "move" && rows[action.index]?.column !== rows[i]?.column) {
+      if (e.key !== "Escape") e.preventDefault();
+      return true;
+    }
     const arrow = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(e.key);
     switch (action.type) {
       case "move":
@@ -278,8 +298,13 @@ export function DashboardSidebarV2({
   const stopIndexOf = (target: EventTarget) =>
     stops.findIndex((s) => itemRefs.current[s.id] === target);
 
+  // The sheet's dialog stops the arrow keys at its popup (Base UI), so it hands them here itself;
+  // the keys it lets through also bubble to the nav, and each press is handled once.
+  const keysHandled = useRef(new WeakSet<Event>());
   const onNavKeyDown = (e: React.KeyboardEvent) => {
-    if (stopIndexOf(e.target) >= 0) handleKeyDown(e);
+    if (keysHandled.current.has(e.nativeEvent) || stopIndexOf(e.target) < 0) return;
+    keysHandled.current.add(e.nativeEvent);
+    handleKeyDown(e);
   };
 
   // Focus can land on a stop without the roving index moving (a click, Tab after a
@@ -451,6 +476,15 @@ export function DashboardSidebarV2({
   }, [measureLabels, slotH, rootPx, labelsKey, language, fontsTick, labelMode, stopCount]);
   const iconOnlyStops = !tree && !compact && !android && !!railSlot?.rootPx && labelMode === "icons";
 
+  // The sheet keeps its group's content while it closes.
+  const lastSheet = useRef<typeof panelGroup>(null);
+  if (android && panelGroup) lastSheet.current = panelGroup;
+  const sheetShown = panelGroup ?? lastSheet.current;
+  const landingTab = sheetShown
+    ? groupForTab(activeTab) === sheetShown.id
+      ? activeTab
+      : resolveGroupLanding(sheetShown.id, lastVisited)
+    : "";
   const labelOf = (item: { labelKey: string; defaultLabel: string }) =>
     t(item.labelKey, { defaultValue: item.defaultLabel });
   const listLabel = (group: string) => t("onAir.nav.sections", { group, defaultValue: "{{group}} sections" });
@@ -606,8 +640,7 @@ export function DashboardSidebarV2({
               data-slot="rail-column"
               className={cn(
                 "flex min-h-0 shrink-0 flex-col",
-                android && "py-[4px]",
-                compact ? "w-[var(--rail-w-compact)]" : "w-[var(--rail-w-split)]",
+                android ? "w-[var(--rail-w-phone)]" : compact ? "w-[var(--rail-w-compact)]" : "w-[var(--rail-w-split)]",
               )}
             >
               {scroller(
@@ -622,12 +655,14 @@ export function DashboardSidebarV2({
                   leading={android ? go("stop") : <div className="px-[6px]">{go("cell")}</div>}
                   lastVisited={lastVisited}
                   onNavClick={onNavClick}
+                  onGroup={android ? setSheetGroup : undefined}
+                  openGroup={sheetGroup}
                   handle={itemProps}
                 />,
               )}
               {!android && cluster}
             </div>
-            {panelGroup && (
+            {panelGroup && !android && (
               <RailSplitPanel
                 group={panelGroup}
                 activeTab={activeTab}
@@ -640,6 +675,48 @@ export function DashboardSidebarV2({
                 handle={itemProps}
                 touch={android}
               />
+            )}
+            {android && sheetShown && (
+              <SideSheet
+                open={panelGroup !== null}
+                onClose={() => setSheetGroup(null)}
+                title={labelOf(sheetShown)}
+                closeLabel={t("onAir.palette.close", { defaultValue: "Close" })}
+                alignToRail
+                initialFocus={landingRef}
+                returnFocus={() => itemRefs.current[`group:${sheetShown.id}`] ?? null}
+                activateRef={sheetActivate}
+                onActivated={(tab) => (onSheetNavigate ?? onNavClick)(tab as string)}
+                onKeyDown={onNavKeyDown}
+                platform="android"
+                data-slot="group-sheet"
+              >
+                <RailSplitPanel
+                  sheet
+                  touch
+                  group={sheetShown}
+                  activeTab={activeTab}
+                  badges={badges}
+                  labelOf={labelOf}
+                  listLabel={listLabel}
+                  attention={attention}
+                  attentionName={attentionName}
+                  onNavClick={(tab) => sheetActivate.current?.(tab)}
+                  // The section to land on: the open page's, else the one last used in the group.
+                  handle={(id) => {
+                    const h = itemProps(id);
+                    return id !== `tab:${landingTab}`
+                      ? h
+                      : {
+                          ...h,
+                          buttonRef: (el) => {
+                            h.buttonRef(el);
+                            landingRef.current = el;
+                          },
+                        };
+                  }}
+                />
+              </SideSheet>
             )}
           </>
         )}

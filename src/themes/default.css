@@ -351,6 +351,8 @@
   /* The shared control floor (Button, tabs, chips and the primitives read it) is the
      touch hit here, instead of desktop's 24px. */
   --target-min: var(--hit);
+  /* The phone's rail: 7 stops of --hit in a 64 px column, and where a side sheet begins. */
+  --rail-w-phone: max(4rem, 64px);
   /* The band's 1 px bottom border sits inside its height: 49 px keeps a 48 px pill whole (R62). */
   --lane-h: calc(var(--hit) + 1px);
   --lane-pill-h: var(--hit);
