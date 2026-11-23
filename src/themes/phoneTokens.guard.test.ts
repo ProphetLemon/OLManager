@@ -90,7 +90,9 @@ describe("the phone: Tailwind variant", () => {
     const declaration = appCss.match(/@custom-variant phone .+;/)?.[0];
     expect(declaration).toBeDefined();
     const compiler = await compile(`${declaration}\n@tailwind utilities;`);
-    const out = compiler.build(["phone:hidden", "hidden"]);
+    // Built at run time: Tailwind scans test files too, and a literal class here would ship in the bundle.
+    const phoneHidden = ["phone", "hidden"].join(":");
+    const out = compiler.build([phoneHidden, "hidden"]);
     expect(out).toMatch(/\[data-form="phone"\]/);
     expect(out).toMatch(/\.phone\\:hidden/);
     // The plain utility stays unscoped, so nothing changes without data-form.
