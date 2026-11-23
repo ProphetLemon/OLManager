@@ -10,9 +10,25 @@ import { paletteEntryPhase, paletteHoldsEntry } from "@/ui-v2/palette/paletteHis
  * stale by the time the handler runs). A press on a hold therefore makes no history call, so
  * the WebView never sits on index 0 between a traversal and a `history.forward()` that a busy
  * main thread delays, where a second press would find `canGoBack()` false and close the app.
- * One sequence still traverses: a second press that arrives while the palette's entry is
- * still coming off repeats the `history.back()`, and the guard below takes that extra pop
- * back. With the listener registered the native side cannot close the app in that gap.
+ *
+ * One traversal at a time. The handler's own `history.back()` (palette entry pushed, or nothing
+ * set with `canGoBack` true) marks a back as in flight, and every press is ignored until its
+ * pop arrives (the guard clears the mark first thing, being the first listener) or 400 ms pass
+ * with no pop. A press also waits while the guard's own `forward()` restore is pending. What
+ * that means for each path:
+ * - the palette's pushed entry: the first press takes it off, a second before the pop is
+ *   ignored (it used to walk past the dashboard's own entry); its release is `releasing`,
+ *   whose pop is already coming, and is ignored as well;
+ * - Settings, a match screen or any screen with nothing set: one press walks one step, and
+ *   repeated presses before the pop do nothing, so a press that carries `canGoBack: false`
+ *   because a traversal is pending cannot close the app; after the pop the next press
+ *   decides afresh from the slot, and a press that finds nothing behind it closes the app;
+ * - a hold or an exit makes no traversal, so nothing is in flight and each press is decided
+ *   on its own (exit is retried by the next press if it was rejected);
+ * - a pop that never arrives clears the mark after the timeout, so a press is never lost for
+ *   good.
+ * Screens set the meaning in a layout effect, so when a pop makes the router render the
+ * dashboard or the menu the slot is already right when the next press is handled.
  *
  * Fallback, the `popstate` guard below, for when the registration failed or has not resolved
  * yet (the native default is then in force) and for pops nobody pressed Back for (the
@@ -57,6 +73,20 @@ let installed = false;
 let meaning: BackMeaning | null = null;
 let restoring = false;
 let restoreTimer: number | undefined;
+/** A `history.back()` of ours whose pop has not arrived yet. */
+let backInFlight = false;
+let backTimer: number | undefined;
+function settleBack(): void {
+  backInFlight = false;
+  window.clearTimeout(backTimer);
+}
+
+function goBackOnce(): void {
+  backInFlight = true;
+  window.clearTimeout(backTimer);
+  backTimer = window.setTimeout(settleBack, BACK_RESTORE_TIMEOUT_MS);
+  window.history.back();
+}
 
 function settleRestore(): void {
   restoring = false;
@@ -72,6 +102,7 @@ function restoreEntry(): void {
 }
 
 function onPopState(event: Event): void {
+  settleBack(); // first: whatever this pop is, the traversal in flight has landed
   if (restoring) {
     // The pop of our own forward(): the history is back on the entry Back was pressed on.
     settleRestore();
@@ -120,6 +151,7 @@ export function setBackMeaning(next: BackMeaning): () => void {
 export function resetBackGuardForTests(): void {
   meaning = null;
   settleRestore();
+  settleBack();
 }
 
 /** The payload of Tauri's Android `back-button` event. */
@@ -143,13 +175,15 @@ function callExit(exit: () => Promise<void>): void {
  * where Back goes back, or closes the app when there is nowhere to go. The palette's entry
  * is checked before the slot, as in the popstate guard: pushed, a press takes it off with
  * `history.back()` (its own listener then closes it); releasing, its pop is already coming,
- * so the press is ignored.
+ * so the press is ignored. While a traversal of ours is in flight, or the guard's restore is
+ * pending, every press is ignored (see the header).
  */
 export function handleNativeBack(payload: NativeBackPayload, exitApp: () => Promise<void>): void {
+  if (backInFlight || restoring) return;
   const phase = paletteEntryPhase();
   if (phase === "releasing") return;
   if (phase === "pushed") {
-    window.history.back();
+    goBackOnce();
     return;
   }
   if (meaning?.kind === "hold") return;
@@ -157,7 +191,7 @@ export function handleNativeBack(payload: NativeBackPayload, exitApp: () => Prom
     callExit(meaning.exit);
     return;
   }
-  if (payload.canGoBack) window.history.back();
+  if (payload.canGoBack) goBackOnce();
   else callExit(exitApp);
 }
 

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import type { NavigateFunction } from "react-router-dom";
 
 import { BACK_RESTORE_TIMEOUT_MS, setBackMeaning } from "@/lib/backGuard";
@@ -33,8 +33,13 @@ export const DASHBOARD_RESTORE_TIMEOUT_MS = BACK_RESTORE_TIMEOUT_MS;
  * replaces the location with /dashboard and adds no history call of its own.
  */
 export function useDashboardBackHold(android: boolean, navigate: NavigateFunction): void {
-  useEffect(() => {
+  // A layout effect: the slot is right in the commit that shows the dashboard, before the next press.
+  useLayoutEffect(() => {
     if (android) return setBackMeaning({ kind: "hold" });
+  }, [android]);
+
+  useEffect(() => {
+    if (android) return;
     const handlePopState = (event: PopStateEvent) => {
       if (paletteEntryPop(event)) return;
       navigate("/dashboard", { replace: true });

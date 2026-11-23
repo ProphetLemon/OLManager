@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 
 import { setBackMeaning } from "@/lib/backGuard";
 
@@ -15,7 +15,8 @@ import { setBackMeaning } from "@/lib/backGuard";
  * an arrival never closes the app. Pass `enabled` false off Android, where nothing changes.
  */
 export function useMenuBackExit(enabled: boolean, exit: () => Promise<void>): void {
-  useEffect(() => {
+  // A layout effect: the slot is right in the commit that shows the menu, before the next press.
+  useLayoutEffect(() => {
     if (!enabled) return;
     return setBackMeaning({ kind: "exit", exit });
   }, [enabled, exit]);

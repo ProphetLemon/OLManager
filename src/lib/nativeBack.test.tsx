@@ -1,11 +1,12 @@
 import { render } from "@testing-library/react";
+import { useLayoutEffect } from "react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { useMenuBackExit } from "@/hooks/useMenuBackExit";
 import { useDashboardBackHold } from "@/ui-v2/dashboard/useDashboardBackHold";
 import { forgetPaletteEntry, pushPaletteEntry, releasePaletteEntry } from "@/ui-v2/palette/paletteHistory";
 
-import { handleNativeBack, installBackGuard, registerNativeBack, resetBackGuardForTests, setBackMeaning } from "./backGuard";
+import { BACK_RESTORE_TIMEOUT_MS, handleNativeBack, installBackGuard, registerNativeBack, resetBackGuardForTests, setBackMeaning } from "./backGuard";
 
 /**
  * Tauri's `back-button` event: with a JS listener registered the native side neither traverses
@@ -129,16 +130,17 @@ describe("native back button", () => {
       expect(forward).not.toHaveBeenCalled();
     });
 
-    it("exits through the guard when the pop of the first press lands on a menu that mounted since (two presses)", () => {
+    it("exits through the guard when the pop of the first press lands on a menu that mounted since (the second press is ignored)", () => {
       const exit = vi.fn(() => Promise.resolve());
       const router = vi.fn();
       window.addEventListener("popstate", router);
       handleNativeBack({ canGoBack: true }, exitApp); // press 1 on Settings
       view = render(<Menu exit={exit} />); // the menu mounted before the second traversal's pop
-      handleNativeBack({ canGoBack: true }, exitApp); // press 2: the menu is "exit"
-      pop();
+      handleNativeBack({ canGoBack: true }, exitApp); // press 2: a back is in flight, ignored
+      expect(exit).not.toHaveBeenCalled();
+      pop(); // the pop lands on the menu: the guard exits once
       window.removeEventListener("popstate", router);
-      expect(exit).toHaveBeenCalledTimes(2);
+      expect(exit).toHaveBeenCalledTimes(1);
     });
 
     it("holds a pop that lands on the dashboard: the entry is taken back, the screen stays", () => {
@@ -162,6 +164,102 @@ describe("native back button", () => {
       window.removeEventListener("popstate", router);
       expect(forward).not.toHaveBeenCalled();
       expect(router).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("one traversal at a time", () => {
+    it("ignores a second press while the palette's entry is coming off", () => {
+      pushPaletteEntry();
+      handleNativeBack({ canGoBack: true }, exitApp);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).toHaveBeenCalledTimes(1);
+      pop(); // the entry's pop arrives and the palette forgets it
+    });
+
+    it("walks one step and never exits on presses before the pop, even with canGoBack false", () => {
+      handleNativeBack({ canGoBack: true }, exitApp);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      handleNativeBack({ canGoBack: false }, exitApp);
+      expect(back).toHaveBeenCalledTimes(1);
+      expect(exitApp).not.toHaveBeenCalled();
+    });
+
+    it("decides afresh once the pop has arrived", () => {
+      handleNativeBack({ canGoBack: true }, exitApp);
+      pop();
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).toHaveBeenCalledTimes(2);
+      pop();
+      view = render(<Dashboard />);
+      handleNativeBack({ canGoBack: true }, exitApp); // hold: nothing
+      expect(back).toHaveBeenCalledTimes(2);
+      expect(exitApp).not.toHaveBeenCalled();
+    });
+
+    it("forgets a traversal whose pop never comes", () => {
+      vi.useFakeTimers();
+      handleNativeBack({ canGoBack: true }, exitApp);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(BACK_RESTORE_TIMEOUT_MS);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).toHaveBeenCalledTimes(2);
+    });
+
+    it("ignores a press while the guard's own restore is pending", () => {
+      const exit = vi.fn(() => Promise.resolve());
+      view = render(<Menu exit={exit} />);
+      pop(); // the fallback path: the guard exits and restores with forward()
+      expect(exit).toHaveBeenCalledTimes(1);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(exit).toHaveBeenCalledTimes(1);
+      expect(back).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("the meaning is set in the commit that shows the screen", () => {
+    function Probe({ exitApp: app }: { exitApp: () => Promise<void> }) {
+      // Runs in the same layout phase as the screen before it, ahead of any passive effect.
+      useLayoutEffect(() => {
+        handleNativeBack({ canGoBack: true }, app);
+      });
+      return null;
+    }
+
+    it("is already the menu's when a press is handled in the commit that mounts it", () => {
+      const exit = vi.fn(() => Promise.resolve());
+      view = render(
+        <>
+          <Menu exit={exit} />
+          <Probe exitApp={exitApp} />
+        </>,
+      );
+      expect(exit).toHaveBeenCalledTimes(1);
+      expect(back).not.toHaveBeenCalled();
+    });
+
+    it("is already the dashboard's when a press is handled in the commit that mounts it", () => {
+      view = render(
+        <>
+          <Dashboard />
+          <Probe exitApp={exitApp} />
+        </>,
+      );
+      expect(back).not.toHaveBeenCalled();
+      expect(exitApp).not.toHaveBeenCalled();
+    });
+
+    it("is the new screen's when one screen replaces another in one commit", () => {
+      const exit = vi.fn(() => Promise.resolve());
+      view = render(<Dashboard />);
+      view.rerender(
+        <>
+          <Menu exit={exit} />
+          <Probe exitApp={exitApp} />
+        </>,
+      );
+      expect(exit).toHaveBeenCalledTimes(1);
+      expect(back).not.toHaveBeenCalled();
     });
   });
 
