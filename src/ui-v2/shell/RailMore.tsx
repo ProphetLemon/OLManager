@@ -126,7 +126,14 @@ export function RailMore({
       )}
       <Menu.Root open={open} onOpenChange={onOpenChange}>
         <Menu.Portal>
-          <Menu.Positioner anchor={anchor} side={placement === "bar" ? "bottom" : "right"} align="end" sideOffset={4} className="z-50">
+          {/* From the bar the menu opens over its trigger, like a phone's overflow menu: under it, six rows of --hit do not fit the height. */}
+          <Menu.Positioner
+            anchor={anchor}
+            side={placement === "bar" ? "bottom" : "right"}
+            align="end"
+            sideOffset={placement === "bar" ? ({ anchor: a }) => -a.height : 4}
+            className="z-50"
+          >
             <Menu.Popup
               aria-label={label}
               className="min-w-48 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md focus-visible:outline-hidden"

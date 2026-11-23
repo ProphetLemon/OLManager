@@ -237,6 +237,10 @@ option {
    slivers in 300 px of height. Unlayered on purpose: it must win over the utilities. */
 [data-form="phone"] #main-content {
   overflow-y: auto;
+  /* Screen-reader-only labels are absolutely positioned: without a positioned ancestor they
+     hang off <body> at their place in this long page, which makes the whole document scroll
+     (the rail and the bar slide away once the content reaches its end). */
+  position: relative;
 }
 [data-form="phone"] #main-content > * {
   flex: none;
