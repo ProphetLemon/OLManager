@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
+import { installBackGuard, resetBackGuardForTests } from "@/lib/backGuard";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
@@ -1389,7 +1390,10 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
       before = { idx: 0, key: `dash-${Math.random()}` };
       window.history.replaceState(before, "");
     });
+    // Installed before the router renders, as main.tsx does.
+    beforeAll(() => installBackGuard());
     afterEach(() => {
+      resetBackGuardForTests();
       delete document.documentElement.dataset.platform;
     });
 

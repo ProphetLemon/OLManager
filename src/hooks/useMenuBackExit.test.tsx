@@ -1,7 +1,8 @@
 import { render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { useMenuBackExit } from "@/hooks/useMenuBackExit";
+import { installBackGuard, resetBackGuardForTests } from "@/lib/backGuard";
 
 function Menu({ enabled, exit }: { enabled: boolean; exit: () => Promise<void> }) {
   useMenuBackExit(enabled, exit);
@@ -9,10 +10,12 @@ function Menu({ enabled, exit }: { enabled: boolean; exit: () => Promise<void> }
 }
 
 /**
- * What React Router does on a Back that changes the route: its bubble-phase `popstate`
- * listener (registered before any screen's) renders the new route in a microtask, which
- * unmounts the screen and removes its listeners before the event reaches them. jsdom runs
- * no microtask checkpoint between listeners, so the test unmounts synchronously instead.
+ * What React Router does on a Back that changes the route: its `popstate` listener
+ * (registered before any screen's) renders the new route in a microtask, which unmounts
+ * the screen and removes its listeners before a later listener runs. jsdom runs no
+ * microtask checkpoint between listeners, so the test unmounts synchronously instead. The
+ * Back guard (`lib/backGuard.ts`) is installed before it, as `main.tsx` does. The wiring
+ * against a router registered first is in `lib/backGuard.test.tsx`.
  */
 function routerThatLeavesTheMenu(unmount: () => void) {
   const listener = vi.fn(() => unmount());
@@ -21,9 +24,14 @@ function routerThatLeavesTheMenu(unmount: () => void) {
 }
 
 describe("useMenuBackExit", () => {
-  afterEach(() => vi.restoreAllMocks());
+  beforeAll(() => installBackGuard());
+  afterEach(() => {
+    resetBackGuardForTests();
+    vi.restoreAllMocks();
+  });
 
   it("exits even when the pop is a route change that unmounts the menu", () => {
+    vi.spyOn(window.history, "forward").mockImplementation(() => {});
     const exit = vi.fn(() => Promise.resolve());
     let unmount = () => {};
     const router = routerThatLeavesTheMenu(() => unmount());
@@ -52,6 +60,7 @@ describe("useMenuBackExit", () => {
 
   it("logs a failed exit and leaves the menu on screen", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(window.history, "forward").mockImplementation(() => {});
     const exit = vi.fn(() => Promise.reject(new Error("no exit")));
     const view = render(<Menu enabled exit={exit} />);
 

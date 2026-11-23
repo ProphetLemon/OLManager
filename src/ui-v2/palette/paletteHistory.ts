@@ -6,9 +6,10 @@
  * it opens, and the gesture pops it. A close by any other path (Escape, Close, an
  * activation) takes the entry off with `history.back()`, which pops it in a later task.
  *
- * Both popstate handlers ask `paletteEntryPop` about the same event: the palette's, which
- * closes on Back, and DashboardV2's, which runs no `navigate` for this pop. The verdict is
- * kept per event, so it does not depend on which listener runs first.
+ * The palette's and More's popstate handlers ask `paletteEntryPop` about the same event, and
+ * the verdict is kept per event, so it does not depend on which listener runs first. The
+ * Back guard (`lib/backGuard.ts`) runs before all of them and must not run those side
+ * effects ahead of the router, so it asks `paletteHoldsEntry`, which has none.
  */
 
 /** `back` when the back gesture popped the entry, `release` when a close's `history.back()` did. */
@@ -97,10 +98,9 @@ function classify(event: Event): PaletteEntryPop | null {
     }
   }
   // A pop that comes after the fallback has fired finds `entry === "none"` and is `null`,
-  // so the dashboard treats it as an ordinary Back: on Android it is undone with
-  // history.forward() (useDashboardBackHold), elsewhere it is replaced by /dashboard.
-  // That is accepted, since the fallback only fires when the WebView dropped the pop,
-  // and a late one is rare.
+  // so the Back guard treats it as an ordinary Back: on the dashboard it is undone with
+  // history.forward(), elsewhere it is replaced by /dashboard. That is accepted, since the
+  // fallback only fires when the WebView dropped the pop, and a late one is rare.
   verdicts.set(event, verdict);
   return verdict;
 }
@@ -128,6 +128,15 @@ export function releasePaletteEntry(): void {
   repush = false;
   if (entry !== "pushed") return;
   startRelease();
+}
+
+/**
+ * Whether the palette holds an entry that is on the history or coming off it, so the next
+ * pop is for it. Changes nothing and runs no waiter. After the release fallback has fired
+ * the entry is forgotten, so a pop that arrives then is an ordinary Back.
+ */
+export function paletteHoldsEntry(): boolean {
+  return entry !== "none";
 }
 
 /** Whether this pop took the palette's entry off, and how; `null` for any other pop. */

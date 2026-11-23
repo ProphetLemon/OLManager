@@ -1,7 +1,8 @@
 import { render } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
-import { pushPaletteEntry } from "@/ui-v2/palette/paletteHistory";
+import { installBackGuard, resetBackGuardForTests } from "@/lib/backGuard";
+import { forgetPaletteEntry, pushPaletteEntry } from "@/ui-v2/palette/paletteHistory";
 
 import { DASHBOARD_RESTORE_TIMEOUT_MS, useDashboardBackHold } from "./useDashboardBackHold";
 
@@ -13,10 +14,11 @@ function Dashboard({ android }: { android: boolean }) {
 }
 
 /**
- * React Router's bubble-phase `popstate` listener, registered before any screen's: on a pop
- * that leaves /dashboard it renders the new route in a microtask that runs between the two
- * listeners, unmounting the dashboard and removing its listener. jsdom runs no microtask
- * checkpoint between listeners, so the stub unmounts synchronously.
+ * React Router's `popstate` listener: on a pop that leaves /dashboard it renders the new
+ * route in a microtask that runs before the next listener, unmounting the dashboard. jsdom
+ * runs no microtask checkpoint between listeners, so the stub unmounts synchronously. The
+ * Back guard is installed before it, as `main.tsx` does; the order Chromium really uses
+ * (router registered first, capture or not) is covered in `lib/backGuard.test.tsx`.
  */
 function routerThatLeavesTheDashboard(unmount: () => void): Mock<() => void> {
   const listener = vi.fn<() => void>(() => unmount());
@@ -36,6 +38,7 @@ describe("useDashboardBackHold", () => {
     view = render(<Dashboard android={android} />);
   }
 
+  beforeAll(() => installBackGuard());
   beforeEach(() => {
     navigate.mockClear();
     forward = vi.spyOn(window.history, "forward").mockImplementation(() => {});
@@ -43,6 +46,8 @@ describe("useDashboardBackHold", () => {
   afterEach(() => {
     window.removeEventListener("popstate", router);
     view.unmount();
+    forgetPaletteEntry();
+    resetBackGuardForTests();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });

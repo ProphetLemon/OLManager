@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useMenuBackExit } from "@/hooks/useMenuBackExit";
+import { installBackGuard, resetBackGuardForTests } from "@/lib/backGuard";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 
@@ -72,8 +73,12 @@ async function renderApp(options: { guarded: boolean; userAgent: string }) {
   );
 }
 
+// Before any router renders, as main.tsx does.
+installBackGuard();
+
 describe("Back after leaving a game", () => {
   beforeEach(() => {
+    resetBackGuardForTests();
     exitApp.mockClear();
     useGameStore.setState({ hasActiveGame: false, gameState: null });
     useSettingsStore.setState({ loaded: true });

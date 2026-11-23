@@ -4,6 +4,7 @@ import "./i18n";
 import "./App.css";
 import AppV2 from "./ui-v2/AppV2";
 import { getApiClient } from "./api/client";
+import { installBackGuard } from "./lib/backGuard";
 
 // Disable the native browser context menu in the Tauri app.
 document.addEventListener("contextmenu", (event) => {
@@ -29,6 +30,10 @@ document.addEventListener(
   },
   true, // capture phase — fires before the event bubbles to component handlers
 );
+
+// The system Back listener must be registered before the router's, which registers when the
+// app first mounts: Chromium runs popstate listeners in registration order.
+installBackGuard();
 
 function Boot() {
   const [ready, setReady] = useState(false);
