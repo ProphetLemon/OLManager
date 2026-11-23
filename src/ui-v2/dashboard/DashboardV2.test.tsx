@@ -1283,6 +1283,21 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
     await waitFor(() => expect(document.activeElement).toBe(document.getElementById("main-content")));
   });
 
+  it("names the view after the place when a Views row moves to its tab (R96)", async () => {
+    await renderOn("Home");
+    await goTo("offers");
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Transfers"));
+    // This file's t returns the key: the view's label is the row's visible text.
+    await waitFor(() => expect(announcer()?.textContent).toMatch(/^onAir\.route\.now.*, transfers\.offers$/));
+  });
+
+  it("names the view too when the Views row is on the tab already open (R96)", async () => {
+    await renderOn("Transfers");
+    await goTo("offers");
+    await waitFor(() => expect(document.activeElement).toBe(document.getElementById("main-content")));
+    await waitFor(() => expect(announcer()?.textContent).toMatch(/^onAir\.route\.now.*, transfers\.offers$/));
+  });
+
   it("writes a Competitions view and the manager's league in one update (R67)", async () => {
     const game = {
       ...minimalGameState(),

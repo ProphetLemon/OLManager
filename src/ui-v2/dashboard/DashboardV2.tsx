@@ -522,7 +522,11 @@ export default function DashboardV2() {
    */
   const runIntent = (
     move: NavIntent | { kind: "back" } | { kind: "closeChampion" },
-    { announce: speak = false, focusMain = false }: { announce?: boolean; focusMain?: boolean } = {},
+    {
+      announce: speak = false,
+      focusMain = false,
+      spoken = (place) => place,
+    }: { announce?: boolean; focusMain?: boolean; spoken?: (place: string) => string } = {},
   ): boolean => {
     const before = currentLocation(useDashboardLocationStore.getState().nav);
     if (move.kind === "back") back(isValidLocation);
@@ -532,7 +536,7 @@ export default function DashboardV2() {
     if (sameLocation(before, after)) return false;
     if (focusMain) focusMainContent();
     const text = speak && gameState ? routeAnnouncement(after, { t, game: gameState }) : null;
-    if (text) announce(text);
+    if (text) announce(spoken(text));
     else clearRoute();
     return true;
   };
@@ -565,18 +569,21 @@ export default function DashboardV2() {
   // A move whose UI takes focus and speaks for itself skips both (R57); none does
   // while the renewal dialog is the legacy frame (R69). A renewal pressed on its
   // open profile is a new request, so a dialog closed since then opens again.
-  const handleLaneCall = (intent: NavIntent) => {
+  // A Views row passes its label as `viewLabel`, so the view it opened is spoken after the
+  // place, also when the tab was already open and only the view changed (R96).
+  const handleLaneCall = (intent: NavIntent, viewLabel?: string) => {
     if (opensOwnFocus(intent)) {
       runIntent(intent);
       return;
     }
-    if (runIntent(intent, { announce: true, focusMain: true })) return;
+    const spoken = (place: string) => (viewLabel ? `${place}, ${viewLabel}` : place);
+    if (runIntent(intent, { announce: true, focusMain: true, spoken })) return;
     // Already there: focus on an unnamed main says little, so name the place, or the
     // press seems to have done nothing (R64).
     focusMainContent();
     const here = currentLocation(useDashboardLocationStore.getState().nav);
     const text = gameState ? routeAnnouncement(here, { t, game: gameState }) : null;
-    if (text) announce(text);
+    if (text) announce(spoken(text));
   };
 
   // A Go palette row, once the palette has closed (R27, R37). Settings leaves the
@@ -591,7 +598,7 @@ export default function DashboardV2() {
     }
     if (intent.kind === "tab" && "view" in intent) {
       writePaletteView(intent.view, useTabUiStore.getState().setTabFields);
-      handleLaneCall({ kind: "tab", tab: intent.tab });
+      handleLaneCall({ kind: "tab", tab: intent.tab }, entry.label);
       return;
     }
     handleLaneCall(intent);
