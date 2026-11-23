@@ -70,6 +70,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
 
   const titleId = useId();
   const listId = useId();
+  const emptyId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   // R37: an activated row closes the palette and runs only once the close completes.
@@ -327,6 +328,8 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
               aria-expanded={hasResults}
               aria-controls={hasResults ? listId : undefined}
               aria-autocomplete="list"
+              // The empty text is the field's description, so a first open with nothing to go to says why (R99).
+              aria-describedby={hasResults ? undefined : emptyId}
               aria-activedescendant={hasResults ? optionId(results[activeIndex]) : undefined}
               autoComplete="off"
               autoCorrect="off"
@@ -387,7 +390,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
                 })}
               </div>
             ) : (
-              <p data-slot="go-palette-empty" className="px-4 py-6 text-entry text-muted-foreground">
+              <p id={emptyId} data-slot="go-palette-empty" className="px-4 py-6 text-entry text-muted-foreground">
                 {emptyText}
               </p>
             )}

@@ -514,6 +514,23 @@ describe("GoPalette: accessibility audit (R74-R84)", () => {
     expect(empty()).toHaveTextContent(/^Nothing to go to$/);
     expect(status()).toHaveTextContent(/^Nothing to go to$/);
   });
+
+  it("ties the empty text to the input, so a first open with nothing to go to is described (R99)", async () => {
+    render(<Harness rows={[]} />);
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    const input = await screen.findByRole("combobox");
+    const empty = document.querySelector('[data-slot="go-palette-empty"]') as HTMLElement;
+    expect(empty.id).not.toBe("");
+    expect(input).toHaveAttribute("aria-describedby", empty.id);
+    expect(input).toHaveAccessibleDescription("Nothing to go to");
+  });
+
+  it("describes the input by nothing while there are results (R99)", async () => {
+    render(<Harness />);
+    act(() => usePaletteStore.getState().openPalette("util:go"));
+    const input = await screen.findByRole("combobox");
+    expect(input).not.toHaveAttribute("aria-describedby");
+  });
 });
 
 // R79, R87: on desktop the palette closes on a popstate and touches no history. On
