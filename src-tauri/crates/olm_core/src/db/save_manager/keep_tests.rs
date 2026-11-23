@@ -155,6 +155,73 @@ fn the_listing_gives_each_save_its_status_and_the_number_it_read() {
     assert_eq!(seen(SHORT), (SaveStatus::Unreadable, None));
 }
 
+/// A file whose header reads as 0 or as a huge number is not a save of any version:
+/// text, gzip and zip files all start like that.
+const GARBAGE: &str = "0b8f4a52-6f3e-4d51-9a1c-2f6d1c0e9a05";
+
+fn started_with_garbage_headers() -> (TempDir, SaveManager) {
+    let dir = tempfile::tempdir().unwrap();
+    let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+    plant(&mut sm, GARBAGE, b"not a save at all, just text");
+    (dir, sm)
+}
+
+#[test]
+fn a_file_with_an_implausible_header_is_listed_as_unreadable_without_a_number() {
+    let (_dir, sm) = started_with_garbage_headers();
+
+    let l = listing_of(&sm, GARBAGE);
+
+    assert_eq!((l.status, l.format_version), (SaveStatus::Unreadable, None));
+}
+
+#[test]
+fn a_header_of_zero_is_listed_as_unreadable() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+    plant(&mut sm, OLD, &with_header(0));
+
+    assert_eq!(listing_of(&sm, OLD).status, SaveStatus::Unreadable);
+}
+
+#[test]
+fn the_highest_plausible_header_is_still_another_version() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+    plant(&mut sm, NEW, &with_header(MAX_PLAUSIBLE_FORMAT));
+
+    assert_eq!(
+        listing_of(&sm, NEW).format_version,
+        Some(MAX_PLAUSIBLE_FORMAT)
+    );
+}
+
+#[test]
+fn a_header_just_above_the_plausible_range_is_listed_as_unreadable() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+    plant(&mut sm, NEW, &with_header(MAX_PLAUSIBLE_FORMAT + 1));
+
+    assert_eq!(listing_of(&sm, NEW).status, SaveStatus::Unreadable);
+}
+
+#[test]
+fn loading_a_file_with_an_implausible_header_answers_with_the_unreadable_code() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+
+    let err = sm.load_game(GARBAGE).unwrap_err();
+
+    assert!(err.starts_with("save_unreadable:"), "{err}");
+}
+
+#[test]
+fn listing_a_file_with_an_implausible_header_leaves_it_untouched() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+    let before = snapshot(sm.save_path(GARBAGE).parent().unwrap());
+
+    let _ = listing_of(&sm, GARBAGE);
+    let _ = sm.load_game(GARBAGE);
+
+    assert_eq!(snapshot(sm.save_path(GARBAGE).parent().unwrap()), before);
+}
+
 #[test]
 fn an_entry_whose_file_vanished_while_running_is_listed_as_unreadable() {
     let dir = tempfile::tempdir().unwrap();
@@ -342,11 +409,21 @@ fn importing_a_good_copy_over_an_odd_save_with_replace_recovers_it() {
     }
 }
 
-/// The bytes of a valid save made by another manager, as an export would carry them.
+/// The bytes of a valid save made by another manager, as an older build wrote it: with no
+/// id in the file, so only the file name says which save it replaces.
 fn good_copy(dir: &Path) -> Vec<u8> {
+    use flate2::{Compression, read::GzDecoder, write::GzEncoder};
+    use std::io::Write;
     let mut source = SaveManager::init(&dir.join("pc")).unwrap();
     let id = source.create_save(&sample_game(), "Main career").unwrap();
-    fs::read(source.save_path(&id)).unwrap()
+    let stored = fs::read(source.save_path(&id)).unwrap();
+    let mut json = Vec::new();
+    GzDecoder::new(&stored[4..]).read_to_end(&mut json).unwrap();
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(&json).unwrap();
+    let mut bytes = stored[..4].to_vec();
+    bytes.extend_from_slice(&encoder.finish().unwrap());
+    bytes
 }
 
 /// An entry whose path cannot be examined (a parent that is a file gives ENOTDIR, not

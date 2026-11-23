@@ -16,9 +16,10 @@ import { resolveTeamLogo } from "@/lib/teams/teamLogos";
 import { isAcademyTeam } from "@/store/academySelectors";
 import { assetUrl } from "@/lib/assetUrl";
 import { DEFAULT_MANAGER_ICON_PATH } from "@/lib/common/managerAvatars";
-import { buildCallItems } from "@/lib/dashboard/needsYourCall";
+import { buildCallItems, deriveCallState, EMPTY_CALL_STATE } from "@/lib/dashboard/needsYourCall";
 import { buildActiveLineupIds } from "@/lib/squad/helpers";
-import type { BlockerData } from "@/services/advanceTimeService";
+import type { DashboardAlert } from "@/lib/dashboard/helpers";
+import { useCallCacheStore } from "@/store/callCacheStore";
 import { collectAdvanceBlockers } from "@/lib/home/advanceBlockers";
 import {
   canContinueAnyway as canOfferContinueAnyway,
@@ -26,7 +27,6 @@ import {
 } from "@/lib/home/blockerRules";
 import type { PlayerData } from "@/store/gameStore";
 import { resolveActiveLineupIds } from "@/store/types";
-import { resolveNavTab } from "@/ui-v2/shell/navModel";
 
 import {
   formatDateFull,
@@ -36,15 +36,17 @@ import {
 import DashboardOverlays from "@/ui-v2/_legacy/components/dashboard/DashboardOverlays";
 import FiredModal from "@/ui-v2/_legacy/components/dashboard/FiredModal";
 import {
-  createDashboardProfileNavigationState,
-  goBackDashboardProfile,
-  hasDashboardProfileHistory,
-  navigateDashboardProfiles,
-  selectDashboardPlayer,
-  selectDashboardTeam,
-  selectDashboardStaff,
+  backDestination,
+  currentLocation,
+  isLocationInGame,
+  sameLocation,
+  type DashboardLocation,
   type DashboardNavigateContext,
+  type NavIntent,
 } from "@/lib/dashboard/profileNavigation";
+import { backTitle, describeLocation, routeAnnouncement, tabTitle } from "@/lib/dashboard/describeLocation";
+import { MAIN_CONTENT_ID, focusMainContent } from "./focusMainContent";
+import { RouteAnnouncer, useRouteAnnouncer } from "./RouteAnnouncer";
 import { createDashboardTabContentModel } from "@/lib/dashboard/tabContentModel";
 import {
   getDashboardAlerts,
@@ -56,12 +58,24 @@ import {
 import type { DashboardMatchModeMeta } from "@/ui-v2/_legacy/components/dashboard/dashboardHelpers";
 
 import { useNavMemoryStore } from "@/store/navMemoryStore";
+import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { goReserve } from "@/ui-v2/shell/railMode";
 import { useRailMode } from "@/ui-v2/shell/useRailMode";
 import { buildAttentionMap } from "@/ui-v2/shell/attention";
 import { ScrimResultNoticeV2 } from "./ScrimResultNoticeV2";
-
+import { AttentionLaneV2 } from "./AttentionLaneV2";
+import { isHomeOnScreen, laneModel } from "@/lib/dashboard/attentionLane";
+import { opensOwnFocus } from "@/lib/dashboard/callAction";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useTabUiStore } from "@/store/tabUiStore";
+import { usePaletteStore } from "@/store/paletteStore";
+import { Button } from "@/ui-v2/components/ui/button";
+import { GoPalette } from "@/ui-v2/palette/GoPalette";
+import { buildPaletteIndex, type PaletteEntry } from "@/ui-v2/palette/paletteIndex";
+import { entryToIntent, writePaletteView } from "@/ui-v2/palette/paletteActivate";
+import { useDashboardBackHold } from "@/ui-v2/dashboard/useDashboardBackHold";
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
 
@@ -93,34 +107,6 @@ const PlayerProfileV2 = lazy(() => import("@/ui-v2/pages/PlayerProfileV2"));
 const StaffProfileV2 = lazy(() => import("@/ui-v2/pages/StaffProfileV2"));
 const TeamProfileV2 = lazy(() => import("@/ui-v2/pages/TeamProfileV2"));
 const DashboardWorkspaceContent = lazy(() => import("@/ui-v2/_legacy/components/dashboard/DashboardWorkspaceContent"));
-
-const TAB_TRANSLATION_KEYS: Record<string, string> = {
-  Home: "dashboard.home",
-  Inbox: "dashboard.inbox",
-  Manager: "dashboard.manager",
-  Squad: "dashboard.squad",
-  Tactics: "dashboard.tactics",
-  Training: "dashboard.training",
-  Scrims: "dashboard.scrims",
-  Soloq: "dashboard.soloq",
-  Meta: "dashboard.meta",
-  Staff: "dashboard.staff",
-  Finances: "dashboard.finances",
-  Competitions: "dashboard.competitions",
-  Tournaments: "dashboard.tournaments",
-  Market: "dashboard.market",
-  Transfers: "dashboard.transfers",
-  Players: "dashboard.players",
-  Teams: "dashboard.teams",
-  WorldStaff: "dashboard.worldStaff",
-
-  ChampionsWorld: "dashboard.champions_world",
-  Schedule: "dashboard.schedule",
-  News: "dashboard.news",
-  Social: "dashboard.social",
-  Scouting: "dashboard.scouting",
-  Youth: "dashboard.youthAcademy",
-};
 
 const PATH_TAB_MAP: Record<string, string> = {
   "/finanzas": "Finances",
@@ -160,22 +146,15 @@ const TAB_TO_DISCORD_KEY: Record<string, string> = {
 /** DOM id of the Home "Needs your call" panel (owned by NeedsYourCallPanel). */
 const NEEDS_YOUR_CALL_ID = "needs-your-call";
 const BLOCKER_REFRESH_DEBOUNCE_MS = 400;
-const MAIN_CONTENT_ID = "main-content";
 /** The panel mounts after a lazy Home chunk resolves, so look for it for a short while. */
 const FOCUS_CALLS_ATTEMPTS = 40;
 const FOCUS_CALLS_INTERVAL_MS = 50;
 
-interface RetainedBlockers {
-  blockers: BlockerData[];
-  canContinueAnyway: boolean;
-  /** Game date the list was last confirmed for. */
-  date: string | null;
-}
-
 export default function DashboardV2() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n?.language ?? "en";
   const {
     hasActiveGame,
     managerName,
@@ -190,45 +169,71 @@ export default function DashboardV2() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
-  const [profileNavigation, setProfileNavigation] = useState(() =>
-    createDashboardProfileNavigationState(
-      PATH_TAB_MAP[location.pathname] ?? useNavMemoryStore.getState().activeTab ?? "Home",
-    ),
-  );
+  // An alias route wins over the remembered location from the first render, so the
+  // remembered tab never paints (and never stays mounted, hidden, behind Suspense).
+  // Moving to the location it is already on is a no-op, so a second call is harmless.
+  // This writes the store during render. It is safe only because nothing that reads
+  // the location store renders before DashboardV2 in this tree; a subscriber placed
+  // above it would get React's update-while-rendering warning. A layout effect is not
+  // a substitute: it commits the remembered tab first, which mounts it and runs its
+  // effects ("never commits the remembered tab" in DashboardV2.aliases.test.tsx).
+  useState(() => {
+    const tab = PATH_TAB_MAP[location.pathname];
+    if (tab) useDashboardLocationStore.getState().go({ kind: "tab", tab });
+  });
+  // Where the user is lives in a store, so it survives this component unmounting
+  // for Settings or a match (R22).
+  const profileNavigation = useDashboardLocationStore((s) => s.nav);
+  const go = useDashboardLocationStore((s) => s.go);
+  const back = useDashboardLocationStore((s) => s.back);
+  const closeChampion = useDashboardLocationStore((s) => s.closeChampion);
+  const clearOneShots = useDashboardLocationStore((s) => s.clearOneShots);
+  const recent = useDashboardLocationStore((s) => s.recent);
+  const selectedCompetitionId = useTabUiStore((s) => s.tabs.competitions.selectedCid);
+  const paletteOpen = usePaletteStore((s) => s.open);
+  // Schedule's Calendar exists only on a wide enough window, so its Views row too.
+  const scheduleCalendar = useMediaQuery("(min-width: 768px)", true);
+  const { message: routeMessage, announce, clearRoute, clearStatus } = useRouteAnnouncer();
+  const viewingChampionKey = profileNavigation.championKey;
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isExitingToMenu, setIsExitingToMenu] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-  const [viewingChampionKey, setViewingChampionKey] = useState<string | null>(null);
   // What blocks the advance, for "Needs your call". Fed by the Continue modal and
-  // by the backend pre-check, which re-runs after every game state update.
-  const [lastBlockers, setLastBlockers] = useState<RetainedBlockers | null>(null);
+  // by the backend pre-check, which re-runs after every game state update. Kept in
+  // a store so a return from Settings or a match starts from it, not from 0.
+  const lastBlockers = useCallCacheStore((s) => s.lastBlockers);
+  const setLastBlockers = useCallCacheStore((s) => s.setLastBlockers);
   // The dashboard body (everything under the title bar) decides Tree or Split for the rail.
   const [railBody, setRailBody] = useState<HTMLDivElement | null>(null);
-  const rail = useRailMode(railBody);
+  // The Tree's Go row is pinned above the tree, so the rail reserves its height (R30).
+  const rail = useRailMode(railBody, { reservedTop: goReserve });
   const focusCallsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!settingsLoaded) loadSettings();
   }, [settingsLoaded, loadSettings]);
 
-  // Block browser back from leaving the dashboard
-  useEffect(() => {
-    const handlePopState = () => {
-      navigate("/dashboard", { replace: true });
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [navigate]);
+  // Back keeps the player in the game (Android: see useDashboardBackHold). The pop that only
+  // takes the Go palette's or the More menu's own entry off (R87) leaves the dashboard as it is.
+  useDashboardBackHold(rail.platform === "android", navigate);
 
+  // An alias route opens its tab. It runs again once the backend probe activates
+  // the game, because activating a game resets the session's location.
   useEffect(() => {
     const tab = PATH_TAB_MAP[location.pathname];
     if (!tab) {
       return;
     }
-    setProfileNavigation((s) =>
-      s.activeTab === tab ? s : navigateDashboardProfiles(s, tab),
-    );
-  }, [location.pathname]);
+    if (useDashboardLocationStore.getState().nav.activeTab !== tab) {
+      go({ kind: "tab", tab });
+      // It bypasses runIntent, so it drops a route message itself (R51).
+      clearRoute();
+    }
+  }, [location.pathname, hasActiveGame, go, clearRoute]);
+
+  // The location survives an unmount, but its one-shot intents (the renewal modal,
+  // the message or competition to preselect) belong to the visit that carried them.
+  useEffect(() => () => clearOneShots(), [clearOneShots]);
 
   // Remember the tab, so returning from Settings or a match lands on it again.
   const rememberTab = useNavMemoryStore((s) => s.rememberTab);
@@ -362,7 +367,7 @@ export default function DashboardV2() {
           }
         : null,
     );
-  }, [blockerModal, currentIsoDate]);
+  }, [blockerModal, currentIsoDate, setLastBlockers]);
 
   // Ask the backend what blocks the advance shortly after each game state update
   // (a new day, a phase change, a lineup fixed in Squad) while the modal is
@@ -374,9 +379,17 @@ export default function DashboardV2() {
   // question the advance command will answer.
   const refreshMode = resolveAdvanceMode(isUnemployed ?? false, matchMode);
   const assistantResolvesScrims = settings.scrim_review_mode === "assistant";
+  // Which game state the pre-check last answered for, and how many answers so far:
+  // a call an advance brought is judged once the answer for the new state is in (R42).
+  const [precheckAnswer, setPrecheckAnswer] = useState<{ game: GameStateData | null | undefined; seq: number }>({
+    game: undefined,
+    seq: 0,
+  });
   useEffect(() => {
     if (!hasGame || blockerModalOpen || showSeasonSummary) return;
     let cancelled = false;
+    const askedFor = gameState;
+    const answered = () => setPrecheckAnswer((prev) => ({ game: askedFor, seq: prev.seq + 1 }));
     const timer = setTimeout(() => {
       // A failed check is not "everything resolved": rethrow and keep the list of this day.
       collectAdvanceBlockers("dashboard-refresh", {
@@ -408,11 +421,13 @@ export default function DashboardV2() {
               date: currentIsoDate,
             };
           });
+          answered();
         },
         () => {
           // Keep this day's list; a list from another day is no longer trustworthy.
           if (cancelled) return;
           setLastBlockers((prev) => (prev && prev.date !== currentIsoDate ? null : prev));
+          answered();
         },
       );
     }, BLOCKER_REFRESH_DEBOUNCE_MS);
@@ -423,6 +438,7 @@ export default function DashboardV2() {
     // gameState changes when the scrim setup is saved; the delegation toggle
     // changes the settings store instead, so it is a dependency of its own.
   }, [
+    setLastBlockers,
     gameState,
     hasGame,
     blockerModalOpen,
@@ -453,6 +469,8 @@ export default function DashboardV2() {
     }
   }, [markClean]);
 
+  // Leaving a game replaces the dashboard's history entry, so the system Back on the menu
+  // (Android) never returns to a game that is no longer loaded.
   const handleExitToMenu = async () => {
     if (isExitingToMenu) return;
     setIsExitingToMenu(true);
@@ -462,13 +480,13 @@ export default function DashboardV2() {
       console.error("Failed to exit:", err);
     } finally {
       clearGame();
-      navigate("/");
+      navigate("/", { replace: true });
     }
   };
 
   const handleExitWithoutSave = () => {
     clearGame();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   const handleCloseQuit = async (save: boolean) => {
@@ -483,10 +501,42 @@ export default function DashboardV2() {
     }
   };
 
-  const handleNavClick = (tab: string) => {
-    setViewingChampionKey(null);
-    setProfileNavigation((s) => navigateDashboardProfiles(s, tab));
+  // Back skips the entries whose player, team or staff member has left the game.
+  const isValidLocation = (loc: DashboardLocation) =>
+    gameState ? isLocationInGame(loc, gameState) : true;
+
+  /**
+   * Every user move enters here (the alias route and its first-render write call
+   * `go` directly). With `focusMain`, focus goes to the main region; an
+   * in-page Back asks for it because its own button unmounts with the page. With
+   * `announce`, the arrival is spoken as "Now on {title}, {group}" (R46). A rail
+   * row does neither: its aria-current already says where the user is. A move
+   * that says nothing clears a route message still queued or shown, so the region
+   * never names a place the user has left (R51). A move that goes nowhere does
+   * nothing at all, and says so by returning false.
+   */
+  const runIntent = (
+    move: NavIntent | { kind: "back" } | { kind: "closeChampion" },
+    {
+      announce: speak = false,
+      focusMain = false,
+      spoken = (place) => place,
+    }: { announce?: boolean; focusMain?: boolean; spoken?: (place: string) => string } = {},
+  ): boolean => {
+    const before = currentLocation(useDashboardLocationStore.getState().nav);
+    if (move.kind === "back") back(isValidLocation);
+    else if (move.kind === "closeChampion") closeChampion(isValidLocation);
+    else go(move);
+    const after = currentLocation(useDashboardLocationStore.getState().nav);
+    if (sameLocation(before, after)) return false;
+    if (focusMain) focusMainContent();
+    const text = speak && gameState ? routeAnnouncement(after, { t, game: gameState }) : null;
+    if (text) announce(spoken(text));
+    else clearRoute();
+    return true;
   };
+
+  const handleNavClick = (tab: string) => runIntent({ kind: "tab", tab });
 
   // Header chip: go Home and move focus to the "Needs your call" panel. Home
   // is lazy, so poll briefly until the panel exists.
@@ -508,26 +558,69 @@ export default function DashboardV2() {
     focusCallsTimer.current = setTimeout(tryFocus, 0);
   };
 
+  // A lane pill goes where its call is fixed, says so, and puts focus on main (R37). When
+  // that place is already the current one, nothing moves, but focus still goes to main
+  // and the place is still named (R64).
+  // A move whose UI takes focus and speaks for itself skips both (R57); none does
+  // while the renewal dialog is the legacy frame (R69). A renewal pressed on its
+  // open profile is a new request, so a dialog closed since then opens again.
+  // A Views row passes its label as `viewLabel`, so the view it opened is spoken after the
+  // place, also when the tab was already open and only the view changed (R96).
+  const handleLaneCall = (intent: NavIntent, viewLabel?: string) => {
+    if (opensOwnFocus(intent)) {
+      runIntent(intent);
+      return;
+    }
+    const spoken = (place: string) => (viewLabel ? `${place}, ${viewLabel}` : place);
+    if (runIntent(intent, { announce: true, focusMain: true, spoken })) return;
+    // Already there: focus on an unnamed main says little, so name the place, or the
+    // press seems to have done nothing (R64).
+    focusMainContent();
+    const here = currentLocation(useDashboardLocationStore.getState().nav);
+    const text = gameState ? routeAnnouncement(here, { t, game: gameState }) : null;
+    if (text) announce(spoken(text));
+  };
+
+  // A Go palette row, once the palette has closed (R27, R37). Settings leaves the
+  // dashboard and its page takes the focus. A Views row writes its view first, with
+  // its league for Competitions (R67). Every row then moves as a lane pill does:
+  // focus on main and the place named, a renewal included (R69).
+  const handlePaletteActivate = (entry: PaletteEntry) => {
+    const intent = entryToIntent(entry);
+    if (intent.kind === "route") {
+      navigate(intent.path, { state: { from: "/dashboard" } });
+      return;
+    }
+    if (intent.kind === "tab" && "view" in intent) {
+      writePaletteView(intent.view, useTabUiStore.getState().setTabFields);
+      handleLaneCall({ kind: "tab", tab: intent.tab }, entry.label);
+      return;
+    }
+    handleLaneCall(intent);
+  };
+
   const handleSkipToMain = (event: { preventDefault: () => void }) => {
     event.preventDefault();
-    document.getElementById(MAIN_CONTENT_ID)?.focus();
+    focusMainContent();
   };
 
-  const handleNavigate = (tab: string, context?: DashboardNavigateContext) => {
-    setViewingChampionKey(null);
-    setProfileNavigation((s) => navigateDashboardProfiles(s, resolveNavTab(tab), context));
-  };
+  const handleNavigate = (tab: string, context?: DashboardNavigateContext) =>
+    runIntent({ kind: "tab", tab, context });
 
-  const handleBack = () => setProfileNavigation((s) => goBackDashboardProfile(s));
+  // The header Back stays where it is and takes the next destination's name, so focus
+  // stays on it (R20); an in-page Back goes away with its page, so focus moves to main.
+  const handleBack = () => runIntent({ kind: "back" }, { announce: true });
+  const handleInPageBack = () => runIntent({ kind: "back" }, { announce: true, focusMain: true });
+  const handleChampionBack = () => runIntent({ kind: "closeChampion" }, { announce: true, focusMain: true });
 
   const selectPlayer = (id: string, options?: PlayerSelectionOptions) =>
-    setProfileNavigation((s) => selectDashboardPlayer(s, id, options));
+    runIntent({ kind: "player", id, openRenewal: options?.openRenewal });
 
-  const selectTeam = (id: string) =>
-    setProfileNavigation((s) => selectDashboardTeam(s, id));
+  const selectTeam = (id: string) => runIntent({ kind: "team", id });
 
-  const selectStaff = (id: string) =>
-    setProfileNavigation((s) => selectDashboardStaff(s, id));
+  const selectStaff = (id: string) => runIntent({ kind: "staff", id });
+
+  const viewChampion = (key: string) => runIntent({ kind: "champion", key });
 
   const MODE_META: Record<MatchModeType, DashboardMatchModeMeta> = useMemo(
     () => ({
@@ -573,34 +666,45 @@ export default function DashboardV2() {
     : managerName;
   const managerAvatar = useMemo(() => gameState?.manager?.avatar_path ? assetUrl(gameState.manager.avatar_path) : assetUrl(DEFAULT_MANAGER_ICON_PATH), [gameState?.manager?.avatar_path]);
   const teamLogo = useMemo(() => resolveTeamLogo(myTeamName, myTeam?.logo_url), [myTeamName, myTeam?.logo_url]);
-  const hasProfileHistory = hasDashboardProfileHistory(profileNavigation);
-  const activeTabLabel = TAB_TRANSLATION_KEYS[profileNavigation.activeTab]
-    ? t(TAB_TRANSLATION_KEYS[profileNavigation.activeTab], { defaultValue: profileNavigation.activeTab })
-    : profileNavigation.activeTab;
+  // One naming source (R21): the h1 names the location itself, so a profile shows the
+  // entity's name. An entity that is gone falls back to its tab's label.
+  const here = currentLocation(profileNavigation);
+  const describeDeps = gameState ? { t, game: gameState } : null;
+  const title = (describeDeps && describeLocation(here, describeDeps)?.title) ?? tabTitle(here.tab, t);
+  // Back is named after where it lands, found by the same function Back runs (R20).
+  const backTarget = backDestination(profileNavigation, isValidLocation);
+  const backTo = backTitle(backTarget, describeDeps, t);
 
-  const dashboardAlerts = gameState
-    ? getDashboardAlerts(gameState, hasMatchToday, t, {
-        assistantResolvesScrims: settings.scrim_review_mode === "assistant",
-      })
-    : [];
-  // The scrim result notice carries the Assistant Coach note itself.
-  if (autoDelegationNotice && !scrimResultNotice) {
-    dashboardAlerts.unshift({
-      id: "scrim_auto_delegate_notice",
-      text: autoDelegationNotice,
-      tab: "Scrims",
-      severity: "info",
-    });
-  }
-
-  if (matchPlayedNotice) {
-    dashboardAlerts.unshift({
-      id: "staff_played_match_notice",
-      text: matchPlayedNotice,
-      tab: "Schedule",
-      severity: "info",
-    });
-  }
+  const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
+    if (!gameState) return [];
+    const alerts = getDashboardAlerts(gameState, hasMatchToday, t, { assistantResolvesScrims });
+    // The scrim result notice carries the Assistant Coach note itself.
+    if (autoDelegationNotice && !scrimResultNotice) {
+      alerts.unshift({
+        id: "scrim_auto_delegate_notice",
+        text: autoDelegationNotice,
+        tab: "Scrims",
+        severity: "info",
+      });
+    }
+    if (matchPlayedNotice) {
+      alerts.unshift({
+        id: "staff_played_match_notice",
+        text: matchPlayedNotice,
+        tab: "Schedule",
+        severity: "info",
+      });
+    }
+    return alerts;
+  }, [
+    gameState,
+    hasMatchToday,
+    t,
+    assistantResolvesScrims,
+    autoDelegationNotice,
+    scrimResultNotice,
+    matchPlayedNotice,
+  ]);
 
   const startingFive = useMemo<PlayerData[]>(() => {
     if (!gameState || !myTeam) return [];
@@ -612,17 +716,96 @@ export default function DashboardV2() {
     });
   }, [gameState, myTeam]);
 
-  const callResult = gameState
-    ? buildCallItems({
-        alerts: dashboardAlerts,
-        blockers: lastBlockers?.blockers ?? [],
-        canContinueAnyway: lastBlockers?.canContinueAnyway ?? false,
-        startingFive,
-        currentDate: gameState.clock.current_date,
-        t,
-      })
-    : null;
-  const callCount = callResult?.decisions ?? 0;
+  // The one "Needs your call" source (R18): the chip, the rail markers and Home read it.
+  const currentGameDate = gameState?.clock.current_date ?? null;
+  const callState = useMemo(
+    () =>
+      currentGameDate === null
+        ? EMPTY_CALL_STATE
+        : deriveCallState(
+            buildCallItems({
+              alerts: dashboardAlerts,
+              blockers: lastBlockers?.blockers ?? [],
+              canContinueAnyway: lastBlockers?.canContinueAnyway ?? false,
+              startingFive,
+              currentDate: currentGameDate,
+              t,
+            }),
+          ),
+    [currentGameDate, dashboardAlerts, lastBlockers, startingFive, t],
+  );
+  const attention = useMemo(() => buildAttentionMap(callState.items), [callState.items]);
+  // The Go palette's rows, built only while it is open, so moves and league changes in
+  // the background never rebuild them. Labels resolve live, so an open palette rebuilds
+  // when a source or the language changes (`t` follows it), never per keystroke: search
+  // keeps its folded fields per row object (NR2.7).
+  const decisionItems = callState.decisionItems;
+  const paletteEntries = useMemo(
+    () =>
+      paletteOpen && gameState
+        ? buildPaletteIndex({
+            callState: { decisionItems },
+            recent,
+            current: currentLocation(profileNavigation),
+            unemployed: isUnemployed ?? false,
+            scheduleCalendar,
+            selectedCompetitionId,
+            game: gameState,
+            t,
+          })
+        : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lang: labels change with the language
+    [paletteOpen, decisionItems, recent, profileNavigation, isUnemployed, scheduleCalendar, selectedCompetitionId, gameState, lang, t],
+  );
+  // A tab's own content shows only while no profile or champion page is open over it.
+  const profileOpen = Boolean(
+    profileNavigation.selectedPlayerId ||
+      profileNavigation.selectedTeamId ||
+      profileNavigation.selectedStaffId ||
+      viewingChampionKey,
+  );
+
+  // "Before you continue" (R24): the decisions while Home's panel is not on screen, a
+  // profile opened from Home included (R58), outside the end-of-season shell, while the
+  // body under the title bar is at least 380 px high.
+  const lane = laneModel({
+    callState,
+    activeTab: profileNavigation.activeTab,
+    profileOpen,
+    compact: showSeasonSummary,
+    bodyHeight: rail.slotH,
+  });
+
+  // R42: a call an advance brings while Home's panel is not on screen is a status
+  // message nothing else speaks. The count is taken as the advance starts (Continue,
+  // a skip, or the confirmed match day) and compared once the pre-check has answered
+  // for the state the advance left. On Home the panel's own status speaks; a refresh
+  // with no advance before it, or a fresh mount, says nothing.
+  const homeShown = isHomeOnScreen({ activeTab: profileNavigation.activeTab, profileOpen }) && !showSeasonSummary;
+  const advanceBaseline = useRef<{ count: number; game: GameStateData | null | undefined; seq: number } | null>(null);
+  const wasAdvancing = useRef(isAdvancing);
+  useEffect(() => {
+    const started = isAdvancing && !wasAdvancing.current;
+    const ended = !isAdvancing && wasAdvancing.current;
+    wasAdvancing.current = isAdvancing;
+    if (started) {
+      // A shown "N to resolve" described the day that is ending (R60).
+      clearStatus();
+      advanceBaseline.current = { count: callState.count, game: gameState, seq: precheckAnswer.seq };
+    }
+    const baseline = advanceBaseline.current;
+    if (!baseline || isAdvancing) return;
+    // Nothing advanced (a blocker stopped it), or the season ended: nothing to say.
+    if (showSeasonSummary || (ended && gameState === baseline.game)) {
+      advanceBaseline.current = null;
+      return;
+    }
+    if (precheckAnswer.seq === baseline.seq || precheckAnswer.game !== gameState) return;
+    advanceBaseline.current = null;
+    if (callState.count > baseline.count && !homeShown) {
+      announce(t("onAir.bar.toResolve", { count: callState.count, defaultValue: "{{count}} to resolve" }), "status");
+    }
+  }, [isAdvancing, precheckAnswer, gameState, callState.count, homeShown, showSeasonSummary, announce, clearStatus, t]);
 
   const dashboardTabContentModel = gameState
     ? createDashboardTabContentModel({
@@ -636,7 +819,7 @@ export default function DashboardV2() {
           onSelectTeam: selectTeam,
           onGameUpdate: setGameState,
           onNavigate: handleNavigate,
-          onViewChampion: (k) => setViewingChampionKey(k),
+          onViewChampion: viewChampion,
         },
       })
     : null;
@@ -648,6 +831,9 @@ export default function DashboardV2() {
         <p className="text-sm text-muted-foreground">
           {t("dashboard.noActiveGameDesc")}
         </p>
+        <Button variant="club" size="touch" onClick={() => navigate("/", { replace: true })}>
+          {t("dashboard.noActiveGameBack")}
+        </Button>
       </div>
     );
   }
@@ -669,6 +855,13 @@ export default function DashboardV2() {
       >
         {t("onAir.nav.skip", { defaultValue: "Skip to main content" })}
       </a>
+      <GoPalette
+        entries={paletteEntries}
+        callCount={callState.count}
+        platform={rail.platform}
+        onActivate={handlePaletteActivate}
+      />
+      <RouteAnnouncer message={routeMessage} />
       <DashboardSidebarV2
         activeTab={profileNavigation.activeTab}
         onNavClick={handleNavClick}
@@ -688,7 +881,7 @@ export default function DashboardV2() {
         compact={showSeasonSummary}
         railMode={rail.mode}
         railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need, rootPx: rail.rootPx }}
-        attention={buildAttentionMap(callResult?.items ?? [])}
+        attention={attention}
         platform={rail.platform}
       />
 
@@ -716,10 +909,10 @@ export default function DashboardV2() {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <DashboardHeaderV2
-          activeTabLabel={activeTabLabel}
+          title={title}
           currentDate={currentDate}
           currentDateShort={currentDateShort}
-          hasProfileHistory={hasProfileHistory}
+          backTo={backTo}
           isAdvancing={isAdvancing}
           seasonComplete={showSeasonSummary}
           endsSplit={endsSplit}
@@ -737,10 +930,19 @@ export default function DashboardV2() {
           teamLogo={teamLogo}
           activeTab={profileNavigation.activeTab}
           isUnemployed={isUnemployed ?? false}
-          callCount={callCount}
+          callCount={callState.count}
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
         />
+
+        {lane.visible && (
+          <AttentionLaneV2
+            pills={lane.pills}
+            platform={rail.platform}
+            onNavigate={handleLaneCall}
+            onShowAll={handleShowCalls}
+          />
+        )}
 
         <ScrimResultNoticeV2
           lines={scrimResultNotice}
@@ -758,26 +960,18 @@ export default function DashboardV2() {
           className="flex min-h-0 flex-1 flex-col overflow-hidden outline-none scrollbar-v2"
         >
         <Suspense fallback={<LazyFallback />}>
-        {profileNavigation.activeTab === "Home" &&
-        !viewingChampionKey &&
-        !profileNavigation.selectedPlayerId &&
-        !profileNavigation.selectedTeamId &&
+        {profileNavigation.activeTab === "Home" && !profileOpen &&
         !showSeasonSummary ? (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-v2">
             <HomeTabV2
               gameState={gameState}
               onNavigate={handleNavigate}
               onSelectPlayer={selectPlayer}
-              alerts={dashboardAlerts}
-              blockers={lastBlockers?.blockers}
-              canContinueAnyway={Boolean(lastBlockers?.canContinueAnyway)}
+              calls={callState}
               unreadCount={unreadMessagesCount}
             />
           </div>
-        ) : profileNavigation.activeTab === "Inbox" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Inbox" && !profileOpen ? (
           <div className="flex-1 overflow-hidden">
             <InboxTabV2
               gameState={gameState}
@@ -786,17 +980,11 @@ export default function DashboardV2() {
               onNavigate={handleNavigate}
             />
           </div>
-        ) : profileNavigation.activeTab === "Schedule" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Schedule" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ScheduleTabV2 gameState={gameState} onSelectTeam={selectTeam} />
           </div>
-        ) : profileNavigation.activeTab === "Squad" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Squad" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <SquadTabV2
               gameState={gameState}
@@ -805,10 +993,7 @@ export default function DashboardV2() {
               onNavigate={handleNavigate}
             />
           </div>
-        ) : profileNavigation.activeTab === "Training" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Training" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <TrainingTabV2
               gameState={gameState}
@@ -816,20 +1001,14 @@ export default function DashboardV2() {
               onSelectPlayer={selectPlayer}
             />
           </div>
-        ) : profileNavigation.activeTab === "Tactics" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Tactics" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <TacticsTabV2
               gameState={gameState}
               onGameUpdate={setGameState}
             />
           </div>
-        ) : profileNavigation.activeTab === "Players" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Players" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <PlayersTabV2
               gameState={gameState}
@@ -837,45 +1016,34 @@ export default function DashboardV2() {
               onSelectTeam={selectTeam}
             />
           </div>
-        ) : profileNavigation.activeTab === "Teams" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Teams" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <TeamsTabV2
               gameState={gameState}
               onSelectTeam={selectTeam}
             />
           </div>
-        ) : profileNavigation.activeTab === "Staff" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId &&
-          !profileNavigation.selectedStaffId ? (
+        ) : profileNavigation.activeTab === "Staff" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
+            {/* Keyed by mode: the club tab and World › Staff keep separate view state. */}
             <StaffTabV2
+              key="staff-club"
               gameState={gameState}
               onGameUpdate={setGameState}
               onSelectStaff={selectStaff}
             />
           </div>
-        ) : profileNavigation.activeTab === "WorldStaff" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId &&
-          !profileNavigation.selectedStaffId ? (
+        ) : profileNavigation.activeTab === "WorldStaff" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <StaffTabV2
+              key="staff-world"
               gameState={gameState}
               onGameUpdate={setGameState}
               mode="world"
               onSelectStaff={selectStaff}
             />
           </div>
-        ) : profileNavigation.activeTab === "Finances" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Finances" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <FinancesTabV2
               gameState={gameState}
@@ -883,20 +1051,14 @@ export default function DashboardV2() {
               onSelectPlayer={selectPlayer}
             />
           </div>
-        ) : profileNavigation.activeTab === "Scrims" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Scrims" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ScrimsTabV2
               gameState={gameState}
               onGameUpdate={setGameState}
             />
           </div>
-        ) : profileNavigation.activeTab === "Soloq" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Soloq" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <SoloqTabV2
               gameState={gameState}
@@ -904,10 +1066,7 @@ export default function DashboardV2() {
               onSelectPlayer={selectPlayer}
             />
           </div>
-        ) : profileNavigation.activeTab === "Scouting" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Scouting" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ScoutingTabV2
               gameState={gameState}
@@ -916,10 +1075,7 @@ export default function DashboardV2() {
               onNavigate={handleNavigate}
             />
           </div>
-        ) : profileNavigation.activeTab === "Transfers" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Transfers" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <TransfersTabV2
               gameState={gameState}
@@ -928,34 +1084,22 @@ export default function DashboardV2() {
               onSelectTeam={selectTeam}
             />
           </div>
-        ) : profileNavigation.activeTab === "News" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "News" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <NewsTabV2 gameState={gameState} />
           </div>
-        ) : profileNavigation.activeTab === "Social" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Social" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <SocialTabV2
               gameState={gameState}
               onGameUpdate={setGameState}
             />
           </div>
-        ) : profileNavigation.activeTab === "Manager" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Manager" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ManagerTabV2 gameState={gameState} />
           </div>
-        ) : profileNavigation.activeTab === "Youth" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Youth" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <YouthTabV2
               gameState={gameState}
@@ -964,10 +1108,7 @@ export default function DashboardV2() {
               onGameUpdate={setGameState}
             />
           </div>
-        ) : profileNavigation.activeTab === "Competitions" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Competitions" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <CompetitionsTabV2
               gameState={gameState}
@@ -975,31 +1116,22 @@ export default function DashboardV2() {
               initialCompetitionId={profileNavigation.initialCompetitionId}
             />
           </div>
-        ) : profileNavigation.activeTab === "Market" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Market" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <MarketTabV2 gameState={gameState} />
           </div>
-        ) : profileNavigation.activeTab === "ChampionsWorld" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "ChampionsWorld" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <ChampionsWorldTabV2
               champions={gameState.champions}
-              onViewChampion={(k) => setViewingChampionKey(k)}
+              onViewChampion={viewChampion}
             />
           </div>
-        ) : profileNavigation.activeTab === "Meta" &&
-          !viewingChampionKey &&
-          !profileNavigation.selectedPlayerId &&
-          !profileNavigation.selectedTeamId ? (
+        ) : profileNavigation.activeTab === "Meta" && !profileOpen ? (
           <div className="flex-1 overflow-y-auto scrollbar-v2">
             <MetaTabV2
               gameState={gameState}
-              onViewChampion={(k) => setViewingChampionKey(k)}
+              onViewChampion={viewChampion}
               onGameUpdate={setGameState}
             />
           </div>
@@ -1009,13 +1141,12 @@ export default function DashboardV2() {
               gameState={gameState}
               playerId={profileNavigation.selectedPlayerId}
               startWithRenewalModal={profileNavigation.selectedPlayerOptions?.openRenewal === true}
-              onClose={() =>
-                setProfileNavigation((s) => goBackDashboardProfile(s))
-              }
+              renewalRequest={profileNavigation.selectedPlayerOptions}
+              onClose={handleInPageBack}
               onGameUpdate={setGameState}
               onSelectPlayer={selectPlayer}
               onSelectTeam={selectTeam}
-              onViewChampion={(k) => setViewingChampionKey(k)}
+              onViewChampion={viewChampion}
             />
           </div>
         ) : profileNavigation.selectedTeamId && !viewingChampionKey && !profileNavigation.selectedPlayerId ? (
@@ -1023,7 +1154,8 @@ export default function DashboardV2() {
             <TeamProfileV2
               gameState={gameState}
               teamId={profileNavigation.selectedTeamId}
-              onClose={handleBack}
+              backTo={backTo}
+              onClose={handleInPageBack}
               onSelectPlayer={selectPlayer}
             />
           </div>
@@ -1032,7 +1164,8 @@ export default function DashboardV2() {
             <StaffProfileV2
               gameState={gameState}
               staffId={profileNavigation.selectedStaffId}
-              onClose={handleBack}
+              backTo={backTo}
+              onClose={handleInPageBack}
               onGameUpdate={setGameState}
               onSelectTeam={selectTeam}
             />
@@ -1041,7 +1174,8 @@ export default function DashboardV2() {
           <div className="flex-1 overflow-hidden">
             <ChampionPageV2
               championKey={viewingChampionKey}
-              onClose={() => setViewingChampionKey(null)}
+              backTo={backTo}
+              onClose={handleChampionBack}
             />
           </div>
         ) : (

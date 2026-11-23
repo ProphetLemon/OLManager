@@ -294,6 +294,7 @@
     "competitions": "Turnuvalar",
     "noActiveGame": "Etkin oyun yok",
     "noActiveGameDesc": "Devam etmek için bir oyun başlatın veya yükleyin.",
+    "noActiveGameBack": "Ana menü",
     "phaseLabels": {
       "scrimBlock": "Scrims"
     }
@@ -1742,6 +1743,7 @@
     "updateAvailableDetail": "Sürüm {{version}} mevcut",
     "upToDate": "Güncel versiyonu kullanıyorsunuz",
     "noPlatformBuild": "Bir sürüm var, ancak sisteminiz için henüz bir yapı yok",
+    "updateCheckFailed": "Güncellemeler denetlenemedi. Bağlantını kontrol edip tekrar dene.",
     "androidUpdateAvailable": "Yeni bir sürüm mevcut. Yeni APK'yı sürüm sayfasından indirin.",
     "androidUpdateKeepsSaves": "Mevcut uygulamanın üzerine kurarsanız kayıtlarınız korunur.",
     "androidUpdateDownload": "Yeni APK'yı indir",
@@ -3699,7 +3701,14 @@
       "manager": "Menajer profili",
       "needsCall_one": "{{label}}, kararını bekliyor",
       "needsCall_other": "{{label}}, {{count}} öğe kararını bekliyor",
-      "more": "Daha fazla"
+      "more": "Daha fazla",
+      "go": "Şuraya git…",
+      "goShort": "Git"
+    },
+    "lane": {
+      "title": "Devam etmeden önce",
+      "allOnHome_one": "Ana Sayfa'da gör",
+      "allOnHome_other": "{{count}} kararın tümü Ana Sayfa'da"
     },
     "bar": {
       "phase": {
@@ -3715,7 +3724,27 @@
       "matchDay": "Maç günü",
       "skipToMatchDay": "Sonraki maça kadar simüle et",
       "skipToNextDay": "Sonraki güne atla",
-      "clock": "Oyun tarihi ve aşaması"
+      "clock": "Oyun tarihi ve aşaması",
+      "backTo": "Geri: {{destination}}",
+      "backNone": "Geri dönülecek yer yok"
+    },
+    "route": {
+      "now": "Şimdi: {{title}}, {{group}}",
+      "nowNoGroup": "Şimdi: {{title}}"
+    },
+    "palette": {
+      "title": "Şuraya git",
+      "placeholder": "Bölüm ve yer ara",
+      "close": "Kapat",
+      "groups": {
+        "recent": "Son gezilenler",
+        "sections": "Bölümler",
+        "views": "Görünümler"
+      },
+      "results_one": "{{count}} sonuç",
+      "results_other": "{{count}} sonuç",
+      "empty": "“{{query}}” için sonuç yok",
+      "nothing": "Gidilecek bir yer yok"
     },
     "tags": {
       "blocker": "Engel",

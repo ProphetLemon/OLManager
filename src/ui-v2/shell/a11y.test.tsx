@@ -1,8 +1,16 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import axe from "axe-core";
+import type { TFunction } from "i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardHeaderV2 } from "@/ui-v2/dashboard/DashboardHeaderV2";
 import { DashboardSidebarV2 } from "@/ui-v2/dashboard/DashboardSidebarV2";
+import { AttentionLaneV2 } from "@/ui-v2/dashboard/AttentionLaneV2";
+import type { LanePill } from "@/lib/dashboard/attentionLane";
+import { usePaletteStore } from "@/store/paletteStore";
+import { translateFromEnglish } from "@/test-i18n";
+import { GoPalette } from "@/ui-v2/palette/GoPalette";
+import { buildPaletteIndex, type PaletteIndexInput } from "@/ui-v2/palette/paletteIndex";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: vi.fn() },
@@ -21,6 +29,39 @@ vi.mock("@/ui-v2/_legacy/components/dashboard/FloatingBugButton", () => ({
   ),
 }));
 
+/** Two decisions in the lane, then its pinned "All 2 on Home". */
+const LANE_PILLS: LanePill[] = [
+  {
+    kind: "call",
+    id: "blocker:incomplete_lineup",
+    item: {
+      id: "blocker:incomplete_lineup",
+      kind: "blocker",
+      severity: "hard",
+      tagKey: "onAir.tags.blocker",
+      tagTone: "negative",
+      headline: "Starting five is incomplete",
+      actionLabelKey: "onAir.calls.actions.fixLineup",
+      target: { tab: "Squad" },
+    },
+  },
+  {
+    kind: "call",
+    id: "contract:p1",
+    item: {
+      id: "contract:p1",
+      kind: "contract",
+      severity: "soft",
+      tagKey: "onAir.tags.contract",
+      tagTone: "warning",
+      headline: "Faker's contract ends in 20 days",
+      actionLabelKey: "onAir.calls.actions.renew",
+      target: { tab: "Squad", context: { playerId: "p1" } },
+    },
+  },
+  { kind: "home", id: "lane:home", count: 2 },
+];
+
 function renderShell() {
   return render(
     <div>
@@ -37,9 +78,9 @@ function renderShell() {
         onExitClick={vi.fn()}
       />
       <DashboardHeaderV2
-        activeTabLabel="Squad"
+        title="Squad"
         currentDate="12 Jan"
-        hasProfileHistory={false}
+        backTo={null}
         isAdvancing={false}
         isSaving={false}
         saveFlash={false}
@@ -56,6 +97,7 @@ function renderShell() {
         callCount={2}
         onShowCalls={vi.fn()}
       />
+      <AttentionLaneV2 pills={LANE_PILLS} platform="desktop" onNavigate={vi.fn()} onShowAll={vi.fn()} />
     </div>,
   );
 }
@@ -124,6 +166,19 @@ describe.each(["off", "high"])("shell accessibility, contrast %s", (mode) => {
     expect([...stops].filter((s) => panel.contains(s))).toHaveLength(1);
   });
 
+  it("adds the lane as one named region and one Tab stop, with no live region of its own (R24, R47)", () => {
+    renderShell();
+    const region = screen.getByRole("region", { name: "Before you continue" });
+    // Spoken once: the toolbar inside takes no name of its own.
+    expect(within(region).getByRole("toolbar")).not.toHaveAttribute("aria-labelledby");
+    expect(region.querySelectorAll('button[tabindex="0"]')).toHaveLength(1);
+    expect(region.querySelectorAll("button")).toHaveLength(3);
+    expect(region.querySelector('[aria-live], [role="status"], [role="alert"]')).toBeNull();
+    // It is not a second navigation landmark.
+    expect(region.closest("nav")).toBeNull();
+    for (const pill of region.querySelectorAll("button")) expect(pill).toHaveAccessibleName();
+  });
+
   it("has no duplicate ids and no hidden focusable controls", () => {
     const { container } = renderShell();
     const ids = [...container.querySelectorAll("[id]")].map((e) => e.id);
@@ -153,5 +208,108 @@ describe("compact (the end-of-season screen)", () => {
     expect(screen.queryByRole("group", { name: /sections/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Inbox" }));
     expect(onNavClick).toHaveBeenCalledWith("Inbox");
+  });
+});
+
+describe.each(["off", "high"])("the Go palette, open, contrast %s (NR2.8, R25, R44, R45, R48)", (mode) => {
+  const home = { tab: "Home", playerId: null, teamId: null, staffId: null, championKey: null };
+  const entries = buildPaletteIndex({
+    callState: { decisionItems: LANE_PILLS.flatMap((p) => (p.kind === "call" ? [p.item] : [])) },
+    recent: [{ ...home, tab: "Inbox" }],
+    current: home,
+    unemployed: false,
+    scheduleCalendar: true,
+    selectedCompetitionId: null,
+    game: {
+      manager: { team_id: "team-1" },
+      user_competition_id: null,
+      leagues: [],
+      players: [],
+      teams: [{ id: "team-1", name: "Night Owls" }],
+      staff: [],
+    } as unknown as PaletteIndexInput["game"],
+    t: translateFromEnglish as unknown as TFunction,
+  });
+
+  beforeEach(() => {
+    if (mode === "high") document.documentElement.setAttribute("data-contrast", "high");
+    usePaletteStore.getState().reset();
+  });
+
+  async function renderOpen() {
+    const view = renderShell();
+    render(<GoPalette entries={entries} callCount={2} platform="desktop" onActivate={vi.fn()} />);
+    act(() => usePaletteStore.getState().openPalette(null));
+    const dialog = await screen.findByRole("dialog", { name: "Go to" });
+    return { ...view, dialog };
+  }
+
+  it("is one named modal dialog that takes the shell out of the accessibility tree", async () => {
+    const { dialog } = await renderOpen();
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(screen.queryByRole("navigation")).toBeNull();
+    expect(screen.queryByRole("region", { name: "Before you continue" })).toBeNull();
+  });
+
+  it("names every control and gives the combobox the states it requires", async () => {
+    const { dialog } = await renderOpen();
+    for (const el of dialog.querySelectorAll("button, input")) expect(el).toHaveAccessibleName();
+    const input = within(dialog).getByRole("combobox");
+    expect(input).toHaveAttribute("aria-expanded", "true");
+    const list = document.getElementById(input.getAttribute("aria-controls") ?? "");
+    expect(list).toHaveAttribute("role", "listbox");
+    const active = document.getElementById(input.getAttribute("aria-activedescendant") ?? "");
+    expect(active).toHaveAttribute("role", "option");
+    expect(list!.contains(active)).toBe(true);
+  });
+
+  it("nests only named groups of options in the listbox, one of them selected", async () => {
+    const { dialog } = await renderOpen();
+    const list = within(dialog).getByRole("listbox");
+    for (const child of list.children) expect(child).toHaveAttribute("role", "group");
+    for (const group of within(list).getAllByRole("group")) {
+      expect(group).toHaveAccessibleName();
+      for (const child of group.children) expect(["option", "presentation"]).toContain(child.getAttribute("role"));
+    }
+    const options = within(list).getAllByRole("option");
+    expect(options.every((o) => o.hasAttribute("aria-selected"))).toBe(true);
+    expect(options.filter((o) => o.getAttribute("aria-selected") === "true")).toHaveLength(1);
+  });
+
+  // jsdom computes no layout or colour, so axe cannot measure contrast; the hand-written
+  // contrast checks above stay (R71).
+  const AXE_OPTIONS: axe.RunOptions = { rules: { "color-contrast": { enabled: false } } };
+  // Base UI's focus guards are left out. When navigator.vendor names Apple, Base UI gives
+  // these visually hidden spans role="button" for VoiceOver, with no name, so axe reports
+  // aria-command-name. jsdom's vendor is "Apple Computer, Inc.", so it happens here; the
+  // Linux WebKitGTK webview reports the same vendor, so it is not jsdom-only (reported to
+  // the a11y audit). The guards belong to Base UI and take no props.
+  const AXE_CONTEXT: axe.ElementContext = { include: [document.body], exclude: [["[data-base-ui-focus-guard]"]] };
+
+  it("passes axe over the shell and the open palette, and R44's required combobox attributes", async () => {
+    const { dialog } = await renderOpen();
+    let results: axe.AxeResults | undefined;
+    await act(async () => {
+      results = await axe.run(AXE_CONTEXT, AXE_OPTIONS);
+    });
+    if (!results) throw new Error("axe did not run");
+    const violations = results.violations.map(
+      (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`,
+    );
+    expect(violations).toEqual([]);
+    const combobox = within(dialog).getByRole("combobox");
+    const required = results.passes.find((rule) => rule.id === "aria-required-attr");
+    expect(required?.nodes.some((node) => document.querySelector(String(node.target[0])) === combobox)).toBe(true);
+  }, 20_000);
+
+  it("has one live region, no title, no positive or option tabindex, and no duplicate id", async () => {
+    const { dialog } = await renderOpen();
+    expect(dialog.querySelectorAll('[aria-live], [role="status"], [role="alert"]')).toHaveLength(1);
+    expect(dialog.querySelector("[title]")).toBeNull();
+    expect(dialog.querySelector('[tabindex]:not([tabindex="0"]):not([tabindex="-1"])')).toBeNull();
+    expect(dialog.querySelector('[role="option"][tabindex]')).toBeNull();
+    expect(dialog.querySelector('[aria-hidden="true"] button, [aria-hidden="true"] input')).toBeNull();
+    const ids = [...document.querySelectorAll("[id]")].map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

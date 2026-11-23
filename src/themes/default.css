@@ -19,8 +19,13 @@
      --text-nav below). */
   --text-map: max(0.75rem, 10px);
   /* Navigation labels (rail, later the Club tree): the second px-floored size,
-     for the same reason as --text-map. Never use it outside src/ui-v2/shell. */
+     for the same reason as --text-map. Never use it outside src/ui-v2/shell,
+     the bar (DashboardHeaderV2), the attention lane (AttentionLaneV2) and the
+     palette (src/ui-v2/palette), R35. */
   --text-nav: max(0.75rem, 10px);
+  /* Option labels and lane pill headlines (R35): rem text would fall to 7.9 px
+     on Android's 9 px root, so it is floored at 12px like --text-nav. */
+  --text-entry: max(0.875rem, 12px);
 
   /* P1 type scale (rem only) */
   --text-section: 1.375rem;
@@ -206,6 +211,18 @@
   --rail-w-split: max(4.75rem, 64px); /* the icon rail beside a docked panel */
   --rail-w-compact: max(3.5rem, 56px); /* the icon rail on the end-of-season screen */
   --nav-panel-w: max(9rem, 136px); /* the docked panel of the active group (Split) */
+  /* The Tree's Go row (NR2.9, R30), with 5 px above and below: railMode.goReserve mirrors it. */
+  --go-row: max(2.5rem, 40px);
+  /* The "Before you continue" lane (R24): the band and its pills. Android raises both to --hit. */
+  --lane-h: max(2.875rem, 46px);
+  --lane-pill-h: var(--nav-row);
+  /* The Go palette (NR2.8, spec §5.7): the desktop panel fits the window, its input row and
+     options are a rail row high, and the Android sheet covers the rail and its panel. */
+  --palette-w: min(36rem, calc(100vw - 2rem));
+  --palette-h: min(32rem, calc(100dvh - 6rem));
+  --palette-top: 15vh;
+  --palette-row: max(2.5rem, 40px);
+  --palette-sheet-w: max(22rem, 320px);
   /* Display-cutout and system-bar insets. 0px wherever the webview reports none
      (every desktop window), so applying them never moves anything there. */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -264,6 +281,16 @@
   --sidebar-ring: var(--club-text);
 }
 
+/* R80: a short window (a 1280x720 one at 400% zoom is 180 CSS px high) gives the Go
+   palette the whole height and starts it near the top, so its list keeps rows below
+   the title and the input instead of being clipped. */
+@media (max-height: 30rem) {
+  :root {
+    --palette-h: calc(100dvh - 1rem);
+    --palette-top: min(15vh, 0.5rem);
+  }
+}
+
 /* ── Dark mode ─────────────────────────────────────────────── */
 
 .dark {
@@ -315,6 +342,11 @@
    The 12px value is provisional: tune it on a real curved phone. */
 :root[data-platform="android"] {
   --hit: max(2.75rem, 48px);
+  /* The band's 1 px bottom border sits inside its height: 49 px keeps a 48 px pill whole (R62). */
+  --lane-h: calc(var(--hit) + 1px);
+  --lane-pill-h: var(--hit);
+  --palette-row: var(--hit);
+  --go-row: var(--hit);
   --edge-gutter: 12px;
   --safe-top: max(env(safe-area-inset-top, 0px), var(--edge-gutter));
   --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--edge-gutter));

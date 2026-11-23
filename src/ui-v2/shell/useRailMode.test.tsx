@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useSettingsStore } from "@/store/settingsStore";
+import { goReserve } from "./railMode";
 import { useRailMode } from "./useRailMode";
 
 type RoCallback = (entries: Array<{ contentRect: { width: number; height: number } }>) => void;
@@ -204,6 +205,16 @@ describe("useRailMode", () => {
     const { result } = renderHook(() => useRailMode(el, { reservedTop: 50 }));
     resize(1280, 660);
     expect(result.current).toMatchObject({ mode: "split", need: 672 });
+  });
+
+  it("takes the reserve as a function of the root size, so the Go row follows the UI scale (R30)", () => {
+    const el = document.createElement("div");
+    const { result } = renderHook(() => useRailMode(el, { reservedTop: goReserve }));
+    resize(1280, 760);
+    expect(result.current).toMatchObject({ mode: "tree", need: 672 });
+    act(() => setRoot(18));
+    // The root changed: the reserve is 55 now, and the need 748.5.
+    return waitFor(() => expect(result.current.need).toBe(748.5));
   });
 
   it("disconnects the observer on unmount", () => {

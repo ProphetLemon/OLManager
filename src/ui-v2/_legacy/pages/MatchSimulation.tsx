@@ -879,7 +879,7 @@ export default function MatchSimulation() {
         console.warn("[MatchSimulation] fetchSnapshot:failed", snapshotError);
         if (typeof routeState?.fixtureIndex !== "number") {
           console.error("Failed to get match snapshot:", snapshotError);
-          navigate("/dashboard");
+          navigate("/dashboard", { replace: true });
           return;
         }
 
@@ -910,7 +910,7 @@ export default function MatchSimulation() {
           }
         } catch (restoreError) {
           console.error("Failed to restore live match session:", restoreError);
-          navigate("/dashboard");
+          navigate("/dashboard", { replace: true });
         }
       }
     };

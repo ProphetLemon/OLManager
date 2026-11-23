@@ -1,7 +1,7 @@
 {
   "name": "openleaguemanager",
   "private": true,
-  "version": "2026.1123.1",
+  "version": "2026.1123.2",
   "type": "module",
   "scripts": {
     "verify:champion-timings": "node scripts/verify-champion-timings.mjs",
@@ -67,6 +67,7 @@
     "@types/topojson-client": "^3.1.5",
     "@vitejs/plugin-react": "^6.0.1",
     "@vitest/coverage-v8": "^4.1.2",
+    "axe-core": "4.14.0",
     "jsdom": "^29.0.1",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.2",

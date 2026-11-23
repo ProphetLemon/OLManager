@@ -1,9 +1,10 @@
 import { resolveUserLeague } from "@/lib/userLeague";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar as CalendarIcon, CalendarDays, ChevronRight } from "lucide-react";
 
 import type { GameStateData, FixtureData } from "@/store/gameStore";
+import { useTabUiField, useValidTabUiField } from "@/store/tabUiStore";
 import { getTeamName, formatMatchDate } from "@/lib/common/helpers";
 import {
   buildBestOfContext,
@@ -28,7 +29,8 @@ interface Props {
 
 export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
   const { t, i18n } = useTranslation();
-  const [view, setView] = useState<"fixtures" | "calendar">("fixtures");
+  // The view and the selected day survive a team visit (R23).
+  const [view, setView] = useTabUiField("schedule", "view");
   const [isDesktop, setIsDesktop] = useState<boolean>(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") return true;
     return window.matchMedia("(min-width: 768px)").matches;
@@ -46,7 +48,12 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
   useEffect(() => { setVisible(true); }, []);
 
   const [fixtureResultView, setFixtureResultView] = useState<StoredFixtureDraftResult | null>(null);
-  const [selectedDayStr, setSelectedDayStr] = useState<string | null>(null);
+  // Only a day the week card shows: once the week moves on, nothing could toggle it off.
+  const isThisWeek = useCallback(
+    (day: string) => weekDayKeys(gameState.clock.current_date).includes(day),
+    [gameState.clock.current_date],
+  );
+  const [selectedDayStr, setSelectedDayStr] = useValidTabUiField("schedule", "selectedDay", isThisWeek);
   const league = resolveUserLeague(gameState) ?? undefined;
   const userTeamId = gameState.manager.team_id;
 
@@ -146,7 +153,7 @@ export function ScheduleTabV2({ gameState, onSelectTeam }: Props) {
         <div className="flex flex-col gap-4">
           {/* Weekly calendar card */}
           <div className={cn("opacity-0 animate-fade-in-up")} style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
-            <WeekScheduleCard gameState={gameState} onDayClick={(dayStr) => {
+            <WeekScheduleCard gameState={gameState} selectedDay={selectedDayStr} onDayClick={(dayStr) => {
               setSelectedDayStr(selectedDayStr === dayStr ? null : dayStr);
             }} />
           </div>
@@ -335,31 +342,41 @@ function getActiveLeague(gameState: GameStateData) {
   return resolveUserLeague(gameState);
 }
 
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** The seven days (YYYY-MM-DD, Monday first) of the week that holds the game date. */
+function weekDayKeys(currentDate: string): string[] {
+  const [y, m, d] = String(currentDate).slice(0, 10).split("-").map(Number);
+  const monday = new Date(y, (m || 1) - 1, d || 1);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    return `${day.getFullYear()}-${pad2(day.getMonth() + 1)}-${pad2(day.getDate())}`;
+  });
+}
+
+/** The highlighted day is the tab's stored day, so it comes back with the list under it. */
 function WeekScheduleCard({
   gameState,
+  selectedDay,
   onDayClick,
 }: {
   gameState: GameStateData;
+  selectedDay: string | null;
   onDayClick?: (date: string) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const league = getActiveLeague(gameState);
   const teamId = gameState.manager.team_id;
 
   const todayKey = String(gameState.clock.current_date).slice(0, 10);
-  const todayParts = todayKey.split("-").map(Number);
-  const today = new Date(todayParts[0], (todayParts[1] || 1) - 1, todayParts[2] || 1);
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  monday.setHours(0, 0, 0, 0);
 
   const fullDay = new Intl.DateTimeFormat(i18n.language, { dateStyle: "full" });
 
-  const week = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const dKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const week = weekDayKeys(gameState.clock.current_date).map((dKey) => {
+    const [yy, mm, dd] = dKey.split("-").map(Number);
+    const d = new Date(yy, mm - 1, dd);
     const fixture =
       league && teamId
         ? league.fixtures.find(
@@ -407,7 +424,6 @@ function WeekScheduleCard({
                   const m = String(d.date.getMonth() + 1).padStart(2, "0");
                   const day = String(d.date.getDate()).padStart(2, "0");
                   const key = `${y}-${m}-${day}`;
-                  setSelectedDay(selectedDay === key ? null : key);
                   onDayClick?.(key);
                 }}
                 className={cn(

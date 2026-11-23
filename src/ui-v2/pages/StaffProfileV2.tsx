@@ -12,6 +12,7 @@ import {
   UserPlus,
 } from "lucide-react";
 
+import { inPageBack } from "@/lib/dashboard/describeLocation";
 import type { GameStateData } from "@/store/gameStore";
 import { hireStaff, releaseStaff } from "@/services/staffService";
 import {
@@ -46,6 +47,8 @@ const ROLE_ICONS: Record<string, React.ReactNode> = {
 interface StaffProfileV2Props {
   gameState: GameStateData;
   staffId: string;
+  /** Where Back lands, as the header names it (R41); omitted when the page is shown on its own. */
+  backTo?: string | null;
   onClose: () => void;
   onGameUpdate?: (state: GameStateData) => void;
   onSelectTeam?: (id: string) => void;
@@ -72,6 +75,7 @@ function AttrBar({ label, value }: { label: string; value: number }) {
 export default function StaffProfileV2({
   gameState,
   staffId,
+  backTo,
   onClose,
   onGameUpdate,
   onSelectTeam,
@@ -99,6 +103,7 @@ export default function StaffProfileV2({
   const canHire = isFreeAgent && managerTeamId != null && !isOwner;
   const realName = `${staff.first_name} ${staff.last_name}`.trim();
   const hasNickname = !!staff.nickname?.trim();
+  const back = inPageBack(t, backTo);
 
   const runAction = async (fn: (id: string) => Promise<GameStateData>) => {
     setActionLoading(true);
@@ -117,10 +122,12 @@ export default function StaffProfileV2({
     <div className="flex h-full flex-col overflow-y-auto scrollbar-v2 p-6">
       <button
         type="button"
-        onClick={onClose}
-        className="mb-4 inline-flex w-fit items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+        onClick={back.disabled ? undefined : onClose}
+        aria-label={back.label}
+        aria-disabled={back.disabled || undefined}
+        className="mb-4 inline-flex w-fit items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 font-heading text-xs font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground aria-disabled:cursor-default aria-disabled:text-dim aria-disabled:hover:text-dim aria-disabled:forced-colors:text-[color:GrayText]"
       >
-        <ChevronLeft className="size-4" />
+        <ChevronLeft aria-hidden="true" className="size-4" />
         {t("common.back", { defaultValue: "Volver" })}
       </button>
 
@@ -137,9 +144,10 @@ export default function StaffProfileV2({
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-heading text-2xl font-bold uppercase tracking-wide text-foreground">
+              {/* h2: the bar's h1 already names this staff member (R52). */}
+              <h2 className="font-heading text-2xl font-bold uppercase tracking-wide text-foreground">
                 {staffDisplayName(staff)}
-              </h1>
+              </h2>
               <Badge
                 variant={ovr >= 65 ? "default" : ovr >= 45 ? "secondary" : "outline"}
                 className="text-xs"

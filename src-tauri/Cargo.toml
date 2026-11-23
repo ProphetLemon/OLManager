@@ -1,6 +1,6 @@
 [package]
 name = "openleaguemanager"
-version = "2026.1123.1"
+version = "2026.1123.2"
 description = "Open League Manager"
 authors = ["KOI Noboris Development Team <noboriskoi@gmail.com>"]
 repository = "https://github.com/OpenLeagueManager/OLManager"
@@ -55,6 +55,10 @@ tauri-plugin-fs = "2"
 # Already in the lock file (tao and wry use it); used for the start-up question.
 gtk = "0.18.2"
 # dup2 onto stderr for the start-up rendering watch (already in the lock file).
+libc = "0.2"
+
+[target.'cfg(target_os = "android")'.dependencies]
+# _exit at the end of the app, so the process skips the C++ static destructors.
 libc = "0.2"
 
 [dev-dependencies]

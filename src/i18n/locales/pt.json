@@ -294,6 +294,7 @@
     "competitions": "Competições",
     "noActiveGame": "Nenhum jogo ativo",
     "noActiveGameDesc": "Inicie ou carregue um jogo para continuar.",
+    "noActiveGameBack": "Menu principal",
     "phaseLabels": {
       "scrimBlock": "Scrims"
     }
@@ -1742,6 +1743,7 @@
     "updateAvailableDetail": "A versão {{version}} está disponível",
     "upToDate": "Tens a versão mais recente",
     "noPlatformBuild": "Existe uma versão, mas ainda não tem compilação para o teu sistema",
+    "updateCheckFailed": "Não foi possível verificar se há atualizações. Verifica a tua ligação e tenta novamente.",
     "androidUpdateAvailable": "Há uma nova versão disponível. Descarrega o novo APK a partir da página da versão.",
     "androidUpdateKeepsSaves": "Ao instalá-lo por cima da aplicação atual, os teus jogos guardados são mantidos.",
     "androidUpdateDownload": "Descarregar o novo APK",
@@ -3699,7 +3701,14 @@
       "manager": "Perfil do treinador",
       "needsCall_one": "{{label}}, precisa da sua decisão",
       "needsCall_other": "{{label}}, {{count}} precisam da sua decisão",
-      "more": "Mais"
+      "more": "Mais",
+      "go": "Ir para…",
+      "goShort": "Ir"
+    },
+    "lane": {
+      "title": "Antes de continuar",
+      "allOnHome_one": "Ver no Início",
+      "allOnHome_other": "Todas as {{count}} no Início"
     },
     "bar": {
       "phase": {
@@ -3715,7 +3724,27 @@
       "matchDay": "Dia de jogo",
       "skipToMatchDay": "Simular até à próxima partida",
       "skipToNextDay": "Saltar para o dia seguinte",
-      "clock": "Data e fase do jogo"
+      "clock": "Data e fase do jogo",
+      "backTo": "Voltar: {{destination}}",
+      "backNone": "Não há para onde voltar"
+    },
+    "route": {
+      "now": "Agora: {{title}}, {{group}}",
+      "nowNoGroup": "Agora: {{title}}"
+    },
+    "palette": {
+      "title": "Ir para",
+      "placeholder": "Pesquisar secções e locais",
+      "close": "Fechar",
+      "groups": {
+        "recent": "Recentes",
+        "sections": "Secções",
+        "views": "Vistas"
+      },
+      "results_one": "{{count}} resultado",
+      "results_other": "{{count}} resultados",
+      "empty": "Sem resultados para «{{query}}»",
+      "nothing": "Nenhum destino"
     },
     "tags": {
       "blocker": "Bloqueio",

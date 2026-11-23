@@ -294,6 +294,7 @@
     "competitions": "Competiciones",
     "noActiveGame": "Sin partida activa",
     "noActiveGameDesc": "Inicia o carga una partida para continuar.",
+    "noActiveGameBack": "Menú principal",
     "phaseLabels": {
       "scrimBlock": "Scrims"
     }
@@ -1928,6 +1929,7 @@
     "updateAvailableDetail": "La versión {{version}} está disponible",
     "upToDate": "Tienes la última versión",
     "noPlatformBuild": "Hay una versión nueva, pero todavía no tiene compilación para tu sistema",
+    "updateCheckFailed": "No se pudo comprobar si hay actualizaciones. Revisa tu conexión e inténtalo de nuevo.",
     "androidUpdateAvailable": "Hay una versión nueva. Descarga el nuevo APK desde la página de la versión.",
     "androidUpdateKeepsSaves": "Al instalarlo sobre la app actual se conservan tus partidas.",
     "androidUpdateDownload": "Descargar el nuevo APK",
@@ -3699,7 +3701,14 @@
       "manager": "Perfil del mánager",
       "needsCall_one": "{{label}}, requiere tu decisión",
       "needsCall_other": "{{label}}, {{count}} requieren tu decisión",
-      "more": "Más"
+      "more": "Más",
+      "go": "Ir a…",
+      "goShort": "Ir"
+    },
+    "lane": {
+      "title": "Antes de continuar",
+      "allOnHome_one": "Verla en Inicio",
+      "allOnHome_other": "Las {{count}} en Inicio"
     },
     "bar": {
       "phase": {
@@ -3715,7 +3724,27 @@
       "matchDay": "Día de partida",
       "skipToMatchDay": "Simular hasta la próxima partida",
       "skipToNextDay": "Saltar al día siguiente",
-      "clock": "Fecha y fase del juego"
+      "clock": "Fecha y fase del juego",
+      "backTo": "Volver a {{destination}}",
+      "backNone": "No hay nada a lo que volver"
+    },
+    "route": {
+      "now": "Ahora en {{title}}, {{group}}",
+      "nowNoGroup": "Ahora en {{title}}"
+    },
+    "palette": {
+      "title": "Ir a",
+      "placeholder": "Buscar secciones y lugares",
+      "close": "Cerrar",
+      "groups": {
+        "recent": "Recientes",
+        "sections": "Secciones",
+        "views": "Vistas"
+      },
+      "results_one": "{{count}} resultado",
+      "results_other": "{{count}} resultados",
+      "empty": "Sin resultados para «{{query}}»",
+      "nothing": "No hay ningún destino"
     },
     "tags": {
       "blocker": "Bloqueo",

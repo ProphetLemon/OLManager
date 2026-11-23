@@ -4,6 +4,7 @@ import type { Ref } from "react";
 import { cn } from "@/ui-v2/lib/utils";
 
 import { ACTIVE_ROW_CLASS, RailActiveBar, badgeText as formatBadge } from "./railActive";
+import { RAIL_FOCUS_CLASS } from "./RailItem";
 
 export type RailRowKind = "leaf" | "header" | "child" | "panel";
 
@@ -78,7 +79,7 @@ export function RailRow({
       className={cn(
         "relative flex w-full items-center gap-2 rounded-[0.625rem] pe-2 text-start transition-colors",
         bold ? "font-bold" : "font-medium",
-        "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring",
+        RAIL_FOCUS_CLASS,
         kind === "child"
           ? "h-[var(--nav-row-child)] ps-[var(--nav-indent)]"
           : kind === "panel"

@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Filter, Newspaper } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { GameStateData } from "@/store/gameStore";
+import { useTabUiField } from "@/store/tabUiStore";
 import { resolveNewsArticle } from "@/lib/i18n/backendI18n";
 import { buildNewsView } from "@/lib/news/helpers";
 import { Button } from "@/ui-v2/components/ui/button";
@@ -19,10 +20,11 @@ const PILL =
 
 export function NewsTabV2({ gameState, onSelectTeam }: NewsTabV2Props) {
   const { t } = useTranslation();
-  const [filterCategory, setFilterCategory] = useState<string | null>(null);
-  const [filterTeamId, setFilterTeamId] = useState<string | null>(null);
+  // Category, team and page survive a team visit (R23); the open article stays local.
+  const [filterCategory, setFilterCategory] = useTabUiField("news", "category");
+  const [filterTeamId, setFilterTeamId] = useTabUiField("news", "team");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useTabUiField("news", "page");
 
   const articles = useMemo(() => (gameState.news || []).map(resolveNewsArticle), [gameState.news]);
   const view = buildNewsView(articles, gameState.teams, {

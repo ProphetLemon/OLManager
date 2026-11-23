@@ -14,12 +14,15 @@ export interface RailModeState {
   platform: RailPlatform;
 }
 
+/** Height pinned above the tree: px, or px for a root size (the Go row scales with the root). */
+export type RailReserve = number | ((rootPx: number) => number);
+
 interface Measured {
   slotW: number;
   slotH: number;
   rootPx: number;
   platform: RailPlatform;
-  reservedTop: number;
+  reservedTop: RailReserve;
   mode: RailMode;
   /** False until the observer first reports a size. */
   measured: boolean;
@@ -38,6 +41,10 @@ function readPlatform(): RailPlatform {
 }
 
 const KEYS = ["mode", "slotW", "slotH", "rootPx", "platform", "reservedTop", "measured"] as const;
+
+/** The reserve in px at the measured root size. */
+const reserveOf = (m: Pick<Measured, "reservedTop" | "rootPx">): number =>
+  typeof m.reservedTop === "function" ? m.reservedTop(m.rootPx) : m.reservedTop;
 const same = (a: Measured, b: Measured) => KEYS.every((k) => a[k] === b[k]);
 
 /** Pure step: change some inputs and re-decide the mode, with the old mode as `current`. */
@@ -57,7 +64,7 @@ function next(prev: Measured, patch: Partial<Omit<Measured, "mode">>): Measured 
     rootPx: merged.rootPx,
     // The first real measurement is decided without hysteresis.
     current: prev.measured ? prev.mode : "tree",
-    reservedTop: merged.reservedTop,
+    reservedTop: reserveOf(merged),
   });
   return keep({ ...merged, mode });
 }
@@ -71,7 +78,7 @@ function next(prev: Measured, patch: Partial<Omit<Measured, "mode">>): Measured 
  */
 export function useRailMode(
   slot: HTMLElement | null,
-  { reservedTop = 0 }: { reservedTop?: number } = {},
+  { reservedTop = 0 }: { reservedTop?: RailReserve } = {},
 ): RailModeState {
   const uiScale = useSettingsStore((s) => s.settings.ui_scale);
   const [m, setM] = useState<Measured>(() => {
@@ -130,5 +137,5 @@ export function useRailMode(
     setM((prev) => next(prev, { reservedTop }));
   }, [reservedTop]);
 
-  return { mode: m.mode, slotW: m.slotW, slotH: m.slotH, need: railNeed(m.rootPx, m.reservedTop), rootPx: m.rootPx, platform: m.platform };
+  return { mode: m.mode, slotW: m.slotW, slotH: m.slotH, need: railNeed(m.rootPx, reserveOf(m)), rootPx: m.rootPx, platform: m.platform };
 }

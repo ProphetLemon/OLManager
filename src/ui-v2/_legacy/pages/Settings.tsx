@@ -61,6 +61,7 @@ export default function Settings() {
     updateInfo,
     checking: checkingUpdate,
     noPlatformBuild,
+    error: updateError,
     check: checkUpdate,
   } = useUpdater(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("display");
@@ -113,13 +114,13 @@ export default function Settings() {
 
   // Show "up to date" feedback when a manual check completes with no update
   useEffect(() => {
-    if (prevChecking.current && !checkingUpdate && !updateAvailable && !noPlatformBuild) {
+    if (prevChecking.current && !checkingUpdate && !updateAvailable && !noPlatformBuild && !updateError) {
       setShowUpToDate(true);
       const timer = setTimeout(() => setShowUpToDate(false), 3000);
       return () => clearTimeout(timer);
     }
     prevChecking.current = checkingUpdate;
-  }, [checkingUpdate, updateAvailable, noPlatformBuild]);
+  }, [checkingUpdate, updateAvailable, noPlatformBuild, updateError]);
 
   const handleUpdate = (partial: Partial<AppSettings>) => {
     updateSettings(partial);
@@ -479,7 +480,7 @@ export default function Settings() {
             >
               <GameButton
                 tone="primary"
-                disabled={checkingUpdate}
+                busy={checkingUpdate}
                 onClick={checkUpdate}
               >
                 {checkingUpdate ? (
@@ -531,6 +532,14 @@ export default function Settings() {
                   <Download className="w-4 h-4" aria-hidden="true" />
                   {t("settings.androidUpdateDownload")}
                 </button>
+              </div>
+            )}
+
+            {updateError && !checkingUpdate && (
+              <div role="alert" className="rounded-lg bg-accent-400/10 border border-accent-400/30 p-3">
+                <p className="text-xs text-accent-400 font-medium">
+                  {t("settings.updateCheckFailed")}
+                </p>
               </div>
             )}
 
@@ -782,11 +791,14 @@ function GameButton({
   children,
   tone = "neutral",
   disabled,
+  busy,
 }: {
   onClick: () => void;
   children: React.ReactNode;
   tone?: "neutral" | "primary" | "danger";
   disabled?: boolean;
+  // Looks disabled and ignores presses, but stays focusable so keyboard focus survives the wait.
+  busy?: boolean;
 }) {
   const tones = {
     neutral:
@@ -798,9 +810,10 @@ function GameButton({
   };
   return (
     <button
-      onClick={onClick}
+      onClick={busy ? undefined : onClick}
       disabled={disabled}
-      className={`flex items-center gap-2 px-4 py-2 rounded-lg border bg-transparent text-sm font-heading font-bold uppercase tracking-wider transition-colors disabled:opacity-50 ${tones[tone]}`}
+      aria-disabled={busy || undefined}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg border bg-transparent text-sm font-heading font-bold uppercase tracking-wider transition-colors disabled:opacity-50 aria-disabled:opacity-50 ${tones[tone]}`}
     >
       {children}
     </button>

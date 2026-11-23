@@ -294,6 +294,7 @@
     "competitions": "Compétitions",
     "noActiveGame": "Aucune partie active",
     "noActiveGameDesc": "Lancez ou chargez une partie pour continuer.",
+    "noActiveGameBack": "Menu principal",
     "phaseLabels": {
       "scrimBlock": "Scrims"
     }
@@ -1742,6 +1743,7 @@
     "updateAvailableDetail": "La version {{version}} est disponible",
     "upToDate": "Vous êtes à jour",
     "noPlatformBuild": "Une version existe, mais elle n'a pas encore de build pour votre système",
+    "updateCheckFailed": "Impossible de vérifier les mises à jour. Vérifiez votre connexion et réessayez.",
     "androidUpdateAvailable": "Une nouvelle version est disponible. Téléchargez le nouvel APK depuis la page de la version.",
     "androidUpdateKeepsSaves": "L'installer par-dessus l'application actuelle conserve vos sauvegardes.",
     "androidUpdateDownload": "Télécharger le nouvel APK",
@@ -3693,13 +3695,20 @@
   "onAir": {
     "nav": {
       "rail": "Navigation principale",
-      "sections": "Sections {{group}}",
+      "sections": "Rubriques {{group}}",
       "skip": "Aller au contenu principal",
       "bug": "Signaler un bug",
       "manager": "Profil du manager",
       "needsCall_one": "{{label}}, attend votre décision",
       "needsCall_other": "{{label}}, {{count}} attendent votre décision",
-      "more": "Plus"
+      "more": "Plus",
+      "go": "Aller à…",
+      "goShort": "Aller"
+    },
+    "lane": {
+      "title": "Avant de continuer",
+      "allOnHome_one": "La voir dans Accueil",
+      "allOnHome_other": "Les {{count}} dans Accueil"
     },
     "bar": {
       "phase": {
@@ -3715,7 +3724,27 @@
       "matchDay": "Jour de match",
       "skipToMatchDay": "Simuler jusqu'au prochain match",
       "skipToNextDay": "Passer au jour suivant",
-      "clock": "Date et phase du jeu"
+      "clock": "Date et phase du jeu",
+      "backTo": "Retour : {{destination}}",
+      "backNone": "Aucun retour possible"
+    },
+    "route": {
+      "now": "Maintenant : {{title}}, {{group}}",
+      "nowNoGroup": "Maintenant : {{title}}"
+    },
+    "palette": {
+      "title": "Aller à",
+      "placeholder": "Rechercher sections et lieux",
+      "close": "Fermer",
+      "groups": {
+        "recent": "Récents",
+        "sections": "Rubriques",
+        "views": "Vues"
+      },
+      "results_one": "{{count}} résultat",
+      "results_other": "{{count}} résultats",
+      "empty": "Aucun résultat pour « {{query}} »",
+      "nothing": "Aucune destination"
     },
     "tags": {
       "blocker": "Blocage",

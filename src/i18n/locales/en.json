@@ -294,6 +294,7 @@
     "competitions": "Competitions",
     "noActiveGame": "No active game",
     "noActiveGameDesc": "Start or load a game to continue.",
+    "noActiveGameBack": "Main menu",
     "phaseLabels": {
       "scrimBlock": "Scrims"
     }
@@ -1939,6 +1940,7 @@
     "updateAvailableDetail": "Version {{version}} is available",
     "upToDate": "You're up to date",
     "noPlatformBuild": "A release exists, but it has no build for your system yet",
+    "updateCheckFailed": "Couldn't check for updates. Check your connection and try again.",
     "androidUpdateAvailable": "A new version is available. Download the new APK from the release page.",
     "androidUpdateKeepsSaves": "Installing it over the current app keeps your saves.",
     "androidUpdateDownload": "Download the new APK",
@@ -3733,7 +3735,14 @@
       "manager": "Manager profile",
       "needsCall_one": "{{label}}, needs your call",
       "needsCall_other": "{{label}}, {{count}} need your call",
-      "more": "More"
+      "more": "More",
+      "go": "Go to…",
+      "goShort": "Go"
+    },
+    "lane": {
+      "title": "Before you continue",
+      "allOnHome_one": "See it on Home",
+      "allOnHome_other": "All {{count}} on Home"
     },
     "bar": {
       "phase": {
@@ -3749,7 +3758,27 @@
       "matchDay": "Match day",
       "skipToMatchDay": "Simulate to next match",
       "skipToNextDay": "Skip to next day",
-      "clock": "Game date and phase"
+      "clock": "Game date and phase",
+      "backTo": "Back to {{destination}}",
+      "backNone": "Nothing to go back to"
+    },
+    "route": {
+      "now": "Now on {{title}}, {{group}}",
+      "nowNoGroup": "Now on {{title}}"
+    },
+    "palette": {
+      "title": "Go to",
+      "placeholder": "Search sections and places",
+      "close": "Close",
+      "groups": {
+        "recent": "Recent",
+        "sections": "Sections",
+        "views": "Views"
+      },
+      "results_one": "{{count}} result",
+      "results_other": "{{count}} results",
+      "empty": "No matches for “{{query}}”",
+      "nothing": "Nothing to go to"
     },
     "tags": {
       "blocker": "Blocker",

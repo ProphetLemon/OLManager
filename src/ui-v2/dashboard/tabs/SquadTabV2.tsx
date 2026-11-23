@@ -18,6 +18,7 @@ import {
 } from "@/lib/squad/imports";
 import { getPlayerCardModel, shortRoleKey, type PlayerCardModel } from "@/lib/squad/cards";
 import type { LolRole } from "@/lib/home/scoreboard";
+import { useTabUiField, useValidTabUiField, type SquadTabUiState } from "@/store/tabUiStore";
 
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { SegmentedControl } from "@/ui-v2/components/ui/segmented-control";
@@ -32,8 +33,8 @@ import { StartingFiveGrid } from "./squad/StartingFiveGrid";
 
 // ─── Types ──────────────────────────────────────────────────────
 
-type SortKey = "pos" | "ovr" | "condition" | "fitness" | "morale" | "age";
-type RoleFilter = "all" | LolRole;
+type SortKey = SquadTabUiState["sortKey"];
+type RoleFilter = SquadTabUiState["roleFilter"];
 
 const LOL_ROLE_ORDER: Record<LolRole, number> = {
   TOP: 1,
@@ -64,11 +65,11 @@ export function SquadTabV2({
   onNavigate,
 }: SquadTabV2Props) {
   const { t, i18n } = useTranslation();
-  const [sortKey, setSortKey] = useState<SortKey>("pos");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // View state lives in the tab UI store, so it survives a profile visit (R23).
+  const [sortKey, setSortKey] = useTabUiField("squad", "sortKey");
+  const [sortDir, setSortDir] = useTabUiField("squad", "sortDir");
+  const [search, setSearch] = useTabUiField("squad", "search");
+  const [roleFilter, setRoleFilter] = useTabUiField("squad", "roleFilter");
   const [savingSlot, setSavingSlot] = useState<string | null>(null);
   const [lineupNotice, setLineupNotice] = useState<string | null>(null);
   const autoSaveChecked = useRef(false);
@@ -93,6 +94,9 @@ export function SquadTabV2({
     () => new Map(roster.map((player) => [player.id, player])),
     [roster],
   );
+  // A selected player who has since left the club reads as no selection.
+  const isOnRoster = useCallback((id: string) => playersById.has(id), [playersById]);
+  const [selectedId, setSelectedId] = useValidTabUiField("squad", "selectedId", isOnRoster);
   const activeLineupSlots = useMemo(
     () => buildActiveLineupSlots(LOL_ACTIVE_ROLES, activeLineupIds, playersById),
     [activeLineupIds, playersById],

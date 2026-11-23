@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import type { GameStateData } from "@/store/gameStore";
+import { useTabUiField, type TrainingTabUiState } from "@/store/tabUiStore";
 import {
   setTraining,
   setTrainingSchedule,
@@ -373,7 +374,8 @@ export function TrainingTabV2({
   ];
 
   // ─── Tab state ───────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState("training");
+  // Kept in the tab UI store, so a profile visit returns to the same view (R23).
+  const [activeTab, setActiveTab] = useTabUiField("training", "view");
 
   // ─── SoloQ Ranks ─────────────────────────────────────────────
   const soloQRanksCard = (
@@ -480,7 +482,11 @@ export function TrainingTabV2({
   // ─── Render ──────────────────────────────────────────────────
   return (
     <div className="flex h-full flex-col gap-4 overflow-y-auto p-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as TrainingTabUiState["view"])}
+        className="flex-1 min-h-0"
+      >
         <TabsList variant="line">
           <TabsTrigger value="training">
             {t("training.tab.training", { defaultValue: "Entrenamiento" })}

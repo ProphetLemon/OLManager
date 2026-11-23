@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 
 import type { GameStateData } from "@/store/gameStore";
+import { useTabUiField } from "@/store/tabUiStore";
 import {
   formatStaffEffectPercent,
   getLolStaffEffectsForTeam,
@@ -73,7 +74,8 @@ const TIER_BADGE_CLASS: Record<string, string> = {
 
 export function MetaTabV2({ gameState, onViewChampion, onGameUpdate }: MetaTabV2Props) {
   const { t, i18n } = useTranslation();
-  const [metaRoleFilter, setMetaRoleFilter] = useState<"ALL" | UiRole>("ALL");
+  // Kept in the tab UI store, so a champion visit returns to the same filter (R23).
+  const [metaRoleFilter, setMetaRoleFilter] = useTabUiField("meta", "roleFilter");
   const [delegating, setDelegating] = useState(false);
 
   const managerTeamId = gameState.manager.team_id;

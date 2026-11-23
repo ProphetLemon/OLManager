@@ -1,11 +1,12 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { GameStateData } from "@/store/gameStore";
-import { useNavMemoryStore } from "@/store/navMemoryStore";
+import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
+import { resetSessionNavigation } from "@/store/sessionReset";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn((command: string) => {
@@ -52,7 +53,34 @@ vi.mock("@/ui-v2/dashboard/tabs/HomeTabV2", () => ({
   ),
 }));
 vi.mock("@/ui-v2/dashboard/tabs/YouthTabV2", () => ({
-  YouthTabV2: () => <div data-testid="youth-tab-v2" />,
+  YouthTabV2: ({ onSelectPlayer }: { onSelectPlayer: (id: string, options?: { openRenewal?: boolean }) => void }) => (
+    <div data-testid="youth-tab-v2">
+      <button onClick={() => onSelectPlayer("p1", { openRenewal: true })}>renew-p1</button>
+    </div>
+  ),
+}));
+vi.mock("@/ui-v2/pages/PlayerProfileV2", () => ({
+  default: ({
+    startWithRenewalModal,
+    onClose,
+    onSelectTeam,
+  }: {
+    startWithRenewalModal?: boolean;
+    onClose: () => void;
+    onSelectTeam: (id: string) => void;
+  }) => (
+    <div data-testid="player-profile" data-renewal={String(startWithRenewalModal)}>
+      <button onClick={onClose}>close-profile</button>
+      <button onClick={() => onSelectTeam("team-1")}>open-team-1</button>
+    </div>
+  ),
+}));
+vi.mock("@/ui-v2/pages/TeamProfileV2", () => ({
+  default: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="team-profile">
+      <button onClick={onClose}>close-team</button>
+    </div>
+  ),
 }));
 
 function game(): GameStateData {
@@ -97,8 +125,17 @@ describe("DashboardV2 backend tab aliases", () => {
       showFiredModal: false,
     });
     useSettingsStore.setState({ loaded: true });
-    useNavMemoryStore.getState().resetNavMemory();
+    resetSessionNavigation();
   });
+
+  const renderAt = async (path: string) => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    return render(
+      <MemoryRouter initialEntries={[path]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+  };
 
   it("lands the backend 'YouthAcademy' tab on the v2 Youth tab", async () => {
     const DashboardV2 = (await import("./DashboardV2")).default;
@@ -134,24 +171,93 @@ describe("DashboardV2 backend tab aliases", () => {
     expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
   });
 
-  it("lets an alias route win over the remembered tab", async () => {
-    useNavMemoryStore.getState().rememberTab("Youth");
-    const DashboardV2 = (await import("./DashboardV2")).default;
+  it("keeps an open profile across an unmount, as Settings or a match do, and Back still reaches the tab", async () => {
+    const first = await renderAt("/dashboard");
+    fireEvent.click(await screen.findByRole("button", { name: "go-youth-academy" }));
+    fireEvent.click(await screen.findByRole("button", { name: "renew-p1" }, { timeout: 3000 }));
+    expect((await screen.findByTestId("player-profile")).dataset.renewal).toBe("true");
+    first.unmount();
 
-    render(
-      <MemoryRouter initialEntries={["/finanzas"]}>
-        <DashboardV2 />
-      </MemoryRouter>,
-    );
+    await renderAt("/dashboard");
+    const profile = await screen.findByTestId("player-profile", {}, { timeout: 3000 });
+    // The renewal intent rode the first visit only; the return does not reopen it.
+    expect(profile.dataset.renewal).toBe("false");
+
+    fireEvent.click(screen.getByRole("button", { name: "close-profile" }));
+    expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByTestId("player-profile")).toBeNull();
+  });
+
+  it("skips a profile whose player has left the game when going back", async () => {
+    await renderAt("/dashboard");
+    fireEvent.click(await screen.findByRole("button", { name: "go-youth-academy" }));
+    // p1 is not among the game's players: it was released or retired since.
+    fireEvent.click(await screen.findByRole("button", { name: "renew-p1" }, { timeout: 3000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "open-team-1" }));
+    fireEvent.click(await screen.findByRole("button", { name: "close-team" }, { timeout: 3000 }));
+
+    expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByTestId("player-profile")).toBeNull();
+  });
+
+  it("lets an alias route win over the remembered location", async () => {
+    useDashboardLocationStore.getState().go({ kind: "tab", tab: "Youth" });
+    await renderAt("/finanzas");
 
     await screen.findByRole("navigation", { name: "Main navigation" });
     expect(screen.queryByTestId("youth-tab-v2")).toBeNull();
-    expect(useNavMemoryStore.getState().activeTab).toBe("Finances");
+    expect(useDashboardLocationStore.getState().nav.activeTab).toBe("Finances");
   });
 
-  it("opens on Home once the remembered tab is reset", async () => {
-    useNavMemoryStore.getState().rememberTab("Youth");
-    useNavMemoryStore.getState().resetNavMemory();
+  it("names the header Back after where it lands, skipping a released player, and keeps focus on it", async () => {
+    await renderAt("/dashboard");
+    fireEvent.click(await screen.findByRole("button", { name: "go-youth-academy" }));
+    // p1 is not among the game's players: it was released or retired since.
+    fireEvent.click(await screen.findByRole("button", { name: "renew-p1" }, { timeout: 3000 }));
+    fireEvent.click(await screen.findByRole("button", { name: "open-team-1" }));
+    await screen.findByTestId("team-profile", {}, { timeout: 3000 });
+    // R21: the title is the team's name, not the tab's.
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Test Team");
+
+    const back = screen.getByRole("button", { name: "Back to Academy" });
+    act(() => back.focus());
+    fireEvent.click(back);
+
+    expect(await screen.findByTestId("youth-tab-v2", {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Academy");
+    expect(back).toHaveFocus();
+    expect(back).toHaveAccessibleName("Back to Home");
+
+    fireEvent.click(back);
+    expect(back).toHaveAccessibleName("Nothing to go back to");
+    expect(back).toHaveAttribute("aria-disabled", "true");
+    expect(back).toHaveFocus();
+  });
+
+  it("never commits the remembered tab on an alias mount, so its effects never run", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.mocked(invoke).mockClear();
+    useDashboardLocationStore.getState().go({ kind: "tab", tab: "Youth" });
+    await renderAt("/finanzas");
+
+    await screen.findByRole("navigation", { name: "Main navigation" });
+    const presence = vi.mocked(invoke).mock.calls.filter(([command]) => command === "update_discord_presence");
+    expect(presence.length).toBeGreaterThan(0);
+    expect(presence.map(([, args]) => args)).not.toContainEqual({ stateKey: "youth" });
+  });
+
+  it("keeps the alias route when the backend probe activates the game after mount", async () => {
+    useGameStore.setState({ hasActiveGame: false, gameState: null });
+    await renderAt("/finanzas");
+
+    await screen.findByRole("navigation", { name: "Main navigation" });
+    expect(useGameStore.getState().hasActiveGame).toBe(true);
+    expect(useDashboardLocationStore.getState().nav.activeTab).toBe("Finances");
+  });
+
+  it("opens on Home once the session is reset", async () => {
+    useDashboardLocationStore.getState().go({ kind: "tab", tab: "Youth" });
+    resetSessionNavigation();
     const DashboardV2 = (await import("./DashboardV2")).default;
 
     render(
