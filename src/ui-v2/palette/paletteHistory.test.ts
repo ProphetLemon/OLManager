@@ -81,6 +81,16 @@ describe("paletteHistory fallbacks", () => {
     expect(push).toHaveBeenCalledTimes(2);
   });
 
+  it("reads a pop that arrives after the fallback as an ordinary pop (null)", async () => {
+    // DashboardV2 then navigates to /dashboard with replace for it. That is accepted: the
+    // fallback only fires when the WebView dropped the pop, and a late one is rare.
+    const mod = await load();
+    mod.pushPaletteEntry();
+    mod.releasePaletteEntry();
+    vi.advanceTimersByTime(mod.PALETTE_ENTRY_POP_TIMEOUT_MS);
+    expect(pop(mod)).toBeNull();
+  });
+
   it("forgets an entry taken off by an unmount whose pop never comes", async () => {
     const mod = await load();
     mod.pushPaletteEntry();

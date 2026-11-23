@@ -96,6 +96,9 @@ function classify(event: Event): PaletteEntryPop | null {
       runWaiters();
     }
   }
+  // A pop that comes after the fallback has fired finds `entry === "none"` and is `null`:
+  // DashboardV2 navigates to /dashboard with replace for it. That is accepted, since the
+  // fallback only fires when the WebView dropped the pop, and a late one is rare.
   verdicts.set(event, verdict);
   return verdict;
 }
