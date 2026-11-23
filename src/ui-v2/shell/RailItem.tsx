@@ -49,10 +49,12 @@ export const RAIL_STOP_CLASS =
 export const RAIL_STOP_LABELLED_CLASS = "min-h-[var(--hit)] min-w-[var(--hit)] gap-0.5 px-1 py-1.5";
 /**
  * The inset focus ring every rail control wears. The ring is a box-shadow, which forced
- * colours drops, so the outline is hidden, not removed: forced colours paints it (R88).
+ * colours drops, so the outline is hidden, not removed: forced colours paints it (R88). It is
+ * drawn inside the control there: the Split column and panel scroll and would clip the
+ * 2 px offset at their top edge (R98).
  */
 export const RAIL_FOCUS_CLASS =
-  "focus-visible:outline-hidden focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring";
+  "focus-visible:outline-hidden forced-colors:focus-visible:-outline-offset-2 focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-ring";
 
 /** One icon-over-label stop of the navigation rail. */
 export function RailItem({

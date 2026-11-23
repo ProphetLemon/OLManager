@@ -34,4 +34,11 @@ describe("the rail keeps a focus outline in forced colours (R88)", () => {
     expect(railCellClass()).toContain("focus-visible:outline-hidden");
     expect(railCellClass("danger")).toContain("focus-visible:outline-hidden");
   });
+
+  // R98: the outline sits 2 px outside its box, and the scrolling Split column and panel
+  // clip it at the top, so in forced colours it is drawn inside.
+  it("draws the forced-colours outline inside the control, so a scroller cannot clip it (R98)", () => {
+    expect(RAIL_FOCUS_CLASS).toContain("forced-colors:focus-visible:-outline-offset-2");
+    expect(railCellClass()).toContain("forced-colors:focus-visible:-outline-offset-2");
+  });
 });
