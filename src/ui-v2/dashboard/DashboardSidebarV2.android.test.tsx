@@ -177,6 +177,24 @@ describe("Android group sheet", () => {
     expect(within(dialog).getByRole("button", { name: "Finances" })).toHaveFocus();
   });
 
+  it("keeps type-ahead inside the sheet: a letter never moves focus to a rail stop behind it", async () => {
+    setup({ activeTab: "Squad" });
+    const dialog = await open();
+    const squad = within(dialog).getByRole("button", { name: "Squad" });
+    await waitFor(() => expect(squad).toHaveFocus());
+    press(squad, "h"); // "Home" is a rail stop; no section of Club starts with h
+    expect(squad).toHaveFocus();
+  });
+
+  it("still answers type-ahead for a section of the sheet", async () => {
+    setup({ activeTab: "Squad" });
+    const dialog = await open();
+    const squad = within(dialog).getByRole("button", { name: "Squad" });
+    await waitFor(() => expect(squad).toHaveFocus());
+    press(squad, "t");
+    expect(within(dialog).getByRole("button", { name: "Tactics" })).toHaveFocus();
+  });
+
   it("navigates and closes when a section is chosen, once the sheet has closed", async () => {
     const onSheetNavigate = vi.fn();
     const { props } = setup({ onSheetNavigate });

@@ -39,7 +39,7 @@ src/
 │   │   └── pages/
 │   ├── components/ui/         # shadcn primitives + On Air primitives (see section 4)
 │   ├── shell/                 # navModel.ts (paradas, grupos, defaultOpen), railMode.ts (Tree/Split puro), treeRows.ts (teclado puro),
-│   │                          # RailTree, RailSplit, RailUtility, RailMore, RailRow, RailItem, useRailMode, useFadeMask, attention.ts, ClockPlate
+│   │                          # RailTree, RailSplit, RailUtility, RailMore, PhoneMoreMenu (el menú Más en la barra del teléfono), RailRow, RailItem, useRailMode, useFadeMask, attention.ts, ClockPlate
 │   │                          # (estado en store/navMemoryStore: última por grupo, grupos abiertos; la ubicación,
 │   │                          #  la pila de Back (30) y Recent (6) en store/dashboardLocationStore; reset en store/sessionReset)
 │   ├── sheet/                 # useSheetBack (contrato de Atrás de un overlay modal en Android: entrada de historial compartida o dismisser nativo; lo usan GoPalette, RailMore y SideSheet; una hoja sólo libera la entrada que empujó ella misma, así que otra hoja abierta o una cerrada no se la quitan) y SideSheet (hoja lateral modal sobre Base UI Dialog: lado, ancho `--sheet-w`, foco al abrir y al volver, Atrás, teclado en pantalla con `--sheet-vvh`, activación R37; la paleta Go de Android es su primer uso; el popup de escritorio de la paleta no es una hoja)
@@ -74,7 +74,7 @@ src/
 | AppV2 | MainMenu, MatchSimulation, UpdateModal (sólo escritorio); en Android, cuando el manifiesto no tiene build, el aviso nativo `ui-v2/updater/AndroidUpdateNotice` envía a la página de la última release; `SettingsV2` es nativo en `ui-v2/pages/` y envuelve `_legacy/pages/Settings` (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
 | DashboardV2 | `DashboardOverlays`, `FiredModal`, `dashboardHelpers` y `DashboardWorkspaceContent` → `DashboardTabContent` → `EndOfSeasonScreen`: ese camino sólo se monta con la pantalla de fin de temporada (Home); el resto de pestañas son nativas v2 |
 | TeamSelectionV2 | `LeaguePickerV2`, `TeamGridV2`, `teamSelection.helpers`; FloatingBugButton en el pie de `RosterOverlayPanel` (prop `actions`), en todos los pasos de /select-team |
-| DashboardSidebarV2 | FloatingBugButton: variante `cell` (celda de iconos del cluster en Tree y Split de escritorio, con `open` controlado para abrirlo con Enter) y `hidden` (sólo el modal, abierto desde el menú Más de Android, donde las utilidades viven) |
+| DashboardSidebarV2 | FloatingBugButton: variante `cell` (celda de iconos del cluster en Tree y Split de escritorio, con `open` controlado para abrirlo con Enter) ; en el teléfono el modal (`hidden`) lo aloja `shell/PhoneMoreMenu`, el menú Más de la barra |
 | LiveMatchV2 | FloatingBugButton en la fila de controles de /match (no flota: no tapa el mapa ni las tarjetas) |
 
 El partido en directo ya no es un wrapper: `_legacy/pages/MatchSimulation` monta la pantalla nativa `ui-v2/match/LiveMatchV2` en la etapa `first_half`. Se retiraron `LolMatchLive`, `lol-prototype/ui/render.ts` y `lol-prototype/ui/panels.tsx` (y sus dos tests); un guard (`ui-v2/match/liveMatchCutover.guard.test.ts`) impide que vuelvan a importarse. Lo que sigue en `_legacy/` para esa pantalla es el motor (`lol-prototype/engine`, `backend`, `ui/stepInterpolation.ts`), `championProfiles`, `itemNames` y `matchRuntimeEvents`.

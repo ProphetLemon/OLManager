@@ -244,6 +244,8 @@ export function DashboardSidebarV2({
     orientation: "vertical",
     onSelect: (i) => stopsRef.current[i]?.activate(),
     getItemLabel: (i) => {
+      // With the sheet open, type-ahead stays in its list: the rail behind it is inert.
+      if (android && panelGroup && rows.find((r) => r.id === stops[i]?.id)?.column !== "panel") return "";
       const el = itemRefs.current[stops[i]?.id ?? ""];
       // Go's row and stop are named by their content, with no title or aria-label (R90).
       return el?.title || el?.getAttribute("aria-label") || el?.textContent?.trim() || "";
