@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readFileSync } from "node:fs";
 import i18n from "@/i18n";
 import { autofillPlans } from "@/lib/scrims/scrimPlans";
+import { dismissOverlayWithBack } from "@/ui-v2/palette/paletteHistory";
 import type { ScrimContextResponse, TodayScrimContext, WeeklyScrimContext, WeeklyScrimSlotContext } from "@/lib/scrims/scrimContext";
 import type { GameStateData, ScrimReportData, TeamData } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -209,8 +210,16 @@ function updatedAfterPush(): GameStateData {
   return base;
 }
 
-const cell = (id: string) => document.querySelector(`[data-row-id="${id}"]`) as HTMLElement;
 const pane = (name: string) => document.querySelector(`[data-slot="scrim-${name}-pane"]`);
+const home = () => document.querySelector('[data-slot="scrim-week-home"]');
+const frame = () => document.querySelector('[data-slot="scrim-view-frame"]');
+const frameHeading = () => frame()?.querySelector("[data-pane-heading]") as HTMLElement;
+const heroEl = () => document.querySelector('[data-slot="phone-week-hero"]') as HTMLElement;
+const entry = (name: string) => document.querySelector(`[data-slot="phone-week-entry"][data-home-control="${name}"]`) as HTMLElement;
+const block = (slotIndex: number) => document.querySelector(`[data-slot="phone-week-block"][data-slot-index="${slotIndex}"]`) as HTMLElement;
+const back = () => document.querySelector('[data-slot="scrim-view-back"]') as HTMLElement;
+/** The title of the open view: its frame's heading, or null on Semana. */
+const viewTitle = () => frame()?.querySelector('[data-slot="scrim-view-back"] span')?.textContent ?? null;
 
 function mount(context: ScrimContextResponse | null, state = game()) {
   contextMock.current = context;
@@ -234,112 +243,140 @@ afterEach(() => {
 });
 
 describe("ScrimsTabV2 on a phone: the frame", () => {
-  it("renders the list and one pane, filling its wrapper, and the CSS rule lets the wrapper go", () => {
+  it("fills its wrapper without a page scroll of its own, and the CSS rule lets the wrapper go", () => {
     const { container } = mount(monday());
-    expect(document.querySelector('[data-slot="phone-week-list"]')).not.toBeNull();
     // The wrapper that DashboardV2 renders carries the attribute (see DashboardV2.phoneFixed.test); the root only fills it.
     expect(container.firstElementChild).not.toHaveAttribute("data-phone-fixed");
     expect(container.firstElementChild?.className).toContain("h-full");
     expect(container.firstElementChild?.className).toContain("min-h-0");
     expect(appCss).toMatch(/\[data-form="phone"\] #main-content > \[data-phone-fixed\]/);
+    // Semana never scrolls: nothing in it is a scroll container.
+    expect(home()?.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
+    expect(container.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"]')).toBeNull();
   });
 
-  it("uses the specification's frame: 8 px margins and gap, 4 px on top, none under", () => {
-    const { container } = mount(monday());
-    const root = container.firstElementChild as HTMLElement;
-    for (const token of ["px-2", "pt-1", "pb-0", "gap-2"]) expect(root.className.split(" ")).toContain(token);
-    expect(root.className).toContain("grid-cols-[17rem_minmax(0,1fr)]");
-  });
-
-  it("gives the list rows of exactly 48 px and gauges of exactly 42 px, pinned to the bottom", () => {
+  it("a view has a top row of one target height with a real back button, the title as its heading and the body below", () => {
     mount(monday());
-    for (const id of ["objective", "volume", "slot:0"]) expect(cell(id).parentElement?.className).toContain("h-[var(--hit)]");
-    const gauges = document.querySelector('[data-slot="phone-week-gauges"]') as HTMLElement;
-    expect(gauges.className).toContain("h-[2.625rem]");
-    expect(gauges.className).toContain("mt-auto");
+    fireEvent.click(entry("objective"));
+    const top = document.querySelector('[data-slot="scrim-view-top"]') as HTMLElement;
+    expect(top.className).toContain("h-[var(--hit)]");
+    expect(back().tagName).toBe("BUTTON");
+    expect(frameHeading().tagName).toBe("H2");
+    expect(frameHeading()).toContainElement(back());
+    expect(viewTitle()).toBe("Objective");
+    expect(back()).toHaveAccessibleName("Back: Objective");
+    const body = document.querySelector('[data-slot="scrim-view-body"]') as HTMLElement;
+    expect(top.nextElementSibling).toBe(body);
+    expect(body.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
+    expect(home()).toBeNull();
   });
 
-  it("lets every pane scroll inside itself as a safety net, and the slot pane has no padding around its grid", () => {
-    mount(planning());
-    const check = () => {
-      const el = document.querySelector('[data-slot^="scrim-"][data-slot$="-pane"]') as HTMLElement;
-      expect(el.className).toContain("overflow-y-auto");
-      return el;
-    };
-    const editable = check();
-    expect(editable.className).not.toMatch(/(^| )p-\d/);
-    for (const id of ["objective", "volume", "report", "slot:0"]) {
-      fireEvent.click(cell(id));
-      check();
-    }
-  });
-
-  it("keeps the early states: no team and loading", () => {
+  it("keeps the early states: no team", () => {
     mount(monday(), game({ manager: { team_id: "nobody" } } as Partial<GameStateData>));
     expect(screen.getByText(/No team assigned/)).toBeInTheDocument();
-    expect(document.querySelector('[data-slot="phone-week-list"]')).toBeNull();
+    expect(home()).toBeNull();
   });
 });
 
-describe("ScrimsTabV2 on a phone: which pane a row shows", () => {
-  it("opens on the objective on a fresh Monday, and the objective, volume and report rows show their panes", () => {
+describe("ScrimsTabV2 on a phone: what opens on arrival", () => {
+  it("opens Semana on a fresh Monday, its hero asking for the objective", () => {
     mount(monday());
-    expect(pane("objective")).not.toBeNull();
-    fireEvent.click(cell("volume"));
-    expect(pane("volume")).not.toBeNull();
-    fireEvent.click(cell("report"));
-    expect(pane("report")).not.toBeNull();
-    fireEvent.click(cell("objective"));
-    expect(pane("objective")).not.toBeNull();
+    expect(home()).not.toBeNull();
+    expect(frame()).toBeNull();
+    expect(heroEl()).toHaveAttribute("data-state", "nextObjective");
   });
 
-  it("opens on the slot that carries Next, an editable slot pane", () => {
+  it("opens Semana while planning, its hero pointing at the slot with no Plan A", () => {
     mount(planning());
-    expect(cell("slot:1")).toHaveAttribute("aria-current", "true");
-    expect(pane("slot")).not.toBeNull();
-    expect(screen.getByRole("group", { name: "Rivals by overall rating" })).toBeInTheDocument();
+    expect(home()).not.toBeNull();
+    expect(heroEl()).toHaveAttribute("data-state", "nextSlot");
+    expect(heroEl()).toHaveTextContent("Wed B");
   });
 
-  it("shows the decision pane when the block waits for its decision", () => {
+  it("opens Decidir by itself when a block waits for its decision", () => {
     mount(afterBlockA());
-    expect(cell("slot:0")).toHaveAttribute("aria-current", "true");
+    expect(home()).toBeNull();
     expect(pane("decision")).not.toBeNull();
-    expect(pane("decision")?.className).toContain("overflow-y-auto");
+    expect(viewTitle()).toBe("Decide Wed A");
     expect(screen.getByRole("button", { name: /Push through/ })).toBeInTheDocument();
   });
 
-  it("shows the today pane for today's block on a scrim-day morning, and a read-only slot pane for the others", () => {
+  it("opens Semana on a scrim-day morning: the hero is today's block, with its sentence and the lock", () => {
     mount(scrimMorning());
-    expect(cell("slot:0")).toHaveAttribute("aria-current", "true");
-    expect(pane("today")).not.toBeNull();
-    fireEvent.click(cell("slot:2"));
-    expect(pane("today")).toBeNull();
+    expect(home()).not.toBeNull();
+    expect(heroEl()).toHaveAttribute("data-state", "today");
+    expect(heroEl()).toHaveTextContent("Nothing to decide right now. Wed A plays against Alpha when you continue.");
+    expect(heroEl()).toHaveTextContent("You confirmed this week's setup");
+    expect(heroEl()).toHaveTextContent("Today's Risk");
+    expect(within(heroEl()).queryAllByRole("button")).toHaveLength(0);
+    expect(block(0)).toHaveAttribute("data-hero", "true");
+  });
+
+  it("opens a view from each control of Semana: the entries, the hero and a block", () => {
+    mount(planning());
+    fireEvent.click(entry("objective"));
+    expect(pane("objective")).not.toBeNull();
+    fireEvent.click(back());
+    fireEvent.click(entry("volume"));
+    expect(pane("volume")).not.toBeNull();
+    fireEvent.click(back());
+    fireEvent.click(entry("report"));
+    expect(pane("report")).not.toBeNull();
+    fireEvent.click(back());
+    fireEvent.click(heroEl());
+    expect(pane("slot")).not.toBeNull();
+    expect(viewTitle()).toBe("Wed B");
+    expect(screen.getByRole("group", { name: "Rivals by overall rating" })).toBeInTheDocument();
+    fireEvent.click(back());
+    fireEvent.click(block(2));
+    expect(viewTitle()).toBe("Thu A");
+  });
+
+  it("a block of a locked week opens a read-only slot view, without the rivals", () => {
+    mount(scrimMorning());
+    fireEvent.click(block(2));
     expect(pane("slot")).not.toBeNull();
     expect(screen.queryByRole("group", { name: "Rivals by overall rating" })).toBeNull();
   });
 });
 
-describe("ScrimsTabV2 on a phone: what moves by itself", () => {
-  it("follows the row that starts to carry Decide when a block was played", () => {
+describe("ScrimsTabV2 on a phone: what moves by itself (BUILD-SPEC section 1)", () => {
+  it("a row that starts to carry Decide opens by itself", () => {
     const { swap } = mount(scrimMorning());
-    expect(pane("today")).not.toBeNull();
-    fireEvent.click(cell("report"));
+    expect(home()).not.toBeNull();
     swap(afterBlockA());
-    expect(cell("slot:0")).toHaveAttribute("aria-current", "true");
+    expect(pane("decision")).not.toBeNull();
+    expect(viewTitle()).toBe("Decide Wed A");
+  });
+
+  it("a row that starts to carry Decide opens by itself even when the player was in another view", () => {
+    const { swap } = mount(scrimMorning());
+    fireEvent.click(entry("report"));
+    swap(afterBlockA());
     expect(pane("decision")).not.toBeNull();
   });
 
-  it("does not follow a Next tag that moves because of the manager's own picks", () => {
+  it("a row that starts to carry Today moves to Semana, whose hero shows it", () => {
     const { swap } = mount(planning());
-    fireEvent.click(cell("report"));
-    swap(ctx(week({ objective: "Macro", planned: 2, slots: [slot(0, { plan: ["alpha"] }), slot(1, { plan: ["bravo"] }), slot(2), slot(3)] }), today()));
-    expect(cell("report")).toHaveAttribute("aria-current", "true");
+    fireEvent.click(entry("report"));
     expect(pane("report")).not.toBeNull();
+    swap(scrimMorning());
+    expect(home()).not.toBeNull();
+    expect(heroEl()).toHaveAttribute("data-state", "today");
   });
 
-  it("opens the Volume row once after the objective is chosen", async () => {
+  it("a Next tag that moves because of the manager's own picks never moves anything", () => {
+    const { swap } = mount(planning());
+    fireEvent.click(entry("report"));
+    swap(ctx(week({ objective: "Macro", planned: 2, slots: [slot(0, { plan: ["alpha"] }), slot(1, { plan: ["bravo"] }), slot(2), slot(3)] }), today()));
+    expect(pane("report")).not.toBeNull();
+    expect(home()).toBeNull();
+  });
+
+  it("opens Volume once after the objective is chosen", async () => {
     trainingMocks.setWeeklyScrimObjective.mockResolvedValue(game());
     mount(monday());
+    fireEvent.click(entry("objective"));
     fireEvent.click(screen.getByRole("button", { name: /Fix early game/ }));
     expect(pane("volume")).not.toBeNull();
     expect(trainingMocks.setWeeklyScrimObjective).toHaveBeenCalledWith("EarlyGame");
@@ -348,41 +385,71 @@ describe("ScrimsTabV2 on a phone: what moves by itself", () => {
 
   it("goes where phoneDoneTarget says on Done, and names that destination on its second line", () => {
     mount(planning());
+    fireEvent.click(heroEl());
     const done = screen.getByRole("button", { name: /Done/ });
     // Wed B is open and has no Plan A: the next slot with no Plan A after it is Thu A.
     expect(done).toHaveTextContent("Thu A");
     fireEvent.click(done);
-    expect(cell("slot:2")).toHaveAttribute("aria-current", "true");
+    expect(viewTitle()).toBe("Thu A");
     expect(screen.getByRole("button", { name: /Done/ })).toHaveTextContent("Thu B");
   });
 
-  it("saves a rival pick at once through the shared plan code and moves the slot pane's own tab", async () => {
+  it("saves a rival pick at once through the shared plan code", async () => {
     trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
     mount(planning());
+    fireEvent.click(heroEl());
     const grid = screen.getByRole("group", { name: "Rivals by overall rating" });
     fireEvent.click(within(grid).getAllByRole("button")[0]);
     await waitFor(() => expect(trainingMocks.setWeeklyScrimPlans).toHaveBeenCalledTimes(1));
     const saved = trainingMocks.setWeeklyScrimPlans.mock.calls[0][0] as string[][];
     expect(saved[1][0]).not.toBe("");
     expect(saved[0][0]).toBe("alpha");
-    expect(cell("slot:1")).toHaveAttribute("aria-current", "true");
-    expect(within(screen.getByRole("group", { name: "Opponent plans" })).getByRole("button", { name: /Plan B/ })).toHaveTextContent("Choosing");
+    expect(viewTitle()).toBe("Wed B");
+  });
+
+  it("the back control of a view returns to Semana", () => {
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(back());
+    expect(home()).not.toBeNull();
+    expect(frame()).toBeNull();
+  });
+
+  it("the system's Back returns to Semana from a view, and does nothing on Semana", () => {
+    mount(planning());
+    expect(dismissOverlayWithBack()).toBe(false);
+    fireEvent.click(entry("report"));
+    expect(frame()).not.toBeNull();
+    act(() => {
+      expect(dismissOverlayWithBack()).toBe(true);
+    });
+    expect(home()).not.toBeNull();
+    expect(dismissOverlayWithBack()).toBe(false);
+  });
+
+  it("the system's Back also closes the decision view that opened by itself", () => {
+    mount(afterBlockA());
+    act(() => {
+      expect(dismissOverlayWithBack()).toBe(true);
+    });
+    expect(home()).not.toBeNull();
+    expect(heroEl()).toHaveAttribute("data-state", "decide");
+    fireEvent.click(within(heroEl()).getByRole("button", { name: /Decide/ }));
+    expect(pane("decision")).not.toBeNull();
   });
 });
 
 describe("ScrimsTabV2 on a phone: the cancel step", () => {
-  it("opens the follow-up without calling the backend, marks the reputation gauge, and Back returns", async () => {
+  it("opens the follow-up without calling the backend and Back returns to the decision", async () => {
     mount(afterBlockA());
-    expect(document.querySelector('[data-slot="scrim-rep-ghost"]')).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Cancel scrims/ }));
     expect(trainingMocks.chooseDailyScrimAction).not.toHaveBeenCalled();
     expect(pane("followup")).not.toBeNull();
-    expect(document.querySelector('[data-slot="scrim-rep-ghost"]')).not.toBeNull();
-    await waitFor(() => expect(document.activeElement).toBe(pane("followup")?.querySelector("[data-pane-heading]")));
+    expect(viewTitle()).toBe("Cancel scrims");
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
     fireEvent.click(screen.getByRole("button", { name: /Back to block decision/ }));
     expect(pane("decision")).not.toBeNull();
-    expect(document.querySelector('[data-slot="scrim-rep-ghost"]')).toBeNull();
-    await waitFor(() => expect(document.activeElement).toBe(pane("decision")?.querySelector("[data-pane-heading]")));
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
   });
 });
 
@@ -395,24 +462,34 @@ describe("ScrimsTabV2 on a phone: after a decision", () => {
     return utils;
   }
 
-  it("replaces the cards with the result, moves focus to its heading", async () => {
+  it("replaces the cards with the result, titled as the block's review, and moves focus to the frame's heading", async () => {
     await decide();
     expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledWith(0, "PushThrough");
     expect(pane("decision")).toBeNull();
-    await waitFor(() => expect(document.activeElement).toBe(pane("result")?.querySelector("[data-pane-heading]")));
+    expect(viewTitle()).toBe("Block review");
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
     expect(pane("result")?.querySelector("[aria-live]")).toBeNull();
     expect(pane("result")).toHaveTextContent("Decision applied to scrim block: Push through");
   });
 
-  it("stays on the result when the tag moves to the block that waits, and Decide <slot> selects that block", async () => {
+  it("stays on the result when the tag moves to the block that waits, and Decide <slot> opens that block", async () => {
     const { swap } = await decide();
     swap(afterPushThrough());
-    expect(cell("slot:1")).toHaveTextContent("Decide");
-    expect(cell("slot:0")).toHaveAttribute("aria-current", "true");
     expect(pane("result")).not.toBeNull();
+    expect(home()).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Decide Wed B" }));
-    expect(cell("slot:1")).toHaveAttribute("aria-current", "true");
     expect(pane("decision")).not.toBeNull();
+    expect(viewTitle()).toBe("Decide Wed B");
+  });
+
+  it("leaves the result with the back control, and Semana then shows the block that waits", async () => {
+    const { swap } = await decide();
+    swap(afterPushThrough());
+    fireEvent.click(back());
+    expect(home()).not.toBeNull();
+    expect(heroEl()).toHaveAttribute("data-state", "decide");
+    expect(heroEl()).toHaveTextContent("Wed B");
+    expect(block(0)).toHaveTextContent("Q73");
   });
 });
 
@@ -420,7 +497,7 @@ describe("ScrimsTabV2 on a phone: the same actions as desktop", () => {
   it("Autofill saves the dealt plans through the backend call desktop uses", async () => {
     trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
     mount(planning());
-    fireEvent.click(cell("volume"));
+    fireEvent.click(entry("volume"));
     fireEvent.click(screen.getByRole("button", { name: /Autofill/ }));
     await waitFor(() => expect(trainingMocks.setWeeklyScrimPlans).toHaveBeenCalledTimes(1));
     // Same deal as the desktop button: every rival, strongest first (equal here, so by name), into all four slots.
@@ -430,38 +507,46 @@ describe("ScrimsTabV2 on a phone: the same actions as desktop", () => {
   it("Finalize setup calls the backend once", async () => {
     trainingMocks.finalizeWeeklyScrimSetup.mockResolvedValue(game());
     mount(planning());
-    fireEvent.click(cell("volume"));
+    fireEvent.click(entry("volume"));
     fireEvent.click(screen.getByRole("button", { name: /Finalize setup/i }));
     await waitFor(() => expect(trainingMocks.finalizeWeeklyScrimSetup).toHaveBeenCalledTimes(1));
   });
 
-  it("with the assistant on the panes are read-only and the volume pane says who handles scrims", () => {
+  it("with the assistant on the views are read-only and the volume view says who handles scrims", () => {
     useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, scrim_review_mode: "assistant" } });
     mount(planning());
-    fireEvent.click(cell("objective"));
+    expect(heroEl()).toHaveTextContent("Locked");
+    fireEvent.click(entry("objective"));
     const choices = within(screen.getByRole("group", { name: "Weekly objective" })).getAllByRole("button");
     expect(choices.every((choice) => choice.getAttribute("aria-disabled") === "true")).toBe(true);
     fireEvent.click(choices[1]);
     expect(trainingMocks.setWeeklyScrimObjective).not.toHaveBeenCalled();
-    fireEvent.click(cell("slot:1"));
+    fireEvent.click(back());
+    fireEvent.click(block(0));
+    expect(pane("slot")).not.toBeNull();
     expect(screen.queryByRole("group", { name: "Rivals by overall rating" })).toBeNull();
-    fireEvent.click(cell("volume"));
+    fireEvent.click(back());
+    fireEvent.click(entry("volume"));
     expect(screen.getByText("Assistant is handling scrims")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Finalize setup/i })).toBeNull();
   });
 
-  it("a locked week shows its sentence on the first line of the locked panes", () => {
+  it("a locked week shows its sentence on the first line of the locked views, and only the word Locked on Semana", () => {
     mount(ctx(week({ setupLocked: true, setupLockedReason: "manual", objective: "Macro", planned: 4, slots: [0, 1, 2, 3].map((i) => slot(i, { plan: ["alpha"], status: "Locked", canEdit: false })) }), today()));
-    fireEvent.click(cell("objective"));
+    expect(screen.queryByText(/You confirmed this week's setup/)).toBeNull();
+    expect(heroEl()).toHaveTextContent("Locked");
+    fireEvent.click(entry("objective"));
     expect(screen.getByText(/You confirmed this week's setup/)).toBeInTheDocument();
-    fireEvent.click(cell("slot:0"));
+    fireEvent.click(back());
+    fireEvent.click(block(0));
     expect(screen.getByText(/You confirmed this week's setup/)).toBeInTheDocument();
   });
 
-  it("career start: the list is shown read-only and its sentence is on screen", () => {
+  it("career start: Semana is shown read-only and its hero carries the sentence", () => {
     mount(ctx(week({ setupLocked: true, setupLockedReason: "career_started_late", slots: [0, 1, 2, 3].map((i) => slot(i, { status: "Locked", canEdit: false })) }), today()));
-    expect(document.querySelector('[data-slot="phone-week-list"]')).not.toBeNull();
-    expect(screen.getByText(/Your career starts after this week's scrim days/)).toBeInTheDocument();
+    expect(home()).not.toBeNull();
+    expect(heroEl()).toHaveAttribute("data-state", "careerStartLate");
+    expect(heroEl()).toHaveTextContent(/Your career starts after this week's scrim days/);
   });
 });
 
@@ -473,22 +558,65 @@ describe("ScrimsTabV2 on a phone: the shared decision text map", () => {
   });
 });
 
-describe("ScrimsTabV2 on a phone: focus after a move the player asked for", () => {
-  it("moves focus to the new pane's heading after Done", async () => {
+describe("ScrimsTabV2 on a phone: focus", () => {
+  it("moves focus to the view's heading when a control of Semana opens it", async () => {
     mount(planning());
-    fireEvent.click(screen.getByRole("button", { name: /Done/ }));
-    expect(cell("slot:2")).toHaveAttribute("aria-current", "true");
-    await waitFor(() => expect(document.activeElement).toBe(pane("slot")?.querySelector("[data-pane-heading]")));
+    fireEvent.click(entry("volume"));
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
   });
 
-  it("moves focus to the decision pane's heading after Decide <slot>", async () => {
+  it("returns focus to the control that opened the view when the back control closes it", async () => {
+    mount(planning());
+    for (const [open, control] of [[() => fireEvent.click(entry("volume")), () => entry("volume")], [() => fireEvent.click(heroEl()), () => heroEl()], [() => fireEvent.click(block(2)), () => block(2)]] as const) {
+      open();
+      await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+      fireEvent.click(back());
+      await waitFor(() => expect(document.activeElement).toBe(control()));
+    }
+  });
+
+  it("returns focus to the opener after the system's Back too", async () => {
+    mount(planning());
+    fireEvent.click(entry("report"));
+    act(() => {
+      dismissOverlayWithBack();
+    });
+    await waitFor(() => expect(document.activeElement).toBe(entry("report")));
+  });
+
+  it("returns focus to the first entry when the opener is gone (a view the game opened by itself)", async () => {
+    mount(afterBlockA());
+    fireEvent.click(back());
+    await waitFor(() => expect(document.activeElement).toBe(entry("objective")));
+  });
+
+  it("moves focus to the new view's heading after Done", async () => {
+    mount(planning());
+    fireEvent.click(heroEl());
+    fireEvent.click(screen.getByRole("button", { name: /Done/ }));
+    expect(viewTitle()).toBe("Thu A");
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+  });
+
+  it("moves focus to the decision view's heading after Decide <slot>", async () => {
     trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
     const { swap } = mount(afterBlockA());
     fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
     await waitFor(() => expect(pane("result")).not.toBeNull());
     swap(afterPushThrough());
     fireEvent.click(screen.getByRole("button", { name: "Decide Wed B" }));
-    await waitFor(() => expect(document.activeElement).toBe(pane("decision")?.querySelector("[data-pane-heading]")));
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+  });
+
+  it("does not take focus from a control outside the screen when the game moves the view by itself", () => {
+    const outside = document.createElement("button");
+    document.body.appendChild(outside);
+    const { swap } = mount(scrimMorning());
+    outside.focus();
+    swap(afterBlockA());
+    expect(pane("decision")).not.toBeNull();
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
   });
 });
 
@@ -496,31 +624,40 @@ describe("ScrimsTabV2 on a phone: the live line", () => {
   const liveRegions = () => [...document.querySelectorAll('[aria-live], [role="status"]')] as HTMLElement[];
   const holding = (text: string) => liveRegions().filter((el) => el.textContent?.includes(text));
 
-  it("has one polite region mounted before any decision, and the result pane's own line is not live", async () => {
+  it("has one polite region mounted on Semana and in the views, and the result view's own line is not live", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    mount(planning());
+    expect(liveRegions()).toHaveLength(1);
+    fireEvent.click(entry("report"));
+    expect(liveRegions()).toHaveLength(1);
+    fireEvent.click(back());
+    expect(liveRegions()).toHaveLength(1);
+    expect(liveRegions()[0]).toHaveAttribute("aria-live", "polite");
+  });
+
+  it("the same node holds a decision's text once, and the result view's own line is not live", async () => {
     trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
     mount(afterBlockA());
     const before = liveRegions();
     expect(before).toHaveLength(1);
-    expect(before[0]).toHaveAttribute("aria-live", "polite");
     expect(before[0].textContent).toBe("");
     fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
     await waitFor(() => expect(pane("result")).not.toBeNull());
-    // The same node, now holding the text once in the document's live regions.
     expect(liveRegions()[0]).toBe(before[0]);
     expect(holding("Push through")).toHaveLength(1);
     expect(pane("result")?.querySelector("[aria-live]")).toBeNull();
   });
 
-  it("shows the result of the block the decision was taken on even if another row was tapped during the save", async () => {
+  it("shows the result of the block the decision was taken on even if the player left for another view during the save", async () => {
     let resolve!: (state: GameStateData) => void;
     trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
     mount(afterBlockA());
     fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
-    fireEvent.click(cell("report"));
+    fireEvent.click(back());
+    fireEvent.click(entry("report"));
     expect(pane("report")).not.toBeNull();
     resolve(updatedAfterPush());
     await waitFor(() => expect(pane("result")).not.toBeNull());
-    expect(cell("slot:0")).toHaveAttribute("aria-current", "true");
+    expect(viewTitle()).toBe("Block review");
   });
 });
-

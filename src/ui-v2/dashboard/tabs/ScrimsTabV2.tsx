@@ -299,7 +299,6 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
         onFinalize={handleFinalizeSetup}
         panel={panel}
         todayMessage={todayMessage}
-        todayOpponentName={todayOpponentName}
         todayRisk={todayRisk}
         decisionReport={decisionReport}
         blockLabel={dailyBlockMeta?.blockLabel ?? null}
