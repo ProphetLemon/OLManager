@@ -157,7 +157,7 @@ function Gauges({ model, ghostReputation }: Pick<ScrimWeekListProps, "model" | "
           className="mt-0.5 flex gap-0.5"
         >
           {Array.from({ length: capacity }).map((_, index) => (
-            <span key={index} className={cn("h-0.5 flex-1", plannedSlots[index] ? "bg-foreground" : "bg-dim")} />
+            <span key={index} className={cn("h-0.5 flex-1", plannedSlots[index] ? "bg-club" : "bg-dim")} />
           ))}
         </div>
       </div>
@@ -182,7 +182,7 @@ function Gauges({ model, ghostReputation }: Pick<ScrimWeekListProps, "model" | "
           aria-describedby={ghost != null ? noteId : undefined}
           className="relative mt-0.5 h-0.5 bg-dim"
         >
-          <div className="absolute inset-y-0 start-0 bg-foreground" style={{ width: `${repPercent}%` }} />
+          <div className="absolute inset-y-0 start-0 bg-club" style={{ width: `${repPercent}%` }} />
           {ghost != null ? (
             <div
               data-slot="scrim-rep-ghost"
@@ -271,6 +271,8 @@ export function ScrimWeekList({ model, selectedId, teamNameById, weekdayLabels, 
                     "flex min-h-[var(--hit)] w-full min-w-0 items-center gap-2 px-3 py-1 text-start outline-hidden transition-colors",
                     "hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                     selected && "outline-2 -outline-offset-2 outline-solid outline-club",
+                    // The 4 px club edge marks the row that needs you, inside the cell so nothing shifts.
+                    cell.tag && "shadow-[inset_4px_0_0_0_var(--club)]",
                   )}
                 >
                   {cell.tag ? <Tag tag={cell.tag} /> : null}

@@ -162,12 +162,19 @@ describe("ScrimWeekList tags", () => {
     expect(within(screen.getByRole("button", { name: new RegExp(`${word}.*Wed A`) })).getByText(word)).toBeInTheDocument();
   });
 
-  it("draws only the tag in the club fill", () => {
+  it("marks the tagged cell with a 4 px club edge and no other cell", () => {
     const slots = [slot(0, { tag: "decide" }), slot(1), slot(2), slot(3), slot(4), slot(5)];
-    const { container } = setup({ model: model({}, slots), selectedId: "slot:0" });
-    const filled = [...container.querySelectorAll("*")].filter((el) => /(^|\s)bg-club(\s|$)/.test(el.getAttribute("class") ?? ""));
-    expect(filled).toHaveLength(1);
-    expect(filled[0]).toHaveTextContent("Decide");
+    setup({ model: model({}, slots), selectedId: "slot:1" });
+    const edged = screen.getAllByRole("button").filter((cell) => cell.className.includes("shadow-[inset_4px_0_0_0_var(--club)]"));
+    expect(edged).toHaveLength(1);
+    expect(edged[0]).toHaveTextContent("Decide");
+  });
+
+  it("fills the tag with the club colour", () => {
+    const slots = [slot(0, { tag: "next" }), slot(1), slot(2), slot(3), slot(4), slot(5)];
+    const { container } = setup({ model: model({}, slots) });
+    const tag = container.querySelector('[data-slot="phone-week-tag"]');
+    expect(tag?.className).toMatch(/(^|\s)bg-club(\s|$)/);
   });
 });
 
@@ -179,6 +186,18 @@ describe("ScrimWeekList gauges", () => {
     expect(meter).toHaveAttribute("aria-valuemax", "6");
     expect(meter.children).toHaveLength(6);
     expect(container).toHaveTextContent("2/6");
+  });
+
+  it("draws the planned segments in the club colour and the rest dim", () => {
+    setup();
+    const segments = [...screen.getByRole("meter", { name: "Planned" }).children];
+    expect(segments.map((segment) => /(^|\s)bg-club(\s|$)/.test(segment.className))).toEqual([true, true, false, false, false, false]);
+  });
+
+  it("draws the rep bar fill in the club colour", () => {
+    setup();
+    const fill = screen.getByRole("meter", { name: "Scrim rep" }).firstElementChild;
+    expect(fill?.className).toMatch(/(^|\s)bg-club(\s|$)/);
   });
 
   it("shows the week record as W-L only", () => {
