@@ -77,8 +77,6 @@ src/
 
 El partido en directo ya no es un wrapper: `_legacy/pages/MatchSimulation` monta la pantalla nativa `ui-v2/match/LiveMatchV2` en la etapa `first_half`. Se retiraron `LolMatchLive`, `lol-prototype/ui/render.ts` y `lol-prototype/ui/panels.tsx` (y sus dos tests); un guard (`ui-v2/match/liveMatchCutover.guard.test.ts`) impide que vuelvan a importarse. Lo que sigue en `_legacy/` para esa pantalla es el motor (`lol-prototype/engine`, `backend`, `ui/stepInterpolation.ts`), `championProfiles`, `itemNames` y `matchRuntimeEvents`.
 
-Partido en directo en el móvil: `liveMatch.css` tiene un bloque `:root[data-form="phone"] .live-shell` (en las bandas de contenedor 720–1239 px y desde 1240 px) que quita el suelo de 20rem del mapa y el `min-height` del shell, para que el mapa tome el espacio que hay; sin `data-form` todo queda como estaba. `liveMatchLayout.test.ts` lo fija.
-
 Tocado en _legacy por On Air: `FloatingBugButton` (variantes `inline`, `cell` y `hidden`; sin variante flotante) y el cambio `text-primary` → `text-club-text` en los ficheros que lo usaban.
 
 Tocado en _legacy por la conservación de partidas: `SavesList` etiqueta una partida de otra versión o ilegible y explica por qué no se carga (Cargar con `aria-disabled` y `aria-describedby`; Exportar y Eliminar siguen activos), y deja Enter/Espacio a su propio botón; `MainMenu` sólo amplía el tipo local `SaveEntry`.

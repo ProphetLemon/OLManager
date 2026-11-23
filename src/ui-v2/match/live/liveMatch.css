@@ -3211,30 +3211,6 @@
   }
 }
 
-/* The phone form (<html data-form="phone">, Android) runs a 16px root, so the 20rem floor of the map
-   is 320px and the shell's min-height (rows + 20rem) would scroll mid-match in the 336px a landscape
-   phone leaves. Here the map takes the room it has instead (never negative, never over 44.5rem).
-   Each rule sits in the width band of the layout it replaces and outranks the plain rules by the
-   attribute selector, so a window without data-form keeps every declaration above untouched.
-   Under 720px the one-column block above already has no floor. */
-@container live (min-width: 1240px) {
-  :root[data-form="phone"] .live-shell {
-    --map-side: min(
-      44.5rem,
-      max(0px, calc(100cqh - var(--live-rows))),
-      calc(100cqw - 2 * var(--live-pad-x) - 2 * var(--live-col-gap) - 2 * var(--live-col-min))
-    );
-    min-height: 0;
-  }
-}
-
-/* The stacked layout keeps its own min-height: 100% (the page scrolls under the map there). */
-@container live (min-width: 720px) and (max-width: 1239px) {
-  :root[data-form="phone"] .live-shell {
-    --map-side: min(calc(100cqw - 2 * var(--live-pad-x)), 44.5rem, max(0px, calc(100cqh - var(--live-rows))));
-  }
-}
-
 /* ── The scrim, the clearing message and the end panel ────────────────── */
 
 .live-scrim {
