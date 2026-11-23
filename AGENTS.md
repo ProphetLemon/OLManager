@@ -55,7 +55,7 @@ src/
 │                              # selección de cada pestaña en store/tabUiStore (R23: sobreviven a un perfil; ids
 │                              # por useValidTabUiField; initialMessageId/initialCompetitionId ganan una vez por useOneShotOverride;
 │                              # la página vuelve a 1 con hooks/useResetOnChange, nunca al montar)
-└── store/, services/, hooks/, api/  # compartidos (hooks/useRovingFocus, useClubTheme)
+└── store/, services/, hooks/, api/  # compartidos (hooks/useRovingFocus, useClubTheme, usePhoneForm: el mismo predicado que pone `data-form="phone"`, leído al renderizar)
 ```
 
 ---
@@ -69,6 +69,7 @@ src/
 | ScheduleTabV2 | `_legacy/components/playoffs/PlayoffBracketBoard` |
 | PlayersTabV2 | PlayerAvatar desde _legacy (SquadTabV2 no importa nada de _legacy) |
 | CompetitionsTabV2 | ScheduleCalendarView desde _legacy |
+| MainMenu (teléfono) | `_legacy/pages/MainMenu` y `_legacy/components/menu/` (`SavesList`, `CommunityPanel`, `PatchNotesPanel`) tienen una rama de teléfono elegida con `usePhoneForm()`: rejilla de fichas 2 x 3 con Exit game y la versión en la columna izquierda, panel con scroll vertical a la derecha, filas de partidas de 56 px con objetivos de 48 px, y Atrás del sistema cierra el panel abierto (`useBackDismisser`). La rama de escritorio no se toca |
 | AppV2 | MainMenu, MatchSimulation, UpdateModal (sólo escritorio); en Android, cuando el manifiesto no tiene build, el aviso nativo `ui-v2/updater/AndroidUpdateNotice` envía a la página de la última release; `SettingsV2` es nativo en `ui-v2/pages/` y envuelve `_legacy/pages/Settings` (ya no hay botón de bug flotante: cada pantalla aloja el suyo) |
 | DashboardV2 | `DashboardOverlays`, `FiredModal`, `dashboardHelpers` y `DashboardWorkspaceContent` → `DashboardTabContent` → `EndOfSeasonScreen`: ese camino sólo se monta con la pantalla de fin de temporada (Home); el resto de pestañas son nativas v2 |
 | TeamSelectionV2 | `LeaguePickerV2`, `TeamGridV2`, `teamSelection.helpers`; FloatingBugButton en el pie de `RosterOverlayPanel` (prop `actions`), en todos los pasos de /select-team |
@@ -78,6 +79,8 @@ src/
 El partido en directo ya no es un wrapper: `_legacy/pages/MatchSimulation` monta la pantalla nativa `ui-v2/match/LiveMatchV2` en la etapa `first_half`. Se retiraron `LolMatchLive`, `lol-prototype/ui/render.ts` y `lol-prototype/ui/panels.tsx` (y sus dos tests); un guard (`ui-v2/match/liveMatchCutover.guard.test.ts`) impide que vuelvan a importarse. Lo que sigue en `_legacy/` para esa pantalla es el motor (`lol-prototype/engine`, `backend`, `ui/stepInterpolation.ts`), `championProfiles`, `itemNames` y `matchRuntimeEvents`.
 
 Tocado en _legacy por On Air: `FloatingBugButton` (variantes `inline`, `cell` y `hidden`; sin variante flotante) y el cambio `text-primary` → `text-club-text` en los ficheros que lo usaban.
+
+Tocado en _legacy por el menú en el teléfono (`usePhoneForm()`, `components/menu/phoneClasses.ts`): `MainMenu` pinta la rejilla de fichas (`MenuTile`) y la columna izquierda sólo en el teléfono, y registra `useBackDismisser` para sus paneles; `SavesList`, `CommunityPanel` y `PatchNotesPanel` cambian cadenas de clases sólo en la rama de teléfono (objetivos de 48 px, Close con `aria-label`, Play siempre visible, la lista de partidas con scroll bajo una cabecera fija). `MainMenu.desktop.test.tsx` fija que el escritorio conserva su diseño.
 
 Tocado en _legacy por la conservación de partidas: `SavesList` etiqueta una partida de otra versión o ilegible y explica por qué no se carga (Cargar con `aria-disabled` y `aria-describedby`; Exportar y Eliminar siguen activos), y deja Enter/Espacio a su propio botón; `MainMenu` sólo amplía el tipo local `SaveEntry`.
 
