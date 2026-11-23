@@ -118,7 +118,7 @@ describe("cargoClasses", () => {
   const joined = (name: keyof typeof parts) => parts[name].join("\n");
 
   it("maps each Cargo class to the filters that contain it", () => {
-    expect(CLASS_FILTERS).toEqual({ official: ["strict", "recommended", "loose"], seasonal: ["recommended", "loose"], other: ["loose"] });
+    expect(CLASS_FILTERS).toEqual({ official: ["strict", "recommended", "loose"], seasonal: ["recommended", "loose"], listed: ["recommended", "loose"], other: ["loose"] });
   });
 
   it("restricts every clause to the window, real leagues and tournaments that are not showmatches or cup qualifiers", () => {

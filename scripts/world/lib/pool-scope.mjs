@@ -3,6 +3,7 @@
 import { matchPerson } from "./match.mjs";
 import { compactKey, countryToIso2 } from "./text.mjs";
 import { dataRoleForLabel } from "./staff-policy.mjs";
+import { CAP_EXEMPT_PAGES, LISTED_EVENTS, LISTED_SINCE } from "./pool-events.mjs";
 
 export const FILTERS = Object.freeze(["strict", "recommended", "loose"]);
 /** A league needs this many tournaments in the window to count as a recurring competition rather than a one-off event. */
@@ -38,6 +39,15 @@ export function tournamentDays(tournament) {
   const end = Date.parse(tournament.end);
   return Number.isFinite(start) && Number.isFinite(end) && end >= start ? Math.round((end - start) / 86_400_000) : 0;
 }
+
+const LISTED_LEAGUES = new Set(LISTED_EVENTS.map((event) => event.league).filter(Boolean));
+const LISTED_PAGES = new Set(LISTED_EVENTS.map((event) => event.page).filter(Boolean));
+/** Is this tournament one of the events the pool takes on the owner's word (pool-events.mjs)? */
+export const isListedTournament = (t) => LISTED_LEAGUES.has(t.league) || LISTED_PAGES.has(t.page);
+/** The date a listed event's tournaments are read from: its own limit, or the pool's when that goes further back. */
+export const listedSince = (since) => (since < LISTED_SINCE ? since : LISTED_SINCE);
+/** The tournaments of the pool's window: those starting on or after `since`, and the listed events' from their own, earlier date. */
+export const inPoolWindow = (tournaments, since) => tournaments.filter((t) => t.start >= since || (isListedTournament(t) && t.start >= listedSince(since)));
 
 const isShowmatch = (t) => /show\s*match/i.test(t.level);
 /** Cup qualifiers and showmatches never count, whatever else the page says. */
@@ -75,18 +85,22 @@ export function leagueCounts(tournaments) {
  *  - recommended: strict plus the non-qualifier tournaments of recurring seasonal leagues (second divisions Leaguepedia does not flag);
  *  - loose: every non-qualifier tournament of a recurring league.
  * Showmatches and cup-qualifier level tournaments never count; a league is recurring from three tournaments in the window.
+ * `listed` marks the tournaments of the events in pool-events.mjs: they skip the official-or-seasonal and the three-tournaments tests,
+ * so their non-qualifier tournaments are in recommended and loose (their qualifier-flagged ones go through `qualifierSplit`).
+ * Pass the tournaments of `inPoolWindow`: league counts and seasons are read from what is in the list.
  */
 export function classifyTournaments(tournaments) {
   const seasonal = seasonalLeagues(tournaments);
   const counts = leagueCounts(tournaments);
   const result = new Map();
   for (const t of tournaments) {
-    const base = isBase(t) && (counts.get(t.league) ?? 0) >= MIN_LEAGUE_TOURNAMENTS;
+    const listed = isBase(t) && isListedTournament(t);
+    const base = isBase(t) && ((counts.get(t.league) ?? 0) >= MIN_LEAGUE_TOURNAMENTS || listed);
     const official = isOfficialCircuit(t);
     const strict = base && official;
-    const recommended = base && (official || (seasonal.has(t.league) && !t.qualifier));
+    const recommended = base && (official || ((seasonal.has(t.league) || listed) && !t.qualifier));
     const loose = base && (official || !t.qualifier);
-    result.set(t.page, { strict, recommended, loose });
+    result.set(t.page, { strict, recommended, loose, listed });
   }
   return result;
 }
@@ -121,22 +135,33 @@ const NOT_QUALIFIER = '(T.IsQualifier IS NULL OR T.IsQualifier="0")';
 export const NOT_QUALIFIER_CLAUSE = NOT_QUALIFIER;
 
 /**
- * Cargo `where` clauses (on Tournaments=T, Leagues=L) that cut the loose filter into three disjoint classes:
- * `official` (= strict), `seasonal` (unflagged tournaments of seasonal leagues; strict + seasonal = recommended) and
- * `other` (the rest of loose). Each class is a list of clauses because league lists are chunked to keep URLs short.
- * Their tournament counts add up to the local predicate's counts.
+ * Cargo `where` clauses (on Tournaments=T, Leagues=L) that cut the loose filter into disjoint classes:
+ * `official` (= strict), `seasonal` (unflagged tournaments of seasonal leagues; strict + seasonal = recommended), `listed` (the
+ * unflagged, unofficial tournaments of the events in pool-events.mjs, read from their own earlier date) and `other` (the rest of loose).
+ * Each class is a list of clauses because league lists are chunked to keep URLs short. A listed league is read by `listed` and nowhere
+ * else, except its official tournaments, which the `official` class reads from the same earlier date; a listed page is excluded from
+ * every other class. Their tournament counts add up to the local predicate's counts.
  */
 export function cargoClasses(tournaments, since) {
   const classes = classifyTournaments(tournaments);
+  const from = listedSince(since);
   const leaguesWhere = (pick) => new Set(tournaments.filter((t) => t.league && pick(classes.get(t.page))).map((t) => t.league));
+  const listedLeagues = new Set(tournaments.filter((t) => classes.get(t.page).listed && LISTED_LEAGUES.has(t.league)).map((t) => t.league));
+  const listedPages = tournaments.filter((t) => classes.get(t.page).listed && !LISTED_LEAGUES.has(t.league) && LISTED_PAGES.has(t.page)).map((t) => t.page);
+  const without = (set, drop) => new Set([...set].filter((league) => !drop.has(league)));
   const official = leaguesWhere((c) => c.strict);
-  const seasonal = seasonalLeagues(tournaments);
-  const other = leaguesWhere((c) => c.loose && !c.recommended);
-  const base = `T.DateStart >= ${quote(since)} AND (T.TournamentLevel IS NULL OR T.TournamentLevel NOT IN ("Showmatch","Show Match","Qualifier"))`;
-  const clauses = (leagues, rest) => chunkNames(leagues).map((chunk) => `${base} AND T.League IN (${chunk.map(quote).join(",")}) AND ${rest}`);
+  const seasonal = without(seasonalLeagues(tournaments), listedLeagues);
+  const other = without(leaguesWhere((c) => c.loose && !c.recommended), listedLeagues);
+  const base = (start) => `T.DateStart >= ${quote(start)} AND (T.TournamentLevel IS NULL OR T.TournamentLevel NOT IN ("Showmatch","Show Match","Qualifier"))`;
+  const notListedPage = listedPages.length > 0 ? ` AND T.OverviewPage NOT IN (${listedPages.map(quote).join(",")})` : "";
+  const clauses = (leagues, rest, start = since, extra = notListedPage) => chunkNames(leagues).map((chunk) => `${base(start)} AND T.League IN (${chunk.map(quote).join(",")}) AND ${rest}${extra}`);
   return {
-    official: clauses(official, OFFICIAL),
+    official: [...clauses(without(official, listedLeagues), OFFICIAL), ...clauses(new Set([...official].filter((league) => listedLeagues.has(league))), OFFICIAL, from)],
     seasonal: clauses(seasonal, `${NOT_QUALIFIER} AND ${NOT_OFFICIAL}`),
+    listed: [
+      ...clauses(listedLeagues, `${NOT_QUALIFIER} AND ${NOT_OFFICIAL}`, from, ""),
+      ...chunkNames(listedPages).map((chunk) => `${base(from)} AND T.OverviewPage IN (${chunk.map(quote).join(",")}) AND ${NOT_QUALIFIER}`),
+    ],
     other: clauses(other, `${NOT_QUALIFIER} AND ${NOT_OFFICIAL}`),
   };
 }
@@ -145,16 +170,18 @@ export function cargoClasses(tournaments, since) {
 export const OPEN_QUALIFIER_ENTRIES = 60;
 
 /**
- * Split the qualifier-flagged tournaments of the strict filter by roster size.
+ * Split the qualifier-flagged tournaments of the strict filter and of the listed events by roster size.
  * @param {Map<string, number>} entryCount roster entries per tournament page
  * @param {number} [threshold] largest roster a qualifier-flagged tournament may have to count as small
+ * @param {readonly string[]} [exempt] pages that count as small whatever their roster (pool-events.mjs: the four Goddess Tour pages)
  */
-export function qualifierSplit(tournaments, classes, entryCount, threshold = OPEN_QUALIFIER_ENTRIES) {
+export function qualifierSplit(tournaments, classes, entryCount, threshold = OPEN_QUALIFIER_ENTRIES, exempt = CAP_EXEMPT_PAGES) {
   const small = [];
   const open = [];
   for (const t of tournaments) {
-    if (!classes.get(t.page)?.strict || !t.qualifier) continue;
-    ((entryCount.get(t.page) ?? 0) <= threshold ? small : open).push(t.page);
+    const c = classes.get(t.page);
+    if (!(c?.strict || c?.listed) || !t.qualifier) continue;
+    ((entryCount.get(t.page) ?? 0) <= threshold || exempt.includes(t.page) ? small : open).push(t.page);
   }
   return { small: small.sort(), open: open.sort() };
 }
@@ -165,7 +192,7 @@ export function pageClauses(pages) {
 }
 
 /** Which filters a Cargo class belongs to. */
-export const CLASS_FILTERS = Object.freeze({ official: ["strict", "recommended", "loose"], seasonal: ["recommended", "loose"], other: ["loose"] });
+export const CLASS_FILTERS = Object.freeze({ official: ["strict", "recommended", "loose"], seasonal: ["recommended", "loose"], listed: ["recommended", "loose"], other: ["loose"] });
 
 // --- People ---------------------------------------------------------------------------------------
 

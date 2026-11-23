@@ -209,6 +209,14 @@ whole; it never keeps "the first 60 names" of one. **Who is out.** Anybody the g
 overlay adds or moves (matched by id, and by page title: Unicode-normalised, case-insensitive, underscores as spaces, so "revenge (X)" in the pool is the "Revenge (X)" the team page adds), players with no usable position, staff whose label is not coaching/analysis/scouting, and anybody the
 matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision`). Those are listed in the report with the reason.
 
+**Listed events.** `lib/pool-events.mjs` is the one place that names events the pool takes on the owner's word: the 14 events of the
+women's and marginalised-genders research (each entry says which page text or source describes it; Leaguepedia has no gender field, so
+nothing here says who a person is), by `Tournaments.League` or, for GIRLGAMER's Mexico City edition, by page. Their tournaments skip the
+"official or seasonal" and "at least three tournaments" tests, are read from their own date limit (`LISTED_SINCE`, 2023-06-01; the rest of the
+pool keeps `--pool-since`, and an earlier `--pool-since` wins for both), and are fetched as their own Cargo class (`listed`). The same file lists
+the four Goddess Tour qualifier pages whose roster is over the cap and which the cap does not drop (`CAP_EXEMPT_PAGES`); nothing else is exempt.
+To add an event, append an entry and its source. Tests: `src/lib/world/pool-women-events.test.ts`, rows in `scripts/world/fixtures/pool-women/`.
+
 **Old names.** Leaguepedia keeps a player's earlier names in `PlayerRedirects`, and roster rows (`TournamentPlayers.Player`) and
 scoreboard rows (`ScoreboardPlayers.Link`) keep the name used at the time. The pool reads the old names once (one paged
 `PlayerRedirects` read, `AllName<>OverviewPage`), runs each people clause a second time joined through them, and adds the games under

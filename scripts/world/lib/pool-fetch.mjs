@@ -3,7 +3,7 @@
 // filter (both checked against the live API: the page filter returned the same rows as filtering locally).
 import { OfflineCacheMissError, RequestBudgetExceededError } from "./mediawiki-client.mjs";
 import {
-  NOT_QUALIFIER_CLAUSE, TOURS_SEPARATOR, aliasTargets, cargoClasses, classifyTournaments, foldGames, mergePerson, normalizeTournament, pageClauses, personFromRow,
+  NOT_QUALIFIER_CLAUSE, TOURS_SEPARATOR, aliasTargets, cargoClasses, classifyTournaments, foldGames, inPoolWindow, listedSince, mergePerson, normalizeTournament, pageClauses, personFromRow,
 } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, poolTournaments } from "./pool.mjs";
 
@@ -54,14 +54,17 @@ export async function cargoAll(client, params) {
 export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap = DEFAULT_QUALIFIER_CAP, probe = "", log = () => {} }) {
   const warnings = [];
 
+  // The listed events (pool-events.mjs) are read from their own, earlier date; everything else from `since`. Both lists are asked for
+  // from the earlier one, and the tournaments of other leagues before `since` are dropped before anything is counted.
+  const from = listedSince(since);
   const tournamentRows = await cargoAll(client, {
     tables: "Tournaments=T,Leagues=L",
     join_on: "T.League=L.League",
     fields: "T.OverviewPage,T.Name,T.League,T.Region,T.TournamentLevel,T.IsOfficial,T.IsQualifier,T.IsPlayoffs,T.Split,T.SplitNumber,T.DateStart,T.Date,T.EventType,T.Year,T.Country,L.Level=LLevel,L.IsOfficial=LOfficial",
-    where: `T.DateStart >= "${since}"`,
+    where: `T.DateStart >= "${from}"`,
     order_by: "T.DateStart,T.OverviewPage",
   });
-  const tournaments = [...new Map(tournamentRows.map((row) => [row.OverviewPage, normalizeTournament(row)])).values()];
+  const tournaments = inPoolWindow([...new Map(tournamentRows.map((row) => [row.OverviewPage, normalizeTournament(row)])).values()], since);
   const classes = classifyTournaments(tournaments);
   log(`pool: ${tournaments.length} tournaments since ${since}`);
 
@@ -69,7 +72,7 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap 
     tables: "TournamentPlayers=TP,Tournaments=T",
     join_on: "TP.OverviewPage=T.OverviewPage",
     fields: "T.OverviewPage,COUNT(*)=n",
-    where: `T.DateStart >= "${since}"`,
+    where: `T.DateStart >= "${from}"`,
     group_by: "T.OverviewPage",
     order_by: "T.OverviewPage",
   });
@@ -77,11 +80,12 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap 
   const view = poolTournaments(tournaments, classes, entryCount, cap);
 
   // Disjoint classes: official tournaments that are not qualifier-flagged, unflagged seasonal-league tournaments (second
-  // divisions), and the small qualifier-flagged official ones (promotions, closed stages) picked by page.
+  // divisions), the unflagged tournaments of the listed events, and the small qualifier-flagged ones (promotions, closed stages) picked by page.
   const parts = cargoClasses(tournaments, since);
   const classClauses = {
     official: parts.official.map((where) => `${where} AND ${NOT_QUALIFIER_CLAUSE}`),
     seasonal: parts.seasonal,
+    ...(parts.listed.length > 0 ? { listed: parts.listed } : {}),
     qualifiers: pageClauses(view.split.small),
   };
   const people = new Map();
