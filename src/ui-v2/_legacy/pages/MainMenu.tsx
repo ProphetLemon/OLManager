@@ -534,7 +534,7 @@ export default function MainMenu() {
             >
               <img
                 src="/olmanager-logo.webp"
-                alt="Open League Manager"
+                alt="League Manager LE"
                 className="h-14 w-auto self-start drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]"
               />
               <div className="font-heading text-nav uppercase tracking-wide text-gray-300/70 drop-shadow">
@@ -571,7 +571,7 @@ export default function MainMenu() {
             <div className="w-full animate-fade-in-up">
               <img
                 src="/olmanager-logo.webp"
-                alt="Open League Manager"
+                alt="League Manager LE"
                 className="h-24 mb-10 drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]"
               />
 

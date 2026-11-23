@@ -76,7 +76,7 @@ export default function CommunityPanel({ onClose }: { onClose: () => void }) {
       <p className="text-sm text-gray-300 leading-relaxed border-t border-white/10 py-4">
         {t("community.blurb", {
           defaultValue:
-            "Open League Manager · Limón Edition es un fork gratuito y de código abierto de Open League Manager. ¿Has encontrado un problema? Díselo a la persona que te pasó el juego y adjunta el ZIP que guarda el botón «{{bugButton}}».",
+            "League Manager LE es un fork gratuito y de código abierto de Open League Manager. ¿Has encontrado un problema? Díselo a la persona que te pasó el juego y adjunta el ZIP que guarda el botón «{{bugButton}}».",
           bugButton: t("onAir.nav.bug", "Reportar bug"),
         })}
       </p>

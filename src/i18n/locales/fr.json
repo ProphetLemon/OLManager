@@ -4242,7 +4242,7 @@
   },
   "community": {
     "title": "Communauté",
-    "blurb": "Open League Manager · Limón Edition est un fork gratuit et open source d’Open League Manager. Un problème ? Dites-le à la personne qui vous a partagé le jeu et joignez le ZIP enregistré par le bouton « {{bugButton}} ».",
+    "blurb": "League Manager LE est un fork gratuit et open source d’Open League Manager. Un problème ? Dites-le à la personne qui vous a partagé le jeu et joignez le ZIP enregistré par le bouton « {{bugButton}} ».",
     "mentionsTitle": "Mentions",
     "mentionsSubtitle": "Merci à celles et ceux qui ont le plus soutenu le projet",
     "links": {
