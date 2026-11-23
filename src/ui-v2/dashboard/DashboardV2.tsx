@@ -71,6 +71,7 @@ import { opensOwnFocus } from "@/lib/dashboard/callAction";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useTabUiStore } from "@/store/tabUiStore";
 import { usePaletteStore } from "@/store/paletteStore";
+import { Button } from "@/ui-v2/components/ui/button";
 import { GoPalette } from "@/ui-v2/palette/GoPalette";
 import { buildPaletteIndex, type PaletteEntry } from "@/ui-v2/palette/paletteIndex";
 import { entryToIntent, writePaletteView } from "@/ui-v2/palette/paletteActivate";
@@ -838,6 +839,9 @@ export default function DashboardV2() {
         <p className="text-sm text-muted-foreground">
           {t("dashboard.noActiveGameDesc")}
         </p>
+        <Button variant="club" size="touch" onClick={() => navigate("/", { replace: true })}>
+          {t("dashboard.noActiveGameBack")}
+        </Button>
       </div>
     );
   }

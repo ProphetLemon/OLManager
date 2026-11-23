@@ -294,6 +294,7 @@
     "competitions": "Turnuvalar",
     "noActiveGame": "Etkin oyun yok",
     "noActiveGameDesc": "Devam etmek için bir oyun başlatın veya yükleyin.",
+    "noActiveGameBack": "Ana menü",
     "phaseLabels": {
       "scrimBlock": "Scrims"
     }

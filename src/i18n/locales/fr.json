@@ -294,6 +294,7 @@
     "competitions": "Compétitions",
     "noActiveGame": "Aucune partie active",
     "noActiveGameDesc": "Lancez ou chargez une partie pour continuer.",
+    "noActiveGameBack": "Menu principal",
     "phaseLabels": {
       "scrimBlock": "Scrims"
     }
