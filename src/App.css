@@ -27,6 +27,11 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* `phone:` utilities apply under <html data-form="phone"> (set by AppV2 on Android) and
+   nowhere else, so a desktop window never matches, whatever its size. :where() keeps the
+   variant at zero specificity, like `dark:`. */
+@custom-variant phone (&:where([data-form="phone"], [data-form="phone"] *));
+
 @layer base {
   html,
   body,

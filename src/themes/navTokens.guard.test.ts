@@ -115,7 +115,7 @@ describe("attention lane tokens (NR2.6, R24, R35)", () => {
     expect(ruleBody(':root[data-platform="android"]')).toContain("--lane-pill-h: var(--hit);");
   });
 
-  it("floors --text-entry at 12px, so pill headlines never fall to 7.9 px on Android", () => {
+  it("floors --text-entry at 12px, so pill headlines never fall under it on a small desktop root", () => {
     expect(css).toMatch(/--text-entry:\s*max\(0\.875rem,\s*12px\);/);
   });
 
