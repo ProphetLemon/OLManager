@@ -155,6 +155,73 @@ fn the_listing_gives_each_save_its_status_and_the_number_it_read() {
     assert_eq!(seen(SHORT), (SaveStatus::Unreadable, None));
 }
 
+/// A file whose header reads as 0 or as a huge number is not a save of any version:
+/// text, gzip and zip files all start like that.
+const GARBAGE: &str = "0b8f4a52-6f3e-4d51-9a1c-2f6d1c0e9a05";
+
+fn started_with_garbage_headers() -> (TempDir, SaveManager) {
+    let dir = tempfile::tempdir().unwrap();
+    let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+    plant(&mut sm, GARBAGE, b"not a save at all, just text");
+    (dir, sm)
+}
+
+#[test]
+fn a_file_with_an_implausible_header_is_listed_as_unreadable_without_a_number() {
+    let (_dir, sm) = started_with_garbage_headers();
+
+    let l = listing_of(&sm, GARBAGE);
+
+    assert_eq!((l.status, l.format_version), (SaveStatus::Unreadable, None));
+}
+
+#[test]
+fn a_header_of_zero_is_listed_as_unreadable() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+    plant(&mut sm, OLD, &with_header(0));
+
+    assert_eq!(listing_of(&sm, OLD).status, SaveStatus::Unreadable);
+}
+
+#[test]
+fn the_highest_plausible_header_is_still_another_version() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+    plant(&mut sm, NEW, &with_header(MAX_PLAUSIBLE_FORMAT));
+
+    assert_eq!(
+        listing_of(&sm, NEW).format_version,
+        Some(MAX_PLAUSIBLE_FORMAT)
+    );
+}
+
+#[test]
+fn a_header_just_above_the_plausible_range_is_listed_as_unreadable() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+    plant(&mut sm, NEW, &with_header(MAX_PLAUSIBLE_FORMAT + 1));
+
+    assert_eq!(listing_of(&sm, NEW).status, SaveStatus::Unreadable);
+}
+
+#[test]
+fn loading_a_file_with_an_implausible_header_answers_with_the_unreadable_code() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+
+    let err = sm.load_game(GARBAGE).unwrap_err();
+
+    assert!(err.starts_with("save_unreadable:"), "{err}");
+}
+
+#[test]
+fn listing_a_file_with_an_implausible_header_leaves_it_untouched() {
+    let (_dir, mut sm) = started_with_garbage_headers();
+    let before = snapshot(sm.save_path(GARBAGE).parent().unwrap());
+
+    let _ = listing_of(&sm, GARBAGE);
+    let _ = sm.load_game(GARBAGE);
+
+    assert_eq!(snapshot(sm.save_path(GARBAGE).parent().unwrap()), before);
+}
+
 #[test]
 fn an_entry_whose_file_vanished_while_running_is_listed_as_unreadable() {
     let dir = tempfile::tempdir().unwrap();

@@ -19,6 +19,12 @@ const FORMAT_VERSION: u32 = 3;
 /// has never been a format. Anything outside 1..=this is not a save at all.
 const MAX_PLAUSIBLE_FORMAT: u32 = 0xFFFF;
 
+/// Whether a header number can be a save format at all, current or not.
+/// Import and the saves list share this so a damaged file reads the same in both.
+fn is_plausible_format(found: u32) -> bool {
+    (1..=MAX_PLAUSIBLE_FORMAT).contains(&found)
+}
+
 /// Prefix of the error a reader returns for a save written by another game version.
 /// The UI and the tests match on it, so it never changes.
 pub const INCOMPATIBLE_SAVE_CODE: &str = "save_incompatible";
@@ -151,7 +157,8 @@ pub enum SaveStatus {
     Ok,
     /// The header names another format: a newer or an older game wrote it.
     OtherVersion,
-    /// The header cannot be read: the file is missing, empty or shorter than it.
+    /// The header cannot be read (the file is missing, empty or shorter than it), or it
+    /// holds a number that cannot be a save format.
     Unreadable,
 }
 
@@ -218,7 +225,10 @@ impl SaveManager {
     fn probe(path: &Path) -> Probe {
         match Self::read_olsave_version(path) {
             Ok(FORMAT_VERSION) => Probe::Current,
-            Ok(found) => Probe::OtherVersion(found),
+            Ok(found) if is_plausible_format(found) => Probe::OtherVersion(found),
+            Ok(found) => Probe::Unreadable(format!(
+                "the header reads {found}, which is not a save format"
+            )),
             Err(why) => Probe::Unreadable(why),
         }
     }
@@ -560,7 +570,7 @@ impl SaveManager {
             .ok_or(SaveImportError::TooSmall)?;
         let found = u32::from_le_bytes(header);
         if found != FORMAT_VERSION {
-            if found == 0 || found > MAX_PLAUSIBLE_FORMAT {
+            if !is_plausible_format(found) {
                 return Err(SaveImportError::NotASave);
             }
             return Err(SaveImportError::WrongVersion {
