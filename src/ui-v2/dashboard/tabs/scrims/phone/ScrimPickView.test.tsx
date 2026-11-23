@@ -367,8 +367,15 @@ describe("ScrimPickView read-only", () => {
     const { onPick } = setup(readOnly);
     expect(within(strip()).queryAllByRole("button")).toHaveLength(0);
     expect(within(strip()).queryByText("Accepts")).toBeNull();
-    expect(within(strip()).getByText("Setup locked once block starts")).toBeInTheDocument();
-    expect(strip().firstElementChild).toHaveTextContent("Setup locked once block starts");
+    // BUILD-SPEC section 4 keeps the strip in the read-only form with the reason in place of Accepts: the sentence takes the row beside it, whole.
+    const note = slot("pick-lock-note");
+    expect(note).toHaveTextContent("Setup locked once block starts");
+    expect(strip()).not.toContainElement(note);
+    expect(note.nextElementSibling).toBe(strip());
+    expect(note.className).not.toMatch(/truncate|line-clamp/);
+    // Three lines of 16 px in the 58 px row, and the strip's own track no longer sits over the labels.
+    expect(note.className).toContain("leading-4");
+    expect(strip().className).toContain("[scrollbar-width:none]");
     // The rivals are still read: logo, tag and number, and the plans that hold them.
     expect(strip()).toHaveTextContent("UCAM 58%");
     expect(within(strip()).getAllByRole("img").length).toBe(8);
@@ -387,7 +394,7 @@ describe("ScrimPickView read-only", () => {
 
   it("falls back to the lock word when the week gives no sentence", () => {
     setup({ readOnly: true, blockedText: null });
-    expect(strip().firstElementChild).toHaveTextContent("Locked");
+    expect(slot("pick-lock-note")).toHaveTextContent("Locked");
   });
 });
 
@@ -457,5 +464,34 @@ describe("ScrimPickView read-only: what was played and what was cleared", () => 
   it("shows nothing of this while the slot can still be edited", () => {
     setup({ plan: ["ucam", "", ""], resolvedTeamId: "ucam", cleared: false });
     expect(document.querySelector('[data-slot="pick-plan-played"]')).toBeNull();
+  });
+});
+
+describe("ScrimPickView read-only: the plan that was played is the one shown", () => {
+  const locked = { readOnly: true, blockedText: "Setup locked once block starts" };
+
+  it("opens on the played plan's tab, so the card shows the matchup that happened", () => {
+    setup({ ...locked, plan: ["ucam", "tha", "lua"], resolvedTeamId: "tha" });
+    expect(tab(/Plan B/)).toHaveAttribute("aria-pressed", "true");
+    expect(slot("pick-card-rival")).toHaveTextContent("Team Heretics Academy");
+  });
+
+  it("opens on Plan A when nothing was played or the slot can still be edited", () => {
+    setup({ ...locked, plan: ["ucam", "tha", "lua"], resolvedTeamId: null });
+    expect(tab(/Plan A/)).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("keeps Plan A on open while editable even if a rival was resolved", () => {
+    setup({ plan: ["ucam", "tha", "lua"], resolvedTeamId: "tha" });
+    expect(tab(/Plan A/)).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("names the played plan with its own word, singular in Spanish", async () => {
+    await i18n.changeLanguage("es");
+    setup({ ...locked, plan: ["ucam", "tha", "lua"], resolvedTeamId: "tha" });
+    const word = document.querySelector('[data-slot="pick-plan-played"]') as HTMLElement;
+    expect(word).toHaveTextContent(/^Jugado$/);
+    expect(word.closest("button")).toHaveAccessibleName(/, Jugado$/);
+    await i18n.changeLanguage("en");
   });
 });

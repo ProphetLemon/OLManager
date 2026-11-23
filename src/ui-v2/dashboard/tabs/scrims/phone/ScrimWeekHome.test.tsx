@@ -337,14 +337,17 @@ describe("Semana: the day groups", () => {
     expect(empty.tagName).toBe("BUTTON");
   });
 
-  it("a plan cleared today shows Plan cleared with an empty shield", () => {
+  it("a block the manager cancelled reads Cancelled with the X, never Plan cleared or Not planned", () => {
     mount(makeWeek(4, {
       0: { ...played(false, 61, "Reviewed"), report: report({ post_decision: "VodReview" }) },
       1: { plan: [] },
       2: lockedPlan("c"),
       3: lockedPlan("d"),
     }, lockWeek));
-    expect(blocks()[1]).toHaveTextContent("Plan cleared");
+    expect(blocks()[1]).toHaveTextContent("Cancelled");
+    expect(blocks()[1]).not.toHaveTextContent("Plan cleared");
+    expect(blocks()[1]).not.toHaveTextContent("Not planned");
+    expect(blocks()[1].querySelector("svg")).not.toBeNull();
     expect(blocks()[1].querySelector('[data-slot="phone-empty-shield"]')).not.toBeNull();
   });
 

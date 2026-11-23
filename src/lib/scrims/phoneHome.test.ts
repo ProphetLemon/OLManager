@@ -99,7 +99,7 @@ describe("hero of Semana, one row per state of BUILD-SPEC section 2", () => {
     const week = makeWeek(4, { 0: { ...reviewed(true), report: report({ post_decision: "DayOff" }) }, 1: { canEdit: false }, 2: { plan: ["a"], status: "Locked", canEdit: false } }, { setupLocked: true, setupLockedReason: "week_started" });
     const model = home({ week });
     expect(model.hero).toMatchObject({ state: "upNext", slotIndex: 2, opponentTeamId: "a" });
-    expect(block(model, 1)).toMatchObject({ state: "cleared", isHero: false, heroWord: null });
+    expect(block(model, 1)).toMatchObject({ state: "cancelled", isHero: false, heroWord: null });
     expect(block(model, 2)).toMatchObject({ isHero: true, heroWord: "next" });
   });
 
@@ -107,7 +107,7 @@ describe("hero of Semana, one row per state of BUILD-SPEC section 2", () => {
     const week = makeWeek(2, { 0: { ...reviewed(true), report: report({ post_decision: "DayOff" }) }, 1: { canEdit: false } }, { setupLocked: true, setupLockedReason: "week_started", wins: 1 });
     const model = home({ week });
     expect(model.hero).toMatchObject({ state: "report", wins: 1, opens: "report" });
-    expect(block(model, 1)).toMatchObject({ state: "cleared", isHero: false });
+    expect(block(model, 1)).toMatchObject({ state: "cancelled", isHero: false });
   });
 
   it("6 upNext: skips played blocks, and on a locked week keeps the lock icon and opens nothing", () => {
@@ -175,9 +175,9 @@ describe("blocks of Semana, one row per state of BUILD-SPEC section 2", () => {
     expect(block(home({ week }), 1)).toMatchObject({ state: "notPlayed", rival: { kind: "none" }, opens: false });
   });
 
-  it("cleared: today's plan cleared by a cancelling decision shows the empty shield", () => {
+  it("cancelled: a block whose plan a cancelling decision cleared is a cancelled block, with the empty shield (the only way a plan is cleared)", () => {
     const week = makeWeek(2, { 0: { ...reviewed(true), report: report({ post_decision: "DayOff" }) }, 1: { canEdit: false } });
-    expect(block(home({ week }), 1)).toMatchObject({ state: "cleared", rival: { kind: "cleared" } });
+    expect(block(home({ week }), 1)).toMatchObject({ state: "cancelled", rival: { kind: "cleared" } });
   });
 
   it("none: an open block with no rival, a button only while it can be edited", () => {

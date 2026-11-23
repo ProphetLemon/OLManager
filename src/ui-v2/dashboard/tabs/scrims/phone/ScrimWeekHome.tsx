@@ -310,7 +310,9 @@ function Block({ block, identityOf, nameOf, weekdayLabel, onOpen }: {
   const { t } = useTranslation();
   const rival = block.rival.kind === "team" ? identityOf(block.rival.teamId) : null;
   const dim = block.state === "cancelled" || block.state === "notPlayed";
-  const emptyText = block.rival.kind === "cleared" ? t("scrims.planCleared") : t("scrims.notPlanned");
+  const emptyText = t("scrims.notPlanned");
+  // A cancelled block with no rival says only Cancelled (the X and the secondary colour), never a second reading.
+  const nameLine = rival || block.state !== "cancelled";
   const className = cn(
     "flex h-[var(--hit)] w-full min-w-0 items-center gap-1.5 rounded-[10px] border-2 px-1 text-start",
     block.isHero ? "border-club" : "border-transparent",
@@ -323,9 +325,11 @@ function Block({ block, identityOf, nameOf, weekdayLabel, onOpen }: {
       </span>
       {rival ? <TeamShield identity={rival} size="small" /> : <EmptyShield size="small" />}
       <span className="flex min-w-0 flex-col gap-0.5">
-        <span aria-hidden={rival ? true : undefined} className={cn("truncate font-heading text-entry font-semibold leading-4", dim && "text-muted-foreground")}>
-          {rival ? nameOf(block.rival.kind === "team" ? block.rival.teamId : "") : emptyText}
-        </span>
+        {nameLine ? (
+          <span aria-hidden={rival ? true : undefined} className={cn("truncate font-heading text-entry font-semibold leading-4", dim && "text-muted-foreground")}>
+            {rival ? nameOf(block.rival.kind === "team" ? block.rival.teamId : "") : emptyText}
+          </span>
+        ) : null}
         <BlockStateLine block={block} />
       </span>
     </>

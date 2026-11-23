@@ -376,7 +376,10 @@ describe("ScrimsTabV2 on a phone: what opens on arrival", () => {
     );
     fireEvent.click(block(0));
     expect(planTab("B")).toHaveAccessibleName(/Played/);
+    expect(planTab("B")).toHaveAttribute("aria-pressed", "true");
     expect(planTab("A")).not.toHaveAccessibleName(/Played/);
+    // The strip stays (BUILD-SPEC section 4) with the sentence beside it, outside the scroller.
+    expect(document.querySelector('[data-slot="pick-lock-note"]')!.nextElementSibling).toBe(strip());
     expect(planTab("C")).toHaveAccessibleName(/No fallback/);
   });
 });
@@ -1007,6 +1010,15 @@ describe("ScrimsTabV2 on a phone: the three settings views", () => {
     const buttons = within(strip()).getAllByRole("button");
     expect(buttons.length).toBeGreaterThan(0);
     for (const button of buttons) expect(button.className).toContain("focus-visible:ring-inset");
+  });
+
+  it("Volumen of a locked week says Locked in the top row and the whole lock sentence at the bottom", () => {
+    mount(scrimMorning());
+    fireEvent.click(entry("volume"));
+    expect(document.querySelector('[data-slot="scrim-view-top"]')).toHaveTextContent("Locked");
+    const sentence = document.querySelector('[data-slot="volume-lock-sentence"]') as HTMLElement;
+    expect(sentence.textContent?.length).toBeGreaterThan(10);
+    expect(document.querySelector('[data-slot="scrim-view-top"]')).not.toContainElement(sentence);
   });
 
   it("Volumen keeps Confirmar clear of the assistant switch: Rellenar is narrower and the gap shorter, so the switch ends before Confirmar starts", () => {

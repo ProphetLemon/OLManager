@@ -48,7 +48,7 @@ export type PhoneHero = HeroBase & (
   | { state: "report"; wins: number; losses: number }
 );
 
-export type PhoneBlockState = "planned" | "played" | "cancelled" | "notPlayed" | "cleared" | "none";
+export type PhoneBlockState = "planned" | "played" | "cancelled" | "notPlayed" | "none";
 
 export interface PhoneBlock {
   id: PhoneRowId;
@@ -91,7 +91,8 @@ function blockState(cell: PhoneSlotCell): PhoneBlockState {
     case "NotPlayed": return "notPlayed";
     default:
       if (cell.rival.kind === "team") return "planned";
-      return cell.rival.kind === "cleared" ? "cleared" : "none";
+      // A plan a cancelling decision cleared is a cancelled block (the only way a plan is cleared before its day passes).
+      return cell.rival.kind === "cleared" ? "cancelled" : "none";
   }
 }
 

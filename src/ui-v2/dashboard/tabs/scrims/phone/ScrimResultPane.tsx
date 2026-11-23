@@ -68,9 +68,11 @@ function OtherBlock({ block }: { block: ResultOtherBlock }) {
       <span className="w-12 shrink-0 text-entry text-muted-foreground">{block.label}</span>
       <div className="flex w-[5.5rem] shrink-0 flex-col items-center gap-1">
         {block.identity ? <TeamShield identity={block.identity} size="medium" /> : <EmptyShield size="medium" />}
-        <span className="max-w-full text-center font-heading text-entry font-semibold leading-tight line-clamp-2">
-          {block.identity ? block.identity.name : t("scrims.notPlanned")}
-        </span>
+        {block.identity || block.state !== "cancelled" ? (
+          <span className="max-w-full text-center font-heading text-entry font-semibold leading-tight line-clamp-2">
+            {block.identity ? block.identity.name : t("scrims.notPlanned")}
+          </span>
+        ) : null}
       </div>
       <div className="pt-4">{state}</div>
     </div>

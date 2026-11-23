@@ -74,7 +74,8 @@ function Odds({ label, value, tone, mirror }: { label: string; value: number; to
 export function ScrimPickView(props: ScrimPickViewProps) {
   const { slotLabel, myTeam, teams, plan, rivals, ownReputation, readOnly, disabled, blockedText, doneTo, onPick, onDone, onBack, resolvedTeamId = null, cleared = false } = props;
   const { t } = useTranslation();
-  const [active, setActive] = useState(0);
+  // A read-only slot that was played opens on the plan that was played, so the card shows what happened.
+  const [active, setActive] = useState(() => (readOnly && resolvedTeamId != null ? Math.max(0, plan.indexOf(resolvedTeamId)) : 0));
   const [helpOpen, setHelpOpen] = useState(false);
   useBackDismisser(helpOpen, () => setHelpOpen(false));
 
@@ -120,7 +121,7 @@ export function ScrimPickView(props: ScrimPickViewProps) {
               data-slot="pick-plan-tab"
               data-plan={LETTERS[index]}
               aria-pressed={active === index}
-              aria-label={`${t(PLAN_KEYS[index])}: ${identity?.name ?? emptyLabel(index)}${playedPlan(index) ? `, ${t("scrims.played")}` : ""}`}
+              aria-label={`${t(PLAN_KEYS[index])}: ${identity?.name ?? emptyLabel(index)}${playedPlan(index) ? `, ${t("scrims.phone.planPlayed")}` : ""}`}
               onClick={() => setActive(index)}
               className={cn(
                 "flex h-[var(--hit)] items-center gap-1.5 border-b-[3px] px-2 font-heading text-section font-bold leading-none",
@@ -133,7 +134,7 @@ export function ScrimPickView(props: ScrimPickViewProps) {
               {playedPlan(index) ? (
                 <span data-slot="pick-plan-played" className="flex items-center gap-1 text-entry font-semibold text-positive">
                   <Check aria-hidden="true" className="size-4 shrink-0" strokeWidth={3} />
-                  {t("scrims.played")}
+                  {t("scrims.phone.planPlayed")}
                 </span>
               ) : null}
             </button>
@@ -227,15 +228,22 @@ export function ScrimPickView(props: ScrimPickViewProps) {
         </section>
 
         <div data-slot="pick-strip-row" className="flex h-[3.625rem] shrink-0 gap-2">
+          {readOnly ? (
+            <p data-slot="pick-lock-note" className="m-0 w-[19rem] shrink-0 self-center text-caption leading-4 text-muted-foreground">
+              {blockedText ?? t("scrims.slotStatus.locked")}
+            </p>
+          ) : null}
           <div
             role="group"
             aria-label={t("scrims.rivalsTable")}
             data-slot="pick-strip"
-            className="scrollbar-v2 flex min-w-0 flex-1 items-start gap-0.5 overflow-x-auto overflow-y-hidden pt-0.5"
+            className={cn(
+              "flex min-w-0 flex-1 items-start gap-0.5 overflow-x-auto overflow-y-hidden pt-0.5",
+              // Read-only nobody picks: the track would only sit over the labels.
+              readOnly ? "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "scrollbar-v2",
+            )}
           >
-            {readOnly ? (
-              <span className="w-44 shrink-0 self-center pe-2 text-caption leading-4 text-muted-foreground">{blockedText ?? t("scrims.slotStatus.locked")}</span>
-            ) : (
+            {readOnly ? null : (
               <span className="w-14 shrink-0 self-center text-entry text-muted-foreground">{t("scrims.rivalAccepts")}</span>
             )}
             {rivals.map((row) => {

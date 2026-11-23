@@ -127,6 +127,14 @@ describe("ScrimResultPane: the blocks", () => {
     expect(b.className).not.toMatch(/opacity/);
   });
 
+  it("says only Cancelled for a cancelled block with no rival: no Not planned under the dashed shield", () => {
+    setup({ result: CANCEL, other: { label: "Wed B", identity: null, state: "cancelled" }, nextSlotLabel: null });
+    const b = document.querySelector('[data-slot="result-block-b"]') as HTMLElement;
+    expect(b.querySelector('[data-slot="phone-empty-shield"]')).not.toBeNull();
+    expect(b).not.toHaveTextContent("Not planned");
+    expect(b).toHaveTextContent("Cancelled");
+  });
+
   it("draws no second block when the day has no other one", () => {
     setup({ other: null });
     expect(document.querySelector('[data-slot="result-block-b"]')).toBeNull();

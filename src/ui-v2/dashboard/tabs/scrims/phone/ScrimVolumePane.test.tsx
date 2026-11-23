@@ -181,9 +181,13 @@ describe("ScrimVolumePane Confirmar", () => {
 });
 
 describe("ScrimVolumePane locked and saving", () => {
-  it("says why in the top row and keeps every control in place, aria-disabled, focusable and not dimmed", () => {
+  it("says Locked in the top row, the whole sentence at the bottom in place of the finalize hint, and keeps every control in place, aria-disabled, focusable and not dimmed", () => {
     const { onVolume, onFinalize, onAutofill, container } = setup({ disabled: true, autofillDisabled: true, blockedText: "Setup locked once block starts" });
-    expect(container.querySelector('[data-slot="scrim-view-top"]')).toContainElement(screen.getByText("Setup locked once block starts"));
+    const top = container.querySelector('[data-slot="scrim-view-top"]') as HTMLElement;
+    expect(top).toHaveTextContent("Locked");
+    expect(top).not.toHaveTextContent("Setup locked once block starts");
+    expect(container.querySelector('[data-slot="volume-lock-sentence"]')).toHaveTextContent("Setup locked once block starts");
+    expect(screen.queryByText("Finalizing locks this week's setup. It reopens next Monday.")).toBeNull();
     const four = screen.getByRole("button", { name: /^Volume 4/ });
     const rellenar = screen.getByRole("button", { name: "Autofill" });
     for (const control of [four, finalize(), rellenar]) {
@@ -210,7 +214,8 @@ describe("ScrimVolumePane locked and saving", () => {
 
   it("while a save runs does nothing on a press and says no reason", () => {
     const { onVolume, container } = setup({ disabled: true, autofillDisabled: true, blockedText: null });
-    expect(container.querySelector('[data-slot="phone-lock-line"]')).toBeNull();
+    expect(container.querySelector('[data-slot="volume-lock-sentence"]')).toBeNull();
+    expect(screen.getByText("Finalizing locks this week's setup. It reopens next Monday.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Volume 2/ }));
     expect(onVolume).not.toHaveBeenCalled();
   });
