@@ -7,9 +7,12 @@ import { paletteEntryPhase, paletteHoldsEntry } from "@/ui-v2/palette/paletteHis
  * (or finishes the activity when it cannot) only when no JS listener is registered for it; a
  * listener makes it just emit `{ canGoBack }`. `registerNativeBack` registers one at startup
  * and `handleNativeBack` decides from the slot, never from the payload (`canGoBack` can be
- * stale by the time the handler runs). A hold therefore touches no history at all, so the
- * WebView never sits on index 0 between a traversal and a `history.forward()` that a busy
+ * stale by the time the handler runs). A press on a hold therefore makes no history call, so
+ * the WebView never sits on index 0 between a traversal and a `history.forward()` that a busy
  * main thread delays, where a second press would find `canGoBack()` false and close the app.
+ * One sequence still traverses: a second press that arrives while the palette's entry is
+ * still coming off repeats the `history.back()`, and the guard below takes that extra pop
+ * back. With the listener registered the native side cannot close the app in that gap.
  *
  * Fallback, the `popstate` guard below, for when the registration failed or has not resolved
  * yet (the native default is then in force) and for pops nobody pressed Back for (the
