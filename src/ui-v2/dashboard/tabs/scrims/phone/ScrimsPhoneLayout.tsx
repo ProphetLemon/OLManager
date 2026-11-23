@@ -238,7 +238,21 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
       };
     }
     if (current === "report") {
-      return { title: t("scrims.phone.report"), content: <ScrimReportPane week={week} teamNameById={teamNameById} suggestions={props.staffSuggestions} /> };
+      return {
+        title: t("scrims.phone.report"),
+        selfFramed: true,
+        content: (
+          <ScrimReportPane
+            title={t("scrims.phone.report")}
+            onBack={goHome}
+            week={week}
+            teams={gameState.teams}
+            teamNameById={teamNameById}
+            slotLabelOf={slotLabelOf}
+            suggestions={props.staffSuggestions}
+          />
+        ),
+      };
     }
 
     const slotIndex = Number(current.slice("slot:".length));
