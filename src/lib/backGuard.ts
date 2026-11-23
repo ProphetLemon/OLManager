@@ -1,4 +1,10 @@
-import { paletteEntryPhase, paletteHoldsEntry } from "@/ui-v2/palette/paletteHistory";
+import {
+  dismissOverlayWithBack,
+  paletteEntryPhase,
+  paletteHoldsEntry,
+  resetNativeBackOverlaysForTests,
+  setNativeBackRegistered,
+} from "@/ui-v2/palette/paletteHistory";
 
 /**
  * What the system Back means while a screen is showing, on Android.
@@ -13,8 +19,10 @@ import { paletteEntryPhase, paletteHoldsEntry } from "@/ui-v2/palette/paletteHis
  *
  * One traversal at a time. The handler's own `history.back()` (palette entry pushed, or nothing
  * set with `canGoBack` true) marks a back as in flight, and every press is ignored until its
- * pop arrives (the guard clears the mark first thing, being the first listener) or 400 ms pass
- * with no pop. A press also waits while the guard's own `forward()` restore is pending. What
+ * pop arrives (the guard clears the mark first thing, being the first listener) or
+ * `BACK_IN_FLIGHT_TIMEOUT_MS` (3 s) pass with no pop: a pop can queue behind a busy main
+ * thread for far longer than 400 ms, and an early clear would let a second press walk a
+ * second step. A press also waits while the guard's own `forward()` restore is pending. What
  * that means for each path:
  * - the palette's pushed entry: the first press takes it off, a second before the pop is
  *   ignored (it used to walk past the dashboard's own entry); its release is `releasing`,
@@ -25,8 +33,15 @@ import { paletteEntryPhase, paletteHoldsEntry } from "@/ui-v2/palette/paletteHis
  *   decides afresh from the slot, and a press that finds nothing behind it closes the app;
  * - a hold or an exit makes no traversal, so nothing is in flight and each press is decided
  *   on its own (exit is retried by the next press if it was rejected);
- * - a pop that never arrives clears the mark after the timeout, so a press is never lost for
+ * - a pop that never arrives clears the mark after the long timeout, so a press is never lost for
  *   good.
+ * Overlays take no history entry while the native listener is registered. The traversal the
+ * trace showed (a `back()` left pending on the dashboard, voided by a later palette
+ * `pushState`) came from the palette's own entry, so with the listener registered
+ * (`registerNativeBack` sets the flag when the registration resolves) the Go palette and the
+ * More menu push nothing and release nothing; they register a dismisser while open, and a
+ * press that finds one calls it and returns, ahead of every other rule. An overlay opened
+ * before the registration resolved keeps its entry and the entry path until it closes.
  * Screens set the meaning in a layout effect, so when a pop makes the router render the
  * dashboard or the menu the slot is already right when the next press is handled.
  *
@@ -69,6 +84,14 @@ export type BackMeaning = { kind: "hold" } | { kind: "exit"; exit: () => Promise
 /** How long the pop of our own `history.forward()` is waited for before it is forgotten. */
 export const BACK_RESTORE_TIMEOUT_MS = 400;
 
+/**
+ * How long a `history.back()` of ours is waited for before its press is forgotten. A pop can
+ * queue behind a busy main thread for much longer than the restore timeout, and clearing the
+ * mark early would let a second press walk a second step; this only keeps a lost pop from
+ * disabling Back for good.
+ */
+export const BACK_IN_FLIGHT_TIMEOUT_MS = 3000;
+
 let installed = false;
 let meaning: BackMeaning | null = null;
 let restoring = false;
@@ -84,7 +107,7 @@ function settleBack(): void {
 function goBackOnce(): void {
   backInFlight = true;
   window.clearTimeout(backTimer);
-  backTimer = window.setTimeout(settleBack, BACK_RESTORE_TIMEOUT_MS);
+  backTimer = window.setTimeout(settleBack, BACK_IN_FLIGHT_TIMEOUT_MS);
   window.history.back();
 }
 
@@ -152,6 +175,7 @@ export function resetBackGuardForTests(): void {
   meaning = null;
   settleRestore();
   settleBack();
+  resetNativeBackOverlaysForTests();
 }
 
 /** The payload of Tauri's Android `back-button` event. */
@@ -179,6 +203,8 @@ function callExit(exit: () => Promise<void>): void {
  * pending, every press is ignored (see the header).
  */
 export function handleNativeBack(payload: NativeBackPayload, exitApp: () => Promise<void>): void {
+  // An open overlay closes on Back and takes precedence over everything else.
+  if (dismissOverlayWithBack()) return;
   if (backInFlight || restoring) return;
   const phase = paletteEntryPhase();
   if (phase === "releasing") return;
@@ -207,6 +233,7 @@ export async function registerNativeBack(
 ): Promise<void> {
   try {
     await register((payload) => handleNativeBack(payload, exitApp));
+    setNativeBackRegistered(true);
   } catch (error) {
     console.error("Failed to register the native back-button listener:", error);
   }

@@ -18,6 +18,7 @@ import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
 
 import { PaletteOption } from "./PaletteOption";
+import { useBackDismisser } from "./useBackDismisser";
 import {
   forgetPaletteEntry,
   paletteEntryPop,
@@ -148,6 +149,11 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     else releasePaletteEntry();
   }, [open, android]);
   useEffect(() => () => forgetPaletteEntry(), []);
+  // With the native back-button listener registered the palette holds no entry: Back closes it.
+  useBackDismisser(open && android, () => {
+    closeReason.current = "dismiss";
+    closePalette();
+  });
 
   useEffect(() => {
     if (!open) return;

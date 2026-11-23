@@ -4,9 +4,9 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, type Mock }
 
 import { useMenuBackExit } from "@/hooks/useMenuBackExit";
 import { useDashboardBackHold } from "@/ui-v2/dashboard/useDashboardBackHold";
-import { forgetPaletteEntry, pushPaletteEntry, releasePaletteEntry } from "@/ui-v2/palette/paletteHistory";
+import { forgetPaletteEntry, pushPaletteEntry, nativeBackRegistered, registerBackDismisser, releasePaletteEntry } from "@/ui-v2/palette/paletteHistory";
 
-import { BACK_RESTORE_TIMEOUT_MS, handleNativeBack, installBackGuard, registerNativeBack, resetBackGuardForTests, setBackMeaning } from "./backGuard";
+import { BACK_IN_FLIGHT_TIMEOUT_MS, BACK_RESTORE_TIMEOUT_MS, handleNativeBack, installBackGuard, registerNativeBack, resetBackGuardForTests, setBackMeaning } from "./backGuard";
 
 /**
  * Tauri's `back-button` event: with a JS listener registered the native side neither traverses
@@ -196,14 +196,46 @@ describe("native back button", () => {
       expect(exitApp).not.toHaveBeenCalled();
     });
 
-    it("forgets a traversal whose pop never comes", () => {
+    it("keeps a traversal in flight past the restore timeout while its pop is still on the way", () => {
+      vi.useFakeTimers();
+      handleNativeBack({ canGoBack: true }, exitApp);
+      vi.advanceTimersByTime(BACK_RESTORE_TIMEOUT_MS + 1000);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).toHaveBeenCalledTimes(1);
+      pop(); // the pop lands: cleared by it
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).toHaveBeenCalledTimes(2);
+    });
+
+    it("forgets a traversal whose pop never comes after the long safety timeout", () => {
       vi.useFakeTimers();
       handleNativeBack({ canGoBack: true }, exitApp);
       handleNativeBack({ canGoBack: true }, exitApp);
       expect(back).toHaveBeenCalledTimes(1);
-      vi.advanceTimersByTime(BACK_RESTORE_TIMEOUT_MS);
+      vi.advanceTimersByTime(BACK_IN_FLIGHT_TIMEOUT_MS);
       handleNativeBack({ canGoBack: true }, exitApp);
       expect(back).toHaveBeenCalledTimes(2);
+    });
+
+    it("lets a registered dismisser win over an in-flight traversal and everything else", () => {
+      const dismiss = vi.fn();
+      const unregister = registerBackDismisser(dismiss);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(dismiss).toHaveBeenCalledTimes(1);
+      expect(back).not.toHaveBeenCalled();
+      unregister();
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(back).toHaveBeenCalledTimes(1);
+    });
+
+    it("dismisses the most recently registered overlay", () => {
+      const first = vi.fn();
+      const second = vi.fn();
+      registerBackDismisser(first);
+      registerBackDismisser(second);
+      handleNativeBack({ canGoBack: true }, exitApp);
+      expect(second).toHaveBeenCalledTimes(1);
+      expect(first).not.toHaveBeenCalled();
     });
 
     it("ignores a press while the guard's own restore is pending", () => {
@@ -272,6 +304,14 @@ describe("native back button", () => {
       await registerNativeBack(register, exitApp);
       expect(register).toHaveBeenCalledTimes(1);
       expect(back).toHaveBeenCalledTimes(1);
+    });
+
+    it("marks the native listener registered only once the registration resolved", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      await registerNativeBack(() => Promise.reject(new Error("denied")), exitApp);
+      expect(nativeBackRegistered()).toBe(false);
+      await registerNativeBack(() => Promise.resolve({}), exitApp);
+      expect(nativeBackRegistered()).toBe(true);
     });
 
     it("reports a rejected registration and leaves the popstate guard as the fallback", async () => {
