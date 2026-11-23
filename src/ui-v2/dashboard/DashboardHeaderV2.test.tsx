@@ -250,7 +250,7 @@ describe("DashboardHeaderV2", () => {
 
     it("is small dim text, not a link or a landmark", () => {
       setup({ activeTab: "Squad" });
-      // text-nav (R16): text-caption is 6.75 px at the Android root.
+      // text-nav (R16): the shell keeps its own label token (caption was 6.75 px at the old 9 px Android root).
       expect(crumb()!.className).toContain("text-nav");
       expect(crumb()!.className).not.toContain("text-caption");
       expect(crumb()!.className).toContain("text-dim");

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  ANDROID_ROOT_FONT,
   MIN_OFFERED_ROOT_FONT_PX,
+  MIN_PHONE_ROOT_FONT_PX,
   SCALE_MAP,
+  phoneRootFontPx,
   rootFontSizeFor,
 } from "@/ui-v2/uiScale";
 
@@ -33,10 +34,17 @@ describe("root font size per platform", () => {
     expect(rootFontSizeFor("xsmall", DESKTOP)).toBe("12px");
   });
 
-  it("keeps the Android root at 9px, also for a stored xsmall", () => {
-    expect(ANDROID_ROOT_FONT).toBe("9px");
-    expect(rootFontSizeFor("xsmall", ANDROID)).toBe("9px");
-    expect(rootFontSizeFor("normal", ANDROID)).toBe("9px");
+  it("gives a phone the 16px root from phoneRootFontPx, also for a stored xsmall", () => {
+    expect(phoneRootFontPx()).toBe(16);
+    expect(rootFontSizeFor("xsmall", ANDROID)).toBe("16px");
+    expect(rootFontSizeFor("normal", ANDROID)).toBe("16px");
+    expect(rootFontSizeFor("xlarge", ANDROID)).toBe(`${phoneRootFontPx()}px`);
+  });
+
+  it("never lets the phone root fall under the phone floor, which keeps 0.75rem text at 12px", () => {
+    expect(MIN_PHONE_ROOT_FONT_PX).toBe(16);
+    expect(phoneRootFontPx()).toBeGreaterThanOrEqual(MIN_PHONE_ROOT_FONT_PX);
+    expect(phoneRootFontPx() * 0.75).toBeGreaterThanOrEqual(12);
   });
 
   it("falls back to 16px for an unknown scale on desktop", () => {

@@ -112,12 +112,17 @@ export default function AppV2() {
   // Decided once in AppV2 so no Tauri window call runs for chrome Android does not show.
   const isAndroid = useMemo(() => isAndroidUserAgent(window.navigator.userAgent), []);
 
-  // Hook for platform-specific CSS (touch hit size, safe areas): see themes/default.css.
+  // Hooks for platform-specific CSS (touch hit size, safe areas): see themes/default.css.
+  // `data-platform` says where the app runs; `data-form="phone"` says the layouts and
+  // tokens built for a phone apply (the `phone:` Tailwind variant reads it). Today the
+  // two travel together: every Android device is a phone.
   useEffect(() => {
     if (!isAndroid) return;
     document.documentElement.dataset.platform = "android";
+    document.documentElement.dataset.form = "phone";
     return () => {
       delete document.documentElement.dataset.platform;
+      delete document.documentElement.dataset.form;
     };
   }, [isAndroid]);
 

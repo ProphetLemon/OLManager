@@ -133,7 +133,7 @@ export function DashboardHeaderV2({
           {teamName && <ClubShield name={teamName} logoUrl={teamLogo} size="md" className="shrink-0" />}
           <div className="min-w-0 flex-1">
             {(crumbTeam || crumbGroup) && (
-              // text-nav, not text-caption: caption is 6.75 px at the Android root (R16).
+              // text-nav, not text-caption: the shell keeps its own label token (R16); caption was 6.75 px at the old 9 px Android root.
               <p data-slot="crumb" title={crumbTitle} className="truncate text-nav leading-tight text-dim">
                 {crumbTeam && <span>{crumbTeam}</span>}
                 {crumbTeam && crumbGroup && (
