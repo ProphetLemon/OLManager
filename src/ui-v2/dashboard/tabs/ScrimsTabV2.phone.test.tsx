@@ -252,9 +252,9 @@ describe("ScrimsTabV2 on a phone: the frame", () => {
     expect(container.firstElementChild?.className).toContain("h-full");
     expect(container.firstElementChild?.className).toContain("min-h-0");
     expect(appCss).toMatch(/\[data-form="phone"\] #main-content > \[data-phone-fixed\]/);
-    // Semana never scrolls: nothing in it is a scroll container.
-    expect(home()?.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
-    expect(container.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"]')).toBeNull();
+    // Semana scrolls inside itself only as a safety when its area is shorter than its content; nothing in it does.
+    expect(home()?.className).toContain("overflow-y-auto");
+    expect(home()?.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"]')).toBeNull();
   });
 
   it("a view has a top row of one target height with a real back button, the title as its heading and the body below", () => {
@@ -269,7 +269,7 @@ describe("ScrimsTabV2 on a phone: the frame", () => {
     expect(back()).toHaveAccessibleName("Back: Objective");
     const body = document.querySelector('[data-slot="scrim-view-body"]') as HTMLElement;
     expect(top.nextElementSibling).toBe(body);
-    expect(body.className).not.toMatch(/overflow-(y-)?(auto|scroll)/);
+    expect(body.className).toContain("overflow-y-auto");
     expect(home()).toBeNull();
   });
 

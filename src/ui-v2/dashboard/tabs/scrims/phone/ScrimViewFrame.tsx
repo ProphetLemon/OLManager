@@ -50,7 +50,7 @@ export function ScrimViewFrame({ title, onBack, lead, actions, bare, children, c
       </div>
       <div
         data-slot="scrim-view-body"
-        className={cn("min-h-0 flex-1 overflow-hidden", !bare && "rounded-lg bg-card text-card-foreground shadow-[inset_0_0_0_1px_var(--line)]")}
+        className={cn("scrollbar-v2 min-h-0 flex-1 overflow-y-auto", !bare && "rounded-lg bg-card text-card-foreground shadow-[inset_0_0_0_1px_var(--line)]")}
       >
         {children}
       </div>

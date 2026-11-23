@@ -215,7 +215,7 @@ export function ScrimPickView(props: ScrimPickViewProps) {
             role="group"
             aria-label={t("scrims.rivalsTable")}
             data-slot="pick-strip"
-            className="scrollbar-v2 flex min-w-0 flex-1 items-start gap-0.5 overflow-x-auto overflow-y-hidden"
+            className="scrollbar-v2 flex min-w-0 flex-1 items-start gap-0.5 overflow-x-auto overflow-y-hidden pt-0.5"
           >
             {readOnly ? (
               <span className="w-44 shrink-0 self-center pe-2 text-caption leading-4 text-muted-foreground">{blockedText ?? t("scrims.slotStatus.locked")}</span>
@@ -250,7 +250,7 @@ export function ScrimPickView(props: ScrimPickViewProps) {
                   </span>
                 </>
               );
-              const base = "relative flex w-[3.75rem] shrink-0 flex-col items-center gap-1 rounded-lg px-0.5";
+              const base = "relative flex w-[3.75rem] shrink-0 flex-col items-center gap-0.5 rounded-lg px-0.5";
               if (readOnly) {
                 return (
                   <div key={row.teamId} data-slot="pick-rival" data-team-id={row.teamId} data-state={state} className={base}>

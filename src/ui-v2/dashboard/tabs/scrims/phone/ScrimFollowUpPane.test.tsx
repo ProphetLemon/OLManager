@@ -127,6 +127,7 @@ describe("ScrimFollowUpPane", () => {
   it("has no live region and nothing that scrolls", () => {
     const { container } = setup();
     expect(container.querySelector("[aria-live]")).toBeNull();
-    expect(container.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"]')).toBeNull();
+    // The frame's body may scroll as a safety; nothing inside the pane does.
+    expect(container.querySelector('[data-slot="scrim-followup-pane"]')!.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"]')).toBeNull();
   });
 });

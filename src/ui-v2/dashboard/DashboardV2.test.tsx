@@ -529,6 +529,17 @@ describe("DashboardV2 shell wiring", () => {
     await waitFor(() => expect(shell.header?.activeTab).toBe("Scrims"));
   });
 
+  it("keeps the scrim result notice on the Scrims tab itself on desktop", async () => {
+    shell.scrimResultNotice = ["Won against Rivals"];
+    await renderDashboard();
+    await screen.findByRole("button", { name: "Training" });
+    act(() => useDashboardLocationStore.getState().go({ kind: "tab", tab: "Scrims" }));
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Scrims"));
+
+    expect(screen.getByRole("region", { name: "dashboard.scrimResultTitle" })).toHaveTextContent("Won against Rivals");
+    expect(shell.dismissScrimResultNotice).not.toHaveBeenCalled();
+  });
+
   it("keeps the header and rail active tab in sync with navigation", async () => {
     await renderDashboard();
     fireEvent.click(await screen.findByRole("button", { name: "Training" }));

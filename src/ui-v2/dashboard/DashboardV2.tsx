@@ -681,11 +681,19 @@ export default function DashboardV2() {
   const backTarget = backDestination(profileNavigation, isValidLocation);
   const backTo = backTitle(backTarget, describeDeps, t);
 
+  // On a phone the Scrims tab shows the result itself and has no height to spare: the banner is
+  // not drawn there, what the player saw is dismissed, and the assistant's note goes to the alerts.
+  const scrimsOnPhone = phone && profileNavigation.activeTab === "Scrims";
+  const shownScrimNotice = scrimsOnPhone ? null : scrimResultNotice;
+  useEffect(() => {
+    if (scrimsOnPhone && scrimResultNotice) dismissScrimResultNotice();
+  }, [scrimsOnPhone, scrimResultNotice, dismissScrimResultNotice]);
+
   const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
     if (!gameState) return [];
     const alerts = getDashboardAlerts(gameState, hasMatchToday, t, { assistantResolvesScrims });
     // The scrim result notice carries the Assistant Coach note itself.
-    if (autoDelegationNotice && !scrimResultNotice) {
+    if (autoDelegationNotice && !shownScrimNotice) {
       alerts.unshift({
         id: "scrim_auto_delegate_notice",
         text: autoDelegationNotice,
@@ -708,7 +716,7 @@ export default function DashboardV2() {
     t,
     assistantResolvesScrims,
     autoDelegationNotice,
-    scrimResultNotice,
+    shownScrimNotice,
     matchPlayedNotice,
   ]);
 
@@ -962,7 +970,7 @@ export default function DashboardV2() {
         )}
 
         <ScrimResultNoticeV2
-          lines={scrimResultNotice}
+          lines={shownScrimNotice}
           assistantNote={autoDelegationNotice}
           onOpenScrims={() => {
             dismissScrimResultNotice();

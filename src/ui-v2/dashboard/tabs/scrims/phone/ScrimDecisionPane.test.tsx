@@ -59,7 +59,8 @@ describe("ScrimDecisionPane: the frame", () => {
     const { container } = setup();
     expect(container.querySelector('[data-slot="scrim-view-body"]')?.className).not.toContain("bg-card");
     expect(container.querySelector("[aria-live]")).toBeNull();
-    expect(container.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"], [class*="overflow-y-scroll"]')).toBeNull();
+    // The frame's body may scroll as a safety; nothing inside the pane does.
+    expect(container.querySelector('[data-slot="scrim-decision-pane"]')!.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"], [class*="overflow-y-scroll"]')).toBeNull();
   });
 
   it("keeps the body inside the 286 px area: 8 px under the top row and 12 px free at the bottom", () => {

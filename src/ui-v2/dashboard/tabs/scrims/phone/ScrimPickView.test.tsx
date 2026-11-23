@@ -420,3 +420,11 @@ describe("ScrimPickView frame and sizes", () => {
     expect(within(card()).queryAllByRole("button")).toHaveLength(0);
   });
 });
+
+describe("ScrimPickView strip room", () => {
+  it("leaves room above the logos for the plan badge and the chosen ring, inside the same row height", () => {
+    setup();
+    expect(slot("pick-strip").className).toContain("pt-0.5");
+    expect(slot("pick-strip-row").className).toContain("h-[3.625rem]");
+  });
+});

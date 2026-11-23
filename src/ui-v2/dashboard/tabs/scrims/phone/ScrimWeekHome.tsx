@@ -83,7 +83,7 @@ function Matchup({ mine, rival, rivalLabel, compact }: { mine: TeamIdentity; riv
     <span data-slot="phone-week-matchup" className="flex items-start gap-3">
       <span className="flex w-24 flex-col items-center gap-0.5">
         <TeamShield identity={mine} size={size} />
-        <span aria-hidden="true" className="max-w-full truncate font-heading text-entry font-semibold leading-4">{t("teams.yourTeam")}</span>
+        <span aria-hidden="true" className="max-w-full truncate font-heading text-entry font-semibold leading-4">{mine.name}</span>
       </span>
       <span aria-hidden="true" className="font-heading text-section font-bold leading-none text-muted-foreground">{t("common.vs")}</span>
       <span className="flex w-32 flex-col items-center gap-0.5">
@@ -400,7 +400,7 @@ export function ScrimWeekHome({ home, myTeam, teams, weekdayLabels, teamNameById
   const reportText = report.hasResult ? record : t("scrims.noRecentReports");
 
   return (
-    <div data-slot="scrim-week-home" className="flex h-full min-h-0 flex-col gap-2 px-2 pb-3 pt-1">
+    <div data-slot="scrim-week-home" className="scrollbar-v2 flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 pb-3 pt-1">
       <div data-slot="phone-week-entries" className="flex h-[var(--hit)] shrink-0 items-center gap-5 border-b border-line">
         <Entry control="objective" id="objective" onOpen={onOpen} label={`${t("scrims.weeklyObjective")}: ${objectiveLabel}`}>
           <Target aria-hidden="true" className="size-6 shrink-0 text-club-text" />

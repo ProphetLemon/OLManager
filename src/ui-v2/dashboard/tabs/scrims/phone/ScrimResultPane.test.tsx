@@ -81,10 +81,11 @@ describe("ScrimResultPane: the frame and the applied line", () => {
   });
 
   it("keeps the body inside the 286 px area and nothing scrolls", () => {
-    const { container } = setup();
+    setup();
     expect(pane().className).toContain("pt-2");
     expect(pane().className).toContain("pb-3");
-    expect(container.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"]')).toBeNull();
+    // The frame's body may scroll as a safety; nothing inside the pane does.
+    expect(pane().querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"]')).toBeNull();
   });
 });
 

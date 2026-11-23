@@ -88,7 +88,9 @@ describe("ScrimReportPane in its frame", () => {
     expect(pane).toHaveAttribute("role", "group");
     expect(pane).toHaveAccessibleName("Weekly Report");
     expect(pane.className).toContain("overflow-y-auto");
-    expect(container.querySelectorAll('[class*="overflow-y-auto"]')).toHaveLength(1);
+    // The pane scrolls; the only other scroller is the frame's body, which scrolls as a safety.
+    expect(pane.querySelectorAll('[class*="overflow-y-auto"]')).toHaveLength(0);
+    expect(container.querySelectorAll('[class*="overflow-y-auto"]')).toHaveLength(2);
     expect(container.querySelector("[aria-live]")).toBeNull();
   });
 });

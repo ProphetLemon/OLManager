@@ -115,7 +115,7 @@ describe("Semana: the hero in each of its seven states", () => {
     expect(hero()).toHaveTextContent("Decide");
     expect(hero()).toHaveTextContent("Loss");
     expect(hero()).toHaveTextContent("Q61");
-    expect(hero()).toHaveTextContent("Your Team");
+    expect(hero()).toHaveTextContent("Mine FC");
     expect(hero()).toHaveTextContent("Alpha Esports");
     expect(hero()).toHaveTextContent("Locked");
     const button = within(hero()).getByRole("button", { name: /Decide/ });
@@ -405,5 +405,19 @@ describe("Semana: the logos", () => {
   it("names your own club on the hero's matchup", () => {
     mount(makeWeek(4, { 0: planned("a", "b", "c"), 1: planned("d"), 2: planned("b"), 3: planned("c") }));
     expect(within(hero()).getByRole("img", { name: "Mine FC" })).toBeInTheDocument();
+  });
+});
+
+describe("Semana: the club's name and the safety scroll", () => {
+  it("names your club in the matchup, not the generic words", () => {
+    mount(makeWeek(4, { 0: planned("a") }));
+    const matchup = document.querySelector('[data-slot="phone-week-matchup"]') as HTMLElement;
+    expect(matchup).toHaveTextContent("Mine FC");
+    expect(matchup).not.toHaveTextContent(/your team/i);
+  });
+
+  it("scrolls inside itself when its area is shorter than its content", () => {
+    mount(makeWeek(4, { 0: planned("a") }));
+    expect(document.querySelector('[data-slot="scrim-week-home"]')!.className).toContain("overflow-y-auto");
   });
 });
