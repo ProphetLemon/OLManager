@@ -1411,11 +1411,18 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
       },
     );
 
-    it("still keeps a Back with the palette closed on the dashboard", async () => {
-      await renderOn("Home");
-      const keys = routeKeys.length;
-      act(() => window.dispatchEvent(new PopStateEvent("popstate", { state: null })));
-      await waitFor(() => expect(routeKeys).toHaveLength(keys + 1));
+    it("still keeps a Back with the palette closed on the dashboard: the entry is taken back, the route is left alone", async () => {
+      const forward = vi.spyOn(window.history, "forward").mockImplementation(() => {});
+      try {
+        await renderOn("Home");
+        const keys = routeKeys.length;
+        act(() => window.dispatchEvent(new PopStateEvent("popstate", { state: null })));
+        expect(forward).toHaveBeenCalledTimes(1);
+        await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+        expect(routeKeys).toHaveLength(keys);
+      } finally {
+        forward.mockRestore();
+      }
     });
   });
 
