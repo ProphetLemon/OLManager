@@ -83,7 +83,7 @@ export interface PhoneWeekInput {
 const isPlanned = (slot: WeeklyScrimSlotContext) => slot.plan.length > 0 || slot.resolvedOpponentTeamId != null;
 
 /** A slot the manager can still plan: not past, not played, and the week is neither finalized nor handled by the assistant. */
-function isEditable(slot: WeeklyScrimSlotContext, week: WeeklyScrimContext, readOnly: boolean): boolean {
+export function isEditable(slot: WeeklyScrimSlotContext, week: WeeklyScrimContext, readOnly: boolean): boolean {
   return !readOnly && !week.setupLocked && slot.canEdit;
 }
 

@@ -56,6 +56,8 @@ src/
 │                              # selección de cada pestaña en store/tabUiStore (R23: sobreviven a un perfil; ids
 │                              # por useValidTabUiField; initialMessageId/initialCompetitionId ganan una vez por useOneShotOverride;
 │                              # la página vuelve a 1 con hooks/useResetOnChange, nunca al montar)
+│       └── scrims/phone/     # Scrims en el teléfono: ScrimsPhoneLayout (lista de 17rem + panel, dueño de la fila elegida), ScrimWeekList y un panel por fila
+│                              # (objetivo, volumen, ranura, hoy, decisión, seguimiento de cancelar, resultado, informe); el modelo puro es lib/scrims/phoneWeek.ts
 └── store/, services/, hooks/, api/  # compartidos (hooks/useRovingFocus, useClubTheme, usePhoneForm: el mismo predicado que pone `data-form="phone"`, leído al renderizar)
 ```
 
@@ -96,6 +98,7 @@ Tocado en _legacy por la conservación de partidas: `SavesList` etiqueta una par
 - Superficies: `--rail` (rail), `--line` (bordes), `--dim` (texto atenuado), `--surface-clamp` (superficie de referencia para el contraste del color del club).
 - Android: la app es sólo apaisada y a pantalla completa (nativo, `MainActivity` y manifiesto); `--safe-top` y `--safe-bottom` tienen un mínimo `--edge-gutter` para pantallas curvas.
 - Móvil (`data-form="phone"` en `<html>`, junto a `data-platform="android"`): raíz de 16 px y `--target-min: var(--hit)` (48 px) en el bloque Android de `default.css`, así que `Button`, pestañas y los demás controles que leen `--target-min` llegan a 48 px. La variante Tailwind `phone:` (`src/App.css`) sólo coincide bajo `[data-form="phone"]`, nunca en escritorio. `--spacing` no cambia en el móvil todavía: se decide con mediciones. `src/themes/phoneTokens.guard.test.ts` impone que ningún `--text-*` quede por debajo de 12 px con una raíz de móvil de 16, 18 o 20 px.
+- Scrims en el teléfono: `ScrimsTabV2` elige con `usePhoneForm()` entre la columna de escritorio (sin cambios) y `ui-v2/dashboard/tabs/scrims/phone/ScrimsPhoneLayout`: dos paneles fijos, la semana como lista a la izquierda (17rem) y el panel de la fila elegida a la derecha, sin scroll de página. La pestaña conserva el estado, los manejadores y los datos derivados (la lista y los paneles sólo los reciben); el layout sólo guarda la fila elegida. La selección sólo se mueve sola al abrir (`openRow`), cuando una fila empieza a llevar la etiqueta Decide o Today, tras elegir el objetivo (a Volume, una vez) y con "Done". Su raíz lleva `data-phone-fixed`: la regla de `src/App.css` que sigue a la del scroll de página la deja exactamente tan alta como el área de contenido (sin crecer con su contenido) y sólo hacen scroll, dentro del panel, los sitios que nombra el diseño (`design/scrims-rework-2026-11-23`).
 - Regla: `text-primary` desnudo está prohibido, usar `text-club-text`. Lo impone `src/ui-v2/tokens.guard.test.ts` (excluye `components/ui/`, `shell/` y `FloatingBugButton`).
 - `cn()` (`src/ui-v2/lib/utils.ts`) usa `extendTailwindMerge` y registra los tamaños `text-2xs/caption/map/nav/entry/section/title/ovr/scoreboard`; un test lo compara con los `--text-*` de `default.css`. Un tamaño nuevo se añade en los dos sitios.
 - Los estados activos nunca dependen sólo del color (barra, peso, `aria-current`).
