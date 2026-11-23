@@ -111,6 +111,15 @@ export function IconTip({ label, className, followFocus = false, children, ...re
   const hideTimer = useRef<number | undefined>(undefined);
   const leaveTimer = useRef<number | undefined>(undefined);
 
+  // The one-shot click swallow after a long press: its listener and its 600 ms timer.
+  const swallowRef = useRef<{ listener: (event: Event) => void; timer: number } | null>(null);
+  const clearSwallow = useCallback(() => {
+    if (!swallowRef.current) return;
+    window.clearTimeout(swallowRef.current.timer);
+    window.removeEventListener("click", swallowRef.current.listener, true);
+    swallowRef.current = null;
+  }, []);
+
   const clearTimers = useCallback(() => {
     window.clearTimeout(hoverTimer.current);
     window.clearTimeout(pressTimer.current);
@@ -134,9 +143,10 @@ export function IconTip({ label, className, followFocus = false, children, ...re
   useEffect(
     () => () => {
       clearTimers();
+      clearSwallow();
       forgetTip(tip);
     },
-    [clearTimers, tip],
+    [clearTimers, clearSwallow, tip],
   );
 
   // Listeners exist only while the tip is open.
@@ -200,13 +210,14 @@ export function IconTip({ label, className, followFocus = false, children, ...re
   });
 
   const swallowNextClick = () => {
+    clearSwallow();
     const swallow = (event: Event) => {
       event.stopPropagation();
       event.preventDefault();
-      window.removeEventListener("click", swallow, true);
+      clearSwallow();
     };
     window.addEventListener("click", swallow, true);
-    window.setTimeout(() => window.removeEventListener("click", swallow, true), CLICK_SWALLOW_MS);
+    swallowRef.current = { listener: swallow, timer: window.setTimeout(clearSwallow, CLICK_SWALLOW_MS) };
   };
 
   const onPointerEnter = (event: { pointerType: string }) => {

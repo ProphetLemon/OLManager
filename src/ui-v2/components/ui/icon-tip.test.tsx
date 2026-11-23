@@ -205,8 +205,13 @@ describe("cleanup", () => {
     expect(tip()).not.toBeNull();
     unmount();
     expect(tip()).toBeNull();
-    // The hide timer is cleared; only the one-shot click swallow timer may remain.
-    expect(vi.getTimerCount()).toBeLessThanOrEqual(1);
+    // The click swallow's timer goes too, and its listener, so a later click is not eaten.
+    expect(vi.getTimerCount()).toBe(0);
+    const onClick = vi.fn();
+    window.addEventListener("click", onClick);
+    fireEvent.click(document.body);
+    window.removeEventListener("click", onClick);
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
 
