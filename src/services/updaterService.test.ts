@@ -114,6 +114,12 @@ describe("updaterService", () => {
       await expect(checkForUpdate(ANDROID)).resolves.toBeNull();
     });
 
+    it("treats a missing release (404) as no update, like desktop", async () => {
+      mocks.invoke.mockRejectedValue("release check failed: HTTP 404");
+      await expect(checkForUpdate(ANDROID)).resolves.toBeNull();
+      expect(mocks.check).not.toHaveBeenCalled();
+    });
+
     it("re-throws a failed lookup", async () => {
       mocks.invoke.mockRejectedValue("release check failed: offline");
       await expect(checkForUpdate(ANDROID)).rejects.toBe("release check failed: offline");
