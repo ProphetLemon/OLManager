@@ -1742,6 +1742,7 @@
     "updateAvailableDetail": "Version {{version}} ist verfügbar",
     "upToDate": "Du hast die neueste Version",
     "noPlatformBuild": "Es gibt eine Version, aber noch keinen Build für dein System",
+    "updateCheckFailed": "Die Suche nach Updates ist fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.",
     "androidUpdateAvailable": "Eine neue Version ist verfügbar. Lade das neue APK von der Release-Seite herunter.",
     "androidUpdateKeepsSaves": "Wenn du es über die aktuelle App installierst, bleiben deine Spielstände erhalten.",
     "androidUpdateDownload": "Neues APK herunterladen",

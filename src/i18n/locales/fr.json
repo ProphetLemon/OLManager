@@ -1742,6 +1742,7 @@
     "updateAvailableDetail": "La version {{version}} est disponible",
     "upToDate": "Vous êtes à jour",
     "noPlatformBuild": "Une version existe, mais elle n'a pas encore de build pour votre système",
+    "updateCheckFailed": "Impossible de vérifier les mises à jour. Vérifiez votre connexion et réessayez.",
     "androidUpdateAvailable": "Une nouvelle version est disponible. Téléchargez le nouvel APK depuis la page de la version.",
     "androidUpdateKeepsSaves": "L'installer par-dessus l'application actuelle conserve vos sauvegardes.",
     "androidUpdateDownload": "Télécharger le nouvel APK",

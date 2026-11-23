@@ -61,6 +61,7 @@ export default function Settings() {
     updateInfo,
     checking: checkingUpdate,
     noPlatformBuild,
+    error: updateError,
     check: checkUpdate,
   } = useUpdater(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("display");
@@ -113,13 +114,13 @@ export default function Settings() {
 
   // Show "up to date" feedback when a manual check completes with no update
   useEffect(() => {
-    if (prevChecking.current && !checkingUpdate && !updateAvailable && !noPlatformBuild) {
+    if (prevChecking.current && !checkingUpdate && !updateAvailable && !noPlatformBuild && !updateError) {
       setShowUpToDate(true);
       const timer = setTimeout(() => setShowUpToDate(false), 3000);
       return () => clearTimeout(timer);
     }
     prevChecking.current = checkingUpdate;
-  }, [checkingUpdate, updateAvailable, noPlatformBuild]);
+  }, [checkingUpdate, updateAvailable, noPlatformBuild, updateError]);
 
   const handleUpdate = (partial: Partial<AppSettings>) => {
     updateSettings(partial);
@@ -531,6 +532,14 @@ export default function Settings() {
                   <Download className="w-4 h-4" aria-hidden="true" />
                   {t("settings.androidUpdateDownload")}
                 </button>
+              </div>
+            )}
+
+            {updateError && !checkingUpdate && (
+              <div role="alert" className="rounded-lg bg-accent-400/10 border border-accent-400/30 p-3">
+                <p className="text-xs text-accent-400 font-medium">
+                  {t("settings.updateCheckFailed")}
+                </p>
               </div>
             )}
 

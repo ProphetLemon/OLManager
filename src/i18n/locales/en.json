@@ -1939,6 +1939,7 @@
     "updateAvailableDetail": "Version {{version}} is available",
     "upToDate": "You're up to date",
     "noPlatformBuild": "A release exists, but it has no build for your system yet",
+    "updateCheckFailed": "Couldn't check for updates. Check your connection and try again.",
     "androidUpdateAvailable": "A new version is available. Download the new APK from the release page.",
     "androidUpdateKeepsSaves": "Installing it over the current app keeps your saves.",
     "androidUpdateDownload": "Download the new APK",
