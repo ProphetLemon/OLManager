@@ -339,6 +339,15 @@
     "home": "Local"
   },
   "scrims": {
+    "phone": {
+      "objective": "Objetivo",
+      "volume": "Volumen",
+      "report": "Informe",
+      "tagNext": "Siguiente",
+      "tagToday": "Hoy",
+      "tagDecide": "Decidir",
+      "weekList": "Semana de scrims"
+    },
     "reputation": "Rep scrims",
     "reviewBlockTitle": "Revisión del bloque",
     "reviewWin": "Victoria",

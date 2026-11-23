@@ -3360,6 +3360,15 @@
     "playWithoutUpdating": "Ohne Aktualisierung spielen"
   },
   "scrims": {
+    "phone": {
+      "objective": "Ziel",
+      "volume": "Umfang",
+      "report": "Bericht",
+      "tagNext": "Nächste",
+      "tagToday": "Heute",
+      "tagDecide": "Entscheiden",
+      "weekList": "Scrim-Woche"
+    },
     "reputation": "Scrim-Ruf",
     "reviewBlockTitle": "Blockauswertung",
     "reviewWin": "Sieg",

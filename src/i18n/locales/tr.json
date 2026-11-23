@@ -3351,6 +3351,15 @@
     "dismissalLetter": "Yönetim kurulu, {{team}} baş koçu olarak görevlerinize derhal geçerli olmak üzere son vermeye karar vermiştir.\n\nHizmetleriniz için teşekkür eder, kariyerinizde başarılar dileriz.\n\nSaygılarımızla,\nYönetim Kurulu"
   },
   "scrims": {
+    "phone": {
+      "objective": "Hedef",
+      "volume": "Hacim",
+      "report": "Rapor",
+      "tagNext": "Sıradaki",
+      "tagToday": "Bugün",
+      "tagDecide": "Karar ver",
+      "weekList": "Scrim haftası"
+    },
     "reputation": "Scrim itibarı",
     "reviewBlockTitle": "Blok değerlendirmesi",
     "reviewWin": "Galibiyet",

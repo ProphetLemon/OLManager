@@ -3360,6 +3360,15 @@
     "playWithoutUpdating": "Jouer Sans Mettre à Jour"
   },
   "scrims": {
+    "phone": {
+      "objective": "Objectif",
+      "volume": "Charge",
+      "report": "Rapport",
+      "tagNext": "Suivant",
+      "tagToday": "Aujourd’hui",
+      "tagDecide": "Décider",
+      "weekList": "Semaine de scrims"
+    },
     "reputation": "Rép. scrims",
     "reviewBlockTitle": "Bilan du bloc",
     "reviewWin": "Victoire",

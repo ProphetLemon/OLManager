@@ -339,6 +339,15 @@
     "home": "Home"
   },
   "scrims": {
+    "phone": {
+      "objective": "Objective",
+      "volume": "Volume",
+      "report": "Report",
+      "tagNext": "Next",
+      "tagToday": "Today",
+      "tagDecide": "Decide",
+      "weekList": "Scrims week"
+    },
     "reputation": "Scrim rep",
     "reviewBlockTitle": "Block review",
     "reviewWin": "Win",

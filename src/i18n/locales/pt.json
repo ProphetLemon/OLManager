@@ -3360,6 +3360,15 @@
     "playWithoutUpdating": "Jogar Sem Atualizar"
   },
   "scrims": {
+    "phone": {
+      "objective": "Objetivo",
+      "volume": "Carga",
+      "report": "Relatório",
+      "tagNext": "Próximo",
+      "tagToday": "Hoje",
+      "tagDecide": "Decidir",
+      "weekList": "Semana de scrims"
+    },
     "weeklySetup": "Configuração semanal",
     "reputation": "Rep. de scrims",
     "reviewBlockTitle": "Revisão do bloco",
