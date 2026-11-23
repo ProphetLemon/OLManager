@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { dismissOverlayWithBack, resetNativeBackOverlaysForTests } from "@/ui-v2/palette/paletteHistory";
 import type { SaveFile } from "@/api/types";
 import SavesList from "./SavesList";
 
@@ -138,5 +139,32 @@ describe("SavesList on the phone", () => {
     fireEvent.click(container.querySelector("[data-save-load]")!);
 
     expect(props.onLoad).toHaveBeenCalledWith("a");
+  });
+});
+
+describe("SavesList on the phone, Back", () => {
+  afterEach(() => resetNativeBackOverlaysForTests());
+
+  it("closes an open delete confirmation on Back, leaving the list", () => {
+    const { props } = renderList({ confirmDeleteId: "a" });
+
+    expect(dismissOverlayWithBack()).toBe(true);
+
+    expect(props.onConfirmDelete).toHaveBeenCalledWith(null);
+  });
+
+  it("cancels a pending replace on Back", () => {
+    const pending = { name: "Old", id: "x" } as unknown as React.ComponentProps<typeof SavesList>["pendingReplace"];
+    const { props } = renderList({ pendingReplace: pending });
+
+    expect(dismissOverlayWithBack()).toBe(true);
+
+    expect(props.onCancelReplace).toHaveBeenCalledTimes(1);
+  });
+
+  it("registers nothing while neither is open", () => {
+    renderList();
+
+    expect(dismissOverlayWithBack()).toBe(false);
   });
 });

@@ -6,6 +6,7 @@ import type { SaveImportPreview } from "@/api/types";
 import type { TransferNotice } from "./useSaveTransfer";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 import { usePhoneForm } from "@/hooks/usePhoneForm";
+import { useBackDismisser } from "@/ui-v2/palette/useBackDismisser";
 import { PHONE_ICON_BUTTON, PHONE_TARGET } from "./phoneClasses";
 
 type SaveStatus = "ok" | "other_version" | "unreadable";
@@ -64,6 +65,11 @@ export default function SavesList({
   const { t, i18n } = useTranslation();
   // The phone branch only swaps class strings; the desktop branch keeps every original one.
   const phone = usePhoneForm();
+
+  // Back closes what is open inside the list before the panel itself: the dismisser stack is
+  // last-registered-first, and these register after the panel's own (MainMenu).
+  useBackDismisser(phone && confirmDeleteId !== null, () => onConfirmDelete(null));
+  useBackDismisser(phone && pendingReplace !== null, onCancelReplace);
 
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { activeIndex, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({

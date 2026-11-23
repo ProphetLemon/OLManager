@@ -432,10 +432,26 @@ export default function MainMenu() {
   // System Back closes an open panel before it does anything else (it exits the app only on
   // the main state). It registers only on the phone, the only form that has a Back button, and
   // after the effect-free `useMenuBackExit` above, which sets the main state's meaning.
-  useBackDismisser(phone && isPanelOpen, () => {
-    setMenuState("main");
-    setFormErrors({});
+  useBackDismisser(phone && isPanelOpen, () => setMenuState("main"));
+  // The country list is the innermost thing of the New Game form: it registers after the panel,
+  // so Back closes it first and the form stays. The list in SavesList does the same.
+  useBackDismisser(phone && nationalityOpen, () => {
+    setNationalityOpen(false);
+    setNationalitySearch("");
   });
+
+  // Whatever way a panel closes (Back, Close, Escape), what it held inside is dropped, so it
+  // reopens clean: no country list (its autofocused search would raise the keyboard), no form
+  // errors, no delete confirmation, no staged import waiting for an answer.
+  const { pendingReplace, cancelReplace } = transfer;
+  useEffect(() => {
+    if (!phone || menuState !== "main") return;
+    setFormErrors((prev) => (Object.keys(prev).length ? {} : prev));
+    setNationalityOpen(false);
+    setNationalitySearch("");
+    setConfirmDeleteId(null);
+    if (pendingReplace) void cancelReplace();
+  }, [phone, menuState, pendingReplace, cancelReplace]);
 
   const focusFirstPanelElement = useCallback(() => {
     requestAnimationFrame(() => {
@@ -444,15 +460,20 @@ export default function MainMenu() {
       const all = panel.querySelectorAll<HTMLElement>(
         "input:not([type=hidden]):not([disabled]), button:not([disabled]), select, textarea, [tabindex]:not([tabindex='-1'])",
       );
+      let close: HTMLElement | null = null;
       for (const el of all) {
         const isCloseBtn = el.tagName === "BUTTON" && el.querySelector("svg.lucide-x");
         if (!isCloseBtn) {
           el.focus();
           return;
         }
+        close = el;
       }
+      // Nothing else to focus (Load Game still loading, or with no saves): on the phone the
+      // Close button is the panel's home, so Escape and the arrow keys still reach the menu.
+      if (phone) close?.focus();
     });
-  }, []);
+  }, [phone]);
 
   useEffect(() => {
     if (isPanelOpen) {
@@ -530,7 +551,6 @@ export default function MainMenu() {
                     icon={item.icon}
                     label={item.label}
                     tone={item.tone}
-                    active={item.active}
                     title={item.title}
                     wide={i === 0}
                     tabIndex={getTabIndex(i)}
@@ -1128,26 +1148,24 @@ const MenuItem = React.forwardRef<HTMLButtonElement, {
 /**
  * The phone's menu item: a tile of at least 48 x 48 (`--target-min`) with an icon over a label.
  * `wide` spans both columns of the grid (New Game); `compact` is the row-shaped Exit game
- * button of the left column. The active state is a bar and a heavier label, never colour alone.
+ * button of the left column. It has no active state: tiles render only on the main state, where
+ * no item is active, because a panel replaces them.
  */
 const MenuTile = React.forwardRef<HTMLButtonElement, {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
-  active?: boolean;
   tone?: MenuItemTone;
   title?: string;
   tabIndex?: 0 | -1;
   wide?: boolean;
   compact?: boolean;
-}>(function MenuTile({ icon, label, onClick, active = false, tone = "accent", title, tabIndex, wide = false, compact = false }, ref) {
+}>(function MenuTile({ icon, label, onClick, tone = "accent", title, tabIndex, wide = false, compact = false }, ref) {
   const surface = wide
     ? "bg-accent-400 text-navy-950 hover:bg-accent-300"
     : tone === "danger"
       ? "bg-white/5 text-gray-100 hover:bg-red-500/10"
-      : active
-        ? "bg-white/10 text-white"
-        : "bg-white/5 text-gray-100 hover:bg-white/10";
+      : "bg-white/5 text-gray-100 hover:bg-white/10";
   const iconColor = wide
     ? ""
     : tone === "danger"
@@ -1161,18 +1179,14 @@ const MenuTile = React.forwardRef<HTMLButtonElement, {
       tabIndex={tabIndex ?? 0}
       onClick={onClick}
       title={title}
-      aria-current={active ? "true" : undefined}
-      className={`relative flex items-center rounded-lg text-center transition-colors duration-200 ${PHONE_TARGET} ${surface} ${
+      className={`flex items-center rounded-lg text-center transition-colors duration-200 ${PHONE_TARGET} ${surface} ${
         compact ? "w-full flex-row justify-start gap-3 px-3" : "flex-col justify-center gap-1 px-2"
       } ${wide ? "col-span-2" : ""}`}
     >
-      {active && !wide && (
-        <span aria-hidden="true" className="absolute inset-x-3 bottom-1 h-1 rounded-full bg-accent-400" />
-      )}
       <span className={`${iconColor} [&>svg]:h-7 [&>svg]:w-7`}>{icon}</span>
       <span
         className={`font-heading uppercase leading-tight tracking-wide ${
-          compact ? "text-entry font-bold" : `text-section ${active ? "font-extrabold" : "font-bold"}`
+          compact ? "text-entry font-bold" : "text-section font-bold"
         }`}
       >
         {label}

@@ -19,9 +19,10 @@ const exitAppMock = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock("@/services/appExit", () => ({ exitApp: exitAppMock }));
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn(() => Promise.resolve(null)) }));
+const listSaves = vi.hoisted(() => vi.fn((): Promise<unknown[]> => Promise.resolve([])));
 vi.mock("@/api/client", () => ({
   getApiClientSync: () => ({
-    saves: { list: vi.fn(() => Promise.resolve([])) },
+    saves: { list: listSaves },
     serverCommands: { debugLog: vi.fn(() => Promise.resolve()) },
   }),
   setApiClient: () => {},
@@ -205,5 +206,76 @@ describe("MainMenu on the phone, panels", () => {
     expect(dismissOverlayWithBack()).toBe(false);
     handleNativeBack({ canGoBack: true }, exitAppMock);
     expect(exitAppMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("MainMenu on the phone, what a panel holds inside", () => {
+  beforeEach(() => resetBackGuardForTests());
+  afterEach(() => {
+    resetBackGuardForTests();
+    vi.clearAllMocks();
+  });
+
+  const SEARCH = "createManager.searchNationalities";
+
+  async function openCountryList() {
+    await openPanel("menu.newGame", "createManager.title");
+    fireEvent.mouseDown(screen.getByText("createManager.selectCountry"));
+    return screen.findByPlaceholderText(SEARCH);
+  }
+
+  function pressBack(): boolean {
+    let handled = false;
+    act(() => {
+      handled = dismissOverlayWithBack();
+    });
+    return handled;
+  }
+
+  it("closes the open country list first on Back, and the form on the next Back", async () => {
+    renderMenu();
+    await openCountryList();
+
+    expect(pressBack()).toBe(true);
+    expect(screen.queryByPlaceholderText(SEARCH)).toBeNull();
+    expect(screen.getByRole("heading", { name: "createManager.title" })).toBeInTheDocument();
+
+    expect(pressBack()).toBe(true);
+    expect(screen.queryByRole("heading", { name: "createManager.title" })).toBeNull();
+    expect(pressBack()).toBe(false);
+  });
+
+  it("reopens New Game clean after it was closed with the country list open", async () => {
+    renderMenu();
+    await openCountryList();
+
+    fireEvent.click(screen.getByRole("button", { name: "common.close" }));
+    await openPanel("menu.newGame", "createManager.title");
+
+    expect(screen.queryByPlaceholderText(SEARCH)).toBeNull();
+  });
+
+  it("reopens New Game clean after two Backs closed the list and then the form", async () => {
+    renderMenu();
+    await openCountryList();
+    pressBack();
+    pressBack();
+    await openPanel("menu.newGame", "createManager.title");
+
+    expect(screen.queryByPlaceholderText(SEARCH)).toBeNull();
+  });
+
+  it("puts focus on the panel's Close button while Load Game loads, and keeps it there with no saves", async () => {
+    let finish: (saves: unknown[]) => void = () => {};
+    listSaves.mockImplementationOnce(() => new Promise<unknown[]>((resolve) => (finish = resolve)));
+    renderMenu();
+    await openPanel("menu.loadGame", "menu.loadGame");
+
+    // Loading: Import is disabled, so there is no first control and the Close button is the home.
+    await waitFor(() => expect(screen.getByRole("button", { name: "common.close" })).toHaveFocus());
+
+    await act(async () => finish([]));
+    await waitFor(() => expect(screen.getByText("menu.noSaves")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "common.close" })).toHaveFocus();
   });
 });
