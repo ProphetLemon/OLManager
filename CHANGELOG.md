@@ -4,6 +4,36 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1123.2] - 2026-11-23
+
+Easier ways to move around the game, and the Android Back button now behaves. It was checked on an Android 14 emulator (x86_64 build); the arm64 build was not run on a real phone before this release.
+
+### Added
+
+- "Go to…": the first button of the navigation opens a search box that jumps to any section. Type a few letters and press Enter, or pick from the list. It also lists the places you visited last and the decisions that are waiting for you. On a phone it opens as a side panel.
+- A Back button at the top of every game screen. It returns to the place you were before, and its label says where ("Back to Squad").
+- "Before you continue": on a computer screen, outside Home, a strip under the top bar lists the decisions that still need you, one button each. A phone screen is too short for it, so it does not show there.
+- Each section remembers how you left it: the view, the filters, the sort order and the page are still there when you come back, also after opening a profile or Settings.
+
+### Fixed
+
+- Android: the Back button no longer throws you out of your game. In a game it closes the "Go to…" panel or the More menu if one is open, and otherwise does nothing; you leave a game with More, then "Exit to Menu", which asks whether to save. Before, one Back on the game's main screen dropped you on the main menu without asking to save.
+- Android: on the main menu, Back closes the app. Before, after leaving a game it could show old screens of that game, or a blank "No active game" screen with no way out. That screen now has a "Main menu" button too.
+- Android: from Settings, team selection and the match screens, Back returns to the previous screen, one step for each press.
+- Android: closing the app with "Exit game" or Back no longer ends in an internal error.
+- Android: in "Go to…", the keyboard's Go/Enter key now opens the highlighted place.
+- A save exported from this version on carries its own identity, so importing one you already have asks whether to replace it, wherever you pick the file from. Before, on Android, picking it from the Downloads view added a second copy. A file exported with an older version can still be added as a copy that way.
+- A damaged save in the Load Game list now reads "Can't be read" and explains that it can still be exported or deleted. Before, it was labelled as coming from another version.
+- Settings > Updates: when the check cannot reach the server it now says so. Before, it said "You're up to date".
+- Load Game: with many saves, the scrollbar no longer covers part of the Delete button.
+
+### Known issues
+
+- Android: Back does nothing inside a player's profile or an open dialog; use the buttons on the screen.
+- Android: Back during the draft, a live match or a result screen returns to the game's main screen. Nothing is lost: the match day can be entered again.
+- Android: the interface is still the desktop layout at a smaller size, and it is hard to read on a phone. A layout made for phones is the next piece of work.
+- The file made by Settings > "Export World Database" holds teams, players and staff only. It is not a save and cannot be imported.
+
 ## [2026.1123.1] - 2026-11-23
 
 A small update, mostly for Android. It was checked on an Android 14 emulator (x86_64 build) and on one real phone, a OnePlus 11 with Android 16 (arm64 build).
