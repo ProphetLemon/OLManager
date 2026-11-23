@@ -34,6 +34,24 @@ describe("safe-area tokens", () => {
   });
 });
 
+describe("android edge gutter", () => {
+  const android = () => ruleBody(':root[data-platform="android"]');
+
+  it("declares --edge-gutter for curved screens", () => {
+    expect(android()).toMatch(/--edge-gutter:\s*12px;/);
+  });
+
+  it.each(["top", "bottom"])("floors --safe-%s at the gutter", (side) => {
+    expect(android()).toContain(
+      `--safe-${side}: max(env(safe-area-inset-${side}, 0px), var(--edge-gutter));`,
+    );
+  });
+
+  it.each(["left", "right"])("leaves --safe-%s to the cutout inset", (side) => {
+    expect(android()).not.toContain(`--safe-${side}:`);
+  });
+});
+
 describe("token namespaces", () => {
   it("never gives a --text-* size the name of a --color-* token", () => {
     // Tailwind builds `text-<name>` from both namespaces, so a shared name makes the

@@ -24,6 +24,7 @@
       "error": {
         "too_small": "Il file è troppo piccolo per essere un salvataggio.",
         "wrong_version": "Il file proviene da un’altra versione del gioco e non può essere caricato qui. Esportalo di nuovo dalla versione che lo ha creato, oppure aggiorna questa.",
+        "not_a_save": "Questo file non è un salvataggio. Per spostare una carriera, apri «Carica partita» nel gioco in cui l’hai giocata, usa «Esporta salvataggio» e importa il file .olsave che viene creato.",
         "corrupt": "Il file è danneggiato o non è un salvataggio di OLManager.",
         "storage": "Non è stato possibile leggere o salvare il salvataggio. Controlla il file e lo spazio libero, poi riprova.",
         "id_taken": "Esiste già un salvataggio con questo identificativo.",
