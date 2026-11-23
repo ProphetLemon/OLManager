@@ -15,7 +15,7 @@ interface ScrimDecisionResultProps {
   heading?: ReactNode;
 }
 
-const CLOSING_KEY: Record<ResultClosing, string> = {
+export const CLOSING_KEY: Record<ResultClosing, string> = {
   blockTwoPlayed: "scrims.result.blockTwoPlayed",
   nextReportLater: "scrims.result.nextReportLater",
   blockCancelled: "scrims.result.blockCancelled",
