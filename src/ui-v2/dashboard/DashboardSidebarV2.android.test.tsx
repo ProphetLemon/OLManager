@@ -1,16 +1,6 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useNavMemoryStore } from "@/store/navMemoryStore";
-
-vi.mock("@/ui-v2/_legacy/components/dashboard/ReportBugModal", () => ({
-  default: ({ onClose }: { onClose: () => void }) => (
-    <div role="dialog" aria-label="Bug report">
-      <button type="button" onClick={onClose}>
-        Close bug report
-      </button>
-    </div>
-  ),
-}));
 
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 
@@ -52,13 +42,6 @@ function setup(overrides: Partial<Props> = {}) {
 }
 
 const navId = (id: string) => document.querySelector<HTMLElement>(`[data-nav-id="${id}"]`)!;
-const focus = (el: HTMLElement) => act(() => el.focus());
-const press = (el: HTMLElement, key: string) => fireEvent.keyDown(el, { key });
-const openMore = async () => {
-  focus(navId("util:more"));
-  press(navId("util:more"), "Enter");
-  return screen.findAllByRole("menuitem");
-};
 
 beforeEach(() => useNavMemoryStore.getState().resetNavMemory());
 
@@ -69,14 +52,15 @@ describe("Android rail", () => {
     expect(screen.getAllByRole("navigation")).toHaveLength(1);
   });
 
-  it("has eight stops: Go, Home, Inbox, Schedule, Club, Market, World and More (R32)", () => {
+  it("has seven stops: Go, Home, Inbox, Schedule, Club, Market and World; More lives in the bar", () => {
     setup();
     const ids = [...document.querySelectorAll<HTMLElement>('[data-slot="rail-item"], [data-slot="go-button"]')].map(
       (e) => e.dataset.navId,
     );
     expect(ids).toEqual([
-      "util:go", "tab:Home", "tab:Inbox", "tab:Schedule", "group:club", "group:market", "group:world", "util:more",
+      "util:go", "tab:Home", "tab:Inbox", "tab:Schedule", "group:club", "group:market", "group:world",
     ]);
+    expect(navId("util:more")).toBeNull();
     expect(navId("tab:News")).toBeNull();
     expect(document.querySelector('[data-slot="rail-cluster"]')).toBeNull();
   });
@@ -154,98 +138,5 @@ describe("Android rail", () => {
     expect(scroller).not.toHaveAttribute("data-overflow-top");
     // The mask itself comes from the same state; jsdom drops the calc() gradient, so the attribute is the check.
     for (const h of heights) h.mockRestore();
-  });
-});
-
-describe("Android More menu", () => {
-  it("lists News, Social, Settings, Report bug, Exit and Manager, six items at --hit", async () => {
-    setup();
-    const items = await openMore();
-    expect(items.map((i) => i.textContent?.trim())).toEqual([
-      "News", "Social", "Settings", "Report bug", "Exit", "Manager profile",
-    ]);
-    for (const item of items) expect(item.className).toContain("min-h-[var(--hit)]");
-  });
-
-  it("shows the highlighted item with the rail's inset focus ring, not a wash alone", async () => {
-    setup();
-    const items = await openMore();
-    for (const item of items) {
-      for (const cls of ["data-[highlighted]:ring-[3px]", "data-[highlighted]:ring-inset", "data-[highlighted]:ring-ring"]) {
-        expect(item.className, cls).toContain(cls);
-      }
-      expect(item.className).toContain("data-[highlighted]:bg-muted"); // the wash stays as a second cue
-    }
-  });
-
-  it("names the stop More and says it opens a menu", async () => {
-    setup();
-    expect(navId("util:more")).toHaveAccessibleName("More");
-    expect(navId("util:more")).toHaveAttribute("aria-haspopup", "menu");
-    expect(navId("util:more")).toHaveAttribute("aria-expanded", "false");
-    await openMore();
-    expect(navId("util:more")).toHaveAttribute("aria-expanded", "true");
-  });
-
-  it("closes on Escape and returns focus to More", async () => {
-    setup();
-    await openMore();
-    fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
-    await waitFor(() => expect(navId("util:more")).toHaveFocus());
-  });
-
-  it("runs each item and closes the menu", async () => {
-    const { props } = setup();
-    let items = await openMore();
-    fireEvent.click(items[0]);
-    // The item runs once the menu's history entry is off (R95).
-    await waitFor(() => expect(props.onNavClick).toHaveBeenLastCalledWith("News"));
-    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
-
-    items = await openMore();
-    fireEvent.click(items[1]);
-    await waitFor(() => expect(props.onNavClick).toHaveBeenLastCalledWith("Social"));
-    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
-
-    items = await openMore();
-    fireEvent.click(items[2]);
-    await waitFor(() => expect(props.onNavigateSettings).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
-
-    items = await openMore();
-    fireEvent.click(items[4]);
-    await waitFor(() => expect(props.onExitClick).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
-
-    items = await openMore();
-    fireEvent.click(items[5]);
-    await waitFor(() => expect(props.onNavClick).toHaveBeenLastCalledWith("Manager"));
-  });
-
-  it("opens the bug report from the menu", async () => {
-    setup();
-    const items = await openMore();
-    fireEvent.click(items[3]);
-    expect(await screen.findByRole("dialog", { name: "Bug report" })).toBeInTheDocument();
-  });
-
-  it("marks More current while the active tab is News, Social or Manager", () => {
-    const { rerender } = setup({ activeTab: "News" });
-    expect(navId("util:more")).toHaveAttribute("aria-current", "page");
-    rerender({ activeTab: "Manager" });
-    expect(navId("util:more")).toHaveAttribute("aria-current", "page");
-    rerender({ activeTab: "Home" });
-    expect(navId("util:more")).not.toHaveAttribute("aria-current");
-  });
-
-  it("keeps More in the roving widget: Down from World reaches it", () => {
-    setup();
-    focus(navId("group:world"));
-    press(navId("group:world"), "ArrowDown");
-    expect(navId("util:more")).toHaveFocus();
-    // Go is the first stop (R32), so Down from More wraps to it.
-    press(navId("util:more"), "ArrowDown");
-    expect(navId("util:go")).toHaveFocus();
   });
 });

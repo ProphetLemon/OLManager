@@ -1,5 +1,7 @@
 import { ArrowLeft, ChevronRight, Loader2, Play, Save, SkipForward, Swords } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
 import { backControlLabel, groupTitle } from "@/lib/dashboard/describeLocation";
 import { Button } from "@/ui-v2/components/ui/button";
 import { ClubShield } from "@/ui-v2/components/ui/club-shield";
@@ -41,6 +43,8 @@ interface Props {
   callCount?: number;
   onShowCalls?: () => void;
   compact?: boolean;
+  /** The phone's More trigger, between the date and Save (the rail has no stop for it). */
+  more?: ReactNode;
 }
 
 /** Broadcast bar: crumb (team, group) over the title, clock, decisions chip, save and advance. */
@@ -68,8 +72,11 @@ export function DashboardHeaderV2({
   callCount = 0,
   onShowCalls,
   compact = false,
+  more,
 }: Props) {
   const { t } = useTranslation();
+  // The phone re-lays the same bar as one row: no shield, team or crumb, a stacked date, More.
+  const phone = usePhoneForm();
 
   const phaseLabels: Record<string, string> = {
     Morning: t("onAir.bar.phase.morning", { defaultValue: "Morning" }),
@@ -100,11 +107,22 @@ export function DashboardHeaderV2({
     // A container: the bar gives way to its own width (R17), not the window's, because the
     // rail and its panel take a different share of the window in each mode.
     <header className="@container shrink-0 bg-card">
-      <div className={cn("flex min-h-[3.75rem] flex-wrap items-center gap-y-2 py-2", compact ? "gap-x-2 px-3" : "gap-x-3 px-4")}>
+      <div
+        data-slot="bar-row"
+        className={
+          phone
+            ? "flex h-[var(--hit)] items-center gap-1 px-2"
+            : cn("flex min-h-[3.75rem] flex-wrap items-center gap-y-2 py-2", compact ? "gap-x-2 px-3" : "gap-x-3 px-4")
+        }
+      >
         {/* Title group: a row of its own under 58rem, the rest of the row above. Never hidden. */}
         <div
           data-slot="bar-title"
-          className="flex min-w-0 basis-full items-center gap-3 @min-[58rem]:basis-0 @min-[58rem]:flex-1"
+          className={
+            phone
+              ? "flex min-w-0 flex-1 items-center gap-1"
+              : "flex min-w-0 basis-full items-center gap-3 @min-[58rem]:basis-0 @min-[58rem]:flex-1"
+          }
         >
           {/* Back is always here, so the title never moves (R20). With nowhere to go it stays
               focusable and named, but aria-disabled: never `disabled`, which would drop it from
@@ -129,10 +147,10 @@ export function DashboardHeaderV2({
               <ArrowLeft aria-hidden="true" className="size-4" />
             </IconTip>
           </Button>
-          <Separator orientation="vertical" className="h-5 shrink-0" />
-          {teamName && <ClubShield name={teamName} logoUrl={teamLogo} size="md" className="shrink-0" />}
+          {!phone && <Separator orientation="vertical" className="h-5 shrink-0" />}
+          {!phone && teamName && <ClubShield name={teamName} logoUrl={teamLogo} size="md" className="shrink-0" />}
           <div className="min-w-0 flex-1">
-            {(crumbTeam || crumbGroup) && (
+            {!phone && (crumbTeam || crumbGroup) && (
               // text-nav, not text-caption: the shell keeps its own label token (R16); caption was 6.75 px at the old 9 px Android root.
               <p data-slot="crumb" title={crumbTitle} className="truncate text-nav leading-tight text-dim">
                 {crumbTeam && <span>{crumbTeam}</span>}
@@ -145,7 +163,10 @@ export function DashboardHeaderV2({
                 {crumbGroup && <span>{crumbGroup}</span>}
               </p>
             )}
-            <h1 title={title} className="truncate font-heading text-title font-bold leading-tight text-foreground">
+            <h1
+              title={title}
+              className={cn("truncate font-heading font-bold leading-tight text-foreground", phone ? "text-section" : "text-title")}
+            >
               {title}
             </h1>
           </div>
@@ -153,8 +174,14 @@ export function DashboardHeaderV2({
 
         {/* Actions: the clock gives way first (short date), then the chip goes icon-only; under
             58rem this group drops to the second row and wraps again if it must. */}
-        <div data-slot="bar-actions" className={cn("flex min-w-0 max-w-full flex-wrap items-center @min-[58rem]:flex-nowrap", compact ? "gap-2" : "gap-3")}>
-        <ClockPlate dateLabel={currentDate} dateShortLabel={currentDateShort} phase={phase} className={compact ? "hidden" : undefined} />
+        <div
+          data-slot="bar-actions"
+          className={cn(
+            "flex items-center",
+            phone ? "shrink-0 gap-1" : cn("min-w-0 max-w-full flex-wrap @min-[58rem]:flex-nowrap", compact ? "gap-2" : "gap-3"),
+          )}
+        >
+        <ClockPlate dateLabel={currentDate} dateShortLabel={currentDateShort} phase={phase} stacked={phone} className={compact ? "hidden" : undefined} />
 
         {callCount > 0 && onShowCalls && (
           <Button
@@ -176,6 +203,8 @@ export function DashboardHeaderV2({
           </Button>
         )}
 
+        {more}
+
         <Button
           variant="outline"
           size="icon-touch"
@@ -196,7 +225,10 @@ export function DashboardHeaderV2({
         </span>
 
         <SplitButton
-          className="shrink-0 @max-[22rem]:[&>button:first-child]:px-3 @max-[22rem]:[&>button:first-child]:text-base"
+          className={cn(
+            "shrink-0 @max-[22rem]:[&>button:first-child]:px-3 @max-[22rem]:[&>button:first-child]:text-base",
+            phone && "ms-2 [&>button:first-child]:px-3 [&>button:first-child]:text-base",
+          )}
           label={continueLabel}
           icon={hasMatchToday ? <Swords aria-hidden="true" /> : <Play aria-hidden="true" />}
           onClick={onContinue}

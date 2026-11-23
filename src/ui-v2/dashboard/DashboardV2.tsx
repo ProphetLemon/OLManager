@@ -61,6 +61,8 @@ import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { PhoneMoreMenu } from "@/ui-v2/shell/PhoneMoreMenu";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
 import { goReserve } from "@/ui-v2/shell/railMode";
 import { useRailMode } from "@/ui-v2/shell/useRailMode";
 import { buildAttentionMap } from "@/ui-v2/shell/attention";
@@ -207,6 +209,7 @@ export default function DashboardV2() {
   const [railBody, setRailBody] = useState<HTMLDivElement | null>(null);
   // The Tree's Go row is pinned above the tree, so the rail reserves its height (R30).
   const rail = useRailMode(railBody, { reservedTop: goReserve });
+  const phone = usePhoneForm();
   const focusCallsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -933,6 +936,16 @@ export default function DashboardV2() {
           callCount={callState.count}
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
+          more={
+            phone ? (
+              <PhoneMoreMenu
+                activeTab={profileNavigation.activeTab}
+                onNavClick={handleNavClick}
+                onNavigateSettings={() => navigate("/settings", { state: { from: "/dashboard" } })}
+                onExitClick={() => !isExitingToMenu && setShowExitConfirm(true)}
+              />
+            ) : undefined
+          }
         />
 
         {lane.visible && (

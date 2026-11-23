@@ -2,6 +2,8 @@ import { Menu } from "@base-ui/react/menu";
 import { Ellipsis, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type Ref } from "react";
 
+import { Button } from "@/ui-v2/components/ui/button";
+import { IconTip } from "@/ui-v2/components/ui/icon-tip";
 import { cn } from "@/ui-v2/lib/utils";
 import { releasePaletteEntry, whenPaletteEntryOff } from "@/ui-v2/palette/paletteHistory";
 import { useSheetBack } from "@/ui-v2/sheet/useSheetBack";
@@ -29,6 +31,8 @@ interface RailMoreProps {
    * gesture closes it. Desktop makes no history call.
    */
   android?: boolean;
+  /** "bar": the phone's trigger, a 48 px icon button in the bar, with the menu opening below it. Default "rail". */
+  placement?: "rail" | "bar";
   tabIndex?: 0 | -1;
   buttonRef?: Ref<HTMLButtonElement>;
   "data-nav-id"?: string;
@@ -46,6 +50,7 @@ export function RailMore({
   onOpenChange,
   active,
   android = false,
+  placement = "rail",
   tabIndex,
   buttonRef,
   ...rest
@@ -77,24 +82,51 @@ export function RailMore({
 
   return (
     <>
-      <RailItem
-        icon={Ellipsis}
-        label={label}
-        active={active}
-        tabIndex={tabIndex}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => onOpenChange(!open)}
-        buttonRef={(el) => {
-          setAnchor(el);
-          if (typeof buttonRef === "function") buttonRef(el);
-          else if (buttonRef) (buttonRef as { current: HTMLButtonElement | null }).current = el;
-        }}
-        data-nav-id={rest["data-nav-id"]}
-      />
+      {placement === "bar" ? (
+        <Button
+          ref={setAnchor}
+          type="button"
+          variant="ghost"
+          size="icon-touch"
+          aria-label={label}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-current={active ? "page" : undefined}
+          onClick={() => onOpenChange(!open)}
+          data-nav-id={rest["data-nav-id"]}
+          className="relative shrink-0"
+        >
+          <IconTip label={label} followFocus className="inline-flex">
+            <Ellipsis aria-hidden="true" className="size-4" />
+          </IconTip>
+          {/* The current page is a shape too, not only a tint: a bar under the icon. */}
+          {active && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-3 bottom-0 h-[3px] rounded-t-sm bg-club-text forced-color-adjust-none forced-colors:bg-[Highlight]"
+            />
+          )}
+        </Button>
+      ) : (
+        <RailItem
+          icon={Ellipsis}
+          label={label}
+          active={active}
+          tabIndex={tabIndex}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => onOpenChange(!open)}
+          buttonRef={(el) => {
+            setAnchor(el);
+            if (typeof buttonRef === "function") buttonRef(el);
+            else if (buttonRef) (buttonRef as { current: HTMLButtonElement | null }).current = el;
+          }}
+          data-nav-id={rest["data-nav-id"]}
+        />
+      )}
       <Menu.Root open={open} onOpenChange={onOpenChange}>
         <Menu.Portal>
-          <Menu.Positioner anchor={anchor} side="right" align="end" sideOffset={4} className="z-50">
+          <Menu.Positioner anchor={anchor} side={placement === "bar" ? "bottom" : "right"} align="end" sideOffset={4} className="z-50">
             <Menu.Popup
               aria-label={label}
               className="min-w-48 rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-md focus-visible:outline-hidden"

@@ -2,13 +2,12 @@ import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { usePaletteStore } from "@/store/paletteStore";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Bug, LogOut, Newspaper, MessageCircle, Settings, UserRound } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 import FloatingBugButton from "@/ui-v2/_legacy/components/dashboard/FloatingBugButton";
 import { GO_ID, GoButton } from "@/ui-v2/shell/GoButton";
 import { ANDROID_DIRECT, RailSplitPanel, RailSplitStops } from "@/ui-v2/shell/RailSplit";
-import { RailMore } from "@/ui-v2/shell/RailMore";
 import { RAIL_LABEL_CLASS, RAIL_STOP_INSET_REM } from "@/ui-v2/shell/RailItem";
 import { useFadeMask } from "@/ui-v2/shell/useFadeMask";
 import { RailTree } from "@/ui-v2/shell/RailTree";
@@ -106,7 +105,6 @@ export function DashboardSidebarV2({
 
   // The bug report is opened from the roving widget (Enter on its cell), so its modal is controlled here.
   const [bugOpen, setBugOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
   const openPalette = usePaletteStore((s) => s.openPalette);
   const openGroups = useNavMemoryStore((s) => s.openGroups);
   const toggleGroup = useNavMemoryStore((s) => s.toggleGroup);
@@ -153,8 +151,8 @@ export function DashboardSidebarV2({
         });
       }
     }
-    // Android keeps the utilities in the More menu: one stop instead of the four cells.
-    for (const u of android ? ["more"] : ["bug", "settings", "exit", "manager"]) {
+    // Android keeps the utilities in the bar's More menu (PhoneMoreMenu): the rail has no cells.
+    for (const u of android ? [] : ["bug", "settings", "exit", "manager"]) {
       out.push({ id: `util:${u}`, kind: "utility", level: 0, parentId: null, column: rail });
     }
     if (panelGroup) {
@@ -183,7 +181,6 @@ export function DashboardSidebarV2({
           };
         }
         if (r.id === GO_ID) return { id: r.id, activate: () => openPalette(GO_ID) };
-        if (r.id === "util:more") return { id: r.id, activate: () => setMoreOpen(true) };
         if (r.id === "util:bug") return { id: r.id, activate: () => setBugOpen(true) };
         if (r.id === "util:settings") return { id: r.id, activate: onNavigateSettings };
         if (r.id === "util:exit") return { id: r.id, activate: onExitClick };
@@ -202,8 +199,9 @@ export function DashboardSidebarV2({
   });
   if (roving.tab !== activeTab) setRoving({ tab: activeTab, id: null, panelId: null });
   const activeRowId = (() => {
-    if (activeTab === "Manager") return android ? "util:more" : "util:manager";
-    if (android && (activeTab === "News" || activeTab === "Social")) return "util:more";
+    // On Android these live in the bar's More, so no stop is current and the tab stop is Go.
+    if (android && (activeTab === "Manager" || activeTab === "News" || activeTab === "Social")) return GO_ID;
+    if (activeTab === "Manager") return "util:manager";
     const g = groupForTab(activeTab);
     if (!g) return `tab:${activeTab}`;
     if (!groups.some((x) => x.id === g)) return "";
@@ -480,32 +478,10 @@ export function DashboardSidebarV2({
     </div>
   );
 
-  const bugLabel = t("onAir.nav.bug", { defaultValue: "Report bug" });
-  const moreItems = [
-    { id: "news", label: labelOf({ labelKey: "dashboard.news", defaultLabel: "News" }), icon: Newspaper, onSelect: () => onNavClick("News") },
-    { id: "social", label: labelOf({ labelKey: "dashboard.social", defaultLabel: "Social" }), icon: MessageCircle, onSelect: () => onNavClick("Social") },
-    { id: "settings", label: t("dashboard.settings", { defaultValue: "Settings" }), icon: Settings, onSelect: onNavigateSettings },
-    { id: "bug", label: bugLabel, icon: Bug, onSelect: () => setBugOpen(true) },
-    { id: "exit", label: t("dashboard.exitToMenu", { defaultValue: "Exit" }), icon: LogOut, tone: "danger" as const, onSelect: onExitClick },
-    { id: "manager", label: managerLabel, icon: UserRound, onSelect: () => onNavClick("Manager") },
-  ];
   // The palette returns focus to Go by its id (util:go) when it closes by Escape, Close or Back.
   const go = (variant: "row" | "cell" | "stop") => (
     <GoButton variant={variant} onClick={() => openPalette(GO_ID)} {...itemProps(GO_ID)} />
   );
-  const more = (
-    <RailMore
-      label={t("onAir.nav.more", { defaultValue: "More" })}
-      items={moreItems}
-      open={moreOpen}
-      onOpenChange={setMoreOpen}
-      android={android}
-      active={activeTab === "Manager" || activeTab === "News" || activeTab === "Social"}
-      data-nav-id="util:more"
-      {...itemProps("util:more")}
-    />
-  );
-
   const cluster = (
     <RailCluster stacked={!tree}>
       <FloatingBugButton
@@ -644,17 +620,12 @@ export function DashboardSidebarV2({
                   iconOnly={iconOnlyStops}
                   android={android}
                   leading={android ? go("stop") : <div className="px-[6px]">{go("cell")}</div>}
-                  trailing={android ? more : undefined}
                   lastVisited={lastVisited}
                   onNavClick={onNavClick}
                   handle={itemProps}
                 />,
               )}
-              {android ? (
-                <FloatingBugButton variant="hidden" open={bugOpen} onOpenChange={setBugOpen} />
-              ) : (
-                cluster
-              )}
+              {!android && cluster}
             </div>
             {panelGroup && (
               <RailSplitPanel
