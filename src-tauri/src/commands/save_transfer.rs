@@ -244,6 +244,19 @@ mod tests {
         let sm = SaveManager::init(&dir.path().join("target")).unwrap();
         let stage = ImportStage::default();
 
+        let error = stage_bytes(&sm, &stage, b"{\"name\": \"Exported World\"}".to_vec(), None)
+            .unwrap_err();
+
+        assert!(error.starts_with("not_a_save|"));
+        assert!(stage.0.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn a_save_of_another_format_version_is_refused_with_a_code_and_stages_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        let sm = SaveManager::init(&dir.path().join("target")).unwrap();
+        let stage = ImportStage::default();
+
         let error = stage_bytes(&sm, &stage, vec![9, 0, 0, 0, 1], None).unwrap_err();
 
         assert!(error.starts_with("wrong_version|"));

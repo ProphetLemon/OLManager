@@ -187,6 +187,7 @@
       "error": {
         "too_small": "Esse arquivo é pequeno demais para ser um save.",
         "wrong_version": "Esse arquivo é de outra versão do jogo e não pode ser carregado aqui. Exporte-o novamente da versão que o criou ou atualize esta.",
+        "not_a_save": "Esse arquivo não é um save. Para levar uma carreira para outro dispositivo, abra “Carregar Jogo” no jogo em que você jogou, use “Exportar save” e importe o arquivo .olsave que é criado.",
         "corrupt": "Esse arquivo está danificado ou não é um save do OLManager.",
         "storage": "Não foi possível ler ou gravar o save. Verifique o arquivo e o espaço livre e tente novamente.",
         "id_taken": "Já existe um save com esse identificador.",

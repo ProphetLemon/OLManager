@@ -13,6 +13,12 @@ use crate::db::save_index_manager::SaveIndexManager;
 /// Current save format version. Increment when breaking changes are made.
 const FORMAT_VERSION: u32 = 3;
 
+/// Highest number still read as a format version when the header is not the current one.
+/// Format numbers are small counters, while text, JSON, zip, gzip and image files all start
+/// with bytes that read as far larger numbers (gzip `1f 8b 08 00` reads as 559,903), and 0
+/// has never been a format. Anything outside 1..=this is not a save at all.
+const MAX_PLAUSIBLE_FORMAT: u32 = 0xFFFF;
+
 /// Prefix of the error a reader returns for a save written by another game version.
 /// The UI and the tests match on it, so it never changes.
 pub const INCOMPATIBLE_SAVE_CODE: &str = "save_incompatible";
@@ -24,6 +30,8 @@ pub const UNREADABLE_SAVE_CODE: &str = "save_unreadable";
 pub enum SaveImportError {
     /// The file is empty or shorter than the format header.
     TooSmall,
+    /// The file is not an OLManager save at all (a JSON export, an image, a bare gzip...).
+    NotASave,
     /// The header names a format this game version does not read.
     WrongVersion { found: u32, expected: u32 },
     /// The header is right but the body is not a gzipped game.
@@ -39,6 +47,7 @@ impl SaveImportError {
     pub fn code(&self) -> &'static str {
         match self {
             Self::TooSmall => "too_small",
+            Self::NotASave => "not_a_save",
             Self::WrongVersion { .. } => "wrong_version",
             Self::Corrupt(_) => "corrupt",
             Self::Storage(_) => "storage",
@@ -51,6 +60,7 @@ impl std::fmt::Display for SaveImportError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::TooSmall => write!(f, "The file is too small to be a save"),
+            Self::NotASave => write!(f, "The file is not an OLManager save"),
             Self::WrongVersion { found, expected } => write!(
                 f,
                 "The file is from another game version (save format {found}, this version reads {expected})"
@@ -506,6 +516,9 @@ impl SaveManager {
             .ok_or(SaveImportError::TooSmall)?;
         let found = u32::from_le_bytes(header);
         if found != FORMAT_VERSION {
+            if found == 0 || found > MAX_PLAUSIBLE_FORMAT {
+                return Err(SaveImportError::NotASave);
+            }
             return Err(SaveImportError::WrongVersion {
                 found,
                 expected: FORMAT_VERSION,
@@ -1267,6 +1280,73 @@ mod tests {
             .unwrap_err();
 
         assert!(err.to_string().contains("another game version"));
+    }
+
+    #[test]
+    fn a_plain_json_document_is_refused_as_not_a_save_and_nothing_changes() {
+        let (_dir, _source, _id, target) = two_devices();
+        let before = dir_listing(&target.saves_dir);
+        let bytes = b"{\n  \"name\": \"Exported World\",\n  \"teams\": []\n}".to_vec();
+
+        let err = target.prepare_import(bytes, None).unwrap_err();
+
+        assert_eq!(err.code(), "not_a_save");
+        assert!(target.list_saves().is_empty());
+        assert_eq!(dir_listing(&target.saves_dir), before);
+    }
+
+    #[test]
+    fn the_highest_plausible_format_number_is_still_another_version() {
+        let (_dir, _source, _id, target) = two_devices();
+
+        let err = target
+            .prepare_import(olsave_with_version(MAX_PLAUSIBLE_FORMAT, b"x"), None)
+            .unwrap_err();
+
+        assert_eq!(err.code(), "wrong_version");
+    }
+
+    #[test]
+    fn a_header_just_above_the_plausible_formats_is_refused_as_not_a_save() {
+        let (_dir, _source, _id, target) = two_devices();
+
+        let err = target
+            .prepare_import(olsave_with_version(MAX_PLAUSIBLE_FORMAT + 1, b"x"), None)
+            .unwrap_err();
+
+        assert_eq!(err, SaveImportError::NotASave);
+    }
+
+    #[test]
+    fn a_header_of_zero_is_refused_as_not_a_save() {
+        let (_dir, _source, _id, target) = two_devices();
+
+        let err = target
+            .prepare_import(olsave_with_version(0, b"x"), None)
+            .unwrap_err();
+
+        assert_eq!(err, SaveImportError::NotASave);
+    }
+
+    #[test]
+    fn a_bare_gzip_stream_without_a_header_is_refused_as_not_a_save() {
+        use flate2::{write::GzEncoder, Compression};
+        use std::io::Write;
+        let (_dir, _source, _id, target) = two_devices();
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(b"{}").unwrap();
+        let gzip = encoder.finish().unwrap();
+
+        let err = target.prepare_import(gzip, None).unwrap_err();
+
+        assert_eq!(err.code(), "not_a_save");
+    }
+
+    #[test]
+    fn a_not_a_save_message_says_the_file_is_not_an_olmanager_save() {
+        assert!(SaveImportError::NotASave
+            .to_string()
+            .contains("not an OLManager save"));
     }
 
     #[test]

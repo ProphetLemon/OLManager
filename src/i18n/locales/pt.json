@@ -187,6 +187,7 @@
       "error": {
         "too_small": "Esse ficheiro é demasiado pequeno para ser um jogo guardado.",
         "wrong_version": "Esse ficheiro é de outra versão do jogo e não pode ser carregado aqui. Exporta-o de novo a partir da versão que o criou ou atualiza esta.",
+        "not_a_save": "Esse ficheiro não é um jogo guardado. Para levar uma carreira para outro dispositivo, abre «Carregar Jogo» no jogo onde a jogaste, usa «Exportar jogo guardado» e importa o ficheiro .olsave que é criado.",
         "corrupt": "Esse ficheiro está danificado ou não é um jogo guardado do OLManager.",
         "storage": "Não foi possível ler ou guardar o jogo. Verifica o ficheiro e o espaço livre e tenta de novo.",
         "id_taken": "Já existe um jogo guardado com esse identificador.",
