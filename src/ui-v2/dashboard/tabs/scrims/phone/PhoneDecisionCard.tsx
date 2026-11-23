@@ -34,9 +34,9 @@ const OMITTED: Record<DecisionCardLayout, readonly EffectLine["kind"][]> = { car
 
 const isCancel = (line: EffectLine): line is Extract<EffectLine, { kind: "cancelStep" | "cancelsNext" }> => line.kind === "cancelStep" || line.kind === "cancelsNext";
 
-function Pair({ label, tone, before, after }: { label: string; tone: "gain"; before: number; after: number }) {
+function Pair({ label, tone, before, after, tight }: { label: string; tone: "gain"; before: number; after: number; tight: boolean }) {
   return (
-    <li className="flex min-w-0 items-center justify-between gap-2 text-caption leading-[1.125rem]">
+    <li className={cn("flex min-w-0 items-center justify-between gap-2 text-caption", tight ? "leading-4" : "leading-[1.125rem]")}>
       <span className="min-w-0 truncate text-muted-foreground">{label}</span>
       <ChangeValue tone={tone} before={before} after={after} />
     </li>
@@ -55,15 +55,18 @@ export function PhoneDecisionCard({ option, layout, report, reputation, saving, 
   const base = useId();
   const dense = layout === "dense";
   const hairline = layout === "hairline";
-  const shown = option.effects.filter((line) => !OMITTED[layout].includes(line.kind));
+  const tight = layout !== "card";
+  // An option that cancels already says the day ends there; two sentences would not fit the card's height.
+  const omitted = layout === "card" && option.effects.some(isCancel) ? [...OMITTED.card, "closesDay" as const] : OMITTED[layout];
+  const shown = option.effects.filter((line) => !omitted.includes(line.kind));
   const cancel = hairline ? undefined : shown.find(isCancel);
   const repAfter = cancel ? Math.max(0, reputation + cancel.reputation) : 0;
   const players = shown.find((line) => line.kind === "players");
 
   const rows: ReactNode[] = [];
   shown.forEach((line, index) => {
-    if (line.kind === "quality") rows.push(<Pair key={index} label={t("scrims.reportQuality")} tone="gain" before={report.quality} after={report.quality + line.delta} />);
-    if (line.kind === "severity") rows.push(<Pair key={index} label={t("scrims.effect.severityLabel")} tone="gain" before={report.severity} after={Math.max(0, report.severity + line.delta)} />);
+    if (line.kind === "quality") rows.push(<Pair key={index} label={t("scrims.reportQuality")} tone="gain" before={report.quality} after={report.quality + line.delta} tight={tight} />);
+    if (line.kind === "severity") rows.push(<Pair key={index} label={t("scrims.effect.severityLabel")} tone="gain" before={report.severity} after={Math.max(0, report.severity + line.delta)} tight={tight} />);
   });
   const sentences = shown.filter((line) => line.kind !== "quality" && line.kind !== "severity" && line.kind !== "players");
 
@@ -76,7 +79,7 @@ export function PhoneDecisionCard({ option, layout, report, reputation, saving, 
         if (!locked) onDecide();
       }}
       className={cn(
-        "min-w-0 text-start font-heading font-bold uppercase tracking-wide outline-none after:absolute after:inset-0 after:rounded-[inherit] aria-disabled:cursor-not-allowed",
+        "line-clamp-2 min-w-0 text-start font-heading font-bold uppercase tracking-wide outline-none after:absolute after:inset-0 after:rounded-[inherit] aria-disabled:cursor-not-allowed",
         dense ? "text-entry leading-tight" : "text-section leading-none",
       )}
     >
@@ -85,11 +88,11 @@ export function PhoneDecisionCard({ option, layout, report, reputation, saving, 
   );
 
   const effects = (
-    <ul id={`${base}-effects`} className="m-0 flex min-w-0 list-none flex-col gap-0.5 p-0">
+    <ul id={`${base}-effects`} className={cn("m-0 flex min-w-0 list-none flex-col p-0", tight ? "gap-0" : "gap-0.5")}>
       {rows}
       {players?.kind === "players" ? (
-        <li className="text-caption leading-[1.125rem]">
-          <PlayersChange morale={players.morale} condition={players.condition} />
+        <li className={cn("text-caption", tight ? "leading-4" : "leading-[1.125rem]")}>
+          <PlayersChange morale={players.morale} condition={players.condition} label={!tight} />
         </li>
       ) : null}
       {cancel ? (
@@ -116,9 +119,9 @@ export function PhoneDecisionCard({ option, layout, report, reputation, saving, 
       className={cn(
         "relative flex min-h-[var(--hit)] min-w-0 flex-1 basis-0 items-center transition-colors",
         "has-[button:focus-visible]:outline-2 has-[button:focus-visible]:outline-offset-2 has-[button:focus-visible]:outline-ring",
-        layout === "card" && "rounded-xl bg-card px-4 py-2.5",
-        dense && "rounded-lg bg-card px-3 py-0.5",
-        hairline && "border-t border-line px-2 py-1",
+        layout === "card" && "rounded-xl bg-card px-4 py-2",
+        dense && "rounded-lg bg-card px-3 py-0",
+        hairline && "border-t border-line px-2 py-0.5",
       )}
     >
       <div

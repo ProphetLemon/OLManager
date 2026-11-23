@@ -206,6 +206,13 @@ describe("ScrimDecisionPane: one card per option the game gives", () => {
     expect(within(cardOf("Continue to block 2")).queryByText("Cost")).toBeNull();
   });
 
+  it("leaves the closing sentence out of an option that cancels, which already says the block is not played", () => {
+    const report = makeReport({ won: true, issue: null });
+    setup({ report, options: makeOptions({ isFirstBlock: true, won: true, report }) });
+    expect(cardOf("Offer rest")).toHaveTextContent("Cancels block B.");
+    expect(cardOf("Offer rest")).not.toHaveTextContent("The day closes");
+  });
+
   it("draws no bar on Push through", () => {
     setup();
     expect(within(cardOf("Push through")).queryByRole("meter")).toBeNull();
@@ -234,6 +241,8 @@ describe("ScrimDecisionPane: a day-closing decision with several cards", () => {
     const vod = cardOf("VOD Review");
     expect(vod).toHaveTextContent("Quality");
     expect(vod).toHaveTextContent("61 → 67");
+    expect(vod).toHaveTextContent("Morale +1, Condition -1");
+    expect(vod).not.toHaveTextContent("Picked players");
   });
 
   it("keeps the single card of a won day in the card layout with its sentence", () => {
