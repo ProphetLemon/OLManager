@@ -3368,7 +3368,6 @@
       "tagToday": "Hoje",
       "tagDecide": "Decidir",
       "weekList": "Semana de scrims",
-      "choosing": "A escolher",
       "noteWinAccepts": "Vitória é a tua probabilidade de ganhar o scrim. Aceita é a probabilidade de este adversário ficar com um bloco com dois ou mais planos.",
       "notePlans": "Um bloco com um só plano joga sempre esse plano, e o Plano A joga-se se todos os planos recusarem.",
       "decideSlot": "Decidir {{slot}}"
