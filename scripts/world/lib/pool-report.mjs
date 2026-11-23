@@ -107,8 +107,9 @@ const ratingTable = (map, label) => table([...map].map(([key, v]) => [key, v.sta
  * @param {{players: number, staff: number, overlayBytes: number}} pool.limits
  * @param {number} pool.bytes size of the serialised overlay
  * @param {ReturnType<typeof explainProbe>|null} pool.probe
+ * @param {ReturnType<import("./pool-rating.mjs").summarizeListed>|null} [pool.listed] the pooled stats of the listed events, by position
  */
-export function renderPoolSection({ settings, inputs, selection, limits, bytes, probe, ops = null }) {
+export function renderPoolSection({ settings, inputs, selection, limits, bytes, probe, ops = null, listed = null }) {
   const lines = ["## Active-pros pool", ""];
   const { counts } = selection;
   const summary = summarizePool(selection);
@@ -157,6 +158,12 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
     lines.push("Players by position (Leaguepedia label)", "", ...ratingTable(ratings.playersByRole, "position"), "");
     lines.push("Staff by tier (staff have no per-game stats)", "", ...ratingTable(ratings.staffByTier, "tier"), "");
     lines.push("Staff by Leaguepedia label", "", ...ratingTable(ratings.staffByRole, "kind"), "");
+  }
+
+  if (listed && listed.size > 0) {
+    lines.push("### Listed events: pooled stats", "");
+    lines.push(`People of the listed events (pool-events.mjs) with no stats in the game's own competitions are compared with one another, one group per position, with the skill model's own thresholds (${STATS_MIN_GAMES} games to be rated, a group of 15 players with 10+ games), anchored to their tier baseline and capped at 6 points either way. Everybody else of those events keeps the default.`, "");
+    lines.push(...table([...listed].map(([position, v]) => [position, v.stats, v.belowMin, v.noData, v.groupTooSmall, v.noEstimate]), ["position", "from the pooled stats", `fewer than ${STATS_MIN_GAMES} games`, "no game-level data", "group too small", "no usable estimate"]), "");
   }
 
   const view = inputs.view;

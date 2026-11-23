@@ -222,6 +222,15 @@ To add an event, append an entry and its source. Tests: `src/lib/world/pool-wome
   Equal Esports Cup 2023 pages and its qualifiers, and Liga Valkyria's two 2023 pages (LAN and LAS). Their qualifier-flagged pages stay under the cap.
 - **Games window unchanged.** Scoreboard games count from `--pool-since` (default 2023-11-12), not from the listed date, so a person who
   enters only through a 2023 edition has no games in the window and takes the default rating.
+- **Rating from stats.** With `--pool-stats`, the run also reads the scoreboard rows of every listed tournament from the listed date
+  (`fetchPoolInputs({ listedGames })`: ScoreboardPlayers joined to ScoreboardGames, by tournament page, cached like every other read; an
+  event with no game-level data yields no rows). A person of those events who has no rows in the game's own competitions is rated
+  from them, compared only with the other listed-events players of the same position (one pooled group per position, the skill model's own
+  thresholds: 8 games to be rated, a group of 15 players with 10+ games). The anchor is the tier baseline the pool already gives the person
+  (spread 4, change capped at 6 either way); the pooled group is never a league level and never feeds anyone's cohort. Under 8 games, no
+  game-level data, or a group too small: the default below, and the report ("Listed events: pooled stats") and a warning say so. Old
+  names are folded as for the other rows. Caveat: the comparison is among the listed events' own players, so a rating says how a
+  person did against them, not against the game's leagues.
 - **Default rating.** Unchanged: the tier comes from Leaguepedia's own flags, so a listed league it does not call official is tier 3 and
   Game Changers (official) is tier 2; anybody without 8 games in the window takes the default of that tier.
 

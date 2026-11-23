@@ -15,6 +15,8 @@ export interface PoolInputs {
   view: ReturnType<typeof import("./pool.mjs").poolTournaments>;
   people: Map<string, Person>;
   games: Map<string, number> | null;
+  /** Normalized stats rows of the listed events (competition "listed"), empty unless `listedGames` was asked for. */
+  listedRows: Array<{ playerKey: string; competition: string; role: string; date: string; [key: string]: unknown }>;
   /** Old names followed: how many, the ones two pages claim (left alone), roster rows merged and dropped, and the old-name map (also used to fold the stats rows). */
   aliases: { names: number; ambiguous: string[]; rosterRows: number; dropped: number; targets: Map<string, string> };
   probe: { page: string; entries: Array<{ page: string; role: string }> | null } | null;
@@ -25,6 +27,7 @@ export function fetchPoolInputs(input: {
   client: { get(params: Record<string, string>): Promise<any> };
   since?: string;
   listedFrom?: string;
+  listedGames?: boolean;
   cap?: number;
   probe?: string;
   log?: (message: string) => void;

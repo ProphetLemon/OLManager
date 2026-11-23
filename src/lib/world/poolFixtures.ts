@@ -31,6 +31,9 @@ export type StubOptions = {
   /** What the people query that joins `PlayerRedirects` answers for the official class (the other classes get no rows). */
   aliasPeople?: Row[];
   games?: Row[];
+  /** Rows of the listed events' scoreboard query (ScoreboardPlayers joined to ScoreboardGames). */
+  listedGames?: Row[];
+  failListedGames?: boolean;
   tournaments?: Row[];
   entries?: Row[];
   /** Answers a plain people query instead of the recorded classes (return undefined to fall back to them). */
@@ -49,7 +52,10 @@ export function stubClient(options: StubOptions = {}) {
         if (options.failRedirects) throw new OfflineCacheMissError(params);
         rows = options.redirects ?? [];
       } else if (params.tables.includes("PlayerRedirects=PR,")) rows = params.where.includes('T.IsOfficial="1"') ? (options.aliasPeople ?? []) : [];
-      else if (params.tables === "Tournaments=T,Leagues=L") rows = options.tournaments ?? tournamentRows;
+      else if (params.tables === "ScoreboardPlayers=SP,ScoreboardGames=SG") {
+        if (options.failListedGames) throw new OfflineCacheMissError(params);
+        rows = options.listedGames ?? [];
+      } else if (params.tables === "Tournaments=T,Leagues=L") rows = options.tournaments ?? tournamentRows;
       else if (params.tables === "TournamentPlayers=TP,Tournaments=T") rows = options.entries ?? entryRows;
       else if (params.tables.includes("Players=P")) rows = options.peopleFor?.(params) ?? (params.where.includes("T.OverviewPage IN") ? recorded.qualifiers : params.where.includes('T.IsOfficial="1"') ? recorded.official : recorded.seasonal);
       else if (params.tables === "ScoreboardPlayers=SP") {

@@ -23,7 +23,7 @@ import { explainProbe } from "./pool-report.mjs";
 import { foldPlayerKeys, gameTeamKeys } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, dropWorldBuildTwins, selectPool } from "./pool.mjs";
 import { contractedPlayers } from "./same-person.mjs";
-import { poolSkillFromRows, recentRolesFromRows } from "./pool-rating.mjs";
+import { listedGroupWarnings, listedSkillFromRows, poolSkillFromRows, recentRolesFromRows, summarizeListed } from "./pool-rating.mjs";
 import { poolOfLevels } from "../../stats/lib/levels.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
@@ -137,7 +137,7 @@ export async function runRefresh(options) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(settings.since)) throw new Error(`pool: --pool-since must be YYYY-MM-DD, got "${settings.since}"`);
     if (!Number.isInteger(settings.cap) || settings.cap < 0) throw new Error(`pool: --pool-cap must be a non-negative integer, got "${settings.cap}"`);
     // An explicit `since` is the limit for the listed events too; without one they start at their own date (pool-events.mjs).
-    const inputs = options.pool.inputs ?? (await fetchPoolInputs({ client: options.client, ...settings, ...(options.pool.since ? { listedFrom: options.pool.since } : {}), probe: options.pool.probe ?? "", log }));
+    const inputs = options.pool.inputs ?? (await fetchPoolInputs({ client: options.client, ...settings, listedGames: Boolean(options.pool.statsRows), ...(options.pool.since ? { listedFrom: options.pool.since } : {}), probe: options.pool.probe ?? "", log }));
     warnings.push(...inputs.warnings);
     const context = {
       playerIndex: buildIndex(world.players.map(playerEntity)),
@@ -159,14 +159,23 @@ export async function runRefresh(options) {
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;
     const poolOf = anchors ? poolOfLevels(anchors.levels) : undefined;
-    const skill = options.pool.skill ?? (statsRows ? poolSkillFromRows(statsRows, positions, { poolOf }) : null);
+    const gameSkill = options.pool.skill ?? (statsRows ? poolSkillFromRows(statsRows, positions, { poolOf }) : null);
+    // The listed events' own stats (pool-events.mjs): one pooled cohort per role, only for a listed-events person with no rows in the game's
+    // own competitions. The rows go through the same old-names fold; the pooled group never reaches the league ladder or anybody's cohort.
+    const hasGameRows = new Set([...(statsRows ?? []).map((r) => r.playerKey), ...(gameSkill?.keys() ?? [])]);
+    const isListedPerson = (page) => (inputs.people.get(page)?.tournaments ?? []).some((tournament) => inputs.classes.get(tournament)?.listed);
+    const listedPositions = new Map(selection.players.filter((e) => isListedPerson(e.page) && !hasGameRows.has(e.page)).map((e) => [e.page, e.role]));
+    const listedRows = foldPlayerKeys(inputs.listedRows ?? [], inputs.aliases?.targets ?? new Map(), (name) => inputs.people.has(name));
+    const listed = listedSkillFromRows(listedRows, listedPositions);
+    const skill = listed.skill.size > 0 ? new Map([...listed.skill, ...(gameSkill ?? [])]) : gameSkill;
+    warnings.push(...listedGroupWarnings(listed));
     const builtPoolOps = buildPoolOps({
       selection, baselines, games: inputs.games, skill, anchors, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
     });
     // The game folds a pool player into a record it already has on a club, or hides him from the AI, so he is left out here.
     const poolOps = dropWorldBuildTwins({ selection, ops: builtPoolOps, contracted: contractedPlayers(world.players, ops.players.map((entry) => entry.op)) });
     ops = { players: [...ops.players, ...poolOps.players], staff: [...ops.staff, ...poolOps.staff], skipped: [...ops.skipped, ...poolOps.skipped] };
-    poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff } };
+    poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff }, listed: summarizeListed(listed) };
     log(`pool: ${poolOps.players.length} players, ${poolOps.staff.length} staff as free agents`);
   }
 
@@ -198,7 +207,7 @@ export async function runRefresh(options) {
     gates = { ok: results.every((r) => r.ok), results };
     const { inputs, selection, settings, ops: poolOpsRun } = poolRun;
     poolReport = {
-      settings, inputs, selection, limits: POOL_LIMITS, bytes, ops: poolOpsRun,
+      settings, inputs, selection, limits: POOL_LIMITS, bytes, ops: poolOpsRun, listed: poolRun.listed,
       probe: inputs.probe ? explainProbe({ probe: inputs.probe, tournaments: inputs.tournaments, classes: inputs.classes, entryCount: inputs.entryCount, cap: settings.cap, since: settings.since, selection }) : null,
     };
   }

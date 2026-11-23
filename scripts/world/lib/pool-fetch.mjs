@@ -3,9 +3,12 @@
 // filter (both checked against the live API: the page filter returned the same rows as filtering locally).
 import { OfflineCacheMissError, RequestBudgetExceededError } from "./mediawiki-client.mjs";
 import {
-  NOT_QUALIFIER_CLAUSE, TOURS_SEPARATOR, aliasTargets, cargoClasses, classifyTournaments, foldGames, inPoolWindow, listedSince, mergePerson, normalizeTournament, pageClauses, personFromRow,
+  NOT_QUALIFIER_CLAUSE, TOURS_SEPARATOR, aliasTargets, cargoClasses, chunkNames, classifyTournaments, foldGames, inPoolWindow, listedSince, mergePerson, normalizeTournament, pageClauses, personFromRow,
 } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, poolTournaments } from "./pool.mjs";
+import { LISTED_COMPETITION } from "./pool-rating.mjs";
+import { normalizeRows } from "../../stats/lib/normalize.mjs";
+import { FIELDS, ORDER_BY, rowsFromCargo, sqlString } from "../../stats/lib/queries.mjs";
 
 const PAGE = 500;
 const PEOPLE_TABLES = "TournamentPlayers=TP,Tournaments=T,Leagues=L,Players=P";
@@ -49,11 +52,12 @@ export async function cargoAll(client, params) {
  * @param {string} [input.since] first tournament start date
  * @param {string} [input.listedFrom] first start date of the listed events (pool-events.mjs); the earlier of `since` and 2023-06-01 by default.
  *   An explicit `--pool-since` is passed as both: it is then the limit for everything
+ * @param {boolean} [input.listedGames] also read the scoreboard rows of the listed events (the pooled stats of a run with `--pool-stats`)
  * @param {number} [input.cap] largest roster a qualifier-flagged tournament may have
  * @param {string} [input.probe] Leaguepedia page of a person whose roster entries the report explains
  * @param {(message: string) => void} [input.log]
  */
-export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, listedFrom = listedSince(since), cap = DEFAULT_QUALIFIER_CAP, probe = "", log = () => {} }) {
+export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, listedFrom = listedSince(since), cap = DEFAULT_QUALIFIER_CAP, probe = "", listedGames = false, log = () => {} }) {
   const warnings = [];
 
   // The listed events (pool-events.mjs) are read from their own, earlier date; everything else from `since`. Both lists are asked for
@@ -157,6 +161,27 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, list
     warnings.push(`pool: game counts unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); pool ops carry games: null`);
   }
 
+  // The listed events' own stats rows: every game of their tournaments from `listedFrom`, normalized into one pooled competition. An event
+  // with no game-level data adds no rows. Old names are folded later, by the pipeline, with the same map as every other stats row.
+  let listedRows = [];
+  const listedPages = listedGames ? tournaments.filter((t) => classes.get(t.page)?.listed).map((t) => t.page) : [];
+  if (listedPages.length > 0) {
+    try {
+      const raw = [];
+      for (const chunk of chunkNames(listedPages)) {
+        raw.push(...await cargoAll(client, {
+          tables: "ScoreboardPlayers=SP,ScoreboardGames=SG", join_on: "SP.GameId=SG.GameId", fields: FIELDS.map(([expression, alias]) => `${expression}=${alias}`).join(","),
+          where: `SP.DateTime_UTC >= ${sqlString(listedFrom)} AND SP.OverviewPage IN (${chunk.map(sqlString).join(",")})`, order_by: ORDER_BY,
+        }));
+      }
+      listedRows = normalizeRows(rowsFromCargo({ cargoquery: raw.map((title) => ({ title })) }), { competition: LISTED_COMPETITION }).rows;
+      log(`pool: listed events -> ${listedRows.length} stats rows from ${listedPages.length} tournaments`);
+    } catch (error) {
+      if (isFatal(error)) throw error;
+      warnings.push(`pool: stats of the listed events unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); their people keep the default`);
+    }
+  }
+
   let probeEntries = null;
   if (probe) {
     try {
@@ -169,6 +194,6 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, list
   }
 
   return {
-    since, cap, tournaments, classes, entryCount, view, people, games, aliases, probe: probe ? { page: probe, entries: probeEntries } : null, requests, warnings,
+    since, cap, tournaments, classes, entryCount, view, people, games, aliases, listedRows, probe: probe ? { page: probe, entries: probeEntries } : null, requests, warnings,
   };
 }
