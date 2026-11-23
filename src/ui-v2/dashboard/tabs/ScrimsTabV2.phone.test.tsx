@@ -353,6 +353,32 @@ describe("ScrimsTabV2 on a phone: what opens on arrival", () => {
     expect(planTab("A")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Done/ })).toBeInTheDocument();
   });
+
+  it("a played block opens read-only with the plan that was played marked and an empty plan worded as the game words it", () => {
+    const played = report({ opponent_team_id: "bravo" });
+    mount(
+      ctx(
+        week({
+          setupLocked: true,
+          setupLockedReason: "week_started",
+          objective: "Macro",
+          planned: 4,
+          played: 1,
+          slots: [
+            slot(0, { plan: ["alpha", "bravo"], status: "Reviewed", canEdit: false, resolvedOpponentTeamId: "bravo", resultWon: true, report: played }),
+            slot(1, { plan: ["bravo"], status: "Locked", canEdit: false }),
+            slot(2, { plan: ["charlie"], status: "Locked", canEdit: false }),
+            slot(3, { plan: ["delta"], status: "Locked", canEdit: false }),
+          ],
+        }),
+        today(),
+      ),
+    );
+    fireEvent.click(block(0));
+    expect(planTab("B")).toHaveAccessibleName(/Played/);
+    expect(planTab("A")).not.toHaveAccessibleName(/Played/);
+    expect(planTab("C")).toHaveAccessibleName(/No fallback/);
+  });
 });
 
 describe("ScrimsTabV2 on a phone: what moves by itself (BUILD-SPEC section 1)", () => {
@@ -362,6 +388,49 @@ describe("ScrimsTabV2 on a phone: what moves by itself (BUILD-SPEC section 1)", 
     swap(afterBlockA());
     expect(pane("decision")).not.toBeNull();
     expect(viewTitle()).toBe("Decide Wed A");
+  });
+
+  it("Semana's hero puts the lock on the word's line and lets the closed-day sentence take its lines whole", () => {
+    mount(
+      ctx(
+        week({
+          setupLocked: true,
+          setupLockedReason: "week_started",
+          objective: "Macro",
+          planned: 4,
+          played: 1,
+          slots: [
+            slot(0, { plan: ["alpha"], status: "Reviewed", canEdit: false, resolvedOpponentTeamId: "alpha", resultWon: true, report: report({ won: true }) }),
+            slot(1, { plan: ["bravo"], status: "Locked", canEdit: false }),
+            slot(2, { plan: ["charlie"], status: "Locked", canEdit: false }),
+            slot(3, { plan: ["delta"], status: "Locked", canEdit: false }),
+          ],
+        }),
+        today({ state: "Reviewed", slotIndex: 0 }),
+      ),
+    );
+    const hero = document.querySelector('[data-slot="phone-week-hero"]') as HTMLElement;
+    const word = hero.querySelector('[data-slot="phone-week-word"]') as HTMLElement;
+    const lock = hero.querySelector('[data-slot="phone-week-lock"]') as HTMLElement;
+    const row = lock.closest('[data-slot="phone-week-word-row"]') as HTMLElement;
+    expect(row).not.toBeNull();
+    expect(row).toContainElement(word);
+    const closed = hero.querySelector('[data-slot="phone-week-closed"]') as HTMLElement;
+    expect(closed.className).not.toContain("truncate");
+    expect(closed.className).not.toContain("line-clamp");
+    // Shield 32 + name 16 + gap 2 = 50 and a two-line sentence 28 = 78: the 90 px hero holds it all.
+    expect(hero.querySelector('[data-slot="phone-week-matchup"] [data-slot="club-shield"]')!.className).toContain("size-8");
+  });
+
+  it("Decidir never cuts the team names under the medium shields: they take two lines", () => {
+    const { swap } = mount(scrimMorning());
+    swap(afterBlockA());
+    const names = [...document.querySelectorAll('[data-slot="phone-matchup-team"] > span')];
+    expect(names).toHaveLength(2);
+    for (const name of names) {
+      expect(name.className).toContain("line-clamp-2");
+      expect(name.className).not.toContain("truncate");
+    }
   });
 
   it("a row that starts to carry Decide opens by itself even when the player was in another view", () => {
@@ -930,6 +999,43 @@ describe("ScrimsTabV2 on a phone: the three settings views", () => {
     expect(card).toHaveTextContent("Loss");
     expect(card).toHaveTextContent("Wed A");
     expect(card).toHaveTextContent("68");
+  });
+
+  it("Elegir rival draws the focus ring of a strip button inside it, so the strip's clipping cannot cut it", () => {
+    mount(planning());
+    fireEvent.click(block(1));
+    const buttons = within(strip()).getAllByRole("button");
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const button of buttons) expect(button.className).toContain("focus-visible:ring-inset");
+  });
+
+  it("Volumen keeps Confirmar clear of the assistant switch: Rellenar is narrower and the gap shorter, so the switch ends before Confirmar starts", () => {
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    const [first, last] = [...document.querySelectorAll('[data-slot="volume-row"]')] as HTMLElement[];
+    // At 696: Rellenar 160 + gap 32 + the switch about 196 end at 388, and Confirmar (268 or more, at the right end) starts at 412 at the latest.
+    expect(first.className).toContain("gap-8");
+    expect(within(first).getByRole("button", { name: /Autofill/ }).className).toContain("min-w-[10rem]");
+    expect(within(last).getByRole("button", { name: /Finalize Setup/ })).toBe(last.lastElementChild);
+  });
+
+  it("Informe with a report keeps the record, the newest block, Rep scrims with its bar and Cancelaciones above anything that scrolls", () => {
+    const played = report({ quality: 68 });
+    mount(ctx(week({ reputation: 25, cancellations: 1, played: 1, losses: 1, lossStreak: 1, latestReports: [played], slots: [slot(0, { status: "Played", canEdit: false, resultWon: false, report: played }), slot(1), slot(2), slot(3)] }), today()));
+    fireEvent.click(entry("report"));
+    const pane = document.querySelector('[data-slot="scrim-report-pane"]') as HTMLElement;
+    const card = pane.querySelector('[data-slot="report-block"]') as HTMLElement;
+    // Calidad, its number and its bar share one line; the focus and the issue sit side by side, label over value.
+    const quality = within(card).getByRole("meter", { name: "Quality" });
+    expect(quality.parentElement).toContainElement(within(card).getByText("Quality"));
+    expect(card.querySelector("dl")!.className).toContain("grid-cols-2");
+    expect(within(card).getByText("Report focus").nextElementSibling).toHaveTextContent("Fix early game");
+    // Height at 286: 226 for the pane; the card about 132 (py-2, 52 shield column or a 100 text column), a gap of 8 and a row of 46 = 186, so Rep scrims and Cancelaciones need no scrolling.
+    const row = within(pane).getByText("Cancellations").parentElement!.parentElement as HTMLElement;
+    expect(row.className).not.toMatch(/\bmt-/);
+    expect(card.className).toContain("py-2");
+    const kids = [...pane.children];
+    expect(kids.indexOf(row)).toBeLessThan(kids.findIndex((child) => child.getAttribute("data-slot") === "scrim-staff-suggestions"));
   });
 
   it("Informe with no reports says so and still shows Rep scrims and Cancelaciones", () => {

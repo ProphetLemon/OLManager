@@ -161,6 +161,16 @@ describe("the scrim result banner on a phone", () => {
     expect(shell.dismissScrimResultNotice).toHaveBeenCalled();
   });
 
+  it("holds only while the Scrims body is on screen: a profile open over it still shows the banner and keeps the notice", async () => {
+    await renderOn("Scrims");
+    await screen.findByTestId("scrims-tab-v2", {}, { timeout: 3000 });
+    shell.dismissScrimResultNotice.mockClear();
+    shell.scrimResultNotice = ["Won against Rivals"];
+    act(() => useDashboardLocationStore.getState().go({ kind: "player", id: "p-1" }));
+    await waitFor(() => expect(document.querySelector(NOTICE)).not.toBeNull());
+    expect(shell.dismissScrimResultNotice).not.toHaveBeenCalled();
+  });
+
   it("keeps the assistant's note reachable: it goes to the dashboard's calls, as when there is no result notice", async () => {
     shell.autoDelegationNotice = "Assistant played the block";
     await renderOn("Home");

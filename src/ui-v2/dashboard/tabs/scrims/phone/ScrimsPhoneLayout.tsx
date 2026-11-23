@@ -9,7 +9,7 @@ import { buildPhoneHome } from "@/lib/scrims/phoneHome";
 import { isEditable, phoneDoneTarget, slotRowId, type PhoneRowId } from "@/lib/scrims/phoneWeek";
 import { buildRivalRows } from "@/lib/scrims/rivalOdds";
 import { autofillDisabled } from "@/lib/scrims/scrimPlans";
-import { type DeskPanel, type RiskLevel } from "@/lib/scrims/scrimDesk";
+import { isPlanClearedToday, type DeskPanel, type RiskLevel } from "@/lib/scrims/scrimDesk";
 import { teamIdentity, teamIdentityById, type TeamIdentity } from "@/lib/teams/teamIdentity";
 import type { DailyScrimAction } from "@/services/trainingService";
 import { useBackDismisser } from "@/ui-v2/palette/useBackDismisser";
@@ -319,6 +319,8 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           onPick={(priorityIndex, teamId) => setSlotPlan(slotIndex, priorityIndex, teamId)}
           onDone={() => goTo(target)}
           onBack={goHome}
+          resolvedTeamId={slot.resolvedOpponentTeamId ?? null}
+          cleared={isPlanClearedToday(slot, week)}
         />
       );
   };

@@ -124,10 +124,11 @@ describe("ScrimDecisionPane: the block", () => {
     }
   });
 
-  it("keeps a long club name on one line so the left column cannot grow", () => {
+  it("never cuts a team's name where the team is the subject: it takes two lines", () => {
     setup({ rival: { name: "Team Heretics Academy", tag: "THA", logoUrl: null } });
     const name = within(document.querySelector('[data-slot="phone-matchup"]') as HTMLElement).getByText("Team Heretics Academy");
-    expect(name.className).toContain("truncate");
+    expect(name.className).toContain("line-clamp-2");
+    expect(name.className).not.toContain("truncate");
   });
 });
 
@@ -242,8 +243,37 @@ describe("ScrimDecisionPane: a day-closing decision with several cards", () => {
     const vod = cardOf("VOD Review");
     expect(vod).toHaveTextContent("Quality");
     expect(vod).toHaveTextContent("61 → 67");
-    expect(vod).toHaveTextContent("Morale +1, Condition -1");
-    expect(vod).not.toHaveTextContent("Picked players");
+    expect(vod).toHaveTextContent("Picked players: Morale +1, Condition -1");
+  });
+
+  it("gives the description of a dense row the whole width under its title, whole, in Spanish too", async () => {
+    await i18n.changeLanguage("es");
+    setup(closeDay(false));
+    for (const card of cards()) {
+      const title = card.querySelector("button") as HTMLElement;
+      const description = card.querySelector('[id$="-desc"]') as HTMLElement;
+      expect(description.className).not.toContain("line-clamp");
+      expect(description.parentElement).toBe(title.parentElement);
+    }
+    for (const text of [
+      "Da el resto del día libre y recupera.",
+      "Revisa el VOD para sacar aprendizajes concretos de los errores.",
+      "Prioriza la moral y reinicia el tilt antes de las próximas sesiones.",
+      "Haz ejercicios centrados en el problema detectado.",
+    ]) {
+      expect(screen.getByText(text)).toBeInTheDocument();
+    }
+    expect(cardOf("Revisión de VOD")).toHaveTextContent("Jugadores elegidos: Moral +1, Energía -1");
+  });
+
+  it("gives each card the height its content needs, not an equal half, and keeps the text off its edges", () => {
+    setup({ options: makeOptions({ isFirstBlock: true, won: true }) });
+    for (const card of cards()) {
+      expect(card.className).toContain("basis-auto");
+      expect(card.className).not.toContain("basis-0");
+      expect(card.className).toContain("shrink-0");
+      expect(card.className).toContain("py-1.5");
+    }
   });
 
   it("keeps the single card of a won day in the card layout with its sentence", () => {

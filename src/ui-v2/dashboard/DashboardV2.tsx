@@ -681,9 +681,17 @@ export default function DashboardV2() {
   const backTarget = backDestination(profileNavigation, isValidLocation);
   const backTo = backTitle(backTarget, describeDeps, t);
 
+  // A tab's own content shows only while no profile or champion page is open over it.
+  const profileOpen = Boolean(
+    profileNavigation.selectedPlayerId ||
+      profileNavigation.selectedTeamId ||
+      profileNavigation.selectedStaffId ||
+      viewingChampionKey,
+  );
+
   // On a phone the Scrims tab shows the result itself and has no height to spare: the banner is
   // not drawn there, what the player saw is dismissed, and the assistant's note goes to the alerts.
-  const scrimsOnPhone = phone && profileNavigation.activeTab === "Scrims";
+  const scrimsOnPhone = phone && profileNavigation.activeTab === "Scrims" && !profileOpen;
   const shownScrimNotice = scrimsOnPhone ? null : scrimResultNotice;
   useEffect(() => {
     if (scrimsOnPhone && scrimResultNotice) dismissScrimResultNotice();
@@ -770,13 +778,6 @@ export default function DashboardV2() {
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lang: labels change with the language
     [paletteOpen, decisionItems, recent, profileNavigation, isUnemployed, scheduleCalendar, selectedCompetitionId, gameState, lang, t],
-  );
-  // A tab's own content shows only while no profile or champion page is open over it.
-  const profileOpen = Boolean(
-    profileNavigation.selectedPlayerId ||
-      profileNavigation.selectedTeamId ||
-      profileNavigation.selectedStaffId ||
-      viewingChampionKey,
   );
 
   // "Before you continue" (R24): the decisions while Home's panel is not on screen, a

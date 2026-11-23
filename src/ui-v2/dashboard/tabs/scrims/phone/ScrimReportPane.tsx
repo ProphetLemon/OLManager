@@ -34,7 +34,7 @@ function RecentBlock({ report, slotLabel, name, teams }: { report: ScrimReportDa
     <section
       data-slot="report-block"
       aria-label={`${t("scrims.reviewBlockTitle")} ${slotLabel}`.trim()}
-      className="flex min-w-0 flex-1 gap-4 rounded-xl bg-card px-4 py-3 text-card-foreground"
+      className="flex min-w-0 flex-1 gap-4 rounded-xl bg-card px-4 py-2 text-card-foreground"
     >
       <div className="flex w-28 shrink-0 flex-col items-center gap-1">
         <span className="relative block">
@@ -43,28 +43,28 @@ function RecentBlock({ report, slotLabel, name, teams }: { report: ScrimReportDa
         </span>
         <span className="max-w-full text-center font-heading text-entry font-semibold leading-tight">{identity.name}</span>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-baseline gap-2.5">
           <span className={cn("font-heading text-section font-bold leading-none", report.won === true ? "text-positive" : "text-negative")}>
             {report.won === true ? t("scrims.reviewWin") : t("scrims.reviewLoss")}
           </span>
           {slotLabel ? <span className="text-entry">{slotLabel}</span> : null}
         </div>
-        <div className="flex flex-col">
+        <div className="flex items-center gap-2.5">
           <span className="text-caption text-muted-foreground">{t("scrims.reportQuality")}</span>
-          <div className="flex items-center gap-2.5">
-            <span className="font-heading text-title font-bold tabular-nums">{report.quality}</span>
-            <Meter className="flex-1" label={t("scrims.reportQuality")} value={report.quality} tone="club" tick={50} showValue={false} />
-          </div>
+          <span className="font-heading text-title font-bold tabular-nums">{report.quality}</span>
+          <Meter className="flex-1" label={t("scrims.reportQuality")} value={report.quality} tone="club" tick={50} showValue={false} />
         </div>
-        <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-0.5 text-entry leading-[1.0625rem]">
-          <dt className="text-muted-foreground">{t("scrims.reportFocus")}</dt>
-          <dd className="m-0">{t(SCRIM_FOCUS_OBJECTIVE_KEYS[report.focus])}</dd>
+        <dl className="m-0 grid grid-cols-2 gap-x-4 text-entry leading-[1.0625rem]">
+          <div className="min-w-0">
+            <dt className="text-caption leading-4 text-muted-foreground">{t("scrims.reportFocus")}</dt>
+            <dd className="m-0">{t(SCRIM_FOCUS_OBJECTIVE_KEYS[report.focus])}</dd>
+          </div>
           {report.issue ? (
-            <>
-              <dt className="text-muted-foreground">{t("scrims.detectedIssue")}</dt>
+            <div className="min-w-0">
+              <dt className="text-caption leading-4 text-muted-foreground">{t("scrims.detectedIssue")}</dt>
               <dd className="m-0">{t(SCRIM_ISSUE_KEYS[report.issue])}</dd>
-            </>
+            </div>
           ) : null}
         </dl>
       </div>
@@ -124,16 +124,16 @@ export function ScrimReportPane({ title, onBack, week, teams, teamNameById, slot
             )}
           </div>
 
-          <div className="mt-2 flex shrink-0 items-end gap-10">
+          <div className="flex shrink-0 items-end gap-10">
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <span className="text-entry text-muted-foreground">{t("scrims.reputation")}</span>
+              <span className="text-entry leading-4 text-muted-foreground">{t("scrims.reputation")}</span>
               <div className="flex items-center gap-2.5">
                 <Meter className="flex-1" label={t("scrims.reputation")} value={week.reputation} tone="club" tick={50} showValue={false} />
                 <span className="font-heading text-section font-bold tabular-nums">{week.reputation}</span>
               </div>
             </div>
             <div className="flex w-[12.5rem] shrink-0 flex-col gap-1.5">
-              <span className="text-entry text-muted-foreground">{t("scrims.cancellations")}</span>
+              <span className="text-entry leading-4 text-muted-foreground">{t("scrims.cancellations")}</span>
               <span className="font-heading text-section font-bold tabular-nums">{week.cancellations}</span>
             </div>
           </div>

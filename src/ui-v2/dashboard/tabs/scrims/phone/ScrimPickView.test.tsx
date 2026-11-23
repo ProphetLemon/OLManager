@@ -428,3 +428,34 @@ describe("ScrimPickView strip room", () => {
     expect(slot("pick-strip-row").className).toContain("h-[3.625rem]");
   });
 });
+
+describe("ScrimPickView read-only: what was played and what was cleared", () => {
+  const locked = { readOnly: true, blockedText: "Setup locked once block starts" };
+
+  it("marks the plan that was played on its tab with the game's word, and names it in the tab's name", () => {
+    setup({ ...locked, plan: ["ucam", "tha", "lua"], resolvedTeamId: "tha", cleared: false });
+    const played = document.querySelectorAll('[data-slot="pick-plan-played"]');
+    expect(played).toHaveLength(1);
+    expect(played[0]).toHaveTextContent("Played");
+    expect(played[0].closest('[data-slot="pick-plan-tab"]')).toHaveAttribute("data-plan", "B");
+    expect(tab(/Plan B/)).toHaveAccessibleName(/Played/);
+  });
+
+  it("words an unset plan as no opponent set and no fallback, as the old pane did", () => {
+    setup({ ...locked, plan: ["", "", ""], resolvedTeamId: null, cleared: false });
+    expect(tab(/Plan A/)).toHaveAccessibleName("Plan A: No opponent set");
+    expect(tab(/Plan B/)).toHaveAccessibleName("Plan B: No fallback");
+    expect(slot("pick-card")).toHaveTextContent("No opponent set");
+  });
+
+  it("words a plan cleared today as Plan cleared", () => {
+    setup({ ...locked, plan: ["", "", ""], resolvedTeamId: null, cleared: true });
+    expect(tab(/Plan A/)).toHaveAccessibleName("Plan A: Plan cleared");
+    expect(slot("pick-card")).toHaveTextContent("Plan cleared");
+  });
+
+  it("shows nothing of this while the slot can still be edited", () => {
+    setup({ plan: ["ucam", "", ""], resolvedTeamId: "ucam", cleared: false });
+    expect(document.querySelector('[data-slot="pick-plan-played"]')).toBeNull();
+  });
+});

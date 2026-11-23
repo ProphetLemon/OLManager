@@ -60,7 +60,7 @@ function LockMark() {
 
 /** The two shields of a matchup (yours, then the rival's or an empty one) with their names under them. */
 function Matchup({ mine, rival, rivalLabel, compact }: { mine: TeamIdentity; rival: TeamIdentity | null; rivalLabel: string; compact?: boolean }) {
-  const size = compact ? "small" : "medium";
+  const size = compact ? "tiny" : "medium";
   const { t } = useTranslation();
   return (
     <span data-slot="phone-week-matchup" className="flex items-start gap-3">
@@ -113,10 +113,12 @@ interface HeroContext {
 
 function SlotTitle({ label, word, locked }: { label: string; word: PhoneTag; locked: boolean }) {
   return (
-    <span className="flex w-24 shrink-0 flex-col gap-0.5">
+    <span className="flex min-w-24 shrink-0 flex-col gap-0.5">
       <span className="truncate font-heading text-title font-bold uppercase leading-[1.1]">{label}</span>
-      <Word tag={word} />
-      {locked ? <LockMark /> : null}
+      <span data-slot="phone-week-word-row" className="flex items-center gap-2">
+        <Word tag={word} />
+        {locked ? <LockMark /> : null}
+      </span>
     </span>
   );
 }
@@ -236,7 +238,7 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
   }
 }
 
-const HERO_CLASS = "flex min-h-[5.625rem] w-full flex-1 flex-col justify-center overflow-hidden rounded-xl bg-card px-4 py-1.5 text-start text-card-foreground";
+const HERO_CLASS = "flex min-h-[5.625rem] w-full flex-1 flex-col justify-center overflow-hidden rounded-xl bg-card px-4 py-1 text-start text-card-foreground";
 
 function Hero({ hero, ctx, onOpen }: { hero: PhoneHero; ctx: HeroContext; onOpen: ScrimWeekHomeProps["onOpen"] }) {
   const { t } = useTranslation();
@@ -244,7 +246,7 @@ function Hero({ hero, ctx, onOpen }: { hero: PhoneHero; ctx: HeroContext; onOpen
   const body = (
     <span className="flex flex-col">
       <HeroBody hero={hero} ctx={ctx} onOpen={onOpen} compact={closed != null} />
-      {closed ? <span data-slot="phone-week-closed" className="block truncate text-caption leading-3.5 text-muted-foreground">{closed}</span> : null}
+      {closed ? <span data-slot="phone-week-closed" className="block text-caption leading-3.5 text-muted-foreground">{closed}</span> : null}
     </span>
   );
   const common = { "data-slot": "phone-week-hero", "data-state": hero.state } as const;

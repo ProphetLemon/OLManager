@@ -95,6 +95,21 @@ describe("hero of Semana, one row per state of BUILD-SPEC section 2", () => {
     expect(home({ week }).hero).toMatchObject({ state: "upNext", slotIndex: 0, opponentTeamId: "a", plan: ["a", "b", "c"], opens: "slot:0" });
   });
 
+  it("6 upNext: a block whose plan was cleared today by a cancelling decision is not the next block; the hero is the next one that can still be played", () => {
+    const week = makeWeek(4, { 0: { ...reviewed(true), report: report({ post_decision: "DayOff" }) }, 1: { canEdit: false }, 2: { plan: ["a"], status: "Locked", canEdit: false } }, { setupLocked: true, setupLockedReason: "week_started" });
+    const model = home({ week });
+    expect(model.hero).toMatchObject({ state: "upNext", slotIndex: 2, opponentTeamId: "a" });
+    expect(block(model, 1)).toMatchObject({ state: "cleared", isHero: false, heroWord: null });
+    expect(block(model, 2)).toMatchObject({ isHero: true, heroWord: "next" });
+  });
+
+  it("6 upNext: with nothing left to play after the cancelled block, the hero is the report", () => {
+    const week = makeWeek(2, { 0: { ...reviewed(true), report: report({ post_decision: "DayOff" }) }, 1: { canEdit: false } }, { setupLocked: true, setupLockedReason: "week_started", wins: 1 });
+    const model = home({ week });
+    expect(model.hero).toMatchObject({ state: "report", wins: 1, opens: "report" });
+    expect(block(model, 1)).toMatchObject({ state: "cleared", isHero: false });
+  });
+
   it("6 upNext: skips played blocks, and on a locked week keeps the lock icon and opens nothing", () => {
     const week = makeWeek(4, { 0: reviewed(true), 1: reviewed(false), 2: plan("p"), 3: plan("q") }, { setupLocked: true, setupLockedReason: "manual" });
     expect(home({ week }).hero).toMatchObject({ state: "upNext", slotIndex: 2, locked: true, opens: null });

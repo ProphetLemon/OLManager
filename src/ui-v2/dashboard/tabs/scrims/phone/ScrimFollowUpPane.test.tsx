@@ -79,7 +79,7 @@ describe("ScrimFollowUpPane", () => {
     expect(vod).toHaveTextContent("61 → 67");
     expect(vod).toHaveTextContent("Severity");
     expect(vod).toHaveTextContent("2 → 1");
-    expect(vod).toHaveTextContent("Morale +1, Condition -1");
+    expect(vod).toHaveTextContent("Picked players: Morale +1, Condition -1");
     expect(vod).not.toHaveTextContent("+Analysis");
     expect(vod).not.toHaveTextContent("Cancels block B");
     expect(vod).not.toHaveTextContent("The day closes");

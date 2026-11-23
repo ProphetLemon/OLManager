@@ -36,7 +36,7 @@ const isCancel = (line: EffectLine): line is Extract<EffectLine, { kind: "cancel
 
 function Pair({ label, tone, before, after, tight }: { label: string; tone: "gain"; before: number; after: number; tight: boolean }) {
   return (
-    <li className={cn("flex min-w-0 items-center justify-between gap-2 text-caption", tight ? "leading-4" : "leading-[1.125rem]")}>
+    <li className={cn("flex min-w-0 items-center justify-between gap-2 text-caption", tight ? "leading-[0.9375rem]" : "leading-[1.125rem]")}>
       <span className="min-w-0 truncate text-muted-foreground">{label}</span>
       <ChangeValue tone={tone} before={before} after={after} />
     </li>
@@ -79,8 +79,8 @@ export function PhoneDecisionCard({ option, layout, report, reputation, saving, 
         if (!locked) onDecide();
       }}
       className={cn(
-        "line-clamp-2 min-w-0 text-start font-heading font-bold uppercase tracking-wide outline-none after:absolute after:inset-0 after:rounded-[inherit] aria-disabled:cursor-not-allowed",
-        dense ? "text-entry leading-tight" : "text-section leading-none",
+        "min-w-0 text-start font-heading font-bold uppercase tracking-wide outline-none after:absolute after:inset-0 after:rounded-[inherit] aria-disabled:cursor-not-allowed",
+        dense ? "text-entry leading-4" : "text-section leading-none",
       )}
     >
       {saving ? t("common.saving") : option.label}
@@ -91,8 +91,8 @@ export function PhoneDecisionCard({ option, layout, report, reputation, saving, 
     <ul id={`${base}-effects`} className={cn("m-0 flex min-w-0 list-none flex-col p-0", tight ? "gap-0" : "gap-0.5")}>
       {rows}
       {players?.kind === "players" ? (
-        <li className={cn("text-caption", tight ? "leading-4" : "leading-[1.125rem]")}>
-          <PlayersChange morale={players.morale} condition={players.condition} label={!tight} />
+        <li className={cn("text-caption", tight ? "leading-[0.9375rem]" : "leading-[1.125rem]")}>
+          <PlayersChange morale={players.morale} condition={players.condition} />
         </li>
       ) : null}
       {cancel ? (
@@ -117,9 +117,10 @@ export function PhoneDecisionCard({ option, layout, report, reputation, saving, 
       data-slot="decision-card"
       data-layout={layout}
       className={cn(
-        "relative flex min-h-[var(--hit)] min-w-0 flex-1 basis-0 items-center transition-colors",
+        // Each card takes the height its content needs and the spare height is shared, so no text touches an edge.
+        "relative flex min-h-[var(--hit)] min-w-0 shrink-0 grow basis-auto items-center transition-colors",
         "has-[button:focus-visible]:outline-2 has-[button:focus-visible]:outline-offset-2 has-[button:focus-visible]:outline-ring",
-        layout === "card" && "rounded-xl bg-card px-4 py-2",
+        layout === "card" && "rounded-xl bg-card px-3 py-1.5",
         dense && "rounded-lg bg-card px-3 py-0",
         hairline && "border-t border-line px-2 py-0.5",
       )}
@@ -128,13 +129,13 @@ export function PhoneDecisionCard({ option, layout, report, reputation, saving, 
         className={cn(
           "grid w-full min-w-0 items-center gap-x-3.5",
           layout === "card" && "grid-cols-[10.5rem_minmax(0,1fr)]",
-          dense && "grid-cols-[6.5rem_minmax(0,1fr)_11.5rem] gap-x-2.5",
-          hairline && "grid-cols-[11.5rem_minmax(0,1fr)_10rem_1.25rem] gap-x-3",
+          dense && "grid-cols-[minmax(0,1fr)_11.5rem] gap-x-2.5",
+          hairline && "grid-cols-[11.5rem_minmax(0,1fr)_15rem_1.25rem] gap-x-3",
         )}
       >
-        <div className={cn("min-w-0", layout === "card" ? "flex flex-col gap-1" : "contents")}>
+        <div className={cn("min-w-0", layout === "card" || dense ? "flex flex-col" : "contents", layout === "card" && "gap-1")}>
           {button}
-          <p id={`${base}-desc`} className={cn("m-0 text-caption text-muted-foreground", dense ? "line-clamp-3 leading-[0.9375rem]" : "leading-[0.9375rem]")}>
+          <p id={`${base}-desc`} className="m-0 text-caption leading-[0.9375rem] text-muted-foreground">
             {option.description}
           </p>
         </div>

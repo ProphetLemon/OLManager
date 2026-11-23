@@ -106,7 +106,7 @@ export function ScrimVolumePane({
           })}
         </div>
 
-        <div data-slot="volume-row" className="mt-3 flex shrink-0 items-center gap-10">
+        <div data-slot="volume-row" className="mt-3 flex shrink-0 items-center gap-8">
           {assistant ? null : (
             <button
               type="button"
@@ -114,7 +114,7 @@ export function ScrimVolumePane({
               onClick={() => {
                 if (!autofillDisabled) onAutofill();
               }}
-              className={cn(BUTTON, "min-w-[12.25rem] border-muted-foreground")}
+              className={cn(BUTTON, "min-w-[10rem] border-muted-foreground")}
             >
               <WandSparkles aria-hidden="true" className="size-5 shrink-0" />
               {t("training.scrims.autofill")}

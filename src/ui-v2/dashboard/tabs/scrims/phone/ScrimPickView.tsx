@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, CircleHelp, X } from "lucide-react";
+import { Check, ChevronRight, CircleHelp, X } from "lucide-react";
 
 import type { RivalRow } from "@/lib/scrims/rivalOdds";
 import { teamIdentity, type TeamIdentity } from "@/lib/teams/teamIdentity";
@@ -36,6 +36,10 @@ export interface ScrimPickViewProps {
   onPick: (priorityIndex: number, teamId: string) => void;
   onDone: () => void;
   onBack: () => void;
+  /** The rival this slot actually played; marks that plan's tab once the slot is read-only. */
+  resolvedTeamId?: string | null;
+  /** The plan was cleared today (wording of the read-only form). */
+  cleared?: boolean;
 }
 
 const PLANS = [0, 1, 2] as const;
@@ -68,7 +72,7 @@ function Odds({ label, value, tone, mirror }: { label: string; value: number; to
  * move on by itself. Mount it with a key per slot so it starts on Plan A.
  */
 export function ScrimPickView(props: ScrimPickViewProps) {
-  const { slotLabel, myTeam, teams, plan, rivals, ownReputation, readOnly, disabled, blockedText, doneTo, onPick, onDone, onBack } = props;
+  const { slotLabel, myTeam, teams, plan, rivals, ownReputation, readOnly, disabled, blockedText, doneTo, onPick, onDone, onBack, resolvedTeamId = null, cleared = false } = props;
   const { t } = useTranslation();
   const [active, setActive] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -86,7 +90,13 @@ export function ScrimPickView(props: ScrimPickViewProps) {
   const own = plan[active] ?? "";
   const ownIdentity = own ? identityOf(own) : null;
   const ownRow = own ? rivals.find((row) => row.teamId === own) : undefined;
-  const emptyLabel = (index: number) => (index === 0 ? t("scrims.notPlanned") : t("training.scrims.noFallback"));
+  const emptyLabel = (index: number) =>
+    readOnly
+      ? cleared
+        ? index === 0 ? t("scrims.planCleared") : "-"
+        : index === 0 ? t("scrims.noOpponentSet") : t("training.scrims.noFallback")
+      : index === 0 ? t("scrims.notPlanned") : t("training.scrims.noFallback");
+  const playedPlan = (index: number) => readOnly && resolvedTeamId != null && (plan[index] ?? "") === resolvedTeamId;
 
   const pick = (teamId: string) => {
     if (disabled || own === teamId) return;
@@ -110,7 +120,7 @@ export function ScrimPickView(props: ScrimPickViewProps) {
               data-slot="pick-plan-tab"
               data-plan={LETTERS[index]}
               aria-pressed={active === index}
-              aria-label={`${t(PLAN_KEYS[index])}: ${identity?.name ?? emptyLabel(index)}`}
+              aria-label={`${t(PLAN_KEYS[index])}: ${identity?.name ?? emptyLabel(index)}${playedPlan(index) ? `, ${t("scrims.played")}` : ""}`}
               onClick={() => setActive(index)}
               className={cn(
                 "flex h-[var(--hit)] items-center gap-1.5 border-b-[3px] px-2 font-heading text-section font-bold leading-none",
@@ -120,6 +130,12 @@ export function ScrimPickView(props: ScrimPickViewProps) {
             >
               {LETTERS[index]}
               {identity ? <TeamShield identity={identity} size="small" /> : <EmptyShield size="small" />}
+              {playedPlan(index) ? (
+                <span data-slot="pick-plan-played" className="flex items-center gap-1 text-entry font-semibold text-positive">
+                  <Check aria-hidden="true" className="size-4 shrink-0" strokeWidth={3} />
+                  {t("scrims.played")}
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -270,7 +286,7 @@ export function ScrimPickView(props: ScrimPickViewProps) {
                   aria-disabled={held || disabled || undefined}
                   aria-label={`${identity.name}, ${t("scrims.rivalAccepts")} ${row.acceptPercent}%${held ? `, ${t(PLAN_KEYS[heldBy])}` : ""}`}
                   onClick={() => !held && pick(row.teamId)}
-                  className={cn(base, "min-h-[var(--hit)] aria-disabled:cursor-default", FOCUS_RING)}
+                  className={cn(base, "min-h-[var(--hit)] aria-disabled:cursor-default focus-visible:ring-inset", FOCUS_RING)}
                 >
                   {cell}
                 </button>

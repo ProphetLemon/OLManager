@@ -70,21 +70,21 @@ export function ScrimDecisionPane({ title, onBack, report, you, rival, blockLabe
     >
       <section data-slot="scrim-decision-pane" role="group" aria-label={title} className="flex h-full min-h-0 gap-4 pb-3 pt-2">
         <div className="flex w-[12.25rem] shrink-0 flex-col">
-          <PhoneMatchup you={you} rival={rival} className="px-1" />
-          <p className="m-0 mt-1.5 flex items-baseline gap-2">
+          <PhoneMatchup you={you} rival={rival} lines={2} className="px-1" />
+          <p className="m-0 mt-1 flex items-baseline gap-2">
             <ResultWord won={won} className="text-title" />
             {blockLabel ? <span className="text-entry text-muted-foreground">{t("scrims.blockOfTwo", { label: blockLabel })}</span> : null}
           </p>
-          <dl data-slot="phone-decision-facts" className="m-0 mt-1.5 flex min-w-0 flex-col gap-[3px]">
+          <dl data-slot="phone-decision-facts" className="m-0 mt-1 flex min-w-0 flex-col">
             <Fact label={t("scrims.reportFocus")} value={t(SCRIM_FOCUS_OBJECTIVE_KEYS[report.focus])} />
-            <div className="flex items-baseline gap-1.5 text-caption">
+            <div className="flex items-baseline gap-1.5 text-caption leading-4">
               <dt className="text-muted-foreground">{t("scrims.reportQuality")}</dt>
               <dd className="m-0 text-entry font-semibold tabular-nums">{report.quality}</dd>
             </div>
             {report.issue ? <Fact label={t("scrims.detectedIssue")} value={t(SCRIM_ISSUE_KEYS[report.issue])} /> : null}
           </dl>
         </div>
-        <ul data-slot="decision-options" className={cn("m-0 flex min-h-0 min-w-0 flex-1 list-none flex-col p-0", dense ? "gap-1" : "gap-2")}>
+        <ul data-slot="decision-options" className={cn("m-0 flex min-h-0 min-w-0 flex-1 list-none flex-col p-0", dense ? "gap-0.5" : "gap-2")}>
           {options.map((option) => (
             <PhoneDecisionCard
               key={option.id}
@@ -106,8 +106,8 @@ export function ScrimDecisionPane({ title, onBack, report, you, rival, blockLabe
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 flex-col">
-      <dt className="truncate text-caption leading-[0.9375rem] text-muted-foreground">{label}</dt>
-      <dd className="m-0 truncate text-entry leading-[1.0625rem]">{value}</dd>
+      <dt className="truncate text-caption leading-[0.875rem] text-muted-foreground">{label}</dt>
+      <dd className="m-0 truncate text-entry leading-4">{value}</dd>
     </div>
   );
 }
