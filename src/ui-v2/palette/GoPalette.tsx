@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type FormEvent,
   type KeyboardEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -230,6 +231,16 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     }
   };
 
+  // The on-screen keyboard's action key (enterKeyHint="go"). Gboard reports it as a composing
+  // keydown (keyCode 229) after predictive text, which the key model rightly ignores, but it
+  // still submits the form. Only Android honours that submission: on desktop an Enter can
+  // confirm an input-method composition (R48) and must not activate a row.
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!android || activeIndex < 0) return;
+    activate(results[activeIndex]);
+  };
+
   const handleOpenChange = (next: boolean) => {
     if (!next) closePalette();
   };
@@ -318,7 +329,10 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
           >
             {t("onAir.palette.title", { defaultValue: "Go to" })}
           </Dialog.Title>
-          <div className="flex min-h-[var(--palette-row)] items-center gap-2 border-b border-line ps-4 pe-1">
+          <form
+            onSubmit={handleSubmit}
+            className="flex min-h-[var(--palette-row)] items-center gap-2 border-b border-line ps-4 pe-1"
+          >
             <Search aria-hidden="true" className="size-[var(--nav-icon)] shrink-0 text-muted-foreground" />
             <input
               ref={inputRef}
@@ -349,7 +363,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
             >
               <X aria-hidden="true" className="size-[var(--nav-icon)]" />
             </Dialog.Close>
-          </div>
+          </form>
           <div className="scrollbar-v2 min-h-0 flex-1 overflow-y-auto py-1">
             {hasResults ? (
               <div role="listbox" id={listId} aria-labelledby={titleId}>
