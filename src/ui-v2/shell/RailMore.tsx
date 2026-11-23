@@ -3,15 +3,8 @@ import { Ellipsis, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type Ref } from "react";
 
 import { cn } from "@/ui-v2/lib/utils";
-import {
-  forgetPaletteEntry,
-  paletteEntryPop,
-  pushPaletteEntry,
-  releasePaletteEntry,
-  whenPaletteEntryOff,
-} from "@/ui-v2/palette/paletteHistory";
-
-import { useBackDismisser } from "@/ui-v2/palette/useBackDismisser";
+import { releasePaletteEntry, whenPaletteEntryOff } from "@/ui-v2/palette/paletteHistory";
+import { useSheetBack } from "@/ui-v2/sheet/useSheetBack";
 
 import { RailItem } from "./RailItem";
 
@@ -69,28 +62,8 @@ export function RailMore({
   // R95: wry turns the back gesture into `goBack()` only when the webview can go back, and
   // the dashboard would navigate under an open menu. So on Android the menu shares the Go
   // palette's history entry (a menu and the palette are never open together): Back pops it
-  // and closes the menu; any other close takes it off.
-  useEffect(() => {
-    if (!android) return;
-    if (open) pushPaletteEntry();
-    else releasePaletteEntry();
-  }, [open, android]);
-  useEffect(() => {
-    if (!android) return;
-    return () => forgetPaletteEntry();
-  }, [android]);
-  // With the native back-button listener registered the menu holds no entry: Back closes it.
-  useBackDismisser(android && open, () => onOpenChange(false));
-  useEffect(() => {
-    if (!android || !open) return;
-    const onPopState = (event: PopStateEvent) => {
-      // The late pop of an entry a close already took off is not a Back for this opening.
-      if (paletteEntryPop(event) === "release") return;
-      onOpenChange(false);
-    };
-    window.addEventListener("popstate", onPopState, true);
-    return () => window.removeEventListener("popstate", onPopState, true);
-  }, [android, open, onOpenChange]);
+  // and closes the menu; any other close takes it off. See `useSheetBack`.
+  useSheetBack({ open, android, onBack: () => onOpenChange(false) });
 
   // A chosen item may push a route; its entry must be off first, or the pop would undo it.
   const choose = (onSelect: () => void) => {

@@ -42,6 +42,7 @@ src/
 │   │                          # RailTree, RailSplit, RailUtility, RailMore, RailRow, RailItem, useRailMode, useFadeMask, attention.ts, ClockPlate
 │   │                          # (estado en store/navMemoryStore: última por grupo, grupos abiertos; la ubicación,
 │   │                          #  la pila de Back (30) y Recent (6) en store/dashboardLocationStore; reset en store/sessionReset)
+│   ├── sheet/                 # useSheetBack: el contrato de Atrás de un overlay modal en Android (entrada de historial compartida o dismisser nativo); lo usan GoPalette y RailMore
 │   ├── lib/utils.ts           # cn()
 │   ├── pages/                 # v2 pages (SettingsV2, TeamSelectionV2, PlayerProfileV2, TeamProfileV2, StaffProfileV2, ChampionPageV2; customTeam/, playerProfile/, settings/, teamProfile/)
 │   ├── match/                 # partido en directo (Arena): LiveMatchV2.tsx es la pantalla; MatchSimulation la monta

@@ -16,16 +16,10 @@ import { useTranslation } from "react-i18next";
 import { usePaletteStore } from "@/store/paletteStore";
 import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
+import { useSheetBack } from "@/ui-v2/sheet/useSheetBack";
 
 import { PaletteOption } from "./PaletteOption";
-import { useBackDismisser } from "./useBackDismisser";
-import {
-  forgetPaletteEntry,
-  paletteEntryPop,
-  pushPaletteEntry,
-  releasePaletteEntry,
-  whenPaletteEntryOff,
-} from "./paletteHistory";
+import { whenPaletteEntryOff } from "./paletteHistory";
 import type { PaletteEntry } from "./paletteIndex";
 import { paletteKeyAction, type PaletteKey } from "./paletteKeys";
 import { groupPaletteResults, searchPalette, type PaletteGroupId } from "./paletteSearch";
@@ -135,37 +129,20 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     return () => clearTimeout(timer);
   }, [open, typed, results.length, emptyText, t]);
 
-  // Back (popstate, raised by the Android back gesture) closes the palette. It does not
+  // Back (the Android back gesture) closes the palette; see `useSheetBack`. It does not
   // consume the event. On Android the Back guard (lib/backGuard.ts) asks `paletteHoldsEntry`
   // and leaves such a pop alone; on desktop DashboardV2's handler asks `paletteEntryPop`
   // whether this pop only took the palette's entry off, and then runs no navigate
-  // (spec §5.5, R87).
-  // R79, R87: wry 0.55.1 raises that popstate only when the webview can go back, so on
-  // Android the palette pushes an entry of its own while open, and a close by any other
-  // path takes it off. Desktop pushes nothing.
-  useEffect(() => {
-    if (!android) return;
-    if (open) pushPaletteEntry();
-    else releasePaletteEntry();
-  }, [open, android]);
-  useEffect(() => () => forgetPaletteEntry(), []);
-  // With the native back-button listener registered the palette holds no entry: Back closes it.
-  useBackDismisser(open && android, () => {
-    closeReason.current = "dismiss";
-    closePalette();
-  });
-
-  useEffect(() => {
-    if (!open) return;
-    const onPopState = (event: PopStateEvent) => {
-      // The late pop of an entry a close already took off is not a Back for this opening.
-      if (paletteEntryPop(event) === "release") return;
+  // (spec §5.5, R87). Desktop pushes no entry but still closes on a pop.
+  useSheetBack({
+    open,
+    android,
+    listenWithoutEntry: true,
+    onBack: () => {
       closeReason.current = "dismiss";
       closePalette();
-    };
-    window.addEventListener("popstate", onPopState, true);
-    return () => window.removeEventListener("popstate", onPopState, true);
-  }, [open, closePalette]);
+    },
+  });
 
   // The Android sheet follows the visual viewport, so the soft keyboard never covers its rows (R29).
   useEffect(() => {
