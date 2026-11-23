@@ -71,11 +71,11 @@ import { opensOwnFocus } from "@/lib/dashboard/callAction";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useTabUiStore } from "@/store/tabUiStore";
 import { usePaletteStore } from "@/store/paletteStore";
+import { Button } from "@/ui-v2/components/ui/button";
 import { GoPalette } from "@/ui-v2/palette/GoPalette";
 import { buildPaletteIndex, type PaletteEntry } from "@/ui-v2/palette/paletteIndex";
 import { entryToIntent, writePaletteView } from "@/ui-v2/palette/paletteActivate";
-import { paletteEntryPop } from "@/ui-v2/palette/paletteHistory";
-
+import { useDashboardBackHold } from "@/ui-v2/dashboard/useDashboardBackHold";
 
 import { LazyFallback } from "@/ui-v2/components/LazyFallback";
 
@@ -213,16 +213,9 @@ export default function DashboardV2() {
     if (!settingsLoaded) loadSettings();
   }, [settingsLoaded, loadSettings]);
 
-  // Block browser back from leaving the dashboard. The pop that only takes the Go
-  // palette's own entry off (Android, R87) leaves the dashboard as it is.
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      if (paletteEntryPop(event)) return;
-      navigate("/dashboard", { replace: true });
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [navigate]);
+  // Back keeps the player in the game (Android: see useDashboardBackHold). The pop that only
+  // takes the Go palette's or the More menu's own entry off (R87) leaves the dashboard as it is.
+  useDashboardBackHold(rail.platform === "android", navigate);
 
   // An alias route opens its tab. It runs again once the backend probe activates
   // the game, because activating a game resets the session's location.
@@ -476,6 +469,8 @@ export default function DashboardV2() {
     }
   }, [markClean]);
 
+  // Leaving a game replaces the dashboard's history entry, so the system Back on the menu
+  // (Android) never returns to a game that is no longer loaded.
   const handleExitToMenu = async () => {
     if (isExitingToMenu) return;
     setIsExitingToMenu(true);
@@ -485,13 +480,13 @@ export default function DashboardV2() {
       console.error("Failed to exit:", err);
     } finally {
       clearGame();
-      navigate("/");
+      navigate("/", { replace: true });
     }
   };
 
   const handleExitWithoutSave = () => {
     clearGame();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   const handleCloseQuit = async (save: boolean) => {
@@ -836,6 +831,9 @@ export default function DashboardV2() {
         <p className="text-sm text-muted-foreground">
           {t("dashboard.noActiveGameDesc")}
         </p>
+        <Button variant="club" size="touch" onClick={() => navigate("/", { replace: true })}>
+          {t("dashboard.noActiveGameBack")}
+        </Button>
       </div>
     );
   }

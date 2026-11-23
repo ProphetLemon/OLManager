@@ -82,7 +82,8 @@ describe("paletteHistory fallbacks", () => {
   });
 
   it("reads a pop that arrives after the fallback as an ordinary pop (null)", async () => {
-    // DashboardV2 then navigates to /dashboard with replace for it. That is accepted: the
+    // The dashboard then treats it as an ordinary Back (undone with history.forward() on
+    // Android, replaced by /dashboard elsewhere). That is accepted: the
     // fallback only fires when the WebView dropped the pop, and a late one is rare.
     const mod = await load();
     mod.pushPaletteEntry();

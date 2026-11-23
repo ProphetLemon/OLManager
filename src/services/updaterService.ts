@@ -80,7 +80,14 @@ export function isNewerVersion(candidate: string, current: string): boolean {
  * `NoPlatformBuildError` because the manifest has no Android build to install.
  */
 async function checkForAndroidRelease(): Promise<null> {
-  const latest = await invoke<string>("latest_release_version");
+  let latest: string;
+  try {
+    latest = await invoke<string>("latest_release_version");
+  } catch (err) {
+    // No release published yet is "nothing to update to", as on desktop.
+    if (isNoReleaseError(err)) return null;
+    throw err;
+  }
   if (isNewerVersion(latest, APP_VERSION)) {
     throw new NoPlatformBuildError(
       `Release ${latest} is available, but it has no build the app can install on Android`,

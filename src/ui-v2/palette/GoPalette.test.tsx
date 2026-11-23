@@ -238,6 +238,49 @@ describe("GoPalette: keys, pointer and activation (spec §5.5, R27, R37)", () =>
     expect(onActivate).not.toHaveBeenCalled();
   });
 
+  describe("the on-screen keyboard's action key", () => {
+    const submit = () => fireEvent.submit(input().form as HTMLFormElement);
+
+    it("activates the highlighted row on Android even though Gboard reports Enter as composing", async () => {
+      await openPalette("android");
+      type("competitions");
+      const best = searchPalette(entries, "competitions", "en")[0];
+      // Gboard sends the action key as a composing keydown (keyCode 229); the key model ignores it...
+      press("Enter", { isComposing: true, keyCode: 229 });
+      expect(onActivate).not.toHaveBeenCalled();
+      // ...and the form submission the same key triggers is what activates the row.
+      submit();
+      await waitFor(() => expect(onActivate).toHaveBeenCalledWith(best));
+      expect(onActivate).toHaveBeenCalledTimes(1);
+    });
+
+    it("does nothing on Android with no option", async () => {
+      await openPalette("android");
+      type("zzzz");
+      submit();
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(onActivate).not.toHaveBeenCalled();
+    });
+
+    it("never activates on desktop, where an Enter that confirms an IME composition must not", async () => {
+      await openPalette("desktop");
+      type("sq");
+      press("Enter", { isComposing: true, keyCode: 229 });
+      submit();
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(onActivate).not.toHaveBeenCalled();
+    });
+
+    it("activates once, not twice, when a plain Enter also submits the form", async () => {
+      await openPalette("android");
+      type("competitions");
+      const form = input().form as HTMLFormElement;
+      press("Enter");
+      fireEvent.submit(form);
+      await waitFor(() => expect(onActivate).toHaveBeenCalledTimes(1));
+    });
+  });
+
   it("has two Tab stops, the input then Close, and no option among them", async () => {
     const dialog = await openPalette();
     const close = screen.getByRole("button", { name: "Close" });

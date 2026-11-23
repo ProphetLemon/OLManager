@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type FormEvent,
   type KeyboardEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,6 +18,7 @@ import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
 
 import { PaletteOption } from "./PaletteOption";
+import { useBackDismisser } from "./useBackDismisser";
 import {
   forgetPaletteEntry,
   paletteEntryPop,
@@ -134,8 +136,10 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   }, [open, typed, results.length, emptyText, t]);
 
   // Back (popstate, raised by the Android back gesture) closes the palette. It does not
-  // consume the event: DashboardV2's handler asks paletteHistory whether this pop only took
-  // the palette's entry off, and then runs no navigate (spec §5.5, R87).
+  // consume the event. On Android the Back guard (lib/backGuard.ts) asks `paletteHoldsEntry`
+  // and leaves such a pop alone; on desktop DashboardV2's handler asks `paletteEntryPop`
+  // whether this pop only took the palette's entry off, and then runs no navigate
+  // (spec §5.5, R87).
   // R79, R87: wry 0.55.1 raises that popstate only when the webview can go back, so on
   // Android the palette pushes an entry of its own while open, and a close by any other
   // path takes it off. Desktop pushes nothing.
@@ -145,6 +149,11 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     else releasePaletteEntry();
   }, [open, android]);
   useEffect(() => () => forgetPaletteEntry(), []);
+  // With the native back-button listener registered the palette holds no entry: Back closes it.
+  useBackDismisser(open && android, () => {
+    closeReason.current = "dismiss";
+    closePalette();
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -228,6 +237,16 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
       closeReason.current = "dismiss";
       closePalette();
     }
+  };
+
+  // The on-screen keyboard's action key (enterKeyHint="go"). Gboard reports it as a composing
+  // keydown (keyCode 229) after predictive text, which the key model rightly ignores, but it
+  // still submits the form. Only Android honours that submission: on desktop an Enter can
+  // confirm an input-method composition (R48) and must not activate a row.
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!android || activeIndex < 0) return;
+    activate(results[activeIndex]);
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -318,7 +337,10 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
           >
             {t("onAir.palette.title", { defaultValue: "Go to" })}
           </Dialog.Title>
-          <div className="flex min-h-[var(--palette-row)] items-center gap-2 border-b border-line ps-4 pe-1">
+          <form
+            onSubmit={handleSubmit}
+            className="flex min-h-[var(--palette-row)] items-center gap-2 border-b border-line ps-4 pe-1"
+          >
             <Search aria-hidden="true" className="size-[var(--nav-icon)] shrink-0 text-muted-foreground" />
             <input
               ref={inputRef}
@@ -349,7 +371,7 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
             >
               <X aria-hidden="true" className="size-[var(--nav-icon)]" />
             </Dialog.Close>
-          </div>
+          </form>
           <div className="scrollbar-v2 min-h-0 flex-1 overflow-y-auto py-1">
             {hasResults ? (
               <div role="listbox" id={listId} aria-labelledby={titleId}>

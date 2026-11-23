@@ -294,6 +294,7 @@
     "competitions": "Competiciones",
     "noActiveGame": "Sin partida activa",
     "noActiveGameDesc": "Inicia o carga una partida para continuar.",
+    "noActiveGameBack": "Menú principal",
     "phaseLabels": {
       "scrimBlock": "Scrims"
     }
@@ -1928,6 +1929,7 @@
     "updateAvailableDetail": "La versión {{version}} está disponible",
     "upToDate": "Tienes la última versión",
     "noPlatformBuild": "Hay una versión nueva, pero todavía no tiene compilación para tu sistema",
+    "updateCheckFailed": "No se pudo comprobar si hay actualizaciones. Revisa tu conexión e inténtalo de nuevo.",
     "androidUpdateAvailable": "Hay una versión nueva. Descarga el nuevo APK desde la página de la versión.",
     "androidUpdateKeepsSaves": "Al instalarlo sobre la app actual se conservan tus partidas.",
     "androidUpdateDownload": "Descargar el nuevo APK",

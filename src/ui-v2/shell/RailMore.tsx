@@ -11,6 +11,8 @@ import {
   whenPaletteEntryOff,
 } from "@/ui-v2/palette/paletteHistory";
 
+import { useBackDismisser } from "@/ui-v2/palette/useBackDismisser";
+
 import { RailItem } from "./RailItem";
 
 export interface RailMoreItem {
@@ -77,6 +79,8 @@ export function RailMore({
     if (!android) return;
     return () => forgetPaletteEntry();
   }, [android]);
+  // With the native back-button listener registered the menu holds no entry: Back closes it.
+  useBackDismisser(android && open, () => onOpenChange(false));
   useEffect(() => {
     if (!android || !open) return;
     const onPopState = (event: PopStateEvent) => {

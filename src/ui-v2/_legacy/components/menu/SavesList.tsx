@@ -162,7 +162,7 @@ export default function SavesList({
         </p>
       )}
 
-      <div className="max-h-[60vh] overflow-y-auto overscroll-contain border-t border-white/10 scrollbar-v2">
+      <div className="max-h-[60vh] overflow-y-auto overscroll-contain border-t border-white/10 pr-2 [scrollbar-gutter:stable] scrollbar-v2">
         {isLoading ? (
           <div className="flex flex-col items-center gap-3 py-10 text-gray-400">
             <Loader2 className="w-8 h-8 animate-spin text-accent-400" />

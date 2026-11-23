@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
+import { installBackGuard, resetBackGuardForTests } from "@/lib/backGuard";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useBugReportStore } from "@/store/bugReportStore";
@@ -1389,7 +1390,10 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
       before = { idx: 0, key: `dash-${Math.random()}` };
       window.history.replaceState(before, "");
     });
+    // Installed before the router renders, as main.tsx does.
+    beforeAll(() => installBackGuard());
     afterEach(() => {
+      resetBackGuardForTests();
       delete document.documentElement.dataset.platform;
     });
 
@@ -1411,11 +1415,18 @@ describe("DashboardV2 Go palette (NR2.8)", () => {
       },
     );
 
-    it("still keeps a Back with the palette closed on the dashboard", async () => {
-      await renderOn("Home");
-      const keys = routeKeys.length;
-      act(() => window.dispatchEvent(new PopStateEvent("popstate", { state: null })));
-      await waitFor(() => expect(routeKeys).toHaveLength(keys + 1));
+    it("still keeps a Back with the palette closed on the dashboard: the entry is taken back, the route is left alone", async () => {
+      const forward = vi.spyOn(window.history, "forward").mockImplementation(() => {});
+      try {
+        await renderOn("Home");
+        const keys = routeKeys.length;
+        act(() => window.dispatchEvent(new PopStateEvent("popstate", { state: null })));
+        expect(forward).toHaveBeenCalledTimes(1);
+        await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+        expect(routeKeys).toHaveLength(keys);
+      } finally {
+        forward.mockRestore();
+      }
     });
   });
 

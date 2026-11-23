@@ -6,9 +6,18 @@
  * it opens, and the gesture pops it. A close by any other path (Escape, Close, an
  * activation) takes the entry off with `history.back()`, which pops it in a later task.
  *
- * Both popstate handlers ask `paletteEntryPop` about the same event: the palette's, which
- * closes on Back, and DashboardV2's, which runs no `navigate` for this pop. The verdict is
- * kept per event, so it does not depend on which listener runs first.
+ * That holds only without the native `back-button` listener (`lib/backGuard.ts`). While it is
+ * registered (`setNativeBackRegistered`, set when its registration resolves) an opening
+ * pushes no entry at all, a close releases none, and the Back press reaches the overlay
+ * through a dismisser it registers while open (`registerBackDismisser`): a history traversal
+ * left on the dashboard can be voided by a later `pushState`, so nothing there touches the
+ * history for Back. An opening that did push an entry (the listener was not registered yet)
+ * keeps the entry path until it closes.
+ *
+ * The palette's and More's popstate handlers ask `paletteEntryPop` about the same event, and
+ * the verdict is kept per event, so it does not depend on which listener runs first. The
+ * Back guard (`lib/backGuard.ts`) runs before all of them and must not run those side
+ * effects ahead of the router, so it asks `paletteHoldsEntry`, which has none.
  */
 
 /** `back` when the back gesture popped the entry, `release` when a close's `history.back()` did. */
@@ -96,15 +105,60 @@ function classify(event: Event): PaletteEntryPop | null {
       runWaiters();
     }
   }
-  // A pop that comes after the fallback has fired finds `entry === "none"` and is `null`:
-  // DashboardV2 navigates to /dashboard with replace for it. That is accepted, since the
+  // A pop that comes after the fallback has fired finds `entry === "none"` and is `null`,
+  // so the Back guard treats it as an ordinary Back: on the dashboard it is undone with
+  // history.forward(), elsewhere it is replaced by /dashboard. That is accepted, since the
   // fallback only fires when the WebView dropped the pop, and a late one is rare.
   verdicts.set(event, verdict);
   return verdict;
 }
 
-/** Pushes the palette's entry, once; a reopening before the old entry is off pushes after it. */
+let nativeRegistered = false;
+const dismissers: Array<() => void> = [];
+
+/** Set by `registerNativeBack` once the native listener is registered. */
+export function setNativeBackRegistered(registered: boolean): void {
+  nativeRegistered = registered;
+}
+
+/** Whether the native `back-button` listener is registered. */
+export function nativeBackRegistered(): boolean {
+  return nativeRegistered;
+}
+
+/**
+ * Registers what a native Back press does while an overlay is open: close it. Returns the
+ * function that unregisters it. The most recently registered overlay is dismissed first.
+ */
+export function registerBackDismisser(dismiss: () => void): () => void {
+  dismissers.push(dismiss);
+  return () => {
+    const at = dismissers.lastIndexOf(dismiss);
+    if (at !== -1) dismissers.splice(at, 1);
+  };
+}
+
+/** Closes the most recently opened overlay; `false` when none is open. */
+export function dismissOverlayWithBack(): boolean {
+  const top = dismissers[dismissers.length - 1];
+  if (!top) return false;
+  top();
+  return true;
+}
+
+/** Test-only: forgets the native flag and every dismisser. */
+export function resetNativeBackOverlaysForTests(): void {
+  nativeRegistered = false;
+  dismissers.length = 0;
+}
+
+/**
+ * Pushes the palette's entry, once; a reopening before the old entry is off pushes after it.
+ * Pushes nothing while the native listener is registered, unless an entry is still on or
+ * coming off from an opening before that.
+ */
 export function pushPaletteEntry(): void {
+  if (nativeRegistered && entry === "none") return;
   if (!listening) {
     // Every pop is classified, even with neither the palette nor the dashboard mounted.
     window.addEventListener("popstate", classify, true);
@@ -126,6 +180,24 @@ export function releasePaletteEntry(): void {
   repush = false;
   if (entry !== "pushed") return;
   startRelease();
+}
+
+/**
+ * Whether the palette holds an entry that is on the history or coming off it, so the next
+ * pop is for it. Changes nothing and runs no waiter. After the release fallback has fired
+ * the entry is forgotten, so a pop that arrives then is an ordinary Back.
+ */
+export function paletteHoldsEntry(): boolean {
+  return entry !== "none";
+}
+
+/**
+ * The same peek, told apart: `pushed` while the entry sits on the history (a Back takes it
+ * off), `releasing` while the palette's own `history.back()` is coming off (its pop is
+ * already on the way), `none` otherwise. Changes nothing and runs no waiter.
+ */
+export function paletteEntryPhase(): EntryState {
+  return entry;
 }
 
 /** Whether this pop took the palette's entry off, and how; `null` for any other pop. */
