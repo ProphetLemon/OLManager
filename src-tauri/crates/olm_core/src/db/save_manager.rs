@@ -102,6 +102,46 @@ fn parse_file_hint(hint: &str) -> (Option<String>, Option<String>) {
     (Some(id), name)
 }
 
+/// Identity a save file carries in its gzip comment, so an import does not depend on
+/// the file name (a picker may hand over a file with none, and users rename files).
+#[derive(Serialize, serde::Deserialize)]
+struct EmbeddedIdentity {
+    id: String,
+    /// Optional on read, so a comment that only names the id still identifies the save.
+    #[serde(default)]
+    name: String,
+}
+
+impl EmbeddedIdentity {
+    /// The comment bytes. JSON escapes quotes and control characters, `\0` included, so the
+    /// result never holds the zero byte that ends a gzip comment.
+    fn to_comment(id: &str, name: &str) -> Result<Vec<u8>, String> {
+        let comment = serde_json::to_vec(&EmbeddedIdentity {
+            id: id.to_string(),
+            name: name.to_string(),
+        })
+        .map_err(|e| format!("Failed to encode the save identity: {e}"))?;
+        if comment.contains(&0) {
+            return Err("Failed to encode the save identity: zero byte".to_string());
+        }
+        Ok(comment)
+    }
+
+    /// Read a comment from a file we do not control. Anything unusable is "absent", and the
+    /// id is only kept when it is a UUID, since it ends up in a file name.
+    fn from_comment(comment: Option<&[u8]>) -> (Option<String>, Option<String>) {
+        let Some(parsed) = comment.and_then(|c| serde_json::from_slice::<EmbeddedIdentity>(c).ok())
+        else {
+            return (None, None);
+        };
+        let id = uuid::Uuid::parse_str(&parsed.id)
+            .ok()
+            .map(|id| id.hyphenated().to_string());
+        let name = Some(parsed.name).filter(|n| !n.trim().is_empty());
+        (id, name)
+    }
+}
+
 /// How a listed save relates to this game version. Worked out from the file on
 /// every listing and never stored, so it cannot go stale.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -233,19 +273,23 @@ impl SaveManager {
     }
 
     /// Write a Game to a .olsave file at the given path using atomic tmp+rename.
-    /// Format: FORMAT_VERSION (u32 LE) + gzipped JSON of the Game.
-    fn write_olsave(path: &Path, game: &Game) -> Result<(), String> {
+    /// Format: FORMAT_VERSION (u32 LE) + gzipped JSON of the Game. The gzip comment holds
+    /// the save's id and name; readers that ignore it still load the file.
+    fn write_olsave(path: &Path, game: &Game, save_id: &str, save_name: &str) -> Result<(), String> {
         let tmp_path = path.with_extension("olsave.tmp");
 
         // Serialize to JSON, then gzip
         use flate2::Compression;
-        use flate2::write::GzEncoder;
+        use flate2::GzBuilder;
         use std::io::Write;
 
         let json = serde_json::to_string(game)
             .map_err(|e| format!("Failed to JSON-serialize game: {e}"))?;
+        let comment = EmbeddedIdentity::to_comment(save_id, save_name)?;
 
-        let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+        let mut encoder = GzBuilder::new()
+            .comment(comment)
+            .write(Vec::new(), Compression::default());
         encoder
             .write_all(json.as_bytes())
             .map_err(|e| format!("Failed to gzip game: {e}"))?;
@@ -353,7 +397,7 @@ impl SaveManager {
             save_id, save_path
         );
 
-        Self::write_olsave(&save_path, game)?;
+        Self::write_olsave(&save_path, game, &save_id, save_name)?;
 
         let now = Utc::now().to_rfc3339();
         let manager_name = game.manager.display_name();
@@ -389,7 +433,7 @@ impl SaveManager {
         }
         let save_name = entry.name.clone();
 
-        Self::write_olsave(&save_path, game)?;
+        Self::write_olsave(&save_path, game, save_id, &save_name)?;
 
         let now = Utc::now().to_rfc3339();
         let manager_name = game.manager.display_name();
@@ -527,17 +571,24 @@ impl SaveManager {
 
         use flate2::read::GzDecoder;
         let mut json = String::new();
-        GzDecoder::new(&bytes[4..])
+        let mut decoder = GzDecoder::new(&bytes[4..]);
+        decoder
             .read_to_string(&mut json)
             .map_err(|e| SaveImportError::Corrupt(format!("decompress: {e}")))?;
+        let (embedded_id, embedded_name) =
+            EmbeddedIdentity::from_comment(decoder.header().and_then(|h| h.comment()));
         let game: Game = serde_json::from_str(&json)
             .map_err(|e| SaveImportError::Corrupt(format!("parse: {e}")))?;
 
         let (hinted_id, hinted_name) = file_hint.map(parse_file_hint).unwrap_or_default();
-        let id = hinted_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+        // The file's own id wins: a file name can be missing or renamed.
+        let id = embedded_id
+            .or(hinted_id)
+            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
         let replaces = self.save_index.find(&id).cloned();
         let manager_name = game.manager.display_name();
         let name = hinted_name
+            .or(embedded_name)
             .or_else(|| replaces.as_ref().map(|e| e.name.clone()))
             .unwrap_or_else(|| format!("{manager_name}'s Career"));
 
@@ -1230,16 +1281,206 @@ mod tests {
         assert_eq!(target.load_game(&id).unwrap().manager.last_name, "Smith");
     }
 
+    /// The same save with its gzip comment replaced (`None` writes none, as older builds did).
+    fn with_comment(bytes: &[u8], comment: Option<&[u8]>) -> Vec<u8> {
+        use flate2::{read::GzDecoder, Compression, GzBuilder};
+        use std::io::Write;
+        let mut json = Vec::new();
+        GzDecoder::new(&bytes[4..]).read_to_end(&mut json).unwrap();
+        let mut builder = GzBuilder::new();
+        if let Some(comment) = comment {
+            builder = builder.comment(comment);
+        }
+        let mut encoder = builder.write(Vec::new(), Compression::default());
+        encoder.write_all(&json).unwrap();
+        olsave_with_version(FORMAT_VERSION, &encoder.finish().unwrap())
+    }
+
+    fn embedded_comment(bytes: &[u8]) -> Option<Vec<u8>> {
+        let mut decoder = flate2::read::GzDecoder::new(&bytes[4..]);
+        std::io::copy(&mut decoder, &mut std::io::sink()).unwrap();
+        decoder.header().and_then(|h| h.comment()).map(<[u8]>::to_vec)
+    }
+
     #[test]
-    fn import_without_a_file_name_gets_a_fresh_id_and_the_manager_name() {
+    fn a_comment_with_an_id_and_no_name_still_gives_the_id() {
+        let (_dir, source, id, target) = two_devices();
+        let comment = format!("{{\"id\":\"{id}\"}}");
+        let bytes = with_comment(&exported(&source, &id), Some(comment.as_bytes()));
+
+        let prepared = target.prepare_import(bytes, None).unwrap();
+
+        assert_eq!(prepared.id, id);
+    }
+
+    #[test]
+    fn an_embedded_id_in_another_uuid_spelling_is_used_in_its_canonical_form() {
+        let (_dir, source, id, target) = two_devices();
+        let braced_upper = format!("{{{}}}", id.to_uppercase());
+        let comment =
+            serde_json::to_vec(&serde_json::json!({ "id": braced_upper, "name": "x" })).unwrap();
+        let bytes = with_comment(&exported(&source, &id), Some(&comment));
+
+        let prepared = target.prepare_import(bytes, None).unwrap();
+
+        assert_eq!(prepared.id, id);
+    }
+
+    #[test]
+    fn import_without_a_file_name_keeps_the_id_the_file_carries() {
         let (_dir, source, id, mut target) = two_devices();
 
         let prepared = target.prepare_import(exported(&source, &id), None).unwrap();
         let entry = target.commit_import(prepared, false).unwrap();
 
+        assert_eq!(entry.id, id);
+    }
+
+    #[test]
+    fn import_without_a_file_name_keeps_the_name_the_file_carries() {
+        let (_dir, source, id, mut target) = two_devices();
+
+        let prepared = target.prepare_import(exported(&source, &id), None).unwrap();
+        let entry = target.commit_import(prepared, false).unwrap();
+
+        assert_eq!(entry.name, "Main career");
+        assert_eq!(save_file_bytes(&target, &entry.id), save_file_bytes(&source, &id));
+    }
+
+    #[test]
+    fn import_without_a_file_name_reports_the_save_it_replaces() {
+        let (_dir, source, id, _target) = two_devices();
+
+        let prepared = source.prepare_import(exported(&source, &id), None).unwrap();
+
+        assert_eq!(prepared.replaces.map(|e| e.id), Some(id));
+    }
+
+    #[test]
+    fn the_embedded_id_wins_over_the_id_in_the_file_name() {
+        let (_dir, source, id, target) = two_devices();
+        let other = uuid::Uuid::new_v4();
+
+        let prepared = target
+            .prepare_import(exported(&source, &id), Some(&format!("Other-{other}.olsave")))
+            .unwrap();
+
+        assert_eq!(prepared.id, id);
+    }
+
+    #[test]
+    fn the_file_name_still_names_the_import_when_the_file_carries_a_name() {
+        let (_dir, source, id, target) = two_devices();
+        let other = uuid::Uuid::new_v4();
+
+        let prepared = target
+            .prepare_import(exported(&source, &id), Some(&format!("Renamed-{other}.olsave")))
+            .unwrap();
+
+        assert_eq!(prepared.name, "Renamed");
+    }
+
+    #[test]
+    fn a_file_without_a_comment_still_imports_by_its_file_name() {
+        let (_dir, source, id, target) = two_devices();
+        let hint = source.export_file_name(&id).unwrap();
+        let bytes = with_comment(&exported(&source, &id), None);
+
+        let prepared = target.prepare_import(bytes, Some(&hint)).unwrap();
+
+        assert_eq!((prepared.id, prepared.name), (id, "Main career".to_string()));
+    }
+
+    #[test]
+    fn a_file_without_a_comment_or_a_file_name_gets_a_fresh_id_and_the_manager_name() {
+        let (_dir, source, id, mut target) = two_devices();
+        let bytes = with_comment(&exported(&source, &id), None);
+
+        let prepared = target.prepare_import(bytes, None).unwrap();
+        let entry = target.commit_import(prepared, false).unwrap();
+
         assert_ne!(entry.id, id);
         assert_eq!(entry.name, "John Smith's Career");
-        assert_eq!(save_file_bytes(&target, &entry.id), save_file_bytes(&source, &id));
+    }
+
+    #[test]
+    fn a_comment_whose_id_is_not_a_uuid_is_ignored() {
+        let (_dir, source, id, target) = two_devices();
+        let bytes = with_comment(
+            &exported(&source, &id),
+            Some(br#"{"id":"../x","name":"Evil"}"#),
+        );
+
+        let prepared = target.prepare_import(bytes, None).unwrap();
+
+        assert!(uuid::Uuid::parse_str(&prepared.id).is_ok());
+        assert_ne!(prepared.id, "../x");
+    }
+
+    #[test]
+    fn a_comment_that_is_not_json_is_ignored() {
+        let (_dir, source, id, target) = two_devices();
+        let bytes = with_comment(&exported(&source, &id), Some(b"made by hand"));
+
+        let prepared = target.prepare_import(bytes, None).unwrap();
+
+        assert_ne!(prepared.id, id);
+        assert_eq!(prepared.name, "John Smith's Career");
+    }
+
+    #[test]
+    fn a_comment_with_invalid_utf8_is_ignored() {
+        let (_dir, source, id, target) = two_devices();
+        let bytes = with_comment(&exported(&source, &id), Some(b"{\"id\":\"\xff\xfe\"}"));
+
+        let prepared = target.prepare_import(bytes, None).unwrap();
+
+        assert_ne!(prepared.id, id);
+    }
+
+    #[test]
+    fn an_odd_save_name_writes_without_panicking_and_comes_back_on_import() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+        let name = "Lucía \"the\" 監督 \u{7}\t\0 end";
+        let id = sm.create_save(&sample_game(), name).unwrap();
+
+        let prepared = sm.prepare_import(exported(&sm, &id), None).unwrap();
+
+        assert_eq!(prepared.name, name);
+    }
+
+    #[test]
+    fn the_comment_never_holds_a_zero_byte() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut sm = SaveManager::init(&dir.path().join("saves")).unwrap();
+        let id = sm.create_save(&sample_game(), "a\0b").unwrap();
+
+        let comment = embedded_comment(&save_file_bytes(&sm, &id));
+
+        assert!(comment.is_some_and(|c| !c.contains(&0)));
+    }
+
+    #[test]
+    fn a_saved_game_carries_its_id_and_name_in_the_comment() {
+        let (_dir, mut source, id, _target) = two_devices();
+        let game = source.load_game(&id).unwrap();
+        source.save_game(&game, &id).unwrap();
+
+        let comment = embedded_comment(&save_file_bytes(&source, &id)).unwrap();
+
+        assert_eq!(
+            String::from_utf8(comment).unwrap(),
+            format!(r#"{{"id":"{id}","name":"Main career"}}"#)
+        );
+    }
+
+    #[test]
+    fn a_file_with_a_comment_still_loads_and_exports_its_stored_bytes() {
+        let (_dir, mut source, id, _target) = two_devices();
+
+        assert_eq!(source.load_game(&id).unwrap().manager.last_name, "Smith");
+        assert_eq!(exported(&source, &id), save_file_bytes(&source, &id));
     }
 
     #[test]
