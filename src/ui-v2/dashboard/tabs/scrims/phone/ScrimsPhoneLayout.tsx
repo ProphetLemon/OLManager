@@ -10,7 +10,7 @@ import { buildPhoneHome } from "@/lib/scrims/phoneHome";
 import { isEditable, phoneDoneTarget, slotRowId, type PhoneRowId } from "@/lib/scrims/phoneWeek";
 import { buildRivalRows } from "@/lib/scrims/rivalOdds";
 import { autofillDisabled } from "@/lib/scrims/scrimPlans";
-import { isPlanClearedToday, type DeskPanel, type RiskLevel } from "@/lib/scrims/scrimDesk";
+import { type DeskPanel, type RiskLevel } from "@/lib/scrims/scrimDesk";
 import type { DailyScrimAction } from "@/services/trainingService";
 import { useBackDismisser } from "@/ui-v2/palette/useBackDismisser";
 import type { DecisionOption } from "../ScrimDecisionPanel";
@@ -19,7 +19,7 @@ import { ScrimFollowUpPane } from "./ScrimFollowUpPane";
 import { ScrimObjectivePane } from "./ScrimObjectivePane";
 import { ScrimReportPane } from "./ScrimReportPane";
 import { ScrimResultPane } from "./ScrimResultPane";
-import { ScrimSlotPane } from "./ScrimSlotPane";
+import { ScrimPickView } from "./ScrimPickView";
 import { ScrimVolumePane } from "./ScrimVolumePane";
 import { ScrimViewFrame } from "./ScrimViewFrame";
 import { ScrimWeekHome } from "./ScrimWeekHome";
@@ -193,7 +193,8 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     return slotLabelOf(slot);
   };
 
-  const view = (): { title: string; content: ReactNode } | null => {
+  /** `selfFramed`: the view draws its own frame (its top row holds controls of its own). */
+  const view = (): { title: string; content: ReactNode; selfFramed?: boolean } | null => {
     if (current === "home") return null;
     if (current === "objective") {
       return {
@@ -279,21 +280,23 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     const target = phoneDoneTarget(week, slotIndex, assistantControls);
     return {
       title: label,
+      selfFramed: true,
       content: (
-        <ScrimSlotPane
+        <ScrimPickView
           key={current}
           slotLabel={label}
+          myTeam={myTeam}
+          teams={gameState.teams}
           plan={[0, 1, 2].map((index) => slot.plan[index] ?? "")}
           rivals={rivals}
-          teamNameById={teamNameById}
+          ownReputation={week.reputation}
           readOnly={!isEditable(slot, week, assistantControls)}
           disabled={isSaving}
           blockedText={setupBlockedText}
           doneTo={rowLabel(target)}
-          resolvedTeamId={slot.resolvedOpponentTeamId}
-          cleared={isPlanClearedToday(slot, week)}
           onPick={(priorityIndex, teamId) => setSlotPlan(slotIndex, priorityIndex, teamId)}
           onDone={() => goTo(target)}
+          onBack={goHome}
         />
       ),
     };
@@ -306,9 +309,13 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
         {props.liveText}
       </div>
       {openView ? (
-        <ScrimViewFrame title={openView.title} onBack={goHome}>
-          {openView.content}
-        </ScrimViewFrame>
+        openView.selfFramed ? (
+          openView.content
+        ) : (
+          <ScrimViewFrame title={openView.title} onBack={goHome}>
+            {openView.content}
+          </ScrimViewFrame>
+        )
       ) : (
         <ScrimWeekHome
           home={home}

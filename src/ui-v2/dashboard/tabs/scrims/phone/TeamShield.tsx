@@ -2,8 +2,8 @@ import type { TeamIdentity } from "@/lib/teams/teamIdentity";
 import { ClubShield } from "@/ui-v2/components/ui/club-shield";
 import { cn } from "@/ui-v2/lib/utils";
 
-/** Sizes of K1: the medium matchup shield and the 40 px one of the day groups and the plan strips. */
-const SIZE = { medium: "size-[3.25rem]", small: "size-10", tiny: "size-8" } as const;
+/** Sizes of K1: the large shield of the pick card (72 px), the medium matchup shield and the 40 px one of the day groups and the plan strips. */
+const SIZE = { large: "size-[4.5rem] text-title", medium: "size-[3.25rem]", small: "size-10", tiny: "size-8" } as const;
 
 /** A team's real logo (a monogram only when it has none), named for assistive technology. */
 export function TeamShield({ identity, size, className }: { identity: TeamIdentity; size: keyof typeof SIZE; className?: string }) {

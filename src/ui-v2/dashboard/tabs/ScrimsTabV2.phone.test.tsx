@@ -210,7 +210,9 @@ function updatedAfterPush(): GameStateData {
   return base;
 }
 
-const pane = (name: string) => document.querySelector(`[data-slot="scrim-${name}-pane"]`);
+const pane = (name: string) => document.querySelector(`[data-slot="${name === "slot" ? "scrim-pick-view" : `scrim-${name}-pane`}"]`);
+const strip = () => screen.getByRole("group", { name: "Rivals by overall rating" });
+const planTab = (letter: string) => within(screen.getByRole("group", { name: "Opponent plans" })).getByRole("button", { name: new RegExp(`^Plan ${letter}`) });
 const home = () => document.querySelector('[data-slot="scrim-week-home"]');
 const frame = () => document.querySelector('[data-slot="scrim-view-frame"]');
 const frameHeading = () => frame()?.querySelector("[data-pane-heading]") as HTMLElement;
@@ -327,17 +329,20 @@ describe("ScrimsTabV2 on a phone: what opens on arrival", () => {
     fireEvent.click(heroEl());
     expect(pane("slot")).not.toBeNull();
     expect(viewTitle()).toBe("Wed B");
-    expect(screen.getByRole("group", { name: "Rivals by overall rating" })).toBeInTheDocument();
+    expect(within(strip()).getAllByRole("button")).toHaveLength(4);
     fireEvent.click(back());
     fireEvent.click(block(2));
     expect(viewTitle()).toBe("Thu A");
   });
 
-  it("a block of a locked week opens a read-only slot view, without the rivals", () => {
+  it("a block of a locked week opens a read-only slot view: the plans can be looked at, no rival can be tapped", () => {
     mount(scrimMorning());
     fireEvent.click(block(2));
     expect(pane("slot")).not.toBeNull();
-    expect(screen.queryByRole("group", { name: "Rivals by overall rating" })).toBeNull();
+    expect(within(strip()).queryAllByRole("button")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "Not planned" })).toBeNull();
+    expect(planTab("A")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Done/ })).toBeInTheDocument();
   });
 });
 
@@ -399,13 +404,49 @@ describe("ScrimsTabV2 on a phone: what moves by itself (BUILD-SPEC section 1)", 
     trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
     mount(planning());
     fireEvent.click(heroEl());
-    const grid = screen.getByRole("group", { name: "Rivals by overall rating" });
-    fireEvent.click(within(grid).getAllByRole("button")[0]);
+    fireEvent.click(within(strip()).getAllByRole("button")[0]);
     await waitFor(() => expect(trainingMocks.setWeeklyScrimPlans).toHaveBeenCalledTimes(1));
     const saved = trainingMocks.setWeeklyScrimPlans.mock.calls[0][0] as string[][];
     expect(saved[1][0]).not.toBe("");
     expect(saved[0][0]).toBe("alpha");
     expect(viewTitle()).toBe("Wed B");
+    // A pick saves once and the plan being filled stays Plan A: it does not move on by itself.
+    expect(planTab("A")).toHaveAttribute("aria-pressed", "true");
+    expect(planTab("B")).toHaveAttribute("aria-pressed", "false");
+    expect(trainingMocks.setWeeklyScrimPlans).toHaveBeenCalledTimes(1);
+  });
+
+  it("fills Plan B of the slot only when the manager taps its tab, then saves into that plan", async () => {
+    trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
+    mount(planning());
+    fireEvent.click(heroEl());
+    fireEvent.click(planTab("B"));
+    fireEvent.click(within(strip()).getAllByRole("button")[1]);
+    await waitFor(() => expect(trainingMocks.setWeeklyScrimPlans).toHaveBeenCalledTimes(1));
+    const saved = trainingMocks.setWeeklyScrimPlans.mock.calls[0][0] as string[][];
+    expect(saved[1][1]).not.toBe("");
+    expect(saved[1][0] ?? "").toBe("");
+    expect(planTab("B")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("the back control and the system's Back leave Elegir rival for Semana, and Back closes its help first", () => {
+    mount(planning());
+    fireEvent.click(heroEl());
+    expect(pane("slot")).not.toBeNull();
+    fireEvent.click(back());
+    expect(home()).not.toBeNull();
+    fireEvent.click(block(2));
+    fireEvent.click(screen.getByRole("button", { name: /Win \/ Accepts/ }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    act(() => {
+      expect(dismissOverlayWithBack()).toBe(true);
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(pane("slot")).not.toBeNull();
+    act(() => {
+      expect(dismissOverlayWithBack()).toBe(true);
+    });
+    expect(home()).not.toBeNull();
   });
 
   it("the back control of a view returns to Semana", () => {
@@ -525,7 +566,7 @@ describe("ScrimsTabV2 on a phone: the same actions as desktop", () => {
     fireEvent.click(back());
     fireEvent.click(block(0));
     expect(pane("slot")).not.toBeNull();
-    expect(screen.queryByRole("group", { name: "Rivals by overall rating" })).toBeNull();
+    expect(within(strip()).queryAllByRole("button")).toHaveLength(0);
     fireEvent.click(back());
     fireEvent.click(entry("volume"));
     expect(screen.getByText("Assistant is handling scrims")).toBeInTheDocument();

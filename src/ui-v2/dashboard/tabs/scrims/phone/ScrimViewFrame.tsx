@@ -8,8 +8,12 @@ export interface ScrimViewFrameProps {
   /** The view's name: the heading of the frame and the name of the back control. */
   title: string;
   onBack: () => void;
+  /** Controls that follow the back control right away (the pick view's plans and Not planned). */
+  lead?: ReactNode;
   /** Controls that belong to this view, at the right end of the top row. */
   actions?: ReactNode;
+  /** The body without the raised card around it: the view draws its own surfaces. */
+  bare?: boolean;
   children: ReactNode;
   className?: string;
 }
@@ -19,12 +23,12 @@ export interface ScrimViewFrameProps {
  * control (a real button holding the chevron and the title), room for the view's own actions, then
  * the body. The title is the view's heading and the target of the focus the layout moves.
  */
-export function ScrimViewFrame({ title, onBack, actions, children, className }: ScrimViewFrameProps) {
+export function ScrimViewFrame({ title, onBack, lead, actions, bare, children, className }: ScrimViewFrameProps) {
   const { t } = useTranslation();
   return (
     <div data-slot="scrim-view-frame" className={cn("flex h-full min-h-0 flex-col px-2 pt-1", className)}>
       <div data-slot="scrim-view-top" className="flex h-[var(--hit)] shrink-0 items-center gap-2">
-        <h2 tabIndex={-1} data-pane-heading="" className="m-0 min-w-0 flex-1 outline-hidden">
+        <h2 tabIndex={-1} data-pane-heading="" className="m-0 min-w-0 outline-hidden">
           <button
             type="button"
             data-slot="scrim-view-back"
@@ -36,6 +40,8 @@ export function ScrimViewFrame({ title, onBack, actions, children, className }: 
             <span className="truncate">{title}</span>
           </button>
         </h2>
+        {lead}
+        <span aria-hidden="true" className="min-w-0 flex-1" />
         {actions ? (
           <div data-slot="scrim-view-actions" className="flex shrink-0 items-center gap-2">
             {actions}
@@ -44,7 +50,7 @@ export function ScrimViewFrame({ title, onBack, actions, children, className }: 
       </div>
       <div
         data-slot="scrim-view-body"
-        className="min-h-0 flex-1 overflow-hidden rounded-lg bg-card text-card-foreground shadow-[inset_0_0_0_1px_var(--line)]"
+        className={cn("min-h-0 flex-1 overflow-hidden", !bare && "rounded-lg bg-card text-card-foreground shadow-[inset_0_0_0_1px_var(--line)]")}
       >
         {children}
       </div>
