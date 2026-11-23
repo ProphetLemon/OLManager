@@ -818,3 +818,78 @@ describe("ScrimsTabV2 on a phone: moves the game makes while the player is elsew
     outside.remove();
   });
 });
+
+describe("ScrimsTabV2 on a phone: the three settings views", () => {
+  it("each entry of Semana opens its view with one heading, the frame's title", () => {
+    mount(planning());
+    for (const [name, title] of [["objective", "Objective"], ["volume", "Volume"], ["report", "Report"]] as const) {
+      fireEvent.click(entry(name));
+      expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(1);
+      expect(frameHeading()).toHaveTextContent(title);
+      expect(viewTitle()).toBe(title);
+      fireEvent.click(back());
+      expect(home()).not.toBeNull();
+    }
+  });
+
+  it("Objetivo and Volumen have no second heading and no card behind the whole view", () => {
+    mount(planning());
+    for (const name of ["objective", "volume"]) {
+      fireEvent.click(entry(name));
+      expect(screen.getAllByRole("heading")).toHaveLength(1);
+      expect((document.querySelector('[data-slot="scrim-view-body"]') as HTMLElement).className).not.toContain("bg-card");
+      fireEvent.click(back());
+    }
+  });
+
+  it("an objective chosen from Semana moves to Volumen once; opening Objetivo again stays there", async () => {
+    trainingMocks.setWeeklyScrimObjective.mockResolvedValue(game());
+    mount(monday());
+    fireEvent.click(entry("objective"));
+    fireEvent.click(screen.getByRole("button", { name: /Fix early game/ }));
+    expect(viewTitle()).toBe("Volume");
+    fireEvent.click(back());
+    fireEvent.click(entry("objective"));
+    expect(viewTitle()).toBe("Objective");
+    await waitFor(() => expect(trainingMocks.setWeeklyScrimObjective).toHaveBeenCalledTimes(1));
+  });
+
+  it("Volumen puts Confirmar in the last row, outlined, away from Rellenar and out of the top row", () => {
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    const confirm = screen.getByRole("button", { name: /Finalize setup/i });
+    const fill = screen.getByRole("button", { name: /Autofill/ });
+    expect(document.querySelector('[data-slot="scrim-view-top"]')).not.toContainElement(confirm);
+    expect(confirm.parentElement).not.toBe(fill.parentElement);
+    expect(confirm.className).not.toMatch(/\bbg-(club|primary)/);
+  });
+
+  it("a volume tap saves through the same handler as before", async () => {
+    trainingMocks.setWeeklyScrimSlots.mockResolvedValue(game());
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(screen.getByRole("button", { name: /^Volume 6/ }));
+    await waitFor(() => expect(trainingMocks.setWeeklyScrimSlots).toHaveBeenCalledTimes(1));
+  });
+
+  it("Informe shows the week's Rep scrims and Cancelaciones, and the latest block as a matchup", () => {
+    const played = report({ quality: 68 });
+    mount(ctx(week({ reputation: 25, cancellations: 1, played: 1, losses: 1, lossStreak: 1, latestReports: [played], slots: [slot(0, { status: "Played", canEdit: false, resultWon: false, report: played }), slot(1), slot(2), slot(3)] }), today()));
+    fireEvent.click(entry("report"));
+    expect(screen.getByRole("meter", { name: "Scrim rep" })).toHaveAttribute("aria-valuenow", "25");
+    expect(screen.getByText("Cancellations").nextSibling).toHaveTextContent("1");
+    const card = document.querySelector('[data-slot="report-block"]') as HTMLElement;
+    expect(card).toHaveTextContent("Alpha");
+    expect(card).toHaveTextContent("Loss");
+    expect(card).toHaveTextContent("Wed A");
+    expect(card).toHaveTextContent("68");
+  });
+
+  it("Informe with no reports says so and still shows Rep scrims and Cancelaciones", () => {
+    mount(ctx(week({ reputation: 40, cancellations: 2 }), today()));
+    fireEvent.click(entry("report"));
+    expect(screen.getByText("No recent reports")).toBeInTheDocument();
+    expect(screen.getByRole("meter", { name: "Scrim rep" })).toHaveAttribute("aria-valuenow", "40");
+    expect(screen.getByText("Cancellations").nextSibling).toHaveTextContent("2");
+  });
+});
