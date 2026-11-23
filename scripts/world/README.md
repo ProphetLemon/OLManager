@@ -209,6 +209,13 @@ whole; it never keeps "the first 60 names" of one. **Who is out.** Anybody the g
 overlay adds or moves (matched by id, and by page title: Unicode-normalised, case-insensitive, underscores as spaces, so "revenge (X)" in the pool is the "Revenge (X)" the team page adds), players with no usable position, staff whose label is not coaching/analysis/scouting, and anybody the
 matcher cannot settle (`ambiguous-with-game`, `duplicate-in-pool`, `id-collision`). Those are listed in the report with the reason.
 
+**Old names.** Leaguepedia keeps a player's earlier names in `PlayerRedirects`, and roster rows (`TournamentPlayers.Player`) and
+scoreboard rows (`ScoreboardPlayers.Link`) keep the name used at the time. The pool reads the old names once (one paged
+`PlayerRedirects` read, `AllName<>OverviewPage`), runs each people clause a second time joined through them, and adds the games under
+an old name to the player's page. A name that two pages claim, and a name that is a page of its own, is left alone (never merged);
+a redirect to a page with no `Players` row adds nobody. If the read fails, the run warns ("redirects unavailable") and follows nothing.
+Tests: `src/lib/world/pool-aliases.test.ts`.
+
 **Op shape** (the game's `Player`/`Staff` record, `team_id: null`, plus a `pool` object the game ignores; `Bot` becomes `ADC`). The `pool` object is review data: the gates and the report read it in memory, but the file written (`serializeOverlay`) is compact JSON without it, because about 4.7k adds pretty-printed with it come to about 5 MB and the app rejects more than 4 MiB. A roster-only overlay is still 2-space JSON, byte-identical to before. The example below is the in-memory op:
 
 ```json

@@ -21,20 +21,40 @@ export const entryRows = read<Row[]>(path.join(poolDir, "entries.json"));
 export const gameRows = read<Row[]>(path.join(poolDir, "games.json"));
 export const probeRows = read<Row[]>(path.join(poolDir, "send0o-entries.json"));
 
+/** Optional answers a test can swap in: the stub otherwise serves the recorded rows and an empty redirects table. */
+export type StubOptions = {
+  failGames?: boolean;
+  failProbe?: boolean;
+  failRedirects?: boolean;
+  /** `PlayerRedirects` rows (AllName, OverviewPage). */
+  redirects?: Row[];
+  /** What the people query that joins `PlayerRedirects` answers for the official class (the other classes get no rows). */
+  aliasPeople?: Row[];
+  games?: Row[];
+  tournaments?: Row[];
+  entries?: Row[];
+  /** Answers a plain people query instead of the recorded classes (return undefined to fall back to them). */
+  peopleFor?: (params: Row) => Row[] | undefined;
+};
+
 /** A client that answers the pool's Cargo queries from the recorded rows, paging like the wiki does. */
-export function stubClient(options: { failGames?: boolean; failProbe?: boolean } = {}) {
+export function stubClient(options: StubOptions = {}) {
   const calls: Row[] = [];
   return {
     calls,
     async get(params: Row) {
       calls.push(params);
       let rows: Row[];
-      if (params.tables === "Tournaments=T,Leagues=L") rows = tournamentRows;
-      else if (params.tables === "TournamentPlayers=TP,Tournaments=T") rows = entryRows;
-      else if (params.tables.includes("Players=P")) rows = params.where.includes("T.OverviewPage IN") ? recorded.qualifiers : params.where.includes('T.IsOfficial="1"') ? recorded.official : recorded.seasonal;
+      if (params.tables === "PlayerRedirects=PR") {
+        if (options.failRedirects) throw new OfflineCacheMissError(params);
+        rows = options.redirects ?? [];
+      } else if (params.tables.includes("PlayerRedirects=PR,")) rows = params.where.includes('T.IsOfficial="1"') ? (options.aliasPeople ?? []) : [];
+      else if (params.tables === "Tournaments=T,Leagues=L") rows = options.tournaments ?? tournamentRows;
+      else if (params.tables === "TournamentPlayers=TP,Tournaments=T") rows = options.entries ?? entryRows;
+      else if (params.tables.includes("Players=P")) rows = options.peopleFor?.(params) ?? (params.where.includes("T.OverviewPage IN") ? recorded.qualifiers : params.where.includes('T.IsOfficial="1"') ? recorded.official : recorded.seasonal);
       else if (params.tables === "ScoreboardPlayers=SP") {
         if (options.failGames) throw new OfflineCacheMissError(params);
-        rows = gameRows;
+        rows = options.games ?? gameRows;
       } else {
         if (options.failProbe) throw new OfflineCacheMissError(params);
         rows = probeRows;

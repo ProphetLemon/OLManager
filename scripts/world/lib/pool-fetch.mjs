@@ -3,7 +3,7 @@
 // filter (both checked against the live API: the page filter returned the same rows as filtering locally).
 import { OfflineCacheMissError, RequestBudgetExceededError } from "./mediawiki-client.mjs";
 import {
-  NOT_QUALIFIER_CLAUSE, TOURS_SEPARATOR, cargoClasses, classifyTournaments, mergePerson, normalizeTournament, pageClauses, personFromRow,
+  NOT_QUALIFIER_CLAUSE, TOURS_SEPARATOR, aliasTargets, cargoClasses, classifyTournaments, foldGames, mergePerson, normalizeTournament, pageClauses, personFromRow,
 } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, poolTournaments } from "./pool.mjs";
 
@@ -17,6 +17,12 @@ export const PEOPLE_FIELDS =
   "MIN(TP.Role)=rmin,MAX(TP.Role)=rmax,MAX(T.DateStart)=last,COUNT(*)=n,MIN(L.Level)=lmin,MIN(T.TournamentLevel)=tmin,MAX(T.IsOfficial)=toff,MAX(L.IsOfficial)=loff,MAX(T.Region)=region," +
   `GROUP_CONCAT(DISTINCT T.OverviewPage SEPARATOR '${TOURS_SEPARATOR}')=tours`;
 export const PEOPLE_GROUP = "TP.Player,P.ID,P.Name,P.Country,P.NationalityPrimary,P.Birthdate,P.Residency,P.Role,P.Team";
+// The same people query, but a roster row under an old name reaches the player's page through `PlayerRedirects`; `alias` is the name on the row.
+const ALIAS_TABLES = "TournamentPlayers=TP,Tournaments=T,Leagues=L,PlayerRedirects=PR,Players=P";
+const ALIAS_JOIN = "TP.OverviewPage=T.OverviewPage,T.League=L.League,TP.Player=PR.AllName,PR.OverviewPage=P.OverviewPage";
+const ALIAS_ONLY = "PR.AllName<>PR.OverviewPage";
+const ALIAS_FIELDS = PEOPLE_FIELDS.replace("TP.Player=player", "PR.OverviewPage=player,TP.Player=alias");
+const ALIAS_GROUP = PEOPLE_GROUP.replace("TP.Player", "TP.Player,PR.OverviewPage");
 
 /** Errors that mean "stop the run" rather than "this optional answer is unavailable". */
 const isFatal = (error) => error instanceof RequestBudgetExceededError;
@@ -80,14 +86,56 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap 
   };
   const people = new Map();
   const requests = {};
+  const addPerson = (person) => people.set(person.page, people.has(person.page) ? mergePerson(people.get(person.page), person) : person);
   for (const [name, clauses] of Object.entries(classClauses)) {
     requests[name] = clauses.length;
     for (const where of clauses) {
       const rows = await cargoAll(client, {
         tables: PEOPLE_TABLES, join_on: PEOPLE_JOIN, where: `${where} AND ${PEOPLE_FILTER}`, fields: PEOPLE_FIELDS, group_by: PEOPLE_GROUP, order_by: "TP.Player",
       });
-      for (const person of rows.map(personFromRow)) people.set(person.page, people.has(person.page) ? mergePerson(people.get(person.page), person) : person);
+      for (const person of rows.map(personFromRow)) addPerson(person);
       log(`pool: ${name} clause ${requests[name]} -> ${people.size} people so far`);
+    }
+  }
+
+  // Old names: roster and scoreboard rows keep the name used at the time. One paged read of the redirects (only the old names),
+  // then the people query again through them. A failed read turns the whole step off, with a warning.
+  const aliases = { names: 0, ambiguous: [], rosterRows: 0, dropped: 0 };
+  let targets = new Map();
+  try {
+    const redirectRows = await cargoAll(client, {
+      tables: "PlayerRedirects=PR", fields: "PR.AllName=AllName,PR.OverviewPage=OverviewPage", where: ALIAS_ONLY, order_by: "PR.AllName,PR.OverviewPage",
+    });
+    ({ targets, ambiguous: aliases.ambiguous } = aliasTargets(redirectRows));
+    aliases.names = targets.size;
+  } catch (error) {
+    if (isFatal(error)) throw error;
+    warnings.push(`pool: redirects unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); old names are not followed`);
+  }
+  if (targets.size > 0) {
+    try {
+      const aliasRows = [];
+      for (const clauses of Object.values(classClauses)) {
+        for (const where of clauses) {
+          aliasRows.push(...await cargoAll(client, {
+            tables: ALIAS_TABLES, join_on: ALIAS_JOIN, where: `${where} AND ${ALIAS_ONLY} AND ${PEOPLE_FILTER}`, fields: ALIAS_FIELDS, group_by: ALIAS_GROUP, order_by: "TP.Player",
+          }));
+        }
+      }
+      // The join hands a name two pages claim to both of them, and a name that is a page of its own (found by the plain query above) to
+      // the page it redirects to: neither is the same person, so only a name with one target and no page of its own is merged.
+      const own = new Set(people.keys());
+      for (const aliasRow of aliasRows) {
+        if (targets.get(aliasRow.alias) !== aliasRow.player || own.has(aliasRow.alias)) aliases.dropped += 1;
+        else {
+          addPerson(personFromRow(aliasRow));
+          aliases.rosterRows += 1;
+        }
+      }
+      log(`pool: old names -> ${aliases.rosterRows} roster rows merged, ${aliases.dropped} dropped`);
+    } catch (error) {
+      if (isFatal(error)) throw error;
+      warnings.push(`pool: roster rows under old names unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); the games are still folded`);
     }
   }
 
@@ -96,7 +144,7 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap 
     const gameRows = await cargoAll(client, {
       tables: "ScoreboardPlayers=SP", fields: "SP.Link,COUNT(*)=n", where: `SP.DateTime_UTC >= "${since} 00:00:00"`, group_by: "SP.Link", order_by: "SP.Link",
     });
-    games = new Map(gameRows.map((row) => [row.Link, Number(row.n)]));
+    games = foldGames(new Map(gameRows.map((row) => [row.Link, Number(row.n)])), targets, (name) => people.has(name));
   } catch (error) {
     if (isFatal(error)) throw error;
     warnings.push(`pool: game counts unavailable (${error instanceof OfflineCacheMissError ? "not in the offline cache" : error.message}); pool ops carry games: null`);
@@ -114,6 +162,6 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, cap 
   }
 
   return {
-    since, cap, tournaments, classes, entryCount, view, people, games, probe: probe ? { page: probe, entries: probeEntries } : null, requests, warnings,
+    since, cap, tournaments, classes, entryCount, view, people, games, aliases, probe: probe ? { page: probe, entries: probeEntries } : null, requests, warnings,
   };
 }

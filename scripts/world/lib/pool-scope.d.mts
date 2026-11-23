@@ -98,6 +98,8 @@ export const TOURS_MAX_CHARS: number;
 export function parseTournaments(value: unknown): { tournaments: string[]; truncated: boolean };
 export function pageClauses(pages: string[]): string[];
 export function mergePerson(a: Person, b: Person): Person;
+export function aliasTargets(rows: Array<Record<string, unknown>>): { targets: Map<string, string>; ambiguous: string[] };
+export function foldGames(games: Map<string, number>, targets: Map<string, string>, isPage?: (name: string) => boolean): Map<string, number>;
 export function playerPosition(label: unknown): string | null;
 export function isStaffLabel(label: unknown): boolean;
 export function roleLabels(value: unknown): string[];

@@ -15,6 +15,8 @@ export interface PoolInputs {
   view: ReturnType<typeof import("./pool.mjs").poolTournaments>;
   people: Map<string, Person>;
   games: Map<string, number> | null;
+  /** Old names followed: how many, the ones two pages claim (left alone), roster rows merged and dropped. */
+  aliases: { names: number; ambiguous: string[]; rosterRows: number; dropped: number };
   probe: { page: string; entries: Array<{ page: string; role: string }> | null } | null;
   requests: Record<string, number>;
   warnings: string[];

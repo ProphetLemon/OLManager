@@ -380,6 +380,48 @@ export function share(items, test) {
   return { count, total: list.length, pct: list.length === 0 ? 0 : Math.round((count / list.length) * 1000) / 10 };
 }
 
+// --- Old names -------------------------------------------------------------------------------------
+
+/**
+ * The old names Leaguepedia keeps in `PlayerRedirects` (rows `{AllName, OverviewPage}`), each mapped to the one page that claims it.
+ * A page's own name is not an old name. A name that two or more pages claim is returned in `ambiguous` and has no target:
+ * following it would hand one person's games to another.
+ * @returns {{targets: Map<string, string>, ambiguous: string[]}}
+ */
+export function aliasTargets(rows) {
+  const claims = new Map();
+  for (const row of rows) {
+    const alias = text(row.AllName);
+    const page = text(row.OverviewPage);
+    if (!alias || !page || alias === page) continue;
+    if (!claims.has(alias)) claims.set(alias, new Set());
+    claims.get(alias).add(page);
+  }
+  const targets = new Map();
+  const ambiguous = [];
+  for (const [alias, pages] of claims) {
+    if (pages.size === 1) targets.set(alias, [...pages][0]);
+    else ambiguous.push(alias);
+  }
+  return { targets, ambiguous: ambiguous.sort() };
+}
+
+/**
+ * Scoreboard games per link, with the games under an old name added to the page that name belongs to. A name that is a page of
+ * its own (`isPage`) keeps its games; so does one with no single target.
+ * @param {Map<string, number>} games
+ * @param {Map<string, string>} targets from `aliasTargets`
+ * @param {(name: string) => boolean} [isPage]
+ */
+export function foldGames(games, targets, isPage = () => false) {
+  const folded = new Map();
+  for (const [name, n] of games) {
+    const key = (!isPage(name) && targets.get(name)) || name;
+    folded.set(key, (folded.get(key) ?? 0) + n);
+  }
+  return folded;
+}
+
 // --- Subtracting what the game has ----------------------------------------------------------------
 
 /** Compact keys of the Leaguepedia page titles of the teams the game has (team-map.json entries with a title). */
