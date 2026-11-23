@@ -2,6 +2,8 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Heart, ExternalLink, Download } from "lucide-react";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
+import { PHONE_ICON_BUTTON } from "./phoneClasses";
 import { GITHUB_URL, LATEST_RELEASE_URL, openExternal } from "@/lib/openExternal";
 
 const DOWNLOADS_URL = LATEST_RELEASE_URL;
@@ -40,6 +42,7 @@ const LINK_ITEMS: Array<{
 
 export default function CommunityPanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  const phone = usePhoneForm();
   const linkLabel = (item: (typeof LINK_ITEMS)[number]): string =>
     item.labelKey ? t(item.labelKey, item.label) : item.label;
 
@@ -63,7 +66,8 @@ export default function CommunityPanel({ onClose }: { onClose: () => void }) {
           {t("community.title", "Comunidad")}
         </h2>
         <button type="button" onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+          aria-label={phone ? t("common.close") : undefined}
+          className={`text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10${phone ? ` ${PHONE_ICON_BUTTON}` : ""}`}
         >
           <X className="w-5 h-5" />
         </button>

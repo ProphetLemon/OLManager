@@ -5,6 +5,8 @@ import { Play, Clock, Trash2, X, Loader2, Download, Upload } from "lucide-react"
 import type { SaveImportPreview } from "@/api/types";
 import type { TransferNotice } from "./useSaveTransfer";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
+import { PHONE_ICON_BUTTON, PHONE_TARGET } from "./phoneClasses";
 
 type SaveStatus = "ok" | "other_version" | "unreadable";
 
@@ -60,6 +62,8 @@ export default function SavesList({
   pendingReplace,
 }: SavesListProps) {
   const { t, i18n } = useTranslation();
+  // The phone branch only swaps class strings; the desktop branch keeps every original one.
+  const phone = usePhoneForm();
 
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { activeIndex, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({
@@ -103,9 +107,16 @@ export default function SavesList({
   };
 
   return (
-    <div className="flex flex-col" onKeyDown={onKeyDown} onFocus={syncIndex} onClickCapture={syncIndex}>
-      <div className="flex justify-between items-center pb-5">
-        <h2 className="text-2xl font-heading font-bold uppercase tracking-wider text-white drop-shadow">
+    <div
+      className={phone ? "flex h-full min-h-0 flex-col" : "flex flex-col"}
+      onKeyDown={onKeyDown}
+      onFocus={syncIndex}
+      onClickCapture={syncIndex}
+    >
+      <div className={phone ? "flex shrink-0 items-center justify-between pb-1" : "flex justify-between items-center pb-5"}>
+        <h2
+          className={`${phone ? "text-section" : "text-2xl"} font-heading font-bold uppercase tracking-wider text-white drop-shadow`}
+        >
           {t("menu.loadGame")}
         </h2>
         <div className="flex items-center gap-2">
@@ -113,7 +124,7 @@ export default function SavesList({
             type="button"
             onClick={onImport}
             disabled={transferBusy || isLoading}
-            className="flex items-center gap-2 px-3 py-1.5 border border-white/20 text-gray-200 hover:border-white/40 hover:bg-white/5 disabled:opacity-50 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors"
+            className={`flex items-center gap-2 px-3 py-1.5 border border-white/20 text-gray-200 hover:border-white/40 hover:bg-white/5 disabled:opacity-50 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors${phone ? ` ${PHONE_TARGET}` : ""}`}
           >
             <Upload className="w-4 h-4" />
             {t("menu.transfer.import")}
@@ -121,7 +132,8 @@ export default function SavesList({
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+          aria-label={phone ? t("common.close") : undefined}
+          className={`text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10${phone ? ` ${PHONE_ICON_BUTTON}` : ""}`}
         >
           <X className="w-5 h-5" />
         </button>
@@ -138,14 +150,14 @@ export default function SavesList({
               type="button"
               onClick={onConfirmReplace}
               disabled={transferBusy}
-              className="flex-1 py-2 border border-red-500/50 text-red-400 hover:border-red-500 hover:bg-red-500/10 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors"
+              className={`flex-1 py-2 border border-red-500/50 text-red-400 hover:border-red-500 hover:bg-red-500/10 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors${phone ? ` ${PHONE_TARGET}` : ""}`}
             >
               {t("menu.transfer.replace")}
             </button>
             <button
               type="button"
               onClick={onCancelReplace}
-              className="flex-1 py-2 border border-white/20 text-gray-200 hover:border-white/40 hover:bg-white/5 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors"
+              className={`flex-1 py-2 border border-white/20 text-gray-200 hover:border-white/40 hover:bg-white/5 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors${phone ? ` ${PHONE_TARGET}` : ""}`}
             >
               {t("menu.cancel")}
             </button>
@@ -162,7 +174,9 @@ export default function SavesList({
         </p>
       )}
 
-      <div className="max-h-[60vh] overflow-y-auto overscroll-contain border-t border-white/10 pr-2 [scrollbar-gutter:stable] scrollbar-v2">
+      <div
+        className={`${phone ? "min-h-0 flex-1" : "max-h-[60vh]"} overflow-y-auto overscroll-contain border-t border-white/10 pr-2 [scrollbar-gutter:stable] scrollbar-v2`}
+      >
         {isLoading ? (
           <div className="flex flex-col items-center gap-3 py-10 text-gray-400">
             <Loader2 className="w-8 h-8 animate-spin text-accent-400" />
@@ -182,10 +196,14 @@ export default function SavesList({
             <div
               key={save.id}
               data-save-row={i}
-              className="group relative flex flex-col gap-2 w-full py-4 text-left transition-colors border-b border-white/10 hover:bg-white/5"
+              className={
+                phone
+                  ? "group relative flex flex-col w-full min-h-[56px] justify-center text-left transition-colors border-b border-white/10 hover:bg-white/5"
+                  : "group relative flex flex-col gap-2 w-full py-4 text-left transition-colors border-b border-white/10 hover:bg-white/5"
+              }
             >
               {confirmDeleteId === save.id ? (
-                <div className="flex flex-col gap-2">
+                <div className={phone ? "flex flex-col gap-2 py-2" : "flex flex-col gap-2"}>
                   <p
                     className="text-sm text-gray-300"
                     dangerouslySetInnerHTML={{
@@ -195,13 +213,13 @@ export default function SavesList({
                   <div className="flex gap-2">
                     <button
                       onClick={() => onDelete(save.id)}
-                      className="flex-1 py-2 border border-red-500/50 text-red-400 hover:border-red-500 hover:bg-red-500/10 text-sm font-heading font-bold uppercase tracking-wider rounded-lg transition-colors"
+                      className={`flex-1 py-2 border border-red-500/50 text-red-400 hover:border-red-500 hover:bg-red-500/10 text-sm font-heading font-bold uppercase tracking-wider rounded-lg transition-colors${phone ? ` ${PHONE_TARGET}` : ""}`}
                     >
                       {t("menu.delete")}
                     </button>
                     <button
                       onClick={() => onConfirmDelete(null)}
-                      className="flex-1 py-2 border border-white/20 text-gray-200 hover:border-white/40 hover:bg-white/5 text-sm font-heading font-bold uppercase tracking-wider rounded-lg transition-colors"
+                      className={`flex-1 py-2 border border-white/20 text-gray-200 hover:border-white/40 hover:bg-white/5 text-sm font-heading font-bold uppercase tracking-wider rounded-lg transition-colors${phone ? ` ${PHONE_TARGET}` : ""}`}
                     >
                       {t("menu.cancel")}
                     </button>
@@ -221,7 +239,7 @@ export default function SavesList({
                     onClick={() => {
                       if (loadable) onLoad(save.id);
                     }}
-                    className={`flex flex-col gap-2 flex-1 text-left min-w-0 px-1 ${loadable ? "" : "cursor-not-allowed"}`}
+                    className={`flex flex-col ${phone ? "min-h-[56px] justify-center gap-1" : "gap-2"} flex-1 text-left min-w-0 px-1 ${loadable ? "" : "cursor-not-allowed"}`}
                   >
                     <div className="flex justify-between items-center w-full">
                       <span className="font-heading font-bold text-white text-lg uppercase tracking-wide truncate">
@@ -238,14 +256,20 @@ export default function SavesList({
                       ) : loadingSaveId === save.id ? (
                         <Loader2 className="w-4 h-4 text-accent-400 animate-spin shrink-0" />
                       ) : (
-                        <Play className="w-4 h-4 text-accent-400 opacity-0 group-hover:opacity-100 transition-all shrink-0" />
+                        <Play
+                          className={
+                            phone
+                              ? "w-5 h-5 text-accent-400 shrink-0"
+                              : "w-4 h-4 text-accent-400 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                          }
+                        />
                       )}
                     </div>
                     <div className="flex justify-between items-center w-full text-sm text-gray-400">
-                      <span>
+                      <span className={phone ? "min-w-0 truncate" : undefined}>
                         {t("menu.manager", { name: save.manager_name })}
                       </span>
-                      <div className="flex items-center gap-1">
+                      <div className={phone ? "flex shrink-0 items-center gap-1 pl-2" : "flex items-center gap-1"}>
                         <Clock className="w-3 h-3" />
                         <span>
                           {formatDate(save.last_played_at, i18n.language)}
@@ -259,7 +283,7 @@ export default function SavesList({
                       onExport(save.id);
                     }}
                     disabled={transferBusy}
-                    className="p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 opacity-70 hover:opacity-100 focus-visible:opacity-100 transition-all shrink-0"
+                    className={`p-1.5 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 opacity-70 hover:opacity-100 focus-visible:opacity-100 transition-all shrink-0${phone ? ` ${PHONE_ICON_BUTTON}` : ""}`}
                     title={t("menu.transfer.export")}
                     aria-label={t("menu.transfer.export")}
                   >
@@ -270,7 +294,7 @@ export default function SavesList({
                       e.stopPropagation();
                       onConfirmDelete(save.id);
                     }}
-                    className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-500/10 opacity-70 hover:opacity-100 focus-visible:opacity-100 transition-all shrink-0"
+                    className={`p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-500/10 opacity-70 hover:opacity-100 focus-visible:opacity-100 transition-all shrink-0${phone ? ` ${PHONE_ICON_BUTTON}` : ""}`}
                     title={t("menu.deleteSave")}
                     aria-label={t("menu.deleteSave")}
                   >
@@ -279,7 +303,7 @@ export default function SavesList({
                 </div>
               )}
               {!loadable && (
-                <p id={reasonId} className="px-1 text-sm text-dim">
+                <p id={reasonId} className={phone ? "px-1 pb-2 text-sm text-dim" : "px-1 text-sm text-dim"}>
                   {save.status === "unreadable"
                     ? t("menu.saveStatus.unreadableReason")
                     : t("menu.saveStatus.otherVersionReason", { found: save.format_version ?? "?" })}

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
+import { PHONE_ICON_BUTTON } from "./phoneClasses";
 import changelogRaw from "../../../../../CHANGELOG.md?raw";
 
 interface ChangeGroup {
@@ -65,6 +67,7 @@ function groupStyle(type: string, t: (key: string, def: string) => string): { la
 
 export default function PatchNotesPanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  const phone = usePhoneForm();
   const releases = useMemo(() => parseChangelog(changelogRaw), []);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -73,20 +76,21 @@ export default function PatchNotesPanel({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <div className="flex flex-col">
-      <div className="flex justify-between items-center pb-5">
+    <div className={phone ? "flex h-full min-h-0 flex-col" : "flex flex-col"}>
+      <div className={phone ? "flex shrink-0 justify-between items-center pb-1" : "flex justify-between items-center pb-5"}>
         <h2 className="text-2xl font-heading font-bold uppercase tracking-wider text-white drop-shadow">
           {t("menu.patchNotes", "Novedades")}
         </h2>
         <button type="button" onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+          aria-label={phone ? t("common.close") : undefined}
+          className={`text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10${phone ? ` ${PHONE_ICON_BUTTON}` : ""}`}
         >
           <X className="w-5 h-5" />
         </button>
       </div>
 
       <div ref={scrollRef} tabIndex={0}
-        className="max-h-[60vh] overflow-y-auto overscroll-contain border-t border-white/10 scrollbar-v2 outline-none"
+        className={`${phone ? "min-h-0 flex-1" : "max-h-[60vh]"} overflow-y-auto overscroll-contain border-t border-white/10 scrollbar-v2 outline-none`}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown" || e.key === "ArrowUp") {
             const el = scrollRef.current;
