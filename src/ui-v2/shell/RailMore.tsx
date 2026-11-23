@@ -3,6 +3,13 @@ import { Ellipsis, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type Ref } from "react";
 
 import { cn } from "@/ui-v2/lib/utils";
+import {
+  forgetPaletteEntry,
+  paletteEntryPop,
+  pushPaletteEntry,
+  releasePaletteEntry,
+  whenPaletteEntryOff,
+} from "@/ui-v2/palette/paletteHistory";
 
 import { RailItem } from "./RailItem";
 
@@ -22,6 +29,11 @@ interface RailMoreProps {
   onOpenChange: (open: boolean) => void;
   /** More owns the current page while one of its tabs (News, Social, Manager) is active. */
   active?: boolean;
+  /**
+   * Android only (R95): the menu keeps a history entry of its own while open, so the back
+   * gesture closes it. Desktop makes no history call.
+   */
+  android?: boolean;
   tabIndex?: 0 | -1;
   buttonRef?: Ref<HTMLButtonElement>;
   "data-nav-id"?: string;
@@ -32,7 +44,17 @@ interface RailMoreProps {
  * It is a stop of the rail (roving widget) that opens a Base UI menu anchored to it; the
  * menu's items are `--hit` high, Escape closes it and focus returns to the stop.
  */
-export function RailMore({ label, items, open, onOpenChange, active, tabIndex, buttonRef, ...rest }: RailMoreProps) {
+export function RailMore({
+  label,
+  items,
+  open,
+  onOpenChange,
+  active,
+  android = false,
+  tabIndex,
+  buttonRef,
+  ...rest
+}: RailMoreProps) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
   const wasOpen = useRef(open);
 
@@ -41,6 +63,40 @@ export function RailMore({ label, items, open, onOpenChange, active, tabIndex, b
     if (wasOpen.current && !open) anchor?.focus();
     wasOpen.current = open;
   }, [open, anchor]);
+
+  // R95: wry turns the back gesture into `goBack()` only when the webview can go back, and
+  // the dashboard would navigate under an open menu. So on Android the menu shares the Go
+  // palette's history entry (a menu and the palette are never open together): Back pops it
+  // and closes the menu; any other close takes it off.
+  useEffect(() => {
+    if (!android) return;
+    if (open) pushPaletteEntry();
+    else releasePaletteEntry();
+  }, [open, android]);
+  useEffect(() => {
+    if (!android) return;
+    return () => forgetPaletteEntry();
+  }, [android]);
+  useEffect(() => {
+    if (!android || !open) return;
+    const onPopState = (event: PopStateEvent) => {
+      // The late pop of an entry a close already took off is not a Back for this opening.
+      if (paletteEntryPop(event) === "release") return;
+      onOpenChange(false);
+    };
+    window.addEventListener("popstate", onPopState, true);
+    return () => window.removeEventListener("popstate", onPopState, true);
+  }, [android, open, onOpenChange]);
+
+  // A chosen item may push a route; its entry must be off first, or the pop would undo it.
+  const choose = (onSelect: () => void) => {
+    if (!android) {
+      onSelect();
+      return;
+    }
+    releasePaletteEntry();
+    whenPaletteEntryOff(onSelect);
+  };
 
   return (
     <>
@@ -69,7 +125,7 @@ export function RailMore({ label, items, open, onOpenChange, active, tabIndex, b
               {items.map(({ id, label: itemLabel, icon: Icon, onSelect, tone = "default" }) => (
                 <Menu.Item
                   key={id}
-                  onClick={onSelect}
+                  onClick={() => choose(onSelect)}
                   className={cn(
                     "flex min-h-[var(--hit)] cursor-default items-center gap-3 rounded-md px-3 font-heading text-nav focus-visible:outline-hidden data-[highlighted]:bg-muted data-[highlighted]:ring-[3px] data-[highlighted]:ring-inset data-[highlighted]:ring-ring",
                     tone === "danger" ? "text-negative" : "text-popover-foreground data-[highlighted]:text-foreground",

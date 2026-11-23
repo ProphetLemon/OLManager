@@ -199,27 +199,28 @@ describe("Android More menu", () => {
     const { props } = setup();
     let items = await openMore();
     fireEvent.click(items[0]);
-    expect(props.onNavClick).toHaveBeenLastCalledWith("News");
+    // The item runs once the menu's history entry is off (R95).
+    await waitFor(() => expect(props.onNavClick).toHaveBeenLastCalledWith("News"));
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
 
     items = await openMore();
     fireEvent.click(items[1]);
-    expect(props.onNavClick).toHaveBeenLastCalledWith("Social");
+    await waitFor(() => expect(props.onNavClick).toHaveBeenLastCalledWith("Social"));
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
 
     items = await openMore();
     fireEvent.click(items[2]);
-    expect(props.onNavigateSettings).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(props.onNavigateSettings).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
 
     items = await openMore();
     fireEvent.click(items[4]);
-    expect(props.onExitClick).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(props.onExitClick).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
 
     items = await openMore();
     fireEvent.click(items[5]);
-    expect(props.onNavClick).toHaveBeenLastCalledWith("Manager");
+    await waitFor(() => expect(props.onNavClick).toHaveBeenLastCalledWith("Manager"));
   });
 
   it("opens the bug report from the menu", async () => {

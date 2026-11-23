@@ -499,6 +499,7 @@ export function DashboardSidebarV2({
       items={moreItems}
       open={moreOpen}
       onOpenChange={setMoreOpen}
+      android={android}
       active={activeTab === "Manager" || activeTab === "News" || activeTab === "Social"}
       data-nav-id="util:more"
       {...itemProps("util:more")}
