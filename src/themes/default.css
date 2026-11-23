@@ -224,7 +224,9 @@
   --palette-h: min(32rem, calc(100dvh - 6rem));
   --palette-top: 15vh;
   --palette-row: max(2.5rem, 40px);
-  --palette-sheet-w: max(22rem, 320px);
+  /* Every side sheet (spec §7.4); the Go palette's Android sheet is one of them. */
+  --sheet-w: max(22rem, 320px);
+  --palette-sheet-w: var(--sheet-w); /* alias, kept for existing readers */
   /* Display-cutout and system-bar insets. 0px wherever the webview reports none
      (every desktop window), so applying them never moves anything there. */
   --safe-top: env(safe-area-inset-top, 0px);

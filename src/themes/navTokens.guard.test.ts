@@ -146,7 +146,8 @@ describe("Go palette tokens (NR2.8, spec §5.7, R29)", () => {
     expect(root).toContain("--palette-w: min(36rem, calc(100vw - 2rem));");
     expect(root).toContain("--palette-h: min(32rem, calc(100dvh - 6rem));");
     expect(root).toContain("--palette-row: max(2.5rem, 40px);");
-    expect(root).toContain("--palette-sheet-w: max(22rem, 320px);");
+    expect(root).toContain("--sheet-w: max(22rem, 320px);");
+    expect(root).toContain("--palette-sheet-w: var(--sheet-w);");
   });
 
   it("raises the rows to the touch hit on Android", () => {

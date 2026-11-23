@@ -7,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type FormEvent,
   type KeyboardEvent,
 } from "react";
@@ -16,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { usePaletteStore } from "@/store/paletteStore";
 import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
+import { SideSheet } from "@/ui-v2/sheet/SideSheet";
 import { useSheetBack } from "@/ui-v2/sheet/useSheetBack";
 
 import { PaletteOption } from "./PaletteOption";
@@ -68,7 +68,8 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   const listId = useId();
   const emptyId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
+  // The Android sheet owns the R37 close-then-run flow; this is its handle on `activate`.
+  const sheetActivate = useRef<((payload: unknown) => void) | null>(null);
   // R37: an activated row closes the palette and runs only once the close completes.
   const closeReason = useRef<"activate" | "dismiss">("dismiss");
   const pending = useRef<PaletteEntry | null>(null);
@@ -77,7 +78,6 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   const [active, setActive] = useState(0);
   const [typed, setTyped] = useState(false);
   const [status, setStatus] = useState("");
-  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   // The row activated by the last close; a fresh object per activation.
   const [activated, setActivated] = useState<{ entry: PaletteEntry } | null>(null);
   const ranActivation = useRef<{ entry: PaletteEntry } | null>(null);
@@ -129,30 +129,21 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
     return () => clearTimeout(timer);
   }, [open, typed, results.length, emptyText, t]);
 
-  // Back (the Android back gesture) closes the palette; see `useSheetBack`. It does not
-  // consume the event. On Android the Back guard (lib/backGuard.ts) asks `paletteHoldsEntry`
-  // and leaves such a pop alone; on desktop DashboardV2's handler asks `paletteEntryPop`
-  // whether this pop only took the palette's entry off, and then runs no navigate
-  // (spec §5.5, R87). Desktop pushes no entry but still closes on a pop.
+  // Back closes the palette; see `useSheetBack`. It does not consume the event. On Android the
+  // `SideSheet` below holds the history entry (or the native dismisser) and the Back guard
+  // (lib/backGuard.ts) asks `paletteHoldsEntry` and leaves such a pop alone. On desktop
+  // DashboardV2's handler asks `paletteEntryPop` whether this pop only took the palette's
+  // entry off, and then runs no navigate (spec §5.5, R87). Desktop pushes no entry but still
+  // closes on a pop, so this call is the desktop one.
   useSheetBack({
-    open,
-    android,
+    open: open && !android,
+    android: false,
     listenWithoutEntry: true,
     onBack: () => {
       closeReason.current = "dismiss";
       closePalette();
     },
   });
-
-  // The Android sheet follows the visual viewport, so the soft keyboard never covers its rows (R29).
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!open || !android || !viewport) return;
-    const update = () => setViewportHeight(viewport.height);
-    update();
-    viewport.addEventListener("resize", update);
-    return () => viewport.removeEventListener("resize", update);
-  }, [open, android]);
 
   const changeQuery = (value: string) => {
     setQuery(value);
@@ -161,6 +152,10 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   };
 
   const activate = (entry: PaletteEntry) => {
+    if (android) {
+      sheetActivate.current?.(entry);
+      return;
+    }
     pending.current = entry;
     closeReason.current = "activate";
     closePalette();
@@ -232,11 +227,14 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
 
   // R27/R37: Escape, Close and the back gesture return focus to the opener (else main);
   // an activation returns it nowhere, since the caller moves it after the close.
+  const openerElement = useCallback(() => {
+    const { openerId } = usePaletteStore.getState();
+    return openerId ? document.getElementById(openerId) : null;
+  }, []);
   const finalFocus = useCallback(() => {
     if (closeReason.current === "activate") return false;
-    const { openerId } = usePaletteStore.getState();
-    return (openerId ? document.getElementById(openerId) : null) ?? document.getElementById("main-content");
-  }, []);
+    return openerElement() ?? document.getElementById("main-content");
+  }, [openerElement]);
 
   // Base UI asks for the final focus after the close completes, so the reason is reset on
   // the next open. A row whose close a reopening interrupted is dropped there too.
@@ -281,10 +279,119 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
   };
 
   const hasResults = results.length > 0;
-  const popupStyle =
-    android && viewportHeight !== null
-      ? ({ "--palette-vvh": `${viewportHeight}px` } as CSSProperties)
-      : undefined;
+
+  // The input row, the results and the status region: the same on both platforms.
+  const content = (
+    <>
+      <form
+        onSubmit={handleSubmit}
+        className="flex min-h-[var(--palette-row)] items-center gap-2 border-b border-line ps-4 pe-1"
+      >
+        <Search aria-hidden="true" className="size-[var(--nav-icon)] shrink-0 text-muted-foreground" />
+        <input
+          ref={inputRef}
+          type="text"
+          role="combobox"
+          aria-labelledby={titleId}
+          aria-expanded={hasResults}
+          aria-controls={hasResults ? listId : undefined}
+          aria-autocomplete="list"
+          // The empty text is the field's description, so a first open with nothing to go to says why (R99).
+          aria-describedby={hasResults ? undefined : emptyId}
+          aria-activedescendant={hasResults ? optionId(results[activeIndex]) : undefined}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          inputMode="search"
+          enterKeyHint="go"
+          placeholder={t("onAir.palette.placeholder", { defaultValue: "Search sections and places" })}
+          value={query}
+          onChange={(e) => changeQuery(e.target.value)}
+          onKeyDown={handleInputKeyDown}
+          // R77: outline-hidden, not outline-none, so forced colours still show a focus outline.
+          className="min-h-[var(--hit)] min-w-0 flex-1 rounded-sm bg-transparent text-entry text-foreground outline-hidden placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <Dialog.Close
+          render={<Button type="button" variant="ghost" size="icon-touch" aria-label={t("onAir.palette.close", { defaultValue: "Close" })} />}
+        >
+          <X aria-hidden="true" className="size-[var(--nav-icon)]" />
+        </Dialog.Close>
+      </form>
+      <div className="scrollbar-v2 min-h-0 flex-1 overflow-y-auto py-1">
+        {hasResults ? (
+          <div role="listbox" id={listId} aria-labelledby={titleId}>
+            {groups.map(({ group, entries: rows, start }) => {
+              const labelId = `${listId}-group-${group}`;
+              return (
+                <div key={group} role="group" aria-labelledby={labelId}>
+                  <div
+                    id={labelId}
+                    role="presentation"
+                    className="px-4 pb-1 pt-2 font-heading text-nav font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    {groupLabel(group)}
+                    {/* R81: the call rows the query keeps (every call while browsing), read
+                        after a pause, "Needs your call, 3": the comma is for screen readers. */}
+                    {group === "calls" && (
+                      <>
+                        <span className="sr-only">,</span>{" "}
+                        <span className="tabular-nums">{query.trim() ? rows.length : callCount}</span>
+                      </>
+                    )}
+                  </div>
+                  {rows.map((entry, i) => {
+                    const index = start + i;
+                    return (
+                      <PaletteOption
+                        key={entry.id}
+                        entry={entry}
+                        id={optionId(entry)}
+                        active={index === activeIndex}
+                        onPointerMove={(e) => pointerMove(index, e)}
+                        onActivate={() => activate(entry)}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p id={emptyId} data-slot="go-palette-empty" className="px-4 py-6 text-entry text-muted-foreground">
+            {emptyText}
+          </p>
+        )}
+      </div>
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {status}
+      </div>
+    </>
+  );
+
+  if (android) {
+    return (
+      <SideSheet
+        open={open}
+        onClose={() => closePalette()}
+        title={t("onAir.palette.title", { defaultValue: "Go to" })}
+        titleId={titleId}
+        closeLabel={t("onAir.palette.close", { defaultValue: "Close" })}
+        closePlacement="body"
+        side="start"
+        initialFocus="title"
+        returnFocus={openerElement}
+        fitVisualViewport
+        activateRef={sheetActivate}
+        onActivated={(entry) => onActivate(entry as PaletteEntry)}
+        onKeyDown={handlePopupKeyDown}
+        platform="android"
+        data-slot="go-palette"
+      >
+        {content}
+      </SideSheet>
+    );
+  }
 
   return (
     <Dialog.Root open={open} onOpenChange={handleOpenChange} onOpenChangeComplete={handleOpenChangeComplete}>
@@ -293,110 +400,24 @@ export function GoPalette({ entries, callCount, platform, onActivate }: GoPalett
         <Dialog.Popup
           aria-modal="true"
           aria-labelledby={titleId}
-          initialFocus={android ? titleRef : inputRef}
+          initialFocus={inputRef}
           finalFocus={finalFocus}
           onKeyDown={handlePopupKeyDown}
           data-slot="go-palette"
           data-platform={platform}
-          style={popupStyle}
           className={cn(
             "fixed z-50 flex flex-col overflow-hidden border-line bg-popover text-popover-foreground shadow-lg outline-none",
-            android
-              ? "inset-y-0 start-0 h-[var(--palette-vvh,100dvh)] w-[var(--palette-sheet-w)] max-w-full border-e pt-[var(--safe-top)] ps-[var(--safe-left)] pb-[var(--safe-bottom)]"
-              : "start-1/2 top-[var(--palette-top)] max-h-[var(--palette-h)] w-[var(--palette-w)] -translate-x-1/2 rounded-lg border rtl:translate-x-1/2",
+            "start-1/2 top-[var(--palette-top)] max-h-[var(--palette-h)] w-[var(--palette-w)] -translate-x-1/2 rounded-lg border rtl:translate-x-1/2",
           )}
         >
           <Dialog.Title
             id={titleId}
-            ref={titleRef}
             tabIndex={-1}
             className="px-4 pt-3 font-heading text-section font-bold uppercase leading-tight text-foreground outline-none"
           >
             {t("onAir.palette.title", { defaultValue: "Go to" })}
           </Dialog.Title>
-          <form
-            onSubmit={handleSubmit}
-            className="flex min-h-[var(--palette-row)] items-center gap-2 border-b border-line ps-4 pe-1"
-          >
-            <Search aria-hidden="true" className="size-[var(--nav-icon)] shrink-0 text-muted-foreground" />
-            <input
-              ref={inputRef}
-              type="text"
-              role="combobox"
-              aria-labelledby={titleId}
-              aria-expanded={hasResults}
-              aria-controls={hasResults ? listId : undefined}
-              aria-autocomplete="list"
-              // The empty text is the field's description, so a first open with nothing to go to says why (R99).
-              aria-describedby={hasResults ? undefined : emptyId}
-              aria-activedescendant={hasResults ? optionId(results[activeIndex]) : undefined}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              inputMode="search"
-              enterKeyHint="go"
-              placeholder={t("onAir.palette.placeholder", { defaultValue: "Search sections and places" })}
-              value={query}
-              onChange={(e) => changeQuery(e.target.value)}
-              onKeyDown={handleInputKeyDown}
-              // R77: outline-hidden, not outline-none, so forced colours still show a focus outline.
-              className="min-h-[var(--hit)] min-w-0 flex-1 rounded-sm bg-transparent text-entry text-foreground outline-hidden placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            <Dialog.Close
-              render={<Button type="button" variant="ghost" size="icon-touch" aria-label={t("onAir.palette.close", { defaultValue: "Close" })} />}
-            >
-              <X aria-hidden="true" className="size-[var(--nav-icon)]" />
-            </Dialog.Close>
-          </form>
-          <div className="scrollbar-v2 min-h-0 flex-1 overflow-y-auto py-1">
-            {hasResults ? (
-              <div role="listbox" id={listId} aria-labelledby={titleId}>
-                {groups.map(({ group, entries: rows, start }) => {
-                  const labelId = `${listId}-group-${group}`;
-                  return (
-                    <div key={group} role="group" aria-labelledby={labelId}>
-                      <div
-                        id={labelId}
-                        role="presentation"
-                        className="px-4 pb-1 pt-2 font-heading text-nav font-semibold uppercase tracking-wide text-muted-foreground"
-                      >
-                        {groupLabel(group)}
-                        {/* R81: the call rows the query keeps (every call while browsing), read
-                            after a pause, "Needs your call, 3": the comma is for screen readers. */}
-                        {group === "calls" && (
-                          <>
-                            <span className="sr-only">,</span>{" "}
-                            <span className="tabular-nums">{query.trim() ? rows.length : callCount}</span>
-                          </>
-                        )}
-                      </div>
-                      {rows.map((entry, i) => {
-                        const index = start + i;
-                        return (
-                          <PaletteOption
-                            key={entry.id}
-                            entry={entry}
-                            id={optionId(entry)}
-                            active={index === activeIndex}
-                            onPointerMove={(e) => pointerMove(index, e)}
-                            onActivate={() => activate(entry)}
-                          />
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p id={emptyId} data-slot="go-palette-empty" className="px-4 py-6 text-entry text-muted-foreground">
-                {emptyText}
-              </p>
-            )}
-          </div>
-          <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-            {status}
-          </div>
+          {content}
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
