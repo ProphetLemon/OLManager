@@ -174,13 +174,17 @@ export async function runRefresh(options) {
     const listed = listedSkillFromRows(listedRows, listedPositions);
     const skill = listed.skill.size > 0 ? new Map([...(gameSkill ?? []), ...listed.skill]) : gameSkill;
     warnings.push(...listedGroupWarnings(listed));
+    // Every old name followed, with the stats rows folded under it: the listed events' rows and the game competitions' together.
+    const foldedRows = new Map();
+    for (const row of [...(options.pool.statsRows ?? []), ...(inputs.listedRows ?? [])]) foldedRows.set(row.playerKey, (foldedRows.get(row.playerKey) ?? 0) + 1);
+    const followed = (inputs.aliases?.followed ?? []).map((entry) => ({ ...entry, rows: foldedRows.get(entry.name) ?? 0 }));
     const builtPoolOps = buildPoolOps({
       selection, baselines, games: inputs.games, skill, anchors, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
     });
     // The game folds a pool player into a record it already has on a club, or hides him from the AI, so he is left out here.
     const poolOps = dropWorldBuildTwins({ selection, ops: builtPoolOps, contracted: contractedPlayers(world.players, ops.players.map((entry) => entry.op)) });
     ops = { players: [...ops.players, ...poolOps.players], staff: [...ops.staff, ...poolOps.staff], skipped: [...ops.skipped, ...poolOps.skipped] };
-    poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff }, listed: summarizeListed(listed) };
+    poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff }, listed: summarizeListed(listed), followed };
     log(`pool: ${poolOps.players.length} players, ${poolOps.staff.length} staff as free agents`);
   }
 
@@ -212,7 +216,7 @@ export async function runRefresh(options) {
     gates = { ok: results.every((r) => r.ok), results };
     const { inputs, selection, settings, ops: poolOpsRun } = poolRun;
     poolReport = {
-      settings, inputs, selection, limits: POOL_LIMITS, bytes, ops: poolOpsRun, listed: poolRun.listed,
+      settings, inputs, selection, limits: POOL_LIMITS, bytes, ops: poolOpsRun, listed: poolRun.listed, followed: poolRun.followed,
       probe: inputs.probe ? explainProbe({ probe: inputs.probe, tournaments: inputs.tournaments, classes: inputs.classes, entryCount: inputs.entryCount, cap: settings.cap, since: settings.since, selection }) : null,
     };
   }

@@ -34,7 +34,7 @@ export type StubOptions = {
   /** Rows of the listed events' scoreboard query (ScoreboardPlayers joined to ScoreboardGames). */
   listedGames?: Row[];
   failListedGames?: boolean;
-  /** Pages of the `Players` table the stub knows (the check that a followed old name is not a page of its own). */
+  /** Pages of the `Players` table the stub knows (the check that a followed old name is not a page of its own); matched without regard to case, as the database does. */
   playersPages?: string[];
   failPlayers?: boolean;
   tournaments?: Row[];
@@ -56,7 +56,7 @@ export function stubClient(options: StubOptions = {}) {
         rows = options.redirects ?? [];
       } else if (params.tables === "Players=P") {
         if (options.failPlayers) throw new OfflineCacheMissError(params);
-        rows = (options.playersPages ?? []).filter((page) => params.where.includes(`"${page}"`)).map((page) => ({ page }));
+        rows = (options.playersPages ?? []).filter((page) => params.where.toLowerCase().includes(`"${page.toLowerCase()}"`)).map((page) => ({ page }));
       } else if (params.tables.includes("PlayerRedirects=PR,")) rows = params.where.includes('T.IsOfficial="1"') ? (options.aliasPeople ?? []) : [];
       else if (params.tables === "ScoreboardPlayers=SP,ScoreboardGames=SG") {
         if (options.failListedGames) throw new OfflineCacheMissError(params);

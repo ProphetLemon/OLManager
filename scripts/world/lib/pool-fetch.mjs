@@ -183,21 +183,28 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, list
     listedStats.read = true;
   }
 
-  // A name is followed only if no Players page carries it: the redirects table need not have a row for every page, so a name that is
-  // someone's own page can still show up as an old name of another. Ask the Players table once about the names the data uses and whose
-  // target is a pool person; any hit is ambiguous, and nothing is followed if the table cannot be read.
+  // A name is followed only if no other Players page carries it: the redirects table need not have a row for every page, so a name that is
+  // someone's own page can still show up as an old name of another. Ask the Players table about every name whose target is a pool page
+  // (the pipeline folds the game competitions' stats rows with the same map, so "the names the data uses" would miss some). The table
+  // matches page names without regard to case: of the pages it returns for a name, any that is not the name's own target makes the
+  // name ambiguous (a link `vicky` for the page `Vicky` is the person's own spelling and is followed). Nothing is followed if the table
+  // cannot be read.
   if (targets.size > 0) {
     const poolPages = new Set([...people.keys(), ...aliasRows.map((r) => r.player)]);
-    const used = new Set([...aliasRows.map((r) => r.alias), ...(gameCounts?.keys() ?? []), ...listedRows.map((r) => r.playerKey)]);
-    const names = [...used].filter((name) => targets.has(name) && poolPages.has(targets.get(name)));
+    const names = [...targets.keys()].filter((name) => poolPages.has(targets.get(name))).sort();
     try {
-      const hits = new Set();
+      const pagesByLower = new Map();
       for (const chunk of chunkNames(names)) {
         const rows = await cargoAll(client, { tables: "Players=P", fields: "P.OverviewPage=page", where: `P.OverviewPage IN (${chunk.map(quoteName).join(",")})`, order_by: "P.OverviewPage" });
-        for (const found of rows) hits.add(found.page);
+        for (const found of rows) {
+          const key = found.page.toLowerCase();
+          if (!pagesByLower.has(key)) pagesByLower.set(key, new Set());
+          pagesByLower.get(key).add(found.page);
+        }
       }
-      for (const name of names) if (hits.has(name)) targets.delete(name);
-      aliases.ambiguous = [...new Set([...aliases.ambiguous, ...hits])].sort();
+      const dropped = names.filter((name) => [...(pagesByLower.get(name.toLowerCase()) ?? [])].some((page) => page !== targets.get(name)));
+      for (const name of dropped) targets.delete(name);
+      aliases.ambiguous = [...new Set([...aliases.ambiguous, ...dropped])].sort();
     } catch (error) {
       if (isFatal(error)) throw error;
       targets = new Map();
@@ -225,7 +232,7 @@ export async function fetchPoolInputs({ client, since = DEFAULT_POOL_SINCE, list
   aliases.followed = [...seen]
     .filter((name) => targets.has(name) && !own.has(name) && people.has(targets.get(name)))
     .sort()
-    .map((name) => ({ name, page: targets.get(name), entries: brought.get(name) ?? 0, games: gameCounts?.get(name) ?? 0 }));
+    .map((name) => ({ name, page: targets.get(name), entries: brought.get(name) ?? 0, games: gameCounts?.get(name) ?? 0, rows: listedRows.filter((r) => r.playerKey === name).length }));
 
   let probeEntries = null;
   if (probe) {

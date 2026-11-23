@@ -174,16 +174,52 @@ describe("a followed name is never a page of its own", () => {
     expect(asked[0].where).toContain('"Foo"');
   });
 
-  it("asks only about names the data actually uses, and lists every name it followed with what it brought", async () => {
-    const client = stubClient({ redirects: [...redirects, { AllName: "Unused Name", OverviewPage: "Vicky" }], games, peopleFor: official([vicky("5"), sakkuromi]), aliasPeople: aliasRows });
+  it("asks about every name whose target is a pool page, used by the data or not, and lists every name it followed with what it brought", async () => {
+    const client = stubClient({
+      redirects: [...redirects, { AllName: "Unused Name", OverviewPage: "Vicky" }, { AllName: "Elsewhere", OverviewPage: "Nobody In The Pool" }], games, peopleFor: official([vicky("5"), sakkuromi]), aliasPeople: aliasRows,
+    });
     const inputs = await fetchPoolInputs({ client });
     const asked = client.calls.filter((c) => c.tables === "Players=P").map((c) => c.where).join("\n");
     expect(asked).toContain('"Indiff"');
-    expect(asked).not.toContain("Unused Name");
+    expect(asked).toContain('"Unused Name"');
+    expect(asked).not.toContain("Elsewhere");
     expect(inputs.aliases.followed).toEqual([
-      { name: "Indiff", page: "Vicky", entries: 2, games: 17 },
-      { name: "Indifferent", page: "Vicky", entries: 8, games: 3 },
+      { name: "Indiff", page: "Vicky", entries: 2, games: 17, rows: 0 },
+      { name: "Indifferent", page: "Vicky", entries: 8, games: 3, rows: 0 },
     ]);
+  });
+
+  it("does not follow a name that is a page of its own under another spelling of the same letters", async () => {
+    // The database matches page names without regard to case: the page Xyz is found for the link XyZ, which is not the person's own page.
+    const inputs = await fetchPoolInputs({
+      client: stubClient({
+        redirects: [{ AllName: "XyZ", OverviewPage: "Y" }, { AllName: "Y", OverviewPage: "Y" }], peopleFor: official([y("3")]), aliasPeople: [y("7", { alias: "XyZ" })],
+        games: [{ Link: "XyZ", n: "120" }, { Link: "Y", n: "4" }], playersPages: ["Xyz"],
+      }),
+    });
+    expect(inputs.games!.get("Y")).toBe(4);
+    expect(inputs.people.get("Y")!.entries).toBe(3);
+    expect(inputs.aliases.ambiguous).toEqual(["XyZ"]);
+  });
+
+  it("follows a name that only differs in case from the person's own page, and reports no ambiguity", async () => {
+    const inputs = await fetchPoolInputs({
+      client: stubClient({
+        redirects: [{ AllName: "vicky", OverviewPage: "Vicky" }, { AllName: "Vicky", OverviewPage: "Vicky" }], games: [{ Link: "vicky", n: "20" }, { Link: "Vicky", n: "6" }],
+        peopleFor: official([vicky("5")]), playersPages: ["Vicky"],
+      }),
+    });
+    expect(inputs.games!.get("Vicky")).toBe(26);
+    expect(inputs.aliases.ambiguous).toEqual([]);
+    expect(inputs.aliases.followed).toEqual([{ name: "vicky", page: "Vicky", entries: 0, games: 20, rows: 0 }]);
+  });
+
+  it("checks a name that only the game competitions' stats rows use, since it is folded with the same map", async () => {
+    const inputs = await fetchPoolInputs({
+      client: stubClient({ redirects: [{ AllName: "OnlyStats", OverviewPage: "Y" }, { AllName: "Y", OverviewPage: "Y" }], peopleFor: official([y("3")]), games: [{ Link: "Y", n: "4" }], playersPages: ["OnlyStats"] }),
+    });
+    expect(inputs.aliases.ambiguous).toEqual(["OnlyStats"]);
+    expect(inputs.aliases.targets.has("OnlyStats")).toBe(false);
   });
 
   it("follows nothing, with a warning, when the Players table cannot be read", async () => {

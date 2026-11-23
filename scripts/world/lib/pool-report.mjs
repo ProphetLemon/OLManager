@@ -109,7 +109,7 @@ const ratingTable = (map, label) => table([...map].map(([key, v]) => [key, v.sta
  * @param {ReturnType<typeof explainProbe>|null} pool.probe
  * @param {ReturnType<import("./pool-rating.mjs").summarizeListed>|null} [pool.listed] the pooled stats of the listed events, by position
  */
-export function renderPoolSection({ settings, inputs, selection, limits, bytes, probe, ops = null, listed = null }) {
+export function renderPoolSection({ settings, inputs, selection, limits, bytes, probe, ops = null, listed = null, followed = inputs.aliases?.followed ?? [] }) {
   const lines = ["## Active-pros pool", ""];
   const { counts } = selection;
   const summary = summarizePool(selection);
@@ -173,10 +173,9 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
     }
   }
 
-  const followed = inputs.aliases?.followed ?? [];
   if (followed.length > 0) {
-    lines.push("### Old names followed", "", "Each old name read as the page it went to (PlayerRedirects, not a Players page of its own), with the roster entries and scoreboard games it brought. A wrong merge shows here.", "");
-    lines.push(...table(followed.map((f) => [f.name, f.page, f.entries, f.games]), ["old name", "page", "roster entries", "games"]), "");
+    lines.push("### Old names followed", "", "Each old name read as the page it went to (PlayerRedirects, not a Players page of its own), with the roster entries, scoreboard games and stats rows (the listed events' and the game competitions') it brought. A wrong merge shows here.", "");
+    lines.push(...table(followed.map((f) => [f.name, f.page, f.entries, f.games, f.rows ?? 0]), ["old name", "page", "roster entries", "games", "stats rows"]), "");
   }
 
   const view = inputs.view;

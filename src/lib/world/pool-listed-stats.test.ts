@@ -175,11 +175,15 @@ describe("the listed events' own stats", () => {
     expect(result.report).toContain("team damage incomplete: 20");
   });
 
-  it("lists every old name that was followed, with the page it went to and what it brought", async () => {
-    const followed = [{ name: "Indiff", page: "Vicky", entries: 2, games: 17 }];
-    const result = await run({ inputs: withVicky({ listedRows: [], aliases: { ...inputs.aliases, targets, followed } }) });
+  it("lists every old name that was followed with its roster entries, games counted and stats rows folded, the game competitions' included", async () => {
+    const followed = [{ name: "Indiff", page: "Vicky", entries: 2, games: 17, rows: 17 }, { name: "Only In Stats", page: "Vicky", entries: 0, games: 0, rows: 0 }];
+    const statsRows = Array.from({ length: 3 }, (_, g) => line("Only In Stats", "Support", `2026-01-0${g + 1}`, 0, 1, g, "lec"));
+    const result = await run({
+      inputs: withVicky({ listedRows: [...vickyRows, ...fillers(15)], aliases: { ...inputs.aliases, targets: new Map([...targets, ["Only In Stats", "Vicky"]]), followed } }), statsRows,
+    });
     expect(result.report).toContain("### Old names followed");
-    expect(result.report).toMatch(/\| Indiff \| Vicky \| 2 \| 17 \|/);
+    expect(result.report).toMatch(/\| Indiff \| Vicky \| 2 \| 17 \| 17 \|/);
+    expect(result.report).toMatch(/\| Only In Stats \| Vicky \| 0 \| 0 \| 3 \|/);
   });
 });
 
