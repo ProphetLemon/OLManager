@@ -118,7 +118,8 @@ export default function PlayerProfileHeroCardV2({
         {insigniaBackground ? (
           <>
             <div className="absolute inset-0 bg-cover" style={{ backgroundImage: `url(${insigniaBackground})`, backgroundPosition: "center 12%" }} />
-            <div className="absolute inset-0 bg-linear-to-r from-black/88 via-black/28 to-transparent" />
+            {/* Phone: the details and the stats sit over the whole splash, not only its dark left edge. */}
+            <div className="absolute inset-0 bg-linear-to-r from-black/88 via-black/28 to-transparent phone:via-black/75 phone:to-black/60" />
           </>
         ) : (
           <div className="absolute inset-0 bg-linear-to-r from-muted/80 to-muted/40" />
