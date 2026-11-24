@@ -277,7 +277,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           slotLabel={label}
           other={
             sibling
-              ? { label: slotLabelOf(week.slots.find((entry) => entry.slotIndex === sibling.slotIndex)), identity: sibling.rival.kind === "team" ? identityOf(sibling.rival.teamId) : null, state: sibling.state }
+              ? { label: slotLabelOf(week.slots.find((entry) => entry.slotIndex === sibling.slotIndex)), identity: sibling.rival.kind === "team" ? identityOf(sibling.rival.teamId) : null, state: sibling.state, decided: sibling.decided, result: sibling.result }
               : null
           }
           nextSlotLabel={waiting != null ? slotLabelOf(week.slots.find((entry) => entry.slotIndex === waiting)) : null}

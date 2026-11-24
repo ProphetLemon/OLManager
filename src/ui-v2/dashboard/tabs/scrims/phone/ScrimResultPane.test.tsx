@@ -135,6 +135,28 @@ describe("ScrimResultPane: the blocks", () => {
     expect(b).toHaveTextContent("Cancelled");
   });
 
+  it("words the other block as report pending only while its own decision is pending", () => {
+    setup({ other: { label: "Wed A", identity: HERETICS, state: "played", decided: false, result: "won" } });
+    const b = document.querySelector('[data-slot="result-block-b"]') as HTMLElement;
+    expect(b).toHaveTextContent("Played, report waiting");
+    expect(b.querySelector('[data-slot="phone-result-word"]')).toBeNull();
+  });
+
+  it("shows a decided other block's result with the shared result word: Win", () => {
+    setup({ other: { label: "Wed A", identity: HERETICS, state: "played", decided: true, result: "won" } });
+    const b = document.querySelector('[data-slot="result-block-b"]') as HTMLElement;
+    expect(b).not.toHaveTextContent("report waiting");
+    expect(b.querySelector('[data-slot="phone-result-word"]')).toHaveAttribute("data-result", "won");
+    expect(b).toHaveTextContent("Win");
+  });
+
+  it("shows a decided other block's result with the shared result word: Loss", () => {
+    setup({ other: { label: "Wed A", identity: HERETICS, state: "played", decided: true, result: "lost" } });
+    const b = document.querySelector('[data-slot="result-block-b"]') as HTMLElement;
+    expect(b.querySelector('[data-slot="phone-result-word"]')).toHaveAttribute("data-result", "lost");
+    expect(b).toHaveTextContent("Loss");
+  });
+
   it("draws no second block when the day has no other one", () => {
     setup({ other: null });
     expect(document.querySelector('[data-slot="result-block-b"]')).toBeNull();

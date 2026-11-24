@@ -175,6 +175,20 @@ describe("blocks of Semana, one row per state of BUILD-SPEC section 2", () => {
     expect(block(home({ week }), 1)).toMatchObject({ state: "notPlayed", rival: { kind: "none" }, opens: false });
   });
 
+  it("decided: a played block is pending until its own decision is taken (a Reviewed status or a post_decision on its report), then it is decided", () => {
+    const week = makeWeek(4, {
+      0: reviewed(true),
+      1: { ...played(false), report: report({ won: false, post_decision: "VodReview" }) },
+      2: played(true),
+      3: plan("b"),
+    });
+    const model = home({ week });
+    expect(block(model, 0)).toMatchObject({ state: "played", decided: true, result: "won" });
+    expect(block(model, 1)).toMatchObject({ state: "played", decided: true, result: "lost" });
+    expect(block(model, 2)).toMatchObject({ state: "played", decided: false });
+    expect(block(model, 3)).toMatchObject({ decided: false });
+  });
+
   it("cancelled: a block whose plan a cancelling decision cleared is a cancelled block, with the empty shield (the only way a plan is cleared)", () => {
     const week = makeWeek(2, { 0: { ...reviewed(true), report: report({ post_decision: "DayOff" }) }, 1: { canEdit: false } });
     expect(block(home({ week }), 1)).toMatchObject({ state: "cancelled", rival: { kind: "cleared" } });

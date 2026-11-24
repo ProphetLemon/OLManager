@@ -21,6 +21,9 @@ export interface ResultOtherBlock {
   /** Its rival; null draws an empty shield. */
   identity: TeamIdentity | null;
   state: PhoneBlockState;
+  /** A played block whose own decision was taken: it shows its result instead of "report waiting". */
+  decided?: boolean;
+  result?: "won" | "lost" | null;
 }
 
 export interface ScrimResultPaneProps {
@@ -58,6 +61,8 @@ function OtherBlock({ block }: { block: ResultOtherBlock }) {
   const state =
     block.state === "cancelled" ? (
       <CancelledWord slot="result-block-state" className="text-entry" />
+    ) : block.state === "played" && block.decided && block.result ? (
+      <ResultWord won={block.result === "won"} className="text-section" />
     ) : block.state === "played" ? (
       <span data-slot="result-block-state" className="text-entry font-medium">{t("scrims.result.playedWaiting")}</span>
     ) : block.state === "notPlayed" ? (

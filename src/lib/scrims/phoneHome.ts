@@ -61,6 +61,8 @@ export interface PhoneBlock {
   /** The block the hero is about, ringed with the hero's word. */
   isHero: boolean;
   heroWord: PhoneTag | null;
+  /** A played block whose own decision was taken (its status is Reviewed or its report carries a post_decision); a pending one waits for it. */
+  decided: boolean;
   /** The block is a button: it opens Elegir rival (editable, or read-only), Decidir or a result. */
   opens: boolean;
 }
@@ -153,6 +155,7 @@ export function buildPhoneHome(input: PhoneHomeInput): PhoneHome {
       return {
         id: cell.id, slotIndex: cell.slotIndex, suffix: cell.suffix, state, rival: cell.rival, result: cell.result, quality: cell.quality,
         isHero, heroWord: isHero ? heroWord : null,
+        decided: state === "played" && (slot.status === "Reviewed" || slot.report?.post_decision != null),
         opens: isEditable(slot, week, readOnly) || state === "played" || state === "planned",
       };
     }),
