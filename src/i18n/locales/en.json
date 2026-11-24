@@ -347,6 +347,8 @@
       "tagToday": "Today",
       "tagDecide": "Decide",
       "weekList": "Scrims week",
+      "weekFilled_one": "Week filled: {{count}} block. Tap a block to change its rival.",
+      "weekFilled_other": "Week filled: {{count}} blocks. Tap a block to change its rival.",
       "planPlayed": "Played",
       "statMorale": "Morale",
       "statEnergy": "Energy",

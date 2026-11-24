@@ -3359,6 +3359,8 @@
       "tagToday": "Bugün",
       "tagDecide": "Karar ver",
       "weekList": "Scrim haftası",
+      "weekFilled_one": "Hafta dolduruldu: {{count}} blok. Rakibini değiştirmek için bir bloğa dokun.",
+      "weekFilled_other": "Hafta dolduruldu: {{count}} blok. Rakibini değiştirmek için bir bloğa dokun.",
       "planPlayed": "Oynandı",
       "statMorale": "Moral",
       "statEnergy": "Enerji",

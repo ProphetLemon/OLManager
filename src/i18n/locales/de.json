@@ -3368,6 +3368,8 @@
       "tagToday": "Heute",
       "tagDecide": "Entscheiden",
       "weekList": "Scrim-Woche",
+      "weekFilled_one": "Woche gefüllt: {{count}} Block. Tippe auf einen Block, um den Gegner zu ändern.",
+      "weekFilled_other": "Woche gefüllt: {{count}} Blöcke. Tippe auf einen Block, um den Gegner zu ändern.",
       "planPlayed": "Gespielt",
       "statMorale": "Moral",
       "statEnergy": "Energie",

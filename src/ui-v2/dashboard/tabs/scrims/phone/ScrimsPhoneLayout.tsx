@@ -82,8 +82,8 @@ interface FocusRequest {
  * three entries), anything else is a view in a frame with a back control. The tab computes
  * everything; this owns which of them is open. The moves it makes by itself: on opening (Decide if
  * a block waits, else Semana), a row that starts to carry Decide (opens it) or Today (Semana shows
- * it in the hero), a decision's result (its block), a pick of the objective (to Volume, once) and
- * Done. Back, the frame's or the system's, returns to Semana.
+ * it in the hero), a decision's result (its block), a pick of the objective (to Volume, once), Rellenar once
+ * applied (to Semana, with a notice) and Done. Back, the frame's or the system's, returns to Semana.
  */
 export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   const { t } = useTranslation();
@@ -121,6 +121,9 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     setSelected(id);
     request("heading", true);
   };
+  // "Week filled": shown on Semana until the manager leaves it, and spoken once through the live region below.
+  const [filledCount, setFilledCount] = useState<number | null>(null);
+  const [spoken, setSpoken] = useState<string | null>(null);
   const goHome = useCallback(() => {
     setSelected("home");
     request("home", true);
@@ -151,6 +154,18 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   const current: View = arrivalTarget ?? (slotExists(selected) ? selected : "home");
   const currentRef = useRef(current);
   currentRef.current = current;
+  useEffect(() => {
+    if (current !== "home") setFilledCount(null);
+  }, [current]);
+  // The game's own line (a decision applied) replaces a spoken notice.
+  useEffect(() => setSpoken(null), [props.liveText]);
+  const fillWeek = async () => {
+    const count = await autofill();
+    if (count == null || currentRef.current !== "volume") return;
+    setFilledCount(count);
+    setSpoken(t("scrims.phone.weekFilled", { count }));
+    goHome();
+  };
   // A game-made move asks for focus without taking it from a control outside this screen.
   const gameMove = (to: View) => {
     opener.current = null;
@@ -249,7 +264,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           blockedText={setupBlockedText}
           assistant={assistantControls}
           onVolume={props.onVolume}
-          onAutofill={autofill}
+          onAutofill={() => void fillWeek()}
           onAssistant={props.onAssistant}
           onFinalize={props.onFinalize}
         />
@@ -365,7 +380,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   return (
     <div ref={rootRef} data-slot="scrim-phone-layout" className="h-full min-h-0">
       <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {props.liveText}
+        {spoken ?? props.liveText}
       </div>
       {openView ? (
         openView
@@ -378,6 +393,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           teamNameById={teamNameById}
           todayMessage={props.todayMessage}
           lockText={setupBlockedText}
+          notice={filledCount != null ? t("scrims.phone.weekFilled", { count: filledCount }) : null}
           onOpen={open}
         />
       )}

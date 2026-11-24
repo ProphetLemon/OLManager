@@ -347,6 +347,8 @@
       "tagToday": "Hoy",
       "tagDecide": "Decidir",
       "weekList": "Semana de scrims",
+      "weekFilled_one": "Semana rellenada: {{count}} bloque. Toca un bloque para cambiar su rival.",
+      "weekFilled_other": "Semana rellenada: {{count}} bloques. Toca un bloque para cambiar su rival.",
       "planPlayed": "Jugado",
       "statMorale": "Moral",
       "statEnergy": "Energía",

@@ -23,6 +23,8 @@ export interface ScrimWeekHomeProps {
   todayMessage: string;
   /** The lock sentence; shown on Semana only in the two hero states that carry it. */
   lockText: string | null;
+  /** One sentence under the hero's content (the week was just filled); null when there is none. The layout drops it on leaving Semana. */
+  notice?: string | null;
   /** `control` names the button that asked, so the layout can give it focus again when the view closes. */
   onOpen: (id: PhoneRowId, control: string) => void;
 }
@@ -240,13 +242,15 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
 
 const HERO_CLASS = "flex min-h-[5.625rem] w-full flex-1 flex-col justify-center overflow-x-clip rounded-xl bg-card px-4 py-1 text-start text-card-foreground";
 
-function Hero({ hero, ctx, onOpen }: { hero: PhoneHero; ctx: HeroContext; onOpen: ScrimWeekHomeProps["onOpen"] }) {
+function Hero({ hero, ctx, onOpen, notice }: { hero: PhoneHero; ctx: HeroContext; onOpen: ScrimWeekHomeProps["onOpen"]; notice: string | null }) {
   const { t } = useTranslation();
-  const closed = hero.closedDayKey && hero.state !== "today" ? t(hero.closedDayKey) : null;
+  // The closed-day sentence wins: it is the one the manager needs; the notice also uses the compact matchup so the hero keeps its height.
+  const closed = (hero.closedDayKey && hero.state !== "today" ? t(hero.closedDayKey) : null) ?? notice;
+  const closedSlot = closed === notice && notice != null ? "phone-week-notice" : "phone-week-closed";
   const body = (
     <span className="flex flex-col">
       <HeroBody hero={hero} ctx={ctx} onOpen={onOpen} compact={closed != null} />
-      {closed ? <span data-slot="phone-week-closed" className="block text-caption leading-3.5 text-muted-foreground">{closed}</span> : null}
+      {closed ? <span data-slot={closedSlot} className="block text-caption leading-3.5 text-muted-foreground">{closed}</span> : null}
     </span>
   );
   const common = { "data-slot": "phone-week-hero", "data-state": hero.state } as const;
@@ -370,7 +374,7 @@ function Entry({ control, label, onOpen, id, children }: { control: string; labe
  * (what needs the manager, one of seven states) and the week's blocks by day with each rival's real
  * logo. It computes nothing: `buildPhoneHome` does, and a tap only says what it wants opened.
  */
-export function ScrimWeekHome({ home, myTeam, teams, weekdayLabels, teamNameById, todayMessage, lockText, onOpen }: ScrimWeekHomeProps) {
+export function ScrimWeekHome({ home, myTeam, teams, weekdayLabels, teamNameById, todayMessage, lockText, notice = null, onOpen }: ScrimWeekHomeProps) {
   const { t } = useTranslation();
   const { objective, volume, report } = home.entries;
   const nameOf = (id: string) => teamNameById.get(id) ?? id;
@@ -415,6 +419,7 @@ export function ScrimWeekHome({ home, myTeam, teams, weekdayLabels, teamNameById
       <Hero
         hero={home.hero}
         onOpen={onOpen}
+        notice={notice}
         ctx={{ slotLabel, identityOf, mine: teamIdentity(myTeam), lockText, todayMessage }}
       />
 

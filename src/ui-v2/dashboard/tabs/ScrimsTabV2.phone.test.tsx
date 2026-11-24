@@ -1269,3 +1269,67 @@ describe("ScrimsTabV2 on a phone: the three settings views", () => {
     expect(screen.getByText("Cancellations").nextSibling).toHaveTextContent("2");
   });
 });
+
+describe("ScrimsTabV2 on a phone: Rellenar opens Semana", () => {
+  const notice = () => document.querySelector('[data-slot="phone-week-notice"]');
+  const live = () => document.querySelector('[aria-live="polite"]') as HTMLElement;
+  const rellenar = () => screen.getByRole("button", { name: /Autofill/ });
+
+  it("opens Semana when the fill is applied, says so once in the live region and shows it on Semana", async () => {
+    trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    await waitFor(() => expect(home()).not.toBeNull());
+    expect(pane("volume")).toBeNull();
+    const text = "Week filled: 4 blocks. Tap a block to change its rival.";
+    expect(notice()).toHaveTextContent(text);
+    expect(live()).toHaveTextContent(text);
+    expect(document.querySelectorAll("[aria-live]")).toHaveLength(1);
+    expect(live().contains(notice())).toBe(false);
+    // Focus sits on the control of Semana that opened Volume, never on body.
+    expect(document.activeElement).toBe(entry("volume"));
+  });
+
+  it("uses the singular for one block", async () => {
+    trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
+    mount(ctx(week({ capacity: 1, slots: [slot(0)] }), today()));
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    await waitFor(() => expect(notice()).toHaveTextContent("Week filled: 1 block. Tap a block to change its rival."));
+  });
+
+  it("does nothing while Rellenar is disabled", () => {
+    mount(ctx(week({ slots: [slot(0, { canEdit: false }), slot(1), slot(2), slot(3)] }), today()));
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    expect(trainingMocks.setWeeklyScrimPlans).not.toHaveBeenCalled();
+    expect(pane("volume")).not.toBeNull();
+    expect(notice()).toBeNull();
+  });
+
+  it("stays in Volumen with no notice when the save fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    trainingMocks.setWeeklyScrimPlans.mockRejectedValue(new Error("boom"));
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    await waitFor(() => expect(error).toHaveBeenCalled());
+    expect(pane("volume")).not.toBeNull();
+    expect(notice()).toBeNull();
+    expect(live()).toHaveTextContent("");
+    error.mockRestore();
+  });
+
+  it("drops the notice when the manager leaves Semana and it does not come back", async () => {
+    trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    await waitFor(() => expect(notice()).not.toBeNull());
+    fireEvent.click(entry("report"));
+    fireEvent.click(back());
+    expect(home()).not.toBeNull();
+    expect(notice()).toBeNull();
+  });
+});
