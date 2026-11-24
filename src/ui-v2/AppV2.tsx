@@ -12,6 +12,7 @@ import { LazyFallback } from "./components/LazyFallback";
 import { TitleBarV2 } from "./components/TitleBarV2";
 import ErrorBoundary from "./components/ErrorBoundary";
 import i18n from "@/i18n";
+import { autoSave } from "@/services/autoSave";
 import { isAndroidUserAgent, rootFontSizeFor } from "@/ui-v2/uiScale";
 
 const DashboardV2 = lazy(() => import("./dashboard/DashboardV2"));
@@ -199,6 +200,9 @@ export default function AppV2() {
     const onVisible = () => {
       if (document.visibilityState === "visible") {
         void applyAndroidImmersive();
+      } else {
+        // Android may close a background app at will: write what is unsaved now.
+        void autoSave();
       }
     };
 
