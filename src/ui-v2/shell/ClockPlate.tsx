@@ -7,6 +7,8 @@ export interface ClockPlateProps {
   /** The abbreviated date, shown instead of `dateLabel` when the bar is narrower than 80rem. */
   dateShortLabel?: string;
   phase?: { key: string; label: string };
+  /** The phone's compact form: the short date over the phase, in plain text, no plate. */
+  stacked?: boolean;
   className?: string;
 }
 
@@ -14,8 +16,22 @@ export interface ClockPlateProps {
  * Game date on a panel plate, joined to a slanted club-colour tag with the day phase.
  * The phase is always spelled out in text; the dot is decoration.
  */
-export function ClockPlate({ dateLabel, dateShortLabel, phase, className }: ClockPlateProps) {
+export function ClockPlate({ dateLabel, dateShortLabel, phase, stacked = false, className }: ClockPlateProps) {
   const { t } = useTranslation();
+
+  if (stacked) {
+    return (
+      <div
+        role="group"
+        aria-label={t("onAir.bar.clock", { defaultValue: "Game date and phase" })}
+        data-slot="clock-plate"
+        className={cn("flex shrink-0 flex-col justify-center whitespace-nowrap font-heading leading-tight", className)}
+      >
+        <span className="text-entry font-bold tabular-nums text-foreground">{dateShortLabel ?? dateLabel}</span>
+        {phase && <span className="text-nav text-dim">{phase.label}</span>}
+      </div>
+    );
+  }
 
   return (
     <div

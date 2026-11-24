@@ -74,6 +74,16 @@ describe("DashboardHeaderV2", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
   });
 
+  it("says a failed auto-save in the Save button and the status, and keeps Save usable", () => {
+    const { onSave } = setup({ saveFailed: true });
+    const save = screen.getByRole("button", { name: "Auto-save failed. Press Save to keep your progress." });
+    expect(save).not.toBeDisabled();
+    // The sentence itself is spoken and shown by the notice under the bar, not twice here.
+    expect(screen.getByRole("status")).toHaveTextContent("");
+    fireEvent.click(save);
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
   it("calls the closed period a split when later splits remain in the season", () => {
     setup({ seasonComplete: true, endsSplit: true });
     expect(screen.getByRole("button", { name: "Split Complete" })).toBeDisabled();
@@ -250,7 +260,7 @@ describe("DashboardHeaderV2", () => {
 
     it("is small dim text, not a link or a landmark", () => {
       setup({ activeTab: "Squad" });
-      // text-nav (R16): text-caption is 6.75 px at the Android root.
+      // text-nav (R16): the shell keeps its own label token (caption was 6.75 px at the old 9 px Android root).
       expect(crumb()!.className).toContain("text-nav");
       expect(crumb()!.className).not.toContain("text-caption");
       expect(crumb()!.className).toContain("text-dim");

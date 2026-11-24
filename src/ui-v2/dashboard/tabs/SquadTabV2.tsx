@@ -18,6 +18,7 @@ import {
 } from "@/lib/squad/imports";
 import { getPlayerCardModel, shortRoleKey, type PlayerCardModel } from "@/lib/squad/cards";
 import type { LolRole } from "@/lib/home/scoreboard";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
 import { useTabUiField, useValidTabUiField, type SquadTabUiState } from "@/store/tabUiStore";
 
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
@@ -97,6 +98,8 @@ export function SquadTabV2({
   // A selected player who has since left the club reads as no selection.
   const isOnRoster = useCallback((id: string) => playersById.has(id), [playersById]);
   const [selectedId, setSelectedId] = useValidTabUiField("squad", "selectedId", isOnRoster);
+  // A phone has no room for the selection bar under the cards: a tap opens the profile, as a bench row does.
+  const phone = usePhoneForm();
   const activeLineupSlots = useMemo(
     () => buildActiveLineupSlots(LOL_ACTIVE_ROLES, activeLineupIds, playersById),
     [activeLineupIds, playersById],
@@ -412,8 +415,8 @@ export function SquadTabV2({
                     key={slot.role}
                     model={model}
                     slotRole={slot.role}
-                    selected={selectedId === player.id}
-                    onSelect={(id) => setSelectedId((current) => (current === id ? null : id))}
+                    selected={phone ? undefined : selectedId === player.id}
+                    onSelect={(id) => (phone ? onSelectPlayer(id) : setSelectedId((current) => (current === id ? null : id)))}
                     candidates={candidates}
                     onSwap={(id) => void handleSlotChange(slot.index, id)}
                     saving={saving}

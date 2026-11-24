@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameStateData, PlayerData } from "@/store/gameStore";
 
 const invokeMock = vi.fn();
+const phoneForm = vi.hoisted(() => ({ value: false }));
+vi.mock("@/hooks/usePhoneForm", () => ({ usePhoneForm: () => phoneForm.value }));
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: (...args: unknown[]) => invokeMock(...args),
 }));
@@ -109,6 +111,7 @@ function benchNames(): string[] {
 }
 
 beforeEach(() => {
+  phoneForm.value = false;
   invokeMock.mockReset();
   invokeMock.mockResolvedValue(undefined);
 });
@@ -166,6 +169,18 @@ describe("SquadTabV2", () => {
 
     fireEvent.click(card);
     fireEvent.click(card);
+    expect(screen.queryByRole("region", { name: "Selected player" })).toBeNull();
+  });
+
+  it("opens the profile at once when a starter card is tapped on a phone, as a bench row does", () => {
+    phoneForm.value = true;
+    const { onSelectPlayer } = setup(makeState([...baseStarters(), ...BENCH]));
+    const card = within(screen.getByTestId("active-lineup")).getByRole("button", { name: /s_mid/ });
+    // It navigates there, so it is not a toggle.
+    expect(card).not.toHaveAttribute("aria-pressed");
+
+    fireEvent.click(card);
+    expect(onSelectPlayer).toHaveBeenCalledWith("s_mid");
     expect(screen.queryByRole("region", { name: "Selected player" })).toBeNull();
   });
 

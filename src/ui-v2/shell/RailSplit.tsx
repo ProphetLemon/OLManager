@@ -33,6 +33,9 @@ interface StopsProps {
   /** Rendered after the group launchers (Android's More stop). */
   trailing?: ReactNode;
   onNavClick: (tab: string) => void;
+  /** Phone: a group stop opens its sections (in a sheet) instead of navigating; `openGroup` is the one that is open. */
+  onGroup?: (id: RailGroupId) => void;
+  openGroup?: RailGroupId | null;
   handle: (navId: string) => RowHandle;
 }
 
@@ -40,7 +43,7 @@ interface StopsProps {
  * The icon-over-label stops of the Split rail: the direct stops, then one launcher per group.
  * A launcher navigates to its group's last tab; the panel beside the rail lists the rest.
  */
-export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, iconOnly = false, lastVisited, android = false, leading, trailing, onNavClick, handle }: StopsProps) {
+export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, iconOnly = false, lastVisited, android = false, leading, trailing, onNavClick, onGroup, openGroup, handle }: StopsProps) {
   const badgeOf = (item: NavItem) => (item.badge ? badges[item.badge] : undefined);
   const hintOf = (g: RailGroup) => g.items.map(labelOf).join(", ");
   const stop = (item: NavItem) => (
@@ -52,6 +55,7 @@ export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, ic
         badge={badgeOf(item)}
         compact={compact}
         iconOnly={iconOnly}
+        phone={android}
         onClick={() => onNavClick(item.tab)}
         data-nav-id={`tab:${item.tab}`}
         {...handle(`tab:${item.tab}`)}
@@ -77,7 +81,10 @@ export function RailSplitStops({ activeTab, groups, badges, labelOf, compact, ic
             badge={g.id === "market" ? badges.offers : undefined}
             compact={compact}
             iconOnly={iconOnly}
-            onClick={() => onNavClick(resolveGroupLanding(g.id, lastVisited))}
+            phone={android}
+            aria-haspopup={onGroup ? "dialog" : undefined}
+            aria-expanded={onGroup ? openGroup === g.id : undefined}
+            onClick={() => (onGroup ? onGroup(g.id) : onNavClick(resolveGroupLanding(g.id, lastVisited)))}
             data-nav-id={`group:${g.id}`}
             {...handle(`group:${g.id}`)}
           />
@@ -104,15 +111,19 @@ interface PanelProps {
   handle: (navId: string) => RowHandle;
   /** Touch (Android): `--hit` rows (ruling R1) and a header sized from `--nav-cell`. */
   touch?: boolean;
+  /** Inside a side sheet: the sheet's title names the group, so no header; the rows fill the sheet in up to two columns. */
+  sheet?: boolean;
 }
 
 /**
  * The docked panel of the active group (Split): a labelled group inside the one nav, with the
  * group's name and size as its header and its tabs below. It is the rail's second level in Split.
  */
-export function RailSplitPanel({ group, activeTab, badges, labelOf, listLabel, attention = {}, attentionName, onNavClick, handle, touch = false }: PanelProps) {
+export function RailSplitPanel({ group, activeTab, badges, labelOf, listLabel, attention = {}, attentionName, onNavClick, handle, touch = false, sheet = false }: PanelProps) {
   const label = labelOf(group);
   const fade = useFadeMask<HTMLUListElement>(group.id);
+  // A sheet fills a column before it starts the next: one column up to five sections, else two.
+  const rows = group.items.length > 5 ? Math.ceil(group.items.length / 2) : group.items.length;
   const marker = (item: NavItem, itemLabel: string): { attention?: Attention; attentionName?: string } => {
     const a = attention[item.tab];
     return a && attentionName
@@ -124,9 +135,9 @@ export function RailSplitPanel({ group, activeTab, badges, labelOf, listLabel, a
       role="group"
       aria-label={listLabel(label)}
       data-slot="rail-panel"
-      className="flex min-h-0 w-[var(--nav-panel-w)] shrink-0 flex-col border-s border-line"
+      className={cn("flex min-h-0 flex-col", sheet ? "flex-1" : "w-[var(--nav-panel-w)] shrink-0 border-s border-line")}
     >
-      <div
+      {!sheet && <div
         aria-hidden="true"
         className={cn(
           touch ? "h-[calc(var(--nav-cell)-8px)]" : "h-[var(--nav-row)]",
@@ -135,15 +146,18 @@ export function RailSplitPanel({ group, activeTab, badges, labelOf, listLabel, a
       >
         <span className="min-w-0 truncate">{label}</span>
         <span className="tabular-nums">{group.items.length}</span>
-      </div>
+      </div>}
       <ul
         ref={fade.ref}
         data-slot="rail-panel-scroll"
         onScroll={fade.onScroll}
-        style={fade.style}
+        style={sheet ? { ...fade.style, gridTemplateRows: `repeat(${rows}, minmax(0, auto))` } : fade.style}
         data-overflow-top={fade["data-overflow-top"]}
         data-overflow-bottom={fade["data-overflow-bottom"]}
-        className="m-0 min-h-0 flex-1 list-none overflow-y-auto overscroll-contain p-[6px] pt-0 pb-[var(--safe-bottom)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={cn(
+          "m-0 min-h-0 flex-1 list-none overflow-y-auto overscroll-contain p-[6px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          sheet ? "grid grid-flow-col auto-cols-fr content-start gap-1" : "pt-0 pb-[var(--safe-bottom)]",
+        )}
       >
         {group.items.map((item) => (
           <li key={item.tab}>

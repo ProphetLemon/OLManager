@@ -12,7 +12,6 @@ import {
   deriveWeeklyScrimContext,
   effectiveWeeklyScrimSlots,
   teamLolOvr,
-  type ScrimDayState,
 } from "@/lib/scrims/scrimContext";
 import {
   chooseDailyScrimAction,
@@ -23,14 +22,17 @@ import {
 } from "@/services/trainingService";
 import { dailyScrimDecisionActions } from "@/lib/scrims/dailyDecisionActions";
 import { decisionEffectLines, NEXT_BLOCK_CANCELLATION, type DecisionEffectContext } from "@/lib/scrims/decisionEffects";
+import { DECISION_TEXT_KEY } from "@/lib/scrims/decisionTextKey";
 import { buildDecisionResult, type DecisionResult } from "@/lib/scrims/decisionResult";
 import { buildRivalRows } from "@/lib/scrims/rivalOdds";
-import { deskPanel, riskLevel, todayBarOpponentId, type RiskLevel } from "@/lib/scrims/scrimDesk";
+import { dayStateKey, deskPanel, riskLevel, todayBarOpponentId, type RiskLevel } from "@/lib/scrims/scrimDesk";
 import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { formatDate } from "@/lib/formatting/dateFormatting";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
 import { useSettingsStore } from "@/store/settingsStore";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
 import { Button } from "@/ui-v2/components/ui/button";
+import { ScrimsPhoneLayout } from "./scrims/phone/ScrimsPhoneLayout";
 import { ScrimDeskPanel } from "./scrims/ScrimDeskPanel";
 import { ScrimDecisionPanel } from "./scrims/ScrimDecisionPanel";
 import { ScrimDecisionResult } from "./scrims/ScrimDecisionResult";
@@ -50,39 +52,19 @@ interface ScrimsTabV2Props {
 
 const ALLOW_SCRIM_CONTEXT_FALLBACK = true;
 
-const DECISION_TEXT_KEY: Record<DailyScrimAction, string> = {
-  ContinueToBlock2: "continueBlock2",
-  OfferRest: "offerRest",
-  PushThrough: "pushThrough",
-  CancelScrims: "cancelScrims",
-  VodReview: "vodReview",
-  MentalReset: "mentalReset",
-  TargetedDrills: "targetedDrills",
-  DayOff: "dayOff",
-};
-
-function todayStateKey(state: ScrimDayState): string {
-  switch (state) {
-    case "PlayedNeedsReview": return "scrims.pendingReview";
-    case "Reviewed": return "scrims.reviewed";
-    case "Planned": return "scrims.planned";
-    case "Cancelled": return "scrims.cancelled";
-    default: return "scrims.noScrim";
-  }
-}
-
 export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const { t, i18n } = useTranslation();
   const { settings, updateSettings } = useSettingsStore();
   const [isSaving, setIsSaving] = useState(false);
   const [decisionSaving, setDecisionSaving] = useState<DailyScrimAction | null>(null);
   const [statusText, setStatusText] = useState("");
-  const [lastResult, setLastResult] = useState<{ date: string; value: DecisionResult } | null>(null);
+  const [lastResult, setLastResult] = useState<{ date: string; value: DecisionResult; slotIndex: number } | null>(null);
   const [focusTick, setFocusTick] = useState(0);
   const [showCancelFollowups, setShowCancelFollowups] = useState(false);
   const remoteScrimContext = useScrimContextWithFallback(gameState);
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const phone = usePhoneForm();
   const myTeam = gameState.teams.find((team) => team.id === gameState.manager.team_id);
 
   // After a decision lands the focus goes to the heading of the wide column, which survives the
@@ -248,8 +230,9 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
           ),
         ),
       });
+      // The result goes first: the phone layout must not see the next block's tag before the result it keeps on screen.
+      setLastResult({ date: dateKey(gameState.clock.current_date), value, slotIndex: decisionReport.slot_index });
       onGameUpdate(updated);
-      setLastResult({ date: dateKey(gameState.clock.current_date), value });
       setStatusText(`${t("scrims.reviewDecisionApplied")}: ${t(`scrims.decision.${DECISION_TEXT_KEY[decision]}`)}`);
       setShowCancelFollowups(false);
       setFocusTick((tick) => tick + 1);
@@ -294,6 +277,44 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
       }
     : null;
 
+  if (phone) {
+    return (
+      <ScrimsPhoneLayout
+        gameState={gameState}
+        myTeam={myTeam}
+        weeklyContext={weeklyContext}
+        todayContext={todayContext}
+        teamNameById={teamNameById}
+        weekdayLabels={weekdayLabels}
+        slotLabelOf={slotLabelOf}
+        assistantControls={assistantControls}
+        onAssistant={(next) => updateSettings({ scrim_review_mode: next ? "assistant" : "manual" })}
+        setupBlockedText={setupBlockedText}
+        staffSuggestions={staffSuggestions}
+        isSaving={isSaving}
+        setIsSaving={setIsSaving}
+        onGameUpdate={onGameUpdate}
+        onObjective={handleSetObjective}
+        onVolume={handleSetWeeklyCapacity}
+        onFinalize={handleFinalizeSetup}
+        panel={panel}
+        todayMessage={todayMessage}
+        todayRisk={todayRisk}
+        decisionReport={decisionReport}
+        blockLabel={dailyBlockMeta?.blockLabel ?? null}
+        decisionOptions={decisionOptions}
+        decisionSaving={decisionSaving}
+        showCancelFollowups={showCancelFollowups}
+        onDecide={handleReviewDecision}
+        onBackToDecision={handleBackToBlockDecision}
+        result={result}
+        resultSlotIndex={result && lastResult ? lastResult.slotIndex : null}
+        liveText={liveText}
+        focusTick={focusTick}
+      />
+    );
+  }
+
   return (
     <div className="flex h-full flex-col gap-5 overflow-y-auto p-4 sm:p-6 scrollbar-v2">
       <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
@@ -335,7 +356,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
             ref={headingRef}
             id={headingId}
             title={panelTitle}
-            badge={t(todayStateKey(todayContext.state))}
+            badge={t(dayStateKey(todayContext.state))}
             status={<ScrimDecisionResult result={result} statusText={liveText} />}
           >
             {panel === "setup" ? (

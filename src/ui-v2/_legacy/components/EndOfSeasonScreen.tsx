@@ -12,6 +12,7 @@ import { PromotionRelegationCard } from "@/ui-v2/components/season/PromotionRele
 import { Card, CardBody } from "@/ui-v2/_legacy/components/ui";
 import PlayoffBracketBoard from "@/ui-v2/_legacy/components/playoffs/PlayoffBracketBoard";
 import { Trophy, Award, Star, ArrowRight, Crown } from "lucide-react";
+import { autoSave } from "@/services/autoSave";
 
 type AdvanceToNextSeasonResult = {
   action?: "fired";
@@ -85,6 +86,7 @@ export default function EndOfSeasonScreen({ gameState, onGameUpdate }: EndOfSeas
       }
       setPendingSeasonSummary(result.summary);
       onGameUpdate(result.game);
+      void autoSave();
     } catch (err) {
       console.error("Failed to advance season:", err);
     } finally {

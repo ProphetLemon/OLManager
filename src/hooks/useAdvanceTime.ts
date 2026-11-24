@@ -12,6 +12,7 @@ import {
 } from "../lib/home/blockerRules";
 import { scrimBlockerText } from "../lib/home/scrimBlockerText";
 import { advanceTimeWithMode, skipToMatchDay } from "../services/advanceTimeService";
+import { autoSave } from "../services/autoSave";
 import { collectAdvanceBlockers } from "../lib/home/advanceBlockers";
 import { autoConfigureWeeklyScrimSetup, delegateScrimDecision } from "../services/trainingService";
 import { newScrimResultLines, scrimReportKeys } from "./scrimResultNotice";
@@ -157,16 +158,19 @@ export function useAdvanceTime(
       // the same day, so only then is there a rest of the day to fast-forward through.
       const applyAdvancedResult = async (initial: GameStateData, dayEnded: boolean): Promise<void> => {
         let nextGame = initial;
+        let ended = dayEnded;
         if (!dayEnded && shouldFastForwardDay(nextGame)) {
           const startDate = String(nextGame.clock.current_date);
           for (let i = 0; i < 5; i += 1) {
             const step = await advanceTimeWithMode(effectiveMode);
             if (!step || !(step.action === "advanced" || step.action === "phase_advanced") || !step.game) break;
             nextGame = step.game as GameStateData;
+            if (step.action === "advanced") ended = true;
             if (step.action === "advanced" || String(nextGame.clock.current_date) !== startDate) break;
           }
         }
         setGameState(nextGame);
+        if (ended) void autoSave();
       };
       if (scrimReviewMode === "assistant") {
         let baselineDate: string | null = null;
@@ -199,11 +203,9 @@ export function useAdvanceTime(
 
           if ((result.action === "advanced" || result.action === "phase_advanced") && result.game) {
             const game = result.game as GameStateData;
-            if (!baselineDate) {
-              setGameState(game);
-              return;
-            }
             setGameState(game);
+            if (result.action === "advanced") void autoSave();
+            if (!baselineDate) return;
             if (String(game.clock.current_date) !== baselineDate) {
               if (didAutoScrimSetup || didAutoScrimDecision) {
                 setAutoDelegationNotice(noticeAssistantResolvedDay(didAutoScrimSetup, didAutoScrimDecision));
@@ -457,6 +459,7 @@ export function useAdvanceTime(
         if ((result.action === "advanced" || result.action === "phase_advanced") && result.game) {
           const game = result.game as GameStateData;
           setGameState(game);
+          if (result.action === "advanced") void autoSave();
           if (!baselineDate) {
             baselineDate = String(game.clock.current_date);
           }
@@ -548,6 +551,8 @@ export function useAdvanceTime(
         return;
       }
       if (result.game) setGameState(result.game as GameStateData);
+      // "arrived" and "blocked" processed `days_skipped` days; "blocked" before any day did not.
+      if (result.game && (result.days_skipped ?? 0) > 0) void autoSave();
       if (result.match_simulated) {
         const summary = result.game ? latestUserMatchSummary(result.game as GameStateData) : null;
         setMatchPlayedNotice(

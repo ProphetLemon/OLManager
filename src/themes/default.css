@@ -13,18 +13,20 @@
      stays legible. The smaller names remain as hooks for later tuning. */
   --text-2xs: 0.75rem;
   --text-caption: 0.75rem;
-  /* On-map labels of the match arena only: one of the two exceptions to "rem only".
-     Android runs a 9 px root, where 0.75rem would be 6.75 px, so the floor is
-     physical. Never use it outside src/ui-v2/match (the only other exception is
-     --text-nav below). */
+  /* On-map labels of the match arena only: one of the exceptions to "rem only".
+     The floor is physical: a 12 px desktop root (xsmall) makes 0.75rem 9 px. The
+     phone runs a 16 px root, where 0.75rem is already 12 px and the floor does not
+     bite. Never use it outside src/ui-v2/match (the other exceptions are
+     --text-nav and --text-entry below). */
   --text-map: max(0.75rem, 10px);
   /* Navigation labels (rail, later the Club tree): the second px-floored size,
      for the same reason as --text-map. Never use it outside src/ui-v2/shell,
      the bar (DashboardHeaderV2), the attention lane (AttentionLaneV2) and the
      palette (src/ui-v2/palette), R35. */
   --text-nav: max(0.75rem, 10px);
-  /* Option labels and lane pill headlines (R35): rem text would fall to 7.9 px
-     on Android's 9 px root, so it is floored at 12px like --text-nav. */
+  /* Option labels and lane pill headlines (R35): rem text falls to 10.5 px on a
+     12 px desktop root, so it is floored at 12px like --text-nav. The phone's 16 px
+     root makes it 14 px, so the floor does not bite there. */
   --text-entry: max(0.875rem, 12px);
 
   /* P1 type scale (rem only) */
@@ -222,7 +224,9 @@
   --palette-h: min(32rem, calc(100dvh - 6rem));
   --palette-top: 15vh;
   --palette-row: max(2.5rem, 40px);
-  --palette-sheet-w: max(22rem, 320px);
+  /* Every side sheet (spec §7.4); the Go palette's Android sheet is one of them. */
+  --sheet-w: max(22rem, 320px);
+  --palette-sheet-w: var(--sheet-w); /* alias, kept for existing readers */
   /* Display-cutout and system-bar insets. 0px wherever the webview reports none
      (every desktop window), so applying them never moves anything there. */
   --safe-top: env(safe-area-inset-top, 0px);
@@ -335,13 +339,20 @@
   --sidebar-ring: var(--club-text);
 }
 
-/* ── Android (data-platform set on <html> by AppV2) ─────────────
-   Touch targets reach 48px at least; desktop keeps its 24px floor.
+/* ── Android (data-platform set on <html> by AppV2, with data-form="phone") ──
+   The phone runs a 16px root (phoneRootFontPx in src/ui-v2/uiScale.ts), so every
+   --text-* token is at least 12px here with no px floor. Touch targets reach 48px
+   at least; desktop keeps its 24px floor.
    Curved screens misread touches at their long edges (top and bottom in
    landscape), so those two insets never drop below --edge-gutter.
    The 12px value is provisional: tune it on a real curved phone. */
 :root[data-platform="android"] {
   --hit: max(2.75rem, 48px);
+  /* The shared control floor (Button, tabs, chips and the primitives read it) is the
+     touch hit here, instead of desktop's 24px. */
+  --target-min: var(--hit);
+  /* The phone's rail: 7 stops of --hit in a 64 px column, and where a side sheet begins. */
+  --rail-w-phone: max(4rem, 64px);
   /* The band's 1 px bottom border sits inside its height: 49 px keeps a 48 px pill whole (R62). */
   --lane-h: calc(var(--hit) + 1px);
   --lane-pill-h: var(--hit);

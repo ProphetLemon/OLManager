@@ -27,7 +27,10 @@ import {
 } from "@/lib/inbox/helpers";
 import { resolveInboxCategoryLabel } from "@/lib/inbox/categoryLabel";
 import { formatDateShort } from "@/lib/common/helpers";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
 import { useOneShotOverride, useTabUiField, useTabUiStore, useValidTabUiField } from "@/store/tabUiStore";
+
+import { MAIN_CONTENT_ID } from "../focusMainContent";
 
 import { Card, CardContent } from "@/ui-v2/components/ui/card";
 import { Badge } from "@/ui-v2/components/ui/badge";
@@ -107,8 +110,14 @@ export function InboxTabV2({
     [allMessages, selectedId],
   );
 
+  // A phone has no room for the list beside the message: it shows one or the other.
+  const phone = usePhoneForm();
+  const reading = phone && selectedMessage !== null;
+
   async function handleSelect(id: string) {
     setSelectedId(id);
+    // shortcut: the message opens at the top and the list reopens at the top, not at the row; keep the offset if that annoys.
+    if (phone) document.getElementById(MAIN_CONTENT_ID)?.scrollTo(0, 0);
     setEffect(null);
     const msg = allMessages.find((m) => m.id === id);
     if (msg && !msg.read) {
@@ -191,6 +200,7 @@ export function InboxTabV2({
 
   return (
     <div className="flex h-full flex-col gap-4 p-6">
+      {!reading && (<>
       {/* Toolbar */}
       <Card>
         <CardContent className="flex flex-wrap items-center gap-3 py-3">
@@ -274,9 +284,11 @@ export function InboxTabV2({
           />
         ))}
       </div>
+      </>)}
 
       {/* Master / detail */}
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[360px_1fr]">
+        {!reading && (
         <Card className="flex h-full min-h-0 flex-col overflow-hidden p-0">
           {filteredMessages.length === 0 ? (
             <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
@@ -296,7 +308,9 @@ export function InboxTabV2({
             </ul>
           )}
         </Card>
+        )}
 
+        {(!phone || reading) && (
         <Card className="flex h-full min-h-0 flex-col overflow-hidden">
           {selectedMessage ? (
             <DetailPane
@@ -313,6 +327,7 @@ export function InboxTabV2({
             </div>
           )}
         </Card>
+        )}
       </div>
     </div>
   );

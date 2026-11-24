@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { finalizeLiveMatch } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
+import { autoSave, setLiveMatchActive } from "@/services/autoSave";
 import type { GameStateData } from "@/store/gameStore";
+
+vi.mock("@/services/autoSave", () => ({
+  autoSave: vi.fn(() => Promise.resolve()),
+  setLiveMatchActive: vi.fn(),
+}));
 
 const game = { id: "g" } as unknown as GameStateData;
 const picksGame = { id: "g-picks" } as unknown as GameStateData;
@@ -76,5 +82,32 @@ describe("finalizeLiveMatch", () => {
     expect(onGame).toHaveBeenCalledTimes(1);
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
+  });
+
+  it("saves once after the match is finalized, once the live match no longer blocks the save", async () => {
+    vi.mocked(autoSave).mockClear();
+    vi.mocked(setLiveMatchActive).mockClear();
+    const order: string[] = [];
+    vi.mocked(setLiveMatchActive).mockImplementation(() => void order.push("inactive"));
+    vi.mocked(autoSave).mockImplementation(() => { order.push("save"); return Promise.resolve(); });
+    await finalizeLiveMatch({
+      finish: () => Promise.resolve({ game }),
+      recordPicks: () => Promise.resolve(picksGame),
+      refetchGame: () => Promise.resolve(game),
+      onGame: vi.fn(),
+    });
+    expect(order).toEqual(["inactive", "save"]);
+  });
+
+  it("does not save when the match could not be finalized", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(autoSave).mockClear();
+    await finalizeLiveMatch({
+      finish: () => Promise.reject(new Error("boom")),
+      recordPicks: null,
+      refetchGame: () => Promise.resolve(game),
+      onGame: vi.fn(),
+    });
+    expect(autoSave).not.toHaveBeenCalled();
   });
 });

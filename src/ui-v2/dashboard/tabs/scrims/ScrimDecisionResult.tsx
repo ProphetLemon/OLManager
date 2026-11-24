@@ -1,9 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { TriangleAlert } from "lucide-react";
 
 import type { DecisionResult, ResultClosing, ResultRow } from "@/lib/scrims/decisionResult";
 import { cn } from "@/ui-v2/lib/utils";
-import { RESULT_FIELD_KEY, resultRowIsCost, usePlayerChanges } from "./EffectText";
+import { CostMark, RESULT_FIELD_KEY, resultRowIsCost, usePlayerChanges } from "./EffectText";
 
 interface ScrimDecisionResultProps {
   result: DecisionResult | null;
@@ -11,7 +10,7 @@ interface ScrimDecisionResultProps {
   statusText: string;
 }
 
-const CLOSING_KEY: Record<ResultClosing, string> = {
+export const CLOSING_KEY: Record<ResultClosing, string> = {
   blockTwoPlayed: "scrims.result.blockTwoPlayed",
   nextReportLater: "scrims.result.nextReportLater",
   blockCancelled: "scrims.result.blockCancelled",
@@ -70,17 +69,15 @@ export function ScrimDecisionResult({ result, statusText }: ScrimDecisionResultP
             {result.rows.map((row, index) => (
               <div
                 key={`${row.kind}-${index}`}
-                className="grid grid-cols-[minmax(8.125rem,0.9fr)_minmax(0,1.4fr)] items-baseline gap-x-4 gap-y-1 border-t border-line py-2 first:border-t-0 first:pt-0"
+                className={cn(
+                  "grid items-baseline gap-x-4 gap-y-1 border-t border-line first:border-t-0 first:pt-0",
+                  "grid-cols-[minmax(8.125rem,0.9fr)_minmax(0,1.4fr)] py-2",
+                )}
               >
                 <dt className="text-sm text-muted-foreground">{rowLabel(row, t)}</dt>
                 <dd className="flex flex-wrap items-center gap-2 font-medium">
                   <RowValue row={row} />
-                  {resultRowIsCost(row) ? (
-                    <span className="inline-flex items-center gap-1 rounded border border-dashed border-warning px-1.5 py-0.5 text-caption font-semibold leading-none text-warning">
-                      <TriangleAlert aria-hidden="true" className="size-3" />
-                      {t("scrims.costMark")}
-                    </span>
-                  ) : null}
+                  {resultRowIsCost(row) ? <CostMark /> : null}
                 </dd>
               </div>
             ))}

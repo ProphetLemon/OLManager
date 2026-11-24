@@ -27,6 +27,8 @@ interface MeterProps {
   tone?: MeterTone
   size?: "sm" | "md"
   showValue?: boolean
+  /** Draws a decorative mark at this value (same scale as `max`), e.g. 50 on a chance. */
+  tick?: number
   className?: string
 }
 
@@ -39,6 +41,7 @@ function Meter({
   tone = "auto",
   size = "md",
   showValue = true,
+  tick,
   className,
 }: MeterProps) {
   const safeMax = max > 0 ? max : 100
@@ -63,6 +66,7 @@ function Meter({
       <div
         className={cn(
           "flex-1 overflow-hidden rounded-full bg-muted",
+          tick !== undefined && "relative",
           size === "sm" ? "h-1.5" : "h-2.5"
         )}
       >
@@ -71,6 +75,14 @@ function Meter({
           className={cn("h-full rounded-full", FILL_CLASS[resolved])}
           style={{ width: `${percent}%` }}
         />
+        {tick !== undefined ? (
+          <span
+            data-slot="meter-tick"
+            aria-hidden="true"
+            className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-foreground"
+            style={{ left: `${Math.max(0, Math.min(100, (tick / safeMax) * 100))}%` }}
+          />
+        ) : null}
       </div>
       {showValue ? (
         <span

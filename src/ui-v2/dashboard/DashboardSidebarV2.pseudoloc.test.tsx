@@ -88,10 +88,10 @@ describe("pseudo-localisation x1.4", () => {
     expect(navId("tab:Squad")).toHaveAccessibleName(grow("Squad"));
   });
 
-  it("Android: same rules on the stops and the panel", () => {
+  it("Android: same rules on the stops (its sections are in a sheet, not a panel)", () => {
     setup({ platform: "android" });
     expectUncut(labelNodes(document.body));
-    expectUncut(panelLabels());
+    expect(panelLabels()).toEqual([]);
   });
 
   it("icon-only Split: no visible label to cut, the full name in the aria-label and the tip", () => {

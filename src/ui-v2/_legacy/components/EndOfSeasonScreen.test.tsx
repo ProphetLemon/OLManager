@@ -8,7 +8,10 @@ import type { EndOfSeasonSummaryData } from "@/store/types";
 const invokeMock = vi.hoisted(() => vi.fn());
 const gameLanguage = vi.hoisted(() => ({ current: "en" }));
 
+const autoSaveMock = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+
 vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
+vi.mock("@/services/autoSave", () => ({ autoSave: autoSaveMock }));
 vi.mock("react-i18next", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-i18next")>();
   const { translateFromEnglish } = await import("@/test-i18n");
@@ -151,6 +154,7 @@ describe("end-of-season summary survives the season wrap", () => {
   beforeEach(() => {
     gameLanguage.current = "en";
     invokeMock.mockReset();
+    autoSaveMock.mockClear();
     useGameStore.getState().clearGame();
     useGameStore.getState().setGameState(game(1));
   });
@@ -179,6 +183,21 @@ describe("end-of-season summary survives the season wrap", () => {
     fireEvent.click(screen.getByRole("button", { name: /start next season/i }));
     expect(await screen.findByText("Ana Gómez")).toBeInTheDocument();
     expect(screen.getByText(`Avg rating: ${expected}`)).toBeInTheDocument();
+  });
+
+  it("saves the game once after the rollover succeeds", async () => {
+    advance(true);
+    await screen.findByTestId("ladder-user-result");
+    expect(autoSaveMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not save when the rollover fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    invokeMock.mockRejectedValue("boom");
+    render(<Harness tab="Home" />);
+    fireEvent.click(screen.getByRole("button", { name: /start next season/i }));
+    await waitFor(() => expect(invokeMock).toHaveBeenCalled());
+    expect(autoSaveMock).not.toHaveBeenCalled();
   });
 
   it("announces the new season when the rollover wraps the season", async () => {
