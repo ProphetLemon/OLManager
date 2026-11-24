@@ -102,8 +102,13 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   // Only Decide and Today move the screen by themselves; the key changes when the game moves the tag.
   const tagKey = hero.state === "decide" || hero.state === "today" ? `${hero.state}:${hero.slotIndex}` : "";
 
+  // A block that waits for its own decision comes before the review of the one just decided (owner's flow).
   const [selected, setSelected] = useState<View>(() =>
-    result && resultSlotIndex != null ? slotRowId(resultSlotIndex) : hero.state === "decide" ? slotRowId(hero.slotIndex) : "home",
+    hero.state === "decide" && (!result || hero.slotIndex !== resultSlotIndex)
+      ? slotRowId(hero.slotIndex)
+      : result && resultSlotIndex != null
+        ? slotRowId(resultSlotIndex)
+        : "home",
   );
   const [focusRequest, setFocusRequest] = useState<FocusRequest>({ to: "heading", force: true, n: 0 });
   // The control of Semana that opened the view, so closing it gives focus back there.
@@ -126,6 +131,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   const slotExists = (id: View) => id === "home" || !id.startsWith("slot:") || week.slots.some((entry) => slotRowId(entry.slotIndex) === id);
   const current: View = slotExists(selected) ? selected : "home";
   const resultRow = result && resultSlotIndex != null ? slotRowId(resultSlotIndex) : null;
+  const decisionSlot = props.panel === "decision" && props.decisionReport ? props.decisionReport.slot_index : null;
   const currentRef = useRef(current);
   currentRef.current = current;
   // A game-made move asks for focus without taking it from a control outside this screen.
@@ -156,12 +162,16 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     lastDate.current = date;
   }, [date]);
 
-  // The result belongs on the block it was taken on, even if the player tapped another one during the save.
-  // After the tag effect above, so it wins when both fire for the same change.
+  // The result belongs on the block it was taken on, even if the player tapped another one during the save,
+  // unless another block of the day now waits for its own decision: then that block's Decidir comes straight
+  // away and the review of the first is not shown in between (owner's flow). Its review stays reachable from
+  // Semana. After the tag effect above, so it wins when both fire for the same change.
   useEffect(() => {
-    if (result && resultSlotIndex != null && currentRef.current !== slotRowId(resultSlotIndex)) gameMove(slotRowId(resultSlotIndex));
+    if (!result || resultSlotIndex == null) return;
+    const target = decisionSlot != null && decisionSlot !== resultSlotIndex ? slotRowId(decisionSlot) : slotRowId(resultSlotIndex);
+    if (currentRef.current !== target) gameMove(target);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result, resultSlotIndex]);
+  }, [result, resultSlotIndex, decisionSlot]);
 
   useEffect(() => {
     if (focusTick > 0) rootRef.current?.querySelector<HTMLElement>("[data-pane-heading]")?.focus();
@@ -180,7 +190,6 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     target?.focus();
   }, [focusRequest]);
 
-  const decisionSlot = props.panel === "decision" && props.decisionReport ? props.decisionReport.slot_index : null;
   // The follow-ups answer to the decision, not to Semana: nothing was applied yet, so Back returns there.
   const followUpOpen = current !== "home" && decisionSlot === Number(current.slice("slot:".length)) && showCancelFollowups;
   // The system's Back closes a view the way the frame's back control does (and does nothing on Semana).

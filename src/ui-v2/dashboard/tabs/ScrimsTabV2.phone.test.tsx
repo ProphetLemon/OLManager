@@ -633,16 +633,6 @@ describe("ScrimsTabV2 on a phone: after a decision", () => {
     expect(frame()?.querySelector('[data-slot="result-applied"]')).toHaveTextContent("Decision applied to scrim block: Push through");
   });
 
-  it("stays on the result when the tag moves to the block that waits, and Decide <slot> opens that block", async () => {
-    const { swap } = await decide();
-    swap(afterPushThrough());
-    expect(pane("result")).not.toBeNull();
-    expect(home()).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Decide Wed B" }));
-    expect(pane("decision")).not.toBeNull();
-    expect(viewTitle()).toBe("Decide Wed B");
-  });
-
   it("leaves the result with the back control, and Semana then shows the block that waits", async () => {
     const { swap } = await decide();
     swap(afterPushThrough());
@@ -651,6 +641,45 @@ describe("ScrimsTabV2 on a phone: after a decision", () => {
     expect(heroEl()).toHaveAttribute("data-state", "decide");
     expect(heroEl()).toHaveTextContent("Wed B");
     expect(block(0)).toHaveTextContent("Q73");
+  });
+});
+
+describe("ScrimsTabV2 on a phone: a decision with another block waiting goes straight to that block (owner's flow)", () => {
+  it("block A decided with block B waiting opens Decidir B, not the review of A, and the one live line still says the decision", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    const { swap } = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("decision")).not.toBeNull());
+    swap(afterPushThrough());
+    expect(pane("result")).toBeNull();
+    expect(pane("decision")).not.toBeNull();
+    expect(viewTitle()).toBe("Decide Wed B");
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Decision applied to scrim block: Push through");
+    await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+  });
+
+  it("does the same when the result and the waiting block arrive in one render", async () => {
+    let resolve!: (state: GameStateData) => void;
+    trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    contextMock.current = afterPushThrough();
+    resolve(updatedAfterPush());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    expect(pane("result")).toBeNull();
+  });
+
+  it("Back from that Decidir returns to Semana, and the review of A stays reachable from its block, with B still pending", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    const { swap } = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("decision")).not.toBeNull());
+    swap(afterPushThrough());
+    fireEvent.click(back());
+    expect(home()).not.toBeNull();
+    fireEvent.click(block(0));
+    expect(viewTitle()).toBe("Block review");
+    expect(document.querySelector('[data-slot="result-block-b"]')).toHaveTextContent("Played, report waiting");
   });
 });
 
@@ -683,8 +712,11 @@ describe("ScrimsTabV2 on a phone: the day's other block in the result view", () 
     trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
     const { swap } = mount(afterBlockA());
     fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
-    await waitFor(() => expect(pane("result")).not.toBeNull());
+    await waitFor(() => expect(pane("decision")).not.toBeNull());
     swap(afterPushThrough());
+    // The review of A is no longer shown by itself; it is reached from Semana.
+    fireEvent.click(back());
+    fireEvent.click(block(0));
     expect(otherBlock()).toHaveTextContent("Played, report waiting");
     expect(otherBlock().querySelector('[data-slot="phone-result-word"]')).toBeNull();
   });
@@ -826,13 +858,13 @@ describe("ScrimsTabV2 on a phone: focus", () => {
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
   });
 
-  it("moves focus to the decision view's heading after Decide <slot>", async () => {
+  it("moves focus to the heading of the waiting block's Decidir, which opens by itself", async () => {
     trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
     const { swap } = mount(afterBlockA());
     fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
-    await waitFor(() => expect(pane("result")).not.toBeNull());
+    await waitFor(() => expect(pane("decision")).not.toBeNull());
     swap(afterPushThrough());
-    fireEvent.click(screen.getByRole("button", { name: "Decide Wed B" }));
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
   });
 
@@ -920,7 +952,7 @@ describe("ScrimsTabV2 on a phone: moves the game makes while the player is elsew
     expect(heroEl()).toHaveAttribute("data-state", "today");
   });
 
-  it("a result and a Decide tag arriving in the same render, with the manager on Semana: the result's block opens, focused", async () => {
+  it("a result and a Decide tag arriving in the same render, with the manager on Semana: the waiting block's Decidir opens, focused", async () => {
     let resolve!: (state: GameStateData) => void;
     trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
     mount(afterBlockA());
@@ -929,13 +961,11 @@ describe("ScrimsTabV2 on a phone: moves the game makes while the player is elsew
     expect(home()).not.toBeNull();
     contextMock.current = afterPushThrough();
     resolve(updatedAfterPush());
-    await waitFor(() => expect(pane("result")).not.toBeNull());
-    expect(viewTitle()).toBe("Block review");
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
-    expect(screen.getByRole("button", { name: "Decide Wed B" })).toBeInTheDocument();
   });
 
-  it("the same with the manager on another view", async () => {
+  it("the same with the manager on another view: the waiting block's Decidir", async () => {
     let resolve!: (state: GameStateData) => void;
     trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
     mount(afterBlockA());
@@ -944,8 +974,7 @@ describe("ScrimsTabV2 on a phone: moves the game makes while the player is elsew
     fireEvent.click(entry("report"));
     contextMock.current = afterPushThrough();
     resolve(updatedAfterPush());
-    await waitFor(() => expect(pane("result")).not.toBeNull());
-    expect(viewTitle()).toBe("Block review");
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
   });
 
