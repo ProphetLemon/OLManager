@@ -33,6 +33,19 @@ vi.mock("@/services/trainingService", () => ({ ...trainingMocks, getScrimContext
 const contextMock = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock("@/hooks/useScrimContextWithFallback", () => ({ useScrimContextWithFallback: () => contextMock.current }));
 
+// Every render of the review pane, by block: a commit the player could see for a frame cannot hide from this.
+const reviewRenders = vi.hoisted(() => ({ labels: [] as string[] }));
+vi.mock("./scrims/phone/ScrimResultPane", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./scrims/phone/ScrimResultPane")>();
+  return {
+    ...actual,
+    ScrimResultPane: (props: Parameters<typeof actual.ScrimResultPane>[0]) => {
+      reviewRenders.labels.push(props.slotLabel);
+      return actual.ScrimResultPane(props);
+    },
+  };
+});
+
 import { ScrimsTabV2 } from "./ScrimsTabV2";
 
 const RIVALS = ["alpha", "bravo", "charlie", "delta"];
@@ -666,24 +679,44 @@ describe("ScrimsTabV2 on a phone: a decision with another block waiting goes str
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
   });
 
-  it("never renders the review of A between the result and the context that brings the waiting block, and ends on Decidir B", async () => {
+  const renderedReviewOfA = () => reviewRenders.labels.filter((label) => label === "Wed A");
+
+  it("never renders the review of A when the context arrives after the result, and ends on Decidir B", async () => {
+    reviewRenders.labels = [];
     trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
     const { swap } = mount(afterBlockA());
-    const reviewSeen = vi.fn();
-    const observer = new MutationObserver(() => {
-      if (viewTitle() === "Block review") reviewSeen();
-    });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
     // The result is in (the one live line says so) but the context still shows block A as the decision.
     await waitFor(() => expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Decision applied to scrim block: Push through"));
     expect(viewTitle()).toBe("Decide Wed A");
-    expect(pane("result")).toBeNull();
     expect(screen.getByRole("button", { name: "Saving..." })).toBeInTheDocument();
     swap(afterPushThrough());
     await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
-    observer.disconnect();
-    expect(reviewSeen).not.toHaveBeenCalled();
+    expect(renderedReviewOfA()).toEqual([]);
+  });
+
+  it("never renders the review of A when the context arrives together with the result", async () => {
+    reviewRenders.labels = [];
+    let resolve!: (state: GameStateData) => void;
+    trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
+    mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    contextMock.current = afterPushThrough();
+    resolve(updatedAfterPush());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    expect(renderedReviewOfA()).toEqual([]);
+  });
+
+  it("never renders the review of A when the context arrived before the result", async () => {
+    reviewRenders.labels = [];
+    let resolve!: (state: GameStateData) => void;
+    trainingMocks.chooseDailyScrimAction.mockReturnValue(new Promise<GameStateData>((done) => (resolve = done)));
+    const { swap } = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    swap(afterPushThrough());
+    resolve(updatedAfterPush());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    expect(renderedReviewOfA()).toEqual([]);
   });
 
   it("still ends on the review when the context catches up and no block waits (never stuck)", async () => {

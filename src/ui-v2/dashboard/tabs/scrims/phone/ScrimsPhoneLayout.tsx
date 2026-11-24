@@ -129,9 +129,24 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   };
 
   const slotExists = (id: View) => id === "home" || !id.startsWith("slot:") || week.slots.some((entry) => slotRowId(entry.slotIndex) === id);
-  const current: View = slotExists(selected) ? selected : "home";
   const resultRow = result && resultSlotIndex != null ? slotRowId(resultSlotIndex) : null;
   const decisionSlot = props.panel === "decision" && props.decisionReport ? props.decisionReport.slot_index : null;
+  // A result that has just arrived is settled once the screen has gone where it belongs. Until then the view shown is
+  // derived here, in the render, so the review of a block whose day-mate waits for its decision is never committed,
+  // not even for a frame (a move made only in an effect would paint it first).
+  const [settled, setSettled] = useState<DecisionResult | null>(result);
+  const arriving = result != null && resultSlotIndex != null && settled !== result;
+  // The result says the day's other block was played (`closing`) and the context has not caught up yet: this block's
+  // decision is still the one on screen, so the screen stays on it, applying. The hold ends as soon as the context
+  // names another block (it waits) or none (nothing waits: the review comes).
+  const holding = arriving && result.closing === "blockTwoPlayed" && decisionSlot === resultSlotIndex;
+  const arrivalTarget: View | null =
+    arriving && resultSlotIndex != null
+      ? holding || decisionSlot == null || decisionSlot === resultSlotIndex
+        ? slotRowId(resultSlotIndex)
+        : slotRowId(decisionSlot)
+      : null;
+  const current: View = arrivalTarget ?? (slotExists(selected) ? selected : "home");
   const currentRef = useRef(current);
   currentRef.current = current;
   // A game-made move asks for focus without taking it from a control outside this screen.
@@ -164,14 +179,14 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
 
   // The result belongs on the block it was taken on, even if the player tapped another one during the save,
   // unless another block of the day now waits for its own decision: then that block's Decidir comes straight
-  // away and the review of the first is not shown in between (owner's flow). Its review stays reachable from
-  // Semana. After the tag effect above, so it wins when both fire for the same change.
+  // away (owner's flow; the render above already shows it) and its review stays reachable from Semana. While the
+  // hold lasts nothing is settled. Back pressed during it leaves for Semana and this effect brings the player back.
   useEffect(() => {
-    if (!result || resultSlotIndex == null) return;
-    const target = decisionSlot != null && decisionSlot !== resultSlotIndex ? slotRowId(decisionSlot) : slotRowId(resultSlotIndex);
-    if (currentRef.current !== target) gameMove(target);
+    if (!arriving || arrivalTarget == null) return;
+    if (selected !== arrivalTarget) gameMove(arrivalTarget);
+    if (!holding) setSettled(result);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result, resultSlotIndex, decisionSlot]);
+  }, [arriving, holding, arrivalTarget, result]);
 
   useEffect(() => {
     if (focusTick > 0) rootRef.current?.querySelector<HTMLElement>("[data-pane-heading]")?.focus();
@@ -268,14 +283,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
         />
       );
     }
-    // The result says the day's other block was played and will wait for its decision (`closing` is
-    // "blockTwoPlayed", read from the same payload as the result) but the week context has not caught up yet (this
-    // block still reads as undecided): the review of this block is never rendered in between. The decision stays
-    // on screen, applying, until Decidir of the other block can be shown. Once the context shows this block decided
-    // the hold is over, whatever else it says, so the review always comes if nothing else waits.
-    const contextBehind = !(slot.status === "Reviewed" || slot.report?.post_decision != null);
-    const holdForNext = result != null && resultSlotIndex === slotIndex && result.closing === "blockTwoPlayed" && contextBehind && decisionSlot === slotIndex;
-    if (result && resultSlotIndex === slotIndex && !holdForNext) {
+    if (result && resultSlotIndex === slotIndex && !holding) {
       const waiting = decisionSlot != null && decisionSlot !== slotIndex ? decisionSlot : null;
       // The day's other block, from the same model Semana draws: the one beside this block in its day.
       const day = home.days.find((entry) => entry.blocks.some((candidate) => candidate.slotIndex === slotIndex));
@@ -311,7 +319,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           rival={identityOf(props.decisionReport.opponent_team_id)}
           blockLabel={props.blockLabel}
           options={props.decisionOptions}
-          savingId={holdForNext && result ? result.action : props.decisionSaving}
+          savingId={holding && result ? result.action : props.decisionSaving}
           onDecide={props.onDecide}
           reputation={week.reputation}
           locked={locked}
