@@ -40,7 +40,8 @@ Active-pros pool (opt-in; without --pool the output is unchanged): add, as teaml
 staff with a Leaguepedia Players page and a roster entry in a league tournament of the last years (the "recommended" filter
 of pool-scope.mjs), minus people the game already has or the roster overlay handles. See scripts/world/README.md.
   --pool                  turn the pool on (needs --login for live runs; the people queries are heavy, run it once and keep the cache)
-  --pool-since YYYY-MM-DD first tournament start date (default ${DEFAULT_POOL_SINCE})
+  --pool-since YYYY-MM-DD first tournament start date (default ${DEFAULT_POOL_SINCE}; the listed events of lib/pool-events.mjs start at 2023-06-01).
+                          Given explicitly, it is the limit for everything, the listed events included, earlier or later
   --pool-cap <n>          qualifier-flagged tournaments count only up to <n> roster entries (default ${DEFAULT_QUALIFIER_CAP})
   --pool-stats <file>     rows.json of scripts/stats/pro-stats.mjs (its <file>.players.json index must sit next to it): players with enough
                           games are rated from them, anchored to the game's league levels; the rest take the default of the league they last
@@ -68,7 +69,7 @@ const { values } = parseArgs({
     "gate-exceptions": { type: "string", default: path.join(ROOT, "scripts/world/gate-exceptions.json") },
     "id-map": { type: "string", default: path.join(ROOT, "scripts/world/id-map.json") },
     pool: { type: "boolean", default: false },
-    "pool-since": { type: "string", default: DEFAULT_POOL_SINCE },
+    "pool-since": { type: "string" },
     "pool-cap": { type: "string", default: String(DEFAULT_QUALIFIER_CAP) },
     "pool-stats": { type: "string" },
     "pool-probe": { type: "string", default: DEFAULT_POOL_PROBE },

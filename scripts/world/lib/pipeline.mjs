@@ -20,10 +20,10 @@ import { EMPTY_ID_MAP, buildIndex, playerEntity, staffEntity } from "./match.mjs
 import { fetchPoolInputs } from "./pool-fetch.mjs";
 import { runPoolGates } from "./pool-gates.mjs";
 import { explainProbe } from "./pool-report.mjs";
-import { gameTeamKeys } from "./pool-scope.mjs";
+import { foldPlayerKeys, gameTeamKeys } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, dropWorldBuildTwins, selectPool } from "./pool.mjs";
 import { contractedPlayers } from "./same-person.mjs";
-import { poolSkillFromRows, recentRolesFromRows } from "./pool-rating.mjs";
+import { gamesSinceFromRows, listedGroupWarnings, listedSkillFromRows, poolSkillFromRows, recentRolesFromRows, summarizeListed } from "./pool-rating.mjs";
 import { poolOfLevels } from "../../stats/lib/levels.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
@@ -136,7 +136,8 @@ export async function runRefresh(options) {
     const settings = { since: options.pool.since ?? DEFAULT_POOL_SINCE, cap: options.pool.cap ?? DEFAULT_QUALIFIER_CAP };
     if (!/^\d{4}-\d{2}-\d{2}$/.test(settings.since)) throw new Error(`pool: --pool-since must be YYYY-MM-DD, got "${settings.since}"`);
     if (!Number.isInteger(settings.cap) || settings.cap < 0) throw new Error(`pool: --pool-cap must be a non-negative integer, got "${settings.cap}"`);
-    const inputs = options.pool.inputs ?? (await fetchPoolInputs({ client: options.client, ...settings, probe: options.pool.probe ?? "", log }));
+    // An explicit `since` is the limit for the listed events too; without one they start at their own date (pool-events.mjs).
+    const inputs = options.pool.inputs ?? (await fetchPoolInputs({ client: options.client, ...settings, listedGames: Boolean(options.pool.statsRows), ...(options.pool.since ? { listedFrom: options.pool.since } : {}), probe: options.pool.probe ?? "", log }));
     warnings.push(...inputs.warnings);
     const context = {
       playerIndex: buildIndex(world.players.map(playerEntity)),
@@ -148,22 +149,46 @@ export async function runRefresh(options) {
     // Titles too: the same person can be spelled differently on a team page and in the pool query, which hashes to another id.
     const addedPages = (entries) => new Set(entries.filter((entry) => entry.op.op === "add" && entry.page).map((entry) => entry.page));
     const rosterTitles = { player: addedPages(ops.players), staff: addedPages(ops.staff) };
-    const recentRoles = options.pool.statsRows ? recentRolesFromRows(options.pool.statsRows, { since: settings.since }) : null;
+    // The stats rows are keyed by the scoreboard link, which is the name used at the time: read old names as the page they belong to.
+    const statsRows = options.pool.statsRows ? foldPlayerKeys(options.pool.statsRows, inputs.aliases?.targets ?? new Map(), (name) => inputs.people.has(name)) : null;
+    const recentRoles = statsRows ? recentRolesFromRows(statsRows, { since: settings.since }) : null;
+    const yearBefore = new Date(Date.parse(options.asOf ?? options.client.oldestFetchDate?.() ?? todayUtc()) - 365 * 864e5).toISOString().slice(0, 10);
+    const gamesLastYear = statsRows ? gamesSinceFromRows(statsRows, { since: yearBefore }) : null;
     const addedRecords = (entries, kind) => entries.filter((entry) => entry.op.op === "add").map((entry) => entry.op[kind]);
     const rosterRecords = { player: addedRecords(ops.players, "player"), staff: addedRecords(ops.staff, "staff") };
-    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles });
+    // Owner's decision (2026-11-24): every listed event counts as tier 2, as Game Changers does; a person never gets a worse tier than 2 through one, nobody is lowered.
+    const people = new Map([...inputs.people].map(([page, p]) => [page, p.tier > 2 && (p.tournaments ?? []).some((t) => inputs.classes.get(t)?.listed) ? { ...p, tier: 2 } : p]));
+    const selection = selectPool({ people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles, gamesLastYear });
     // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;
     const poolOf = anchors ? poolOfLevels(anchors.levels) : undefined;
-    const skill = options.pool.skill ?? (options.pool.statsRows ? poolSkillFromRows(options.pool.statsRows, positions, { poolOf }) : null);
+    const gameSkill = options.pool.skill ?? (statsRows ? poolSkillFromRows(statsRows, positions, { poolOf }) : null);
+    // The listed events' own stats (pool-events.mjs): one pooled cohort per role. The game's own competitions win only when they give a
+    // rating from stats (an estimate with 8+ games and, with a ladder, a league level); a person they give only the default is rated from
+    // the pooled rows when those give stats. The rows go through the same old-names fold; the pooled group never reaches the league ladder
+    // or anybody's cohort, and a pool person outside the listed events is not looked up in it at all.
+    const gameGivesStats = (page) => {
+      const estimate = gameSkill?.get(page);
+      return Boolean(estimate) && (!options.pool.anchors || Boolean(options.pool.anchors.levels?.[estimate.competition]));
+    };
+    const isListedPerson = (page) => (inputs.people.get(page)?.tournaments ?? []).some((tournament) => inputs.classes.get(tournament)?.listed);
+    const listedPositions = new Map(selection.players.filter((e) => isListedPerson(e.page) && !gameGivesStats(e.page)).map((e) => [e.page, e.role]));
+    const listedRows = foldPlayerKeys(inputs.listedRows ?? [], inputs.aliases?.targets ?? new Map(), (name) => inputs.people.has(name));
+    const listed = listedSkillFromRows(listedRows, listedPositions);
+    const skill = listed.skill.size > 0 ? new Map([...(gameSkill ?? []), ...listed.skill]) : gameSkill;
+    warnings.push(...listedGroupWarnings(listed));
+    // Every old name followed, with the stats rows folded under it: the listed events' rows and the game competitions' together.
+    const foldedRows = new Map();
+    for (const row of [...(options.pool.statsRows ?? []), ...(inputs.listedRows ?? [])]) foldedRows.set(row.playerKey, (foldedRows.get(row.playerKey) ?? 0) + 1);
+    const followed = (inputs.aliases?.followed ?? []).map((entry) => ({ ...entry, rows: foldedRows.get(entry.name) ?? 0 }));
     const builtPoolOps = buildPoolOps({
       selection, baselines, games: inputs.games, skill, anchors, tournamentIndex: new Map(inputs.tournaments.map((t) => [t.page, t])),
     });
     // The game folds a pool player into a record it already has on a club, or hides him from the AI, so he is left out here.
     const poolOps = dropWorldBuildTwins({ selection, ops: builtPoolOps, contracted: contractedPlayers(world.players, ops.players.map((entry) => entry.op)) });
     ops = { players: [...ops.players, ...poolOps.players], staff: [...ops.staff, ...poolOps.staff], skipped: [...ops.skipped, ...poolOps.skipped] };
-    poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff } };
+    poolRun = { settings, inputs, selection, ops: { players: poolOps.players, staff: poolOps.staff }, listed: summarizeListed(listed), followed };
     log(`pool: ${poolOps.players.length} players, ${poolOps.staff.length} staff as free agents`);
   }
 
@@ -195,7 +220,7 @@ export async function runRefresh(options) {
     gates = { ok: results.every((r) => r.ok), results };
     const { inputs, selection, settings, ops: poolOpsRun } = poolRun;
     poolReport = {
-      settings, inputs, selection, limits: POOL_LIMITS, bytes, ops: poolOpsRun,
+      settings, inputs, selection, limits: POOL_LIMITS, bytes, ops: poolOpsRun, listed: poolRun.listed, followed: poolRun.followed,
       probe: inputs.probe ? explainProbe({ probe: inputs.probe, tournaments: inputs.tournaments, classes: inputs.classes, entryCount: inputs.entryCount, cap: settings.cap, since: settings.since, selection }) : null,
     };
   }

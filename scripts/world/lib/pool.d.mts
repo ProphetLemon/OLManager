@@ -71,6 +71,7 @@ export function selectPool(input: {
   rosterTitles?: { player?: Set<string>; staff?: Set<string> };
   rosterRecords?: { player?: object[]; staff?: object[] } | null;
   recentRoles?: Map<string, { position: string; games: number; last: string }> | null;
+  gamesLastYear?: Map<string, number> | null;
 }): PoolSelection;
 /** How many of the selected players took each step of the position evidence. */
 export function positionSteps(selection: PoolSelection): { a: number; b: number; c: number; d: number; first: number; profile: number };

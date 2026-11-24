@@ -13,6 +13,8 @@ export const STATS_MIN_GAMES: number;
 export const POSITION_MIN_GAMES: number;
 /** The role most of each player's games in the window were played in, with the games and the newest date. */
 export function recentRolesFromRows(rows: Array<{ playerKey: string; role: string; date: string }>, options: { since: string }): Map<string, { position: string; games: number; last: string }>;
+/** Games per player dated on or after the first day, whatever the role. */
+export function gamesSinceFromRows(rows: Array<{ playerKey: string; role: string; date: string }>, options: { since: string }): Map<string, number>;
 export const POOL_LEAGUE_SD: number;
 export const POOL_MAX_CHANGE: number;
 
@@ -59,4 +61,14 @@ export function ratePoolPlayer(input: {
 export function latestMappedCompetition(input: { tournaments: string[]; tournamentIndex: Map<string, { start?: string }>; anchors: Pick<PoolAnchors, "levels" | "prefixes"> }): string | null;
 export function shapeBaselines(input: { baselines: Baselines; tier: number; anchors?: PoolAnchors | null; competition?: string | null }): Baselines;
 export function poolSkillByPage(estimates: SkillEstimate[], positions: Map<string, string>): Map<string, SkillEstimate>;
+export const LISTED_COMPETITION: "listed";
+export type ListedStatus = "stats" | "below-min-games" | "no-data" | "group-too-small" | "no-estimate";
+export interface ListedSkill {
+  skill: Map<string, SkillEstimate>;
+  outcomes: Map<string, { position: string; status: ListedStatus }>;
+  groups: Map<string, number>;
+}
+export function listedSkillFromRows(rows: GameRow[], positions: Map<string, string>): ListedSkill;
+export function summarizeListed(listed: ListedSkill): Map<string, { stats: number; belowMin: number; noData: number; groupTooSmall: number; noEstimate: number }>;
+export function listedGroupWarnings(listed: ListedSkill): string[];
 export function poolSkillFromRows(rows: GameRow[], positions: Map<string, string>, options?: { poolOf?: (competition: string) => string | null | undefined }): Map<string, SkillEstimate>;

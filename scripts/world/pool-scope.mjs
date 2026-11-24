@@ -11,7 +11,7 @@ import { buildIndex, playerEntity, staffEntity } from "./lib/match.mjs";
 import { loadTeamMap } from "./lib/team-map.mjs";
 import { loadWorld } from "./lib/world.mjs";
 import {
-  CLASS_FILTERS, FILTERS, OPEN_QUALIFIER_ENTRIES, cargoClasses, pageClauses, qualifierSplit, classifyTournaments, evenSample, fieldCoverage, gameStatus, gameTeamKeys, mergePerson,
+  CLASS_FILTERS, FILTERS, OPEN_QUALIFIER_ENTRIES, cargoClasses, inPoolWindow, listedSince, pageClauses, qualifierSplit, classifyTournaments, evenSample, fieldCoverage, gameStatus, gameTeamKeys, mergePerson,
   normalizeTournament, personFromRow, share, summarizePeople, tournamentDays,
 } from "./lib/pool-scope.mjs";
 
@@ -70,12 +70,12 @@ const tournamentRows = await cargoAll({
   tables: "Tournaments=T,Leagues=L",
   join_on: "T.League=L.League",
   fields: "T.OverviewPage,T.Name,T.League,T.Region,T.TournamentLevel,T.IsOfficial,T.IsQualifier,T.IsPlayoffs,T.Split,T.SplitNumber,T.DateStart,T.Date,T.EventType,T.Year,T.Country,L.Level=LLevel,L.IsOfficial=LOfficial",
-  where: `T.DateStart >= "${since}"`,
+  where: `T.DateStart >= "${listedSince(since)}"`,
   order_by: "T.DateStart,T.OverviewPage",
 });
 const tournaments = new Map();
 for (const row of tournamentRows) tournaments.set(row.OverviewPage, normalizeTournament(row));
-const tournamentList = [...tournaments.values()];
+const tournamentList = inPoolWindow([...tournaments.values()], since); // listed events from their own, earlier date (lib/pool-events.mjs)
 const classes = classifyTournaments(tournamentList);
 const cargoParts = cargoClasses(tournamentList, since);
 
@@ -132,7 +132,7 @@ const entryRows = await cargoAll({
   tables: "TournamentPlayers=TP,Tournaments=T",
   join_on: "TP.OverviewPage=T.OverviewPage",
   fields: "T.OverviewPage,COUNT(*)=n",
-  where: `T.DateStart >= "${since}"`,
+  where: `T.DateStart >= "${listedSince(since)}"`,
   group_by: "T.OverviewPage",
   order_by: "T.OverviewPage",
 });
