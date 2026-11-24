@@ -94,7 +94,7 @@ export function ScrimPickView(props: ScrimPickViewProps) {
   const emptyLabel = (index: number) =>
     readOnly
       ? cleared
-        ? index === 0 ? t("scrims.planCleared") : "-"
+        ? index === 0 ? t("scrims.slotStatus.cancelled") : "-"
         : index === 0 ? t("scrims.noOpponentSet") : t("training.scrims.noFallback")
       : index === 0 ? t("scrims.notPlanned") : t("training.scrims.noFallback");
   const playedPlan = (index: number) => readOnly && resolvedTeamId != null && (plan[index] ?? "") === resolvedTeamId;
@@ -201,7 +201,14 @@ export function ScrimPickView(props: ScrimPickViewProps) {
             <span className="font-heading text-section font-bold leading-none text-club-text">{t(PLAN_KEYS[active])}</span>
           </div>
           <div data-slot="pick-card-rival" className="flex min-w-0 flex-col items-end gap-2 text-end">
-            <span className="max-w-full truncate font-heading text-section font-bold">{rivalTitle}</span>
+            {readOnly && cleared && !ownIdentity && active === 0 ? (
+              <span data-slot="pick-cancelled" className="inline-flex max-w-full items-center gap-1 font-heading text-section font-bold uppercase text-muted-foreground">
+                <X aria-hidden="true" className="size-5 shrink-0" strokeWidth={3} />
+                {rivalTitle}
+              </span>
+            ) : (
+              <span className="max-w-full truncate font-heading text-section font-bold">{rivalTitle}</span>
+            )}
             <div className="flex w-full flex-row-reverse items-center gap-3">
               {ownIdentity ? <TeamShield identity={ownIdentity} size="large" /> : <EmptyShield size="large" />}
               <div className="flex min-w-0 flex-1 flex-col items-end gap-1.5">

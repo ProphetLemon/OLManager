@@ -654,6 +654,54 @@ describe("ScrimsTabV2 on a phone: after a decision", () => {
   });
 });
 
+describe("ScrimsTabV2 on a phone: the day's other block in the result view", () => {
+  const otherBlock = () => document.querySelector('[data-slot="result-block-b"]') as HTMLElement;
+
+  /** Mon..: A won and decided (Continue to block 2), B lost and waiting for its decision. */
+  const bPending = () => {
+    const a = report({ won: true, post_decision: "PushThrough" });
+    const b = report({ slot_index: 1, opponent_team_id: "bravo" });
+    const c = afterBlockA();
+    c.week.slots[0] = { ...c.week.slots[0], status: "Reviewed", resultWon: true, report: a };
+    c.week.slots[1] = { ...c.week.slots[1], status: "Played", resultWon: false, report: b, resolvedOpponentTeamId: "bravo" };
+    return ctx(c.week, today({ state: "PlayedNeedsReview", slotIndex: 1, opponentTeamId: "bravo", report: b, canReview: true }));
+  };
+  const bDecided = () => {
+    const c = bPending();
+    const b = report({ slot_index: 1, opponent_team_id: "bravo", post_decision: "VodReview" });
+    c.week.slots[1] = { ...c.week.slots[1], status: "Reviewed", report: b };
+    return ctx(c.week, today({ state: "Reviewed", slotIndex: 1 }));
+  };
+  const updatedBoth = (): GameStateData => {
+    const base = game();
+    const mine = base.teams.find((t) => t.id === "mine") as TeamData;
+    mine.scrim_reports = [report({ won: true, post_decision: "PushThrough" }), report({ slot_index: 1, opponent_team_id: "bravo", post_decision: "VodReview" })];
+    return base;
+  };
+
+  it("the review of the first block says the second is played and its report waits while its decision is pending", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    const { swap } = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    swap(afterPushThrough());
+    expect(otherBlock()).toHaveTextContent("Played, report waiting");
+    expect(otherBlock().querySelector('[data-slot="phone-result-word"]')).toBeNull();
+  });
+
+  it("the review of the second block shows the first one's result word once its own decision was taken", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedBoth());
+    const { swap } = mount(bPending());
+    fireEvent.click(screen.getByRole("button", { name: "VOD Review" }));
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    swap(bDecided());
+    expect(viewTitle()).toBe("Block review");
+    expect(otherBlock()).toHaveTextContent("Wed A");
+    expect(otherBlock()).not.toHaveTextContent("report waiting");
+    expect(otherBlock().querySelector('[data-slot="phone-result-word"]')).toHaveAttribute("data-result", "won");
+  });
+});
+
 describe("ScrimsTabV2 on a phone: the same actions as desktop", () => {
   it("Autofill saves the dealt plans through the backend call desktop uses", async () => {
     trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());

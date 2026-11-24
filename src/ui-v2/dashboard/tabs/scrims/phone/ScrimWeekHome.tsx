@@ -66,12 +66,12 @@ function Matchup({ mine, rival, rivalLabel, compact }: { mine: TeamIdentity; riv
     <span data-slot="phone-week-matchup" className="flex items-start gap-3">
       <span className="flex min-w-16 max-w-44 flex-col items-center gap-0.5">
         <TeamShield identity={mine} size={size} />
-        <span data-slot="phone-week-team-name" aria-hidden="true" className="max-w-full break-words text-center font-heading text-entry font-semibold leading-4 line-clamp-2">{mine.name}</span>
+        <span data-slot="phone-week-team-name" aria-hidden="true" className="max-w-full break-words text-center font-heading text-entry font-semibold leading-4">{mine.name}</span>
       </span>
       <span aria-hidden="true" className="font-heading text-section font-bold leading-none text-muted-foreground">{t("common.vs")}</span>
       <span className="flex min-w-16 max-w-44 flex-col items-center gap-0.5">
         {rival ? <TeamShield identity={rival} size={size} /> : <EmptyShield size={size} />}
-        <span data-slot="phone-week-team-name" aria-hidden={rival ? true : undefined} className="max-w-full break-words text-center font-heading text-entry font-semibold leading-4 line-clamp-2">{rivalLabel}</span>
+        <span data-slot="phone-week-team-name" aria-hidden={rival ? true : undefined} className="max-w-full break-words text-center font-heading text-entry font-semibold leading-4">{rivalLabel}</span>
       </span>
     </span>
   );
@@ -168,7 +168,7 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
               {rival ? <TeamShield identity={rival} size="small" /> : <EmptyShield size="small" />}
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-caption leading-3.5 text-muted-foreground">{t("scrims.todayOpponent")}</span>
-                <span data-slot="phone-week-today-rival" className="break-words font-heading text-entry font-bold leading-4 line-clamp-2">{rival?.name ?? t("scrims.noOpponentSet")}</span>
+                <span data-slot="phone-week-today-rival" className="break-words font-heading text-entry font-bold leading-4">{rival?.name ?? t("scrims.noOpponentSet")}</span>
               </div>
             </div>
             {hero.risk ? (
@@ -180,7 +180,7 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
             <PlanShields plans={hero.plan} from={0} identityOf={(id) => identityOf(id) ?? { name: id, tag: id, logoUrl: null }} />
           </div>
           <div className="flex items-end justify-between gap-3">
-            <p className="m-0 line-clamp-2 min-w-0 flex-1 text-caption leading-3.5">{ctx.todayMessage}</p>
+            <p className="m-0 min-w-0 flex-1 text-caption leading-3.5">{ctx.todayMessage}</p>
             {hero.locked ? <LockMark /> : null}
           </div>
         </div>
@@ -202,7 +202,7 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
               <span className="font-heading text-section font-bold leading-none">{t("training.scrims.weeklyObjective")}</span>
               <Word tag="next" />
             </span>
-            <span className="line-clamp-2 text-caption leading-3.5 text-muted-foreground">{t("training.scrims.weeklyObjectiveDescription")}</span>
+            <span className="text-caption leading-3.5 text-muted-foreground">{t("training.scrims.weeklyObjectiveDescription")}</span>
           </span>
           <ChevronRight aria-hidden="true" className="ms-auto size-5 shrink-0 text-muted-foreground" />
         </span>
@@ -238,7 +238,7 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
   }
 }
 
-const HERO_CLASS = "flex min-h-[5.625rem] w-full flex-1 flex-col justify-center overflow-hidden rounded-xl bg-card px-4 py-1 text-start text-card-foreground";
+const HERO_CLASS = "flex min-h-[5.625rem] w-full flex-1 flex-col justify-center overflow-x-clip rounded-xl bg-card px-4 py-1 text-start text-card-foreground";
 
 function Hero({ hero, ctx, onOpen }: { hero: PhoneHero; ctx: HeroContext; onOpen: ScrimWeekHomeProps["onOpen"] }) {
   const { t } = useTranslation();

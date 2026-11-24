@@ -455,10 +455,14 @@ describe("ScrimPickView read-only: what was played and what was cleared", () => 
     expect(slot("pick-card")).toHaveTextContent("No opponent set");
   });
 
-  it("words a plan cleared today as Plan cleared", () => {
+  it("words a block the manager cancelled as Cancelled, with the X and the secondary colour, never Plan cleared", () => {
     setup({ ...locked, plan: ["", "", ""], resolvedTeamId: null, cleared: true });
-    expect(tab(/Plan A/)).toHaveAccessibleName("Plan A: Plan cleared");
-    expect(slot("pick-card")).toHaveTextContent("Plan cleared");
+    expect(tab(/Plan A/)).toHaveAccessibleName("Plan A: Cancelled");
+    expect(slot("pick-card")).toHaveTextContent("Cancelled");
+    expect(slot("pick-card")).not.toHaveTextContent("Plan cleared");
+    const word = slot("pick-card").querySelector('[data-slot="pick-cancelled"]') as HTMLElement;
+    expect(word.querySelector("svg")).not.toBeNull();
+    expect(word.className).toContain("text-muted-foreground");
   });
 
   it("shows nothing of this while the slot can still be edited", () => {
