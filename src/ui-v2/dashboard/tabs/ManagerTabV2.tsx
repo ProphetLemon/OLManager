@@ -478,7 +478,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
       {/* ── Avatar Picker Modal ── */}
       {showAvatarPicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAvatarPicker(false)}>
-          <div className="w-full max-w-xl rounded-xl border border-border bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-border bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">{t("manager.changeAvatar")}</h3>
               <button type="button" onClick={() => setShowAvatarPicker(false)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
@@ -511,7 +511,7 @@ export function ManagerTabV2({ gameState }: ManagerTabV2Props) {
       {/* ── Settings Modal ── */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowSettings(false)}>
-          <div className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-heading text-lg font-bold uppercase tracking-wide text-foreground">{t("manager.editProfile")}</h3>
               <button type="button" onClick={() => setShowSettings(false)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">

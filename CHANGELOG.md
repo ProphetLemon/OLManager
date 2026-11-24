@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [2026.1124.2] - 2026-11-24
 
-Three fixes to Scrims on the phone, found by playing 2026.1124.1 on a real phone, and the roster refresh of 23 November now comes inside the game. On Windows and Linux nothing you can see changes in a career that already exists. The Scrims fixes were checked on an Android 14 emulator (x86_64 build). A test build of the same code (arm64) was then installed on one real phone, a OnePlus 11 with Android 16, and its owner reported that it looks right; which screens were opened there was not recorded.
+Fixes found by playing 2026.1124.1 on a real phone: three in Scrims, and a transfer offer that could trap you in its dialog. And the roster refresh of 23 November now comes inside the game. On Windows and Linux nothing you can see changes in a career that already exists. The Scrims fixes were checked on an Android 14 emulator (x86_64 build). A test build of the same code (arm64) was then installed on one real phone, a OnePlus 11 with Android 16, and its owner reported that it looks right; which screens were opened there was not recorded.
 
 ### Changed
 
@@ -20,6 +20,7 @@ Three fixes to Scrims on the phone, found by playing 2026.1124.1 on a real phone
 - Android, Scrims: the review of a block has one row for each block you decided that day, with the decision's name and what it changed in Quality, Morale and Energy; the open block's row is marked. Before, after you decided both blocks of a day it showed only the last decision, so a first decision that raised Quality ("Push through") looked as if it had changed nothing. The decision had been applied; only the review was wrong.
 - Android, Scrims: "Autofill" returns to the week, and a line there says how many blocks it filled. Before, it stayed on the Volume screen and you had to go back to see the result.
 - Android, Scrims: the review keeps these values when you leave Scrims and come back on the same day.
+- Android: a dialog taller than the screen now stays inside it and scrolls. Before, the transfer offer opened from a player's profile was cut off at the top and the bottom once the club had answered: its buttons could not be reached, and the only way out was to close the app. The contract renewal, the release of a player and the manager's profile dialogs were built the same way and are fixed too.
 
 ### Known issues
 
