@@ -230,7 +230,7 @@ function HeroBody({ hero, ctx, onOpen, compact }: { hero: PhoneHero; ctx: HeroCo
       return (
         <span className="flex h-full items-center gap-4">
           <FileText aria-hidden="true" className="size-9 shrink-0 text-muted-foreground" />
-          <span className="font-heading text-scoreboard leading-none tabular-nums">{hero.wins}-{hero.losses}</span>
+          <span className="font-heading text-ovr leading-none tabular-nums">{hero.wins}-{hero.losses}</span>
           <span className="text-entry text-muted-foreground">{t("scrims.weekRecord")}</span>
           <ChevronRight aria-hidden="true" className="ms-auto size-5 shrink-0 text-muted-foreground" />
         </span>

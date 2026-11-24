@@ -258,6 +258,16 @@ describe("Semana: the hero in each of its seven states", () => {
     fireEvent.click(hero());
     expect(onOpen).toHaveBeenCalledWith("report", "hero");
   });
+
+  it("7 fits its 90 px box with the closed-day sentence: the record is the 60 px record size, not the 84 px scoreboard size", () => {
+    const week = makeWeek(2, { 0: played(true, 70, "Reviewed"), 1: played(false, 55, "Reviewed") }, { ...lockWeek, wins: 1, losses: 1, played: 2 });
+    mount(week, makeToday({ state: "Reviewed", slotIndex: 1 }));
+    const record = [...hero().querySelectorAll("span")].find((node) => node.textContent === "1-1") as HTMLElement;
+    // 60 (record) + 14 (one-line sentence) = 74 of the 82 px of content; the scoreboard size was 84 + 14 = 98.
+    expect(record.className).toContain("text-ovr");
+    expect(record.className).not.toContain("text-scoreboard");
+    expect(hero().querySelector('[data-slot="phone-week-closed"]')).not.toBeNull();
+  });
 });
 
 describe("Semana: the day groups", () => {
