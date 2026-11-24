@@ -78,7 +78,8 @@ describe("DashboardHeaderV2", () => {
     const { onSave } = setup({ saveFailed: true });
     const save = screen.getByRole("button", { name: "Auto-save failed. Press Save to keep your progress." });
     expect(save).not.toBeDisabled();
-    expect(screen.getByRole("status")).toHaveTextContent("Auto-save failed. Press Save to keep your progress.");
+    // The sentence itself is spoken and shown by the notice under the bar, not twice here.
+    expect(screen.getByRole("status")).toHaveTextContent("");
     fireEvent.click(save);
     expect(onSave).toHaveBeenCalledTimes(1);
   });

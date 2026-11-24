@@ -10,7 +10,8 @@ import { Eye, Gamepad2 } from "lucide-react";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData, PlayerSelectionOptions } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
-import { useAutoSaveStore } from "@/services/autoSave";
+import { saveNow, useAutoSaveStore } from "@/services/autoSave";
+import { AutoSaveFailedNotice } from "./AutoSaveFailedNotice";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { useAdvanceTime, type MatchModeType } from "@/hooks/useAdvanceTime";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -176,6 +177,7 @@ export default function DashboardV2() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
   const autoSaveFailed = useAutoSaveStore((s) => s.failed);
+  const autoSaveFailCount = useAutoSaveStore((s) => s.failCount);
   const autoSavedCount = useAutoSaveStore((s) => s.savedCount);
   // An alias route wins over the remembered location from the first render, so the
   // remembered tab never paints (and never stays mounted, hidden, behind Suspense).
@@ -477,19 +479,15 @@ export default function DashboardV2() {
     flashSaved();
   }, [autoSavedCount, flashSaved]);
 
+  // The flash and the failure notice come from the shared save, so a manual and an auto-save look alike.
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await invoke("save_game");
-      markClean();
-      useAutoSaveStore.setState({ failed: false });
-      flashSaved();
-    } catch (err) {
-      console.error("Failed to save:", err);
+      await saveNow();
     } finally {
       setIsSaving(false);
     }
-  }, [markClean, flashSaved]);
+  }, []);
 
   // Leaving a game replaces the dashboard's history entry, so the system Back on the menu
   // (Android) never returns to a game that is no longer loaded.
@@ -986,6 +984,8 @@ export default function DashboardV2() {
             onShowAll={handleShowCalls}
           />
         )}
+
+        <AutoSaveFailedNotice failed={autoSaveFailed} failCount={autoSaveFailCount} />
 
         <ScrimResultNoticeV2
           lines={shownScrimNotice}

@@ -229,7 +229,7 @@ export function DashboardHeaderV2({
           )}
         </Button>
         <span role="status" aria-live="polite" className="sr-only">
-          {saveFailed ? saveLabel : saveFlash ? t("onAir.bar.saved", { defaultValue: "Saved" }) : ""}
+          {saveFlash ? t("onAir.bar.saved", { defaultValue: "Saved" }) : ""}
         </span>
 
         <SplitButton

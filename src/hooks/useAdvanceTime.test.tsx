@@ -809,6 +809,15 @@ describe("useAdvanceTime", function (): void {
       await settle();
     });
 
+    it("does not save on a phase change in the Assistant Coach loop", async function (): Promise<void> {
+      mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({ action: "phase_advanced", game: day("2026-07-01") });
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" scrimReviewMode="assistant" />);
+      click("Continue");
+      await waitFor(() => expect(mockedInvoke).toHaveBeenCalledTimes(2));
+      await settle();
+      expect(mockedAutoSave).not.toHaveBeenCalled();
+    });
+
     it.each([
       ["a phase change", { action: "phase_advanced", game: day("2026-07-01") }, "Continue"],
       ["a live match", { action: "live_match", fixture_index: 0 }, "Continue"],

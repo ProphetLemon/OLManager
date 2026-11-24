@@ -16,7 +16,7 @@ import ChampionDraft, {
   authorizedRelationshipChampionIdsForViewer,
 } from "@/ui-v2/_legacy/components/match/ChampionDraft";
 import type { ChampionDraftResultPayload } from "@/ui-v2/_legacy/components/match/ChampionDraft";
-import { setLiveMatchActive } from "@/services/autoSave";
+import { useLiveMatchActive } from "@/hooks/useLiveMatchActive";
 import { finalizeLiveMatch, type FinishLiveMatchResponse } from "@/ui-v2/_legacy/pages/MatchSimulation.finalize";
 import { guardReentry, settleSeriesGame } from "@/ui-v2/_legacy/pages/MatchSimulation.seriesRecord";
 import LiveMatchV2 from "@/ui-v2/match/LiveMatchV2";
@@ -793,11 +793,7 @@ export default function MatchSimulation() {
   const [userSide, setUserSide] = useState<"Home" | "Away" | null>(null);
   const [isSpectator, setIsSpectator] = useState(effectiveMatchMode === "spectator");
   const [hasFinalizedMatch, setHasFinalizedMatch] = useState(false);
-  // While this screen is up and the match is not finalized the backend holds a live session: no auto-save.
-  useEffect(() => {
-    setLiveMatchActive(true);
-    return () => setLiveMatchActive(false);
-  }, []);
+  useLiveMatchActive();
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationFeedback, setSimulationFeedback] = useState<string | null>(null);
   const delegateAutoAdvanceKeyRef = useRef<string | null>(null);

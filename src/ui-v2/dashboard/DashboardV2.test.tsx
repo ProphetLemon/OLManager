@@ -317,7 +317,7 @@ describe("DashboardV2 tab sync", () => {
 
   it("flashes Saved when an auto-save completes while on screen, not for one that finished before", async () => {
     const DashboardV2 = (await import("./DashboardV2")).default;
-    useAutoSaveStore.setState({ failed: false, savedCount: 3 });
+    useAutoSaveStore.setState({ failed: false, failCount: 0, savedCount: 3 });
 
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>
@@ -332,7 +332,7 @@ describe("DashboardV2 tab sync", () => {
 
   it("tells the bar when the auto-save failed", async () => {
     const DashboardV2 = (await import("./DashboardV2")).default;
-    useAutoSaveStore.setState({ failed: true, savedCount: 0 });
+    useAutoSaveStore.setState({ failed: true, failCount: 1, savedCount: 0 });
 
     render(
       <MemoryRouter initialEntries={["/dashboard"]}>
@@ -343,6 +343,58 @@ describe("DashboardV2 tab sync", () => {
 
     act(() => useAutoSaveStore.setState({ failed: false }));
     expect(shell.header?.saveFailed).toBe(false);
+  });
+
+  it("shows the failed auto-save as a notice under the bar until a save succeeds", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: true, failCount: 1, savedCount: 0 });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("onAir.bar.autoSaveFailed")).toBeVisible();
+
+    act(() => useAutoSaveStore.setState({ failed: false }));
+    expect(screen.queryByText("onAir.bar.autoSaveFailed")).toBeNull();
+  });
+
+  it("the Save button writes, marks the game clean and clears a failed auto-save", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: true, failCount: 1, savedCount: 0 });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    await act(async () => undefined);
+    act(() => useGameStore.setState({ isDirty: true }));
+    await act(async () => (shell.header?.onSave as () => Promise<void>)());
+
+    expect(useGameStore.getState().isDirty).toBe(false);
+    expect(useAutoSaveStore.getState().failed).toBe(false);
+    expect(shell.header?.saveFlash).toBe(true);
+  });
+
+  it("a failed Save shows the notice instead of only logging", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: false, failCount: 0, savedCount: 0 });
+    useGameStore.setState({ isDirty: true });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    vi.mocked(invoke).mockImplementationOnce(() => Promise.reject("disk full"));
+    await act(async () => (shell.header?.onSave as () => Promise<void>)());
+
+    expect(useGameStore.getState().isDirty).toBe(true);
+    expect(screen.getByText("onAir.bar.autoSaveFailed")).toBeVisible();
   });
 
   it("reflects the tab implied by the dashboard route", async () => {
