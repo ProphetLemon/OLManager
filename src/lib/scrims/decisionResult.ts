@@ -1,4 +1,5 @@
 import type { DailyScrimAction } from "@/services/trainingService";
+import type { PostScrimDecision } from "@/store/types";
 import { cancelsNextBlock } from "./decisionEffects";
 
 /** The numbers of a scrim report and of the club before or after a decision, read from the game state. */
@@ -70,4 +71,21 @@ export function buildDecisionResult(input: BuildDecisionResultInput): DecisionRe
   else closing = nextReportWaiting ? "blockTwoPlayed" : "nextReportLater";
 
   return { action, rows, closing };
+}
+
+/**
+ * The button behind a stored decision. Only "Day off" is ambiguous (the first block offers rest, the second
+ * closes the day): the block's place in its day says which, and the rest map one to one.
+ */
+export function storedDecisionAction(stored: PostScrimDecision | null | undefined, isFirstBlock: boolean): DailyScrimAction | null {
+  switch (stored) {
+    case "ContinuePlan": return "ContinueToBlock2";
+    case "DayOff": return isFirstBlock ? "OfferRest" : "DayOff";
+    case "VodReview":
+    case "MentalReset":
+    case "TargetedDrills":
+    case "PushThrough":
+      return stored;
+    default: return null;
+  }
 }

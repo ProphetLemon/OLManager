@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { create } from "zustand";
 import type { LolRole } from "@/lib/home/scoreboard";
+import type { DecisionResult } from "@/lib/scrims/decisionResult";
 import type { MessageSortOrder } from "@/lib/inbox/helpers";
 import type { FinancialTransactionKind } from "./types";
 
@@ -125,6 +126,11 @@ export interface MarketTabUiState {
   filter: "all" | "user" | "ai";
 }
 
+export interface ScrimsTabUiState {
+  /** Each decision of the day by slot, keyed by the game date it was taken on; the phone review reads it. */
+  dayResults: { date: string; bySlot: Record<number, DecisionResult> } | null;
+}
+
 export interface TabUiStates {
   transfers: TransfersTabUiState;
   scouting: ScoutingTabUiState;
@@ -143,6 +149,7 @@ export interface TabUiStates {
   inbox: InboxTabUiState;
   news: NewsTabUiState;
   market: MarketTabUiState;
+  scrims: ScrimsTabUiState;
 }
 
 const DEFAULT_STAFF_STATE: StaffTabUiState = {
@@ -200,6 +207,7 @@ export const DEFAULT_TAB_UI_STATES: TabUiStates = {
   inbox: { selectedId: null, filter: null, sortOrder: "newest", query: "" },
   news: { category: null, team: null, page: 0 },
   market: { filter: "all" },
+  scrims: { dayResults: null },
 };
 
 interface TabUiStore {

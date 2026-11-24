@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useScrimPlans } from "@/hooks/useScrimPlans";
 import type { TeamData, GameStateData, ScrimFocus, ScrimReportData } from "@/store/gameStore";
 import type { TodayScrimContext, WeeklyScrimContext } from "@/lib/scrims/scrimContext";
-import type { DecisionResult } from "@/lib/scrims/decisionResult";
+import { storedDecisionAction, type DecisionResult } from "@/lib/scrims/decisionResult";
 import { buildPhoneHome } from "@/lib/scrims/phoneHome";
 import { isEditable, phoneDoneTarget, slotRowId, type PhoneRowId } from "@/lib/scrims/phoneWeek";
 import { buildRivalRows } from "@/lib/scrims/rivalOdds";
@@ -18,7 +18,7 @@ import { ScrimDecisionPane } from "./ScrimDecisionPane";
 import { ScrimFollowUpPane } from "./ScrimFollowUpPane";
 import { ScrimObjectivePane } from "./ScrimObjectivePane";
 import { ScrimReportPane } from "./ScrimReportPane";
-import { ScrimResultPane } from "./ScrimResultPane";
+import { ScrimResultPane, type ResultDecision } from "./ScrimResultPane";
 import { ScrimPickView } from "./ScrimPickView";
 import { ScrimVolumePane } from "./ScrimVolumePane";
 import { ScrimWeekHome } from "./ScrimWeekHome";
@@ -59,6 +59,8 @@ export interface ScrimsPhoneLayoutProps {
   /** The result of today's last decision and the slot it was taken on; null when there is none. */
   result: DecisionResult | null;
   resultSlotIndex: number | null;
+  /** What each decision of today applied, by slot index, while this tab remembers it (it does not survive a restart). */
+  dayResults: Readonly<Record<number, DecisionResult>>;
   /** The one live line: the decision just applied, or the prompt of the open cancel step. */
   liveText: string;
   /** Bumped by the tab after a decision or a step change: focus goes to the pane's heading. */
@@ -80,8 +82,8 @@ interface FocusRequest {
  * three entries), anything else is a view in a frame with a back control. The tab computes
  * everything; this owns which of them is open. The moves it makes by itself: on opening (Decide if
  * a block waits, else Semana), a row that starts to carry Decide (opens it) or Today (Semana shows
- * it in the hero), a decision's result (its block), a pick of the objective (to Volume, once) and
- * Done. Back, the frame's or the system's, returns to Semana.
+ * it in the hero), a decision's result (its block), a pick of the objective (to Volume, once), Rellenar once
+ * applied (to Semana, with a notice) and Done. Back, the frame's or the system's, returns to Semana.
  */
 export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   const { t } = useTranslation();
@@ -119,6 +121,9 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
     setSelected(id);
     request("heading", true);
   };
+  // "Week filled": shown on Semana until the manager leaves it, and spoken once through the live region below.
+  const [filledCount, setFilledCount] = useState<number | null>(null);
+  const [spoken, setSpoken] = useState<string | null>(null);
   const goHome = useCallback(() => {
     setSelected("home");
     request("home", true);
@@ -149,6 +154,18 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   const current: View = arrivalTarget ?? (slotExists(selected) ? selected : "home");
   const currentRef = useRef(current);
   currentRef.current = current;
+  useEffect(() => {
+    if (current !== "home") setFilledCount(null);
+  }, [current]);
+  // The game's own line (a decision applied) replaces a spoken notice.
+  useEffect(() => setSpoken(null), [props.liveText]);
+  const fillWeek = async () => {
+    const count = await autofill();
+    if (count == null || currentRef.current !== "volume") return;
+    setFilledCount(count);
+    setSpoken(t("scrims.phone.weekFilled", { count }));
+    goHome();
+  };
   // A game-made move asks for focus without taking it from a control outside this screen.
   const gameMove = (to: View) => {
     opener.current = null;
@@ -247,7 +264,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           blockedText={setupBlockedText}
           assistant={assistantControls}
           onVolume={props.onVolume}
-          onAutofill={autofill}
+          onAutofill={() => void fillWeek()}
           onAssistant={props.onAssistant}
           onFinalize={props.onFinalize}
         />
@@ -289,11 +306,21 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
       const day = home.days.find((entry) => entry.blocks.some((candidate) => candidate.slotIndex === slotIndex));
       const sibling = day?.blocks.find((candidate) => candidate.slotIndex !== slotIndex);
       const rivalId = slot.resolvedOpponentTeamId ?? slot.report?.opponent_team_id ?? slot.plan[0];
+      // One row per decided block of the day, in day order: what each one changed, as read when it landed, or only
+      // its stored decision when this tab no longer remembers the result (never a guess at the numbers).
+      const decisions = (day?.blocks ?? []).flatMap((candidate, position): ResultDecision[] => {
+        const entry = week.slots.find((cell) => cell.slotIndex === candidate.slotIndex);
+        const isCurrent = candidate.slotIndex === slotIndex;
+        if (!isCurrent && !candidate.decided) return [];
+        const known = isCurrent ? result : props.dayResults[candidate.slotIndex] ?? null;
+        return [{ slotLabel: slotLabelOf(entry), action: known?.action ?? storedDecisionAction(entry?.report?.post_decision, position === 0), result: known, current: isCurrent }];
+      });
       return (
         <ScrimResultPane
           title={t("scrims.reviewBlockTitle")}
           onBack={goHome}
           result={result}
+          decisions={decisions}
           statusText={props.liveText}
           you={teamIdentity(myTeam)}
           rival={identityOf(rivalId)}
@@ -353,7 +380,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
   return (
     <div ref={rootRef} data-slot="scrim-phone-layout" className="h-full min-h-0">
       <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {props.liveText}
+        {spoken ?? props.liveText}
       </div>
       {openView ? (
         openView
@@ -366,6 +393,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           teamNameById={teamNameById}
           todayMessage={props.todayMessage}
           lockText={setupBlockedText}
+          notice={filledCount != null ? t("scrims.phone.weekFilled", { count: filledCount }) : null}
           onOpen={open}
         />
       )}

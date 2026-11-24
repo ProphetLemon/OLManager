@@ -53,4 +53,6 @@ export function renderPoolSection(pool: {
   bytes: number;
   probe: ProbeExplanation | null;
   ops?: { players: Array<{ op: Record<string, any> }>; staff: Array<{ op: Record<string, any> }> } | null;
+  followed?: Array<{ name: string; page: string; entries: number; games: number; rows: number }>;
+  listed?: Map<string, { stats: number; belowMin: number; noData: number; groupTooSmall: number; noEstimate: number }> | null;
 }): string[];

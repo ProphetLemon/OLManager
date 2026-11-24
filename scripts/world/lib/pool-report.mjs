@@ -107,8 +107,9 @@ const ratingTable = (map, label) => table([...map].map(([key, v]) => [key, v.sta
  * @param {{players: number, staff: number, overlayBytes: number}} pool.limits
  * @param {number} pool.bytes size of the serialised overlay
  * @param {ReturnType<typeof explainProbe>|null} pool.probe
+ * @param {ReturnType<import("./pool-rating.mjs").summarizeListed>|null} [pool.listed] the pooled stats of the listed events, by position
  */
-export function renderPoolSection({ settings, inputs, selection, limits, bytes, probe, ops = null }) {
+export function renderPoolSection({ settings, inputs, selection, limits, bytes, probe, ops = null, listed = null, followed = inputs.aliases?.followed ?? [] }) {
   const lines = ["## Active-pros pool", ""];
   const { counts } = selection;
   const summary = summarizePool(selection);
@@ -157,6 +158,24 @@ export function renderPoolSection({ settings, inputs, selection, limits, bytes, 
     lines.push("Players by position (Leaguepedia label)", "", ...ratingTable(ratings.playersByRole, "position"), "");
     lines.push("Staff by tier (staff have no per-game stats)", "", ...ratingTable(ratings.staffByTier, "tier"), "");
     lines.push("Staff by Leaguepedia label", "", ...ratingTable(ratings.staffByRole, "kind"), "");
+  }
+
+  if (listed && listed.size > 0) {
+    lines.push("### Listed events: pooled stats", "");
+    const read = inputs.listedStats;
+    if (!read?.read) {
+      lines.push(`The scoreboard of the listed events (pool-events.mjs) was not read in this run (${read?.requested ? "the read failed, see the warnings" : "it needs --pool-stats"}), so nobody is rated from it: their people keep the default, which says nothing about their games.`, "");
+    } else {
+      lines.push(`People of the listed events with no stats rating from the game's own competitions are compared with one another, one group per position, with the skill model's own thresholds (${STATS_MIN_GAMES} games to be rated, a group of 15 players with 10+ games), anchored to their tier baseline and capped at 6 points either way. Everybody else of those events keeps the default. Read: ${read.inputRows} scoreboard rows of ${read.pages} tournaments, ${read.rows} kept.`, "");
+      const droppedTotal = Object.values(read.dropped ?? {}).reduce((sum, n) => sum + n, 0);
+      if (droppedTotal > 0) lines.push(`${droppedTotal} of ${read.inputRows} scoreboard rows were dropped (${Object.entries(read.dropped).map(([reason, n]) => `${reason}: ${n}`).join(", ")}): the people in them have no rows.`, "");
+      lines.push(...table([...listed].map(([position, v]) => [position, v.stats, v.belowMin, v.noData, v.groupTooSmall, v.noEstimate]), ["position", "from the pooled stats", `fewer than ${STATS_MIN_GAMES} games`, "no rows in the position", "group too small", "no usable estimate"]), "");
+    }
+  }
+
+  if (followed.length > 0) {
+    lines.push("### Old names followed", "", "Each old name read as the page it went to (PlayerRedirects, not a Players page of its own), with the roster entries, scoreboard games and stats rows (the listed events' and the game competitions') it brought. A wrong merge shows here.", "");
+    lines.push(...table(followed.map((f) => [f.name, f.page, f.entries, f.games, f.rows ?? 0]), ["old name", "page", "roster entries", "games", "stats rows"]), "");
   }
 
   const view = inputs.view;

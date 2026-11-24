@@ -23,12 +23,14 @@ export function useScrimPlans({ gameState, weeklyContext, onGameUpdate, setIsSav
   const plans = planGrid(weeklyContext);
 
   const save = useCallback(
-    async (next: string[][]) => {
+    async (next: string[][]): Promise<boolean> => {
       setIsSaving(true);
       try {
         onGameUpdate?.(await setWeeklyScrimPlans(next));
+        return true;
       } catch (error) {
         console.error("Failed to save weekly scrim plans:", error);
+        return false;
       } finally {
         setIsSaving(false);
       }
@@ -41,9 +43,10 @@ export function useScrimPlans({ gameState, weeklyContext, onGameUpdate, setIsSav
     void save(withPlan(plans, slotIndex, priorityIndex, teamId));
   };
 
-  const autofill = () => {
+  /** Resolves to the number of blocks filled once saved; null when nobody could be dealt or the save failed. */
+  const autofill = async (): Promise<number | null> => {
     const next = autofillPlans(options.map((team) => team.id), weeklyContext.objective, weeklyContext.capacity);
-    if (next) void save(next);
+    return next && (await save(next)) ? next.length : null;
   };
 
   return { myTeam, teamOvrById, options, plans, setSlotPlan, autofill };

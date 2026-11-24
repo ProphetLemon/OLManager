@@ -29,6 +29,7 @@ import { dayStateKey, deskPanel, riskLevel, todayBarOpponentId, type RiskLevel }
 import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { formatDate } from "@/lib/formatting/dateFormatting";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
+import { useTabUiField } from "@/store/tabUiStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { usePhoneForm } from "@/hooks/usePhoneForm";
 import { Button } from "@/ui-v2/components/ui/button";
@@ -59,6 +60,9 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const [decisionSaving, setDecisionSaving] = useState<DailyScrimAction | null>(null);
   const [statusText, setStatusText] = useState("");
   const [lastResult, setLastResult] = useState<{ date: string; value: DecisionResult; slotIndex: number } | null>(null);
+  // Every decision of the day keeps its own result, by slot: the review shows what each block changed.
+  // It lives in the tab store, so it survives leaving the tab (the squad check between two decisions).
+  const [dayResults, setDayResults] = useTabUiField("scrims", "dayResults");
   const [focusTick, setFocusTick] = useState(0);
   const [showCancelFollowups, setShowCancelFollowups] = useState(false);
   const remoteScrimContext = useScrimContextWithFallback(gameState);
@@ -231,7 +235,9 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
         ),
       });
       // The result goes first: the phone layout must not see the next block's tag before the result it keeps on screen.
-      setLastResult({ date: dateKey(gameState.clock.current_date), value, slotIndex: decisionReport.slot_index });
+      const day = dateKey(gameState.clock.current_date);
+      setLastResult({ date: day, value, slotIndex: decisionReport.slot_index });
+      setDayResults((previous) => ({ date: day, bySlot: { ...(previous?.date === day ? previous.bySlot : {}), [decisionReport.slot_index]: value } }));
       onGameUpdate(updated);
       setStatusText(`${t("scrims.reviewDecisionApplied")}: ${t(`scrims.decision.${DECISION_TEXT_KEY[decision]}`)}`);
       setShowCancelFollowups(false);
@@ -246,6 +252,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
     setFocusTick((tick) => tick + 1);
   };
 
+  const todayResults = dayResults && dayResults.date === dateKey(gameState.clock.current_date) ? dayResults.bySlot : {};
   const result = lastResult && lastResult.date === dateKey(gameState.clock.current_date) ? lastResult.value : null;
   // The line only speaks for a decision that is still on screen or a step that is still open.
   const liveText = result || showCancelFollowups ? statusText : "";
@@ -309,6 +316,7 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
         onBackToDecision={handleBackToBlockDecision}
         result={result}
         resultSlotIndex={result && lastResult ? lastResult.slotIndex : null}
+        dayResults={todayResults}
         liveText={liveText}
         focusTick={focusTick}
       />

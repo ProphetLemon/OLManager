@@ -102,10 +102,12 @@ function identityKey(person) {
  *   roster overlay adds in this run; a pool person whose page has the same `titleKey` is the same person, whatever id his
  *   spelling hashes to. Kinds do not stay apart: a head coach the roster overlay adds is not also a pool player, and a player
  *   it adds is not also a pool coach (one person, one record).
+ * @param {Map<string, number>|null} [input.gamesLastYear] games each player has in the stats rows in the year before the run's as-of date;
+ *   with it, a person whose Players page lists a staff role and who has fewer than `POSITION_MIN_GAMES` of them is pooled as staff
  * @param {{player?: object[], staff?: object[]}|null} [input.rosterRecords] the player and staff records the roster overlay adds in
  *   this run; a pool player whose own Players page makes him staff is the coach it adds undated with his real name and country.
  */
-export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {}, rosterRecords = null, recentRoles = null }) {
+export function selectPool({ people, context, world, rosterIds = new Set(), rosterTitles = {}, rosterRecords = null, recentRoles = null, gamesLastYear = null }) {
   // Real name and country of the staff the roster overlay of this run adds without a birth date (the generator's 1990-01-01).
   const undatedRosterStaff = new Set(
     (rosterRecords?.staff ?? [])
@@ -126,7 +128,10 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
     statuses.set(person.page, { state: "refused", code, reason });
   };
 
-  for (const person of [...people.values()].sort((a, b) => compare(a.page, b.page))) {
+  for (const listed of [...people.values()].sort((a, b) => compare(a.page, b.page))) {
+    // Owner's decision (2026-11-24): the Players page role says what a person is today, so a listed staff role beats playing roster rows unless he still plays.
+    const staffByProfile = gamesLastYear && listed.kind !== "staff" && isStaffLabel(listed.profile.role) && (gamesLastYear.get(listed.page) ?? 0) < POSITION_MIN_GAMES;
+    const person = staffByProfile ? { ...listed, kind: "staff", position: null, staffLabel: String(listed.profile.role).trim() } : listed;
     counts.considered += 1;
     if (!person.profile.ign) {
       counts.noPage += 1;
@@ -153,7 +158,7 @@ export function selectPool({ people, context, world, rosterIds = new Set(), rost
     const otherRole = rosterIds.has(poolId(other, person.page)) || rosterKeys[other].has(titleKey(person.page));
     // A player whose own Players page makes him staff, when the roster overlay adds an undated staff member with his real name
     // and country: the same coach under another page (Nulu and Selfie, Marcin Wolski, PL, both on Shopify Rebellion's staff).
-    const coachElsewhere = person.kind !== "staff" && isStaffLabel(person.profile.role) && String(person.profile.name ?? "").trim().split(/\s+/).length >= 2
+    const coachElsewhere = listed.kind !== "staff" && isStaffLabel(person.profile.role) && String(person.profile.name ?? "").trim().split(/\s+/).length >= 2
       && undatedRosterStaff.has(`${foldName(person.profile.name)}|${countryToIso2(countryOf(person))}`);
     const handledByOverlay = rosterIds.has(id) || sameTitle || otherRole || coachElsewhere;
     // A current team the game has excludes a person only when the roster overlay of this run really handles him. A player

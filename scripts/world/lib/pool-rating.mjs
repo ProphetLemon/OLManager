@@ -32,6 +32,12 @@ export const GAME_POSITION = Object.freeze({ Top: "Top", Jungle: "Jungle", Mid: 
  */
 export const TIER_OFFSETS = Object.freeze({ 1: 0, 2: -6, 3: -12 });
 
+/**
+ * The competition id of the pooled stats rows of the listed events (pool-events.mjs). It is one cohort per role among those events' own
+ * players, anchored to the person's tier baseline; it is never a league level and never feeds anybody else's cohort.
+ */
+export const LISTED_COMPETITION = "listed";
+
 /** `pool.rating` values: what the attributes of an op were derived from. */
 export const RATING_STATS = "stats";
 export const RATING_TIER_DEFAULT = "tier-default";
@@ -147,7 +153,19 @@ function defaultOf(anchors, competition) {
  *   `reason` says why a player fell back to a default; without anchors the default carries the exact tier baseline (no jitter)
  */
 export function ratePoolPlayer({ tier, position, baselines, estimate = null, anchors = null, competition = null, seed = null }) {
+  if (anchors && estimate?.competition === LISTED_COMPETITION) {
+    // The pooled listed-events cohort has no league level: it is anchored to the tier baseline, as without a ladder.
+    const listed = rateFromTierBaseline({ tier, position, baselines, estimate });
+    if (listed.source === RATING_STATS) return { ...listed, competition: LISTED_COMPETITION };
+    return rateAnchored({ tier, position, baselines, estimate: null, anchors, competition, seed });
+  }
   if (anchors) return rateAnchored({ tier, position, baselines, estimate, anchors, competition, seed });
+  const rated = rateFromTierBaseline({ tier, position, baselines, estimate });
+  return rated.source === RATING_STATS && estimate?.competition === LISTED_COMPETITION ? { ...rated, competition: LISTED_COMPETITION } : rated;
+}
+
+/** The rating anchored to the tier baseline of the person: the tier default, or, with a usable estimate, the blend of docs/STAT_RATINGS.md. */
+function rateFromTierBaseline({ tier, position, baselines, estimate }) {
   const base = tierBaselines(baselines, tier).player(null, position);
   const authoredOvr = calculateLolOvr(base.attributes);
   const fallback = (reason) => ({ source: RATING_TIER_DEFAULT, reason, attributes: { ...base.attributes }, potential: base.potential, ovr: authoredOvr, games: null, competition: null });
@@ -239,8 +257,82 @@ export function poolSkillFromRows(rows, positions, { poolOf } = {}) {
   return poolSkillByPage(estimateSkill(rows, { referenceDate, ...(poolOf ? { poolOf } : {}) }), positions);
 }
 
+/**
+ * The pooled stats of the listed events: the skill model run on its own over their rows (one cohort per role, the model's own thresholds,
+ * no `poolOf`, so these rows never borrow a league's cohort and never shape anybody else's), and why each person with a roster
+ * entry in those events did or did not get a usable estimate.
+ *
+ * @param {Array<{playerKey: string, role: string, date: string}>} rows normalized rows of the listed events, old names already folded
+ * @param {Map<string, string>} positions role of each person of the listed events by page
+ * @returns {{skill: Map<string, object>, outcomes: Map<string, {position: string, status: "stats"|"below-min-games"|"no-data"|"group-too-small"|"no-estimate"}>, groups: Map<string, number>}}
+ *   `groups`: players with at least the cohort's games, by role
+ */
+export function listedSkillFromRows(rows, positions) {
+  const empty = { skill: new Map(), outcomes: new Map(), groups: new Map() };
+  if (rows.length === 0) {
+    for (const [page, position] of positions) empty.outcomes.set(page, { position, status: "no-data" });
+    return empty;
+  }
+  const referenceDate = rows.reduce((max, r) => (r.date > max ? r.date : max), "1970-01-01");
+  if (Number.isNaN(dayNumber(referenceDate))) throw new Error("pool stats: listed rows carry no valid date");
+  const estimates = estimateSkill(rows, { referenceDate });
+  const skill = poolSkillByPage(estimates, positions);
+  const groups = new Map();
+  for (const e of estimates) if (e.games >= DEFAULT_OPTIONS.minCohortGames) groups.set(e.role, (groups.get(e.role) ?? 0) + 1);
+  const outcomes = new Map();
+  for (const [page, position] of positions) {
+    const own = estimates.filter((e) => e.playerKey === page && gamePosition(e.role) === gamePosition(position));
+    const best = own.sort((a, b) => b.games - a.games)[0];
+    const status = skill.has(page) ? "stats"
+      : !best ? "no-data"
+        : best.reason === "below_min_write_games" ? "below-min-games"
+          : best.reason === "cohort_too_small" ? "group-too-small"
+            : "no-estimate";
+    outcomes.set(page, { position, status });
+  }
+  return { skill, outcomes, groups };
+}
+
+/**
+ * The outcome of the pooled listed-events stats by position (the game's names): people rated from them, and the people who kept the
+ * default because they have fewer than 8 games, no game-level data, a pooled group too small for their role, or no usable estimate.
+ * @param {ReturnType<typeof listedSkillFromRows>} listed
+ * @returns {Map<string, {stats: number, belowMin: number, noData: number, groupTooSmall: number, noEstimate: number}>}
+ */
+export function summarizeListed(listed) {
+  const byRole = new Map();
+  for (const { position, status } of listed.outcomes.values()) {
+    const row = byRole.get(position) ?? { stats: 0, belowMin: 0, noData: 0, groupTooSmall: 0, noEstimate: 0 };
+    if (status === "stats") row.stats += 1;
+    else if (status === "below-min-games") row.belowMin += 1;
+    else if (status === "no-data") row.noData += 1;
+    else if (status === "group-too-small") row.groupTooSmall += 1;
+    else row.noEstimate += 1;
+    byRole.set(position, row);
+  }
+  return new Map([...byRole].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+
+/** One warning per position whose pooled group was too small to compare anybody: its people keep the default. */
+export function listedGroupWarnings(listed) {
+  const warnings = [];
+  for (const [position, row] of summarizeListed(listed)) {
+    if (row.groupTooSmall === 0) continue;
+    const label = Object.entries(GAME_POSITION).find(([, game]) => game === position)?.[0] ?? position;
+    warnings.push(`pool: the pooled stats group of the listed events for ${position} is too small (${listed.groups.get(label) ?? 0} players with ${DEFAULT_OPTIONS.minCohortGames}+ games, ${DEFAULT_OPTIONS.minCohortSize} needed); ${row.groupTooSmall} people keep the default`);
+  }
+  return warnings;
+}
+
 /** The fewest games in the activity window that settle a player's position (step a of the position evidence). */
 export const POSITION_MIN_GAMES = 5;
+
+/** Games per player dated on or after `since` (YYYY-MM-DD), whatever the role. */
+export function gamesSinceFromRows(rows, { since }) {
+  const games = new Map();
+  for (const row of rows) if (row.date >= since) games.set(row.playerKey, (games.get(row.playerKey) ?? 0) + 1);
+  return games;
+}
 
 /**
  * Where each pool player has played lately, from the per-game rows of `scripts/stats/pro-stats.mjs`: the role most of his games

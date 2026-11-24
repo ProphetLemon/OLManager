@@ -7,6 +7,7 @@ import { autofillPlans } from "@/lib/scrims/scrimPlans";
 import { dismissOverlayWithBack } from "@/ui-v2/palette/paletteHistory";
 import type { ScrimContextResponse, TodayScrimContext, WeeklyScrimContext, WeeklyScrimSlotContext } from "@/lib/scrims/scrimContext";
 import type { GameStateData, ScrimReportData, TeamData } from "@/store/gameStore";
+import { useTabUiStore } from "@/store/tabUiStore";
 import { useSettingsStore } from "@/store/settingsStore";
 
 const appCss = readFileSync("src/App.css", "utf8");
@@ -257,6 +258,7 @@ function mount(context: ScrimContextResponse | null, state = game()) {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  useTabUiStore.getState().resetTabUi();
   await i18n.changeLanguage("en");
   useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, scrim_review_mode: "manual" } });
 });
@@ -809,6 +811,87 @@ describe("ScrimsTabV2 on a phone: the day's other block in the result view", () 
   });
 });
 
+describe("ScrimsTabV2 on a phone: the review shows what each decision of the day changed", () => {
+  const rows = () => [...document.querySelectorAll('[data-slot="decision-row"]')] as HTMLElement[];
+  const stat = (row: HTMLElement, id: string) => row.querySelector(`[data-stat="${id}"] [data-slot="stat-value"]`) as HTMLElement | null;
+
+  /** Both blocks decided: A with Push through, B with Day off. */
+  const bothDecided = () => {
+    const c = afterPushThrough();
+    const b = report({ slot_index: 1, opponent_team_id: "bravo", post_decision: "DayOff" });
+    c.week.slots[1] = { ...c.week.slots[1], status: "Reviewed", report: b };
+    return ctx(c.week, today({ state: "Reviewed", slotIndex: 1 }));
+  };
+  const updatedBoth = (): GameStateData => {
+    const base = game();
+    const mine = base.teams.find((t) => t.id === "mine") as TeamData;
+    mine.scrim_reports = [report({ post_decision: "PushThrough", quality: 73, severity: 1 }), report({ slot_index: 1, opponent_team_id: "bravo", post_decision: "DayOff" })];
+    return base;
+  };
+
+  it("A pushed, then B given the day off: the review has two rows, each with its own values", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValueOnce(updatedAfterPush()).mockResolvedValueOnce(updatedBoth());
+    const { swap } = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("decision")).not.toBeNull());
+    swap(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    fireEvent.click(screen.getByRole("button", { name: /^Day off\./ }));
+    await waitFor(() => expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledTimes(2));
+    swap(bothDecided());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    const [a, b] = rows();
+    expect(rows()).toHaveLength(2);
+    expect(a).toHaveTextContent("Wed A");
+    expect(stat(a, "quality")).toHaveTextContent("+12");
+    expect(stat(a, "quality")).toHaveTextContent("\u2192 73");
+    expect(stat(a, "energy")).toHaveTextContent("\u22126");
+    expect(b).toHaveTextContent("Wed B");
+    expect(stat(b, "quality")).toHaveAttribute("data-change", "none");
+    expect(stat(b, "morale")).toHaveTextContent("+5");
+    expect(stat(b, "energy")).toHaveTextContent("+6");
+    expect(b).toHaveAttribute("aria-current", "true");
+  });
+
+  it("keeps block A's values when the tab is left and reopened between the two decisions", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValueOnce(updatedAfterPush()).mockResolvedValueOnce(updatedBoth());
+    const first = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("decision")).not.toBeNull());
+    first.swap(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    first.unmount();
+    const { swap } = mount(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    fireEvent.click(screen.getByRole("button", { name: /^Day off\./ }));
+    await waitFor(() => expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledTimes(2));
+    swap(bothDecided());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    const [a, b] = rows();
+    expect(rows()).toHaveLength(2);
+    expect(stat(a, "quality")).toHaveTextContent("+12");
+    expect(stat(a, "energy")).toHaveTextContent("\u22126");
+    expect(a).not.toHaveTextContent("Changes not available");
+    expect(stat(b, "morale")).toHaveTextContent("+5");
+  });
+
+  it("when this tab no longer remembers block A's result it names A's stored decision and shows no values and no dash", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValueOnce(updatedBoth());
+    const { swap } = mount(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    fireEvent.click(screen.getByRole("button", { name: /^Day off\./ }));
+    await waitFor(() => expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledTimes(1));
+    swap(bothDecided());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    const [a, b] = rows();
+    expect(a).toHaveTextContent("Push through");
+    expect(a.querySelector('[data-slot="stat-value"]')).toBeNull();
+    expect(a).not.toHaveTextContent("\u2014");
+    expect(a).toHaveTextContent("Changes not available");
+    expect(b.querySelectorAll('[data-slot="stat-value"]')).toHaveLength(3);
+  });
+});
+
 describe("ScrimsTabV2 on a phone: the same actions as desktop", () => {
   it("Autofill saves the dealt plans through the backend call desktop uses", async () => {
     trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
@@ -1208,5 +1291,69 @@ describe("ScrimsTabV2 on a phone: the three settings views", () => {
     expect(screen.getByText("No recent reports")).toBeInTheDocument();
     expect(screen.getByRole("meter", { name: "Scrim rep" })).toHaveAttribute("aria-valuenow", "40");
     expect(screen.getByText("Cancellations").nextSibling).toHaveTextContent("2");
+  });
+});
+
+describe("ScrimsTabV2 on a phone: Rellenar opens Semana", () => {
+  const notice = () => document.querySelector('[data-slot="phone-week-notice"]');
+  const live = () => document.querySelector('[aria-live="polite"]') as HTMLElement;
+  const rellenar = () => screen.getByRole("button", { name: /Autofill/ });
+
+  it("opens Semana when the fill is applied, says so once in the live region and shows it on Semana", async () => {
+    trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    await waitFor(() => expect(home()).not.toBeNull());
+    expect(pane("volume")).toBeNull();
+    const text = "Week filled: 4 blocks. Tap a block to change its rival.";
+    expect(notice()).toHaveTextContent(text);
+    expect(live()).toHaveTextContent(text);
+    expect(document.querySelectorAll("[aria-live]")).toHaveLength(1);
+    expect(live().contains(notice())).toBe(false);
+    // Focus sits on the control of Semana that opened Volume, never on body.
+    expect(document.activeElement).toBe(entry("volume"));
+  });
+
+  it("uses the singular for one block", async () => {
+    trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
+    mount(ctx(week({ capacity: 1, slots: [slot(0)] }), today()));
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    await waitFor(() => expect(notice()).toHaveTextContent("Week filled: 1 block. Tap a block to change its rival."));
+  });
+
+  it("does nothing while Rellenar is disabled", () => {
+    mount(ctx(week({ slots: [slot(0, { canEdit: false }), slot(1), slot(2), slot(3)] }), today()));
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    expect(trainingMocks.setWeeklyScrimPlans).not.toHaveBeenCalled();
+    expect(pane("volume")).not.toBeNull();
+    expect(notice()).toBeNull();
+  });
+
+  it("stays in Volumen with no notice when the save fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    trainingMocks.setWeeklyScrimPlans.mockRejectedValue(new Error("boom"));
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    await waitFor(() => expect(error).toHaveBeenCalled());
+    expect(pane("volume")).not.toBeNull();
+    expect(notice()).toBeNull();
+    expect(live()).toHaveTextContent("");
+    error.mockRestore();
+  });
+
+  it("drops the notice when the manager leaves Semana and it does not come back", async () => {
+    trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());
+    mount(planning());
+    fireEvent.click(entry("volume"));
+    fireEvent.click(rellenar());
+    await waitFor(() => expect(notice()).not.toBeNull());
+    fireEvent.click(entry("report"));
+    fireEvent.click(back());
+    expect(home()).not.toBeNull();
+    expect(notice()).toBeNull();
   });
 });

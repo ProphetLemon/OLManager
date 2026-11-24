@@ -2272,10 +2272,25 @@ mod tests {
             game.players.iter().filter(|p| p.match_name == name).collect()
         }
 
-        fn team_id_by_name(game: &Game, name: &str) -> String {
-            let found: Vec<_> = game.teams.iter().filter(|t| t.name == name).collect();
-            assert_eq!(found.len(), 1, "expected exactly one team named {name}");
-            found[0].id.clone()
+        /// Every player the bundled list moves onto a team of this game is on that team.
+        /// Read from the list itself, so a roster refresh cannot leave the check stale.
+        fn assert_overlay_moves_hold(game: &Game, overlay: &WorldOverlay) {
+            let dup_ids = duplicate_player_ids(&game.players);
+            let mut checked = 0;
+            for op in &overlay.players {
+                let olm_core::world_overlay::PlayerOp::Move { id, team_id: Some(team_id), .. } = op
+                else {
+                    continue;
+                };
+                if dup_ids.contains(id) || game.teams.iter().all(|t| &t.id != team_id) {
+                    continue;
+                }
+                for p in game.players.iter().filter(|p| &p.id == id) {
+                    assert_eq!(p.team_id.as_ref(), Some(team_id), "overlay move of {id}");
+                    checked += 1;
+                }
+            }
+            assert!(checked > 0, "the bundled list moves nobody onto a team of this game");
         }
 
         /// A new game built by the same `build_new_game_world` that `select_team` runs,
@@ -4124,20 +4139,8 @@ mod tests {
         fn new_game_reflects_bundled_overlay_and_every_team_is_playable() {
             let (game, catalog, overlay, user_team) = new_game();
 
-            let drx = user_team.clone();
-            let kt = team_id_by_name(&game, "KT Rolster");
-
             assert_eq!(game.world_overlay_as_of.as_deref(), Some(overlay.as_of.as_str()));
-
-            let aiming = player_named(&game, "Aiming");
-            assert_eq!(aiming.len(), 1);
-            assert_eq!(aiming[0].team_id.as_deref(), Some(drx.as_str()));
-            // "Jiwoo" is also the name of a Challengers player, so look for the one on KT.
-            let jiwoo_on_kt = player_named(&game, "Jiwoo")
-                .into_iter()
-                .filter(|p| p.team_id.as_deref() == Some(kt.as_str()))
-                .count();
-            assert_eq!(jiwoo_on_kt, 1);
+            assert_overlay_moves_hold(&game, &overlay);
 
             assert!(catalog.iter().any(|p| p.id == ICE_ID), "Ice must exist in the catalog");
             assert!(game.players.iter().all(|p| p.id != ICE_ID));
@@ -4281,8 +4284,6 @@ mod tests {
         #[test]
         fn save_and_reload_keep_overlay_results_against_the_catalog() {
             let (game, catalog, overlay, _user_team) = new_game();
-            let drx = team_id_by_name(&game, "Kiwoom DRX");
-            let kt = team_id_by_name(&game, "KT Rolster");
             let dup_ids = duplicate_player_ids(&game.players);
             let protected: Vec<(String, Option<String>)> = game
                 .players
@@ -4318,12 +4319,7 @@ mod tests {
             for id in &game.retired_player_ids {
                 assert!(loaded.players.iter().all(|p| &p.id != id), "retired {id} came back");
             }
-            let aiming = player_named(&loaded, "Aiming");
-            assert_eq!(aiming.len(), 1);
-            assert_eq!(aiming[0].team_id.as_deref(), Some(drx.as_str()));
-            assert!(player_named(&loaded, "Jiwoo")
-                .iter()
-                .any(|p| p.team_id.as_deref() == Some(kt.as_str())));
+            assert_overlay_moves_hold(&loaded, &overlay);
             for (id, team) in protected {
                 let p = loaded.players.iter().find(|p| p.id == id).unwrap();
                 assert_eq!(p.team_id, team, "moved or filled player {id} reverted");

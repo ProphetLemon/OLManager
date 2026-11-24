@@ -10,7 +10,10 @@ import { cn } from "@/ui-v2/lib/utils";
 import { RESULT_FIELD_KEY } from "../EffectText";
 import { CLOSING_KEY } from "../ScrimDecisionResult";
 import { ChangeValue } from "./PhoneChange";
-import { STATS, STAT_ICONS, STAT_KEYS, StatValue, useStatWords, type StatChange, type StatId } from "./PhoneStats";
+import { DECISION_TEXT_KEY } from "@/lib/scrims/decisionTextKey";
+import type { DailyScrimAction } from "@/services/trainingService";
+import { COLUMNS, EffectsHeader } from "./PhoneEffectsTable";
+import { STATS, StatValue, useStatWords, type StatChange, type StatId } from "./PhoneStats";
 import { GlossaryButton } from "./ScrimGlossary";
 import { PhoneMatchup, ResultWord } from "./PhoneMatchup";
 import { ScrimViewFrame } from "./ScrimViewFrame";
@@ -28,12 +31,27 @@ export interface ResultOtherBlock {
   result?: "won" | "lost" | null;
 }
 
+/** One decided block of the day, as a read-only row of the table. */
+export interface ResultDecision {
+  /** "Wed A". */
+  slotLabel: string;
+  /** The decision taken; null only when the stored report does not name it. */
+  action: DailyScrimAction | null;
+  /** What the game applied, as read when the decision landed; null when it is no longer known (after a restart only the stored decision remains). */
+  result: DecisionResult | null;
+  /** The block this review was opened for. */
+  current: boolean;
+}
+
 export interface ScrimResultPaneProps {
   /** "Block review": the frame's heading and the name of its back control. */
   title: string;
   /** Leaves for Semana. */
   onBack: () => void;
+  /** The result of the block this review is for: its costs and its closing sentence. */
   result: DecisionResult;
+  /** One entry per decided block of the day, in day order. */
+  decisions: readonly ResultDecision[];
   /** "Decision applied to scrim block: …": shown in the top row; the layout's one live region is the only one that speaks. */
   statusText: string;
   you: TeamIdentity;
@@ -99,6 +117,39 @@ function statChangeOf(stat: StatId, rows: readonly ResultRow[]): StatChange {
   return { delta: stat === "morale" ? players.morale : players.condition };
 }
 
+function DecisionRow({ decision }: { decision: ResultDecision }) {
+  const { t } = useTranslation();
+  const statWords = useStatWords();
+  const { slotLabel, action, result, current } = decision;
+  const name = action ? t(`scrims.decision.${DECISION_TEXT_KEY[action]}`) : null;
+  const spoken = [slotLabel, ...(name ? [name] : [])];
+  if (result) spoken.push(...STATS.map((stat) => statWords(stat, statChangeOf(stat, result.rows))));
+  else spoken.push(t("scrims.phone.changesUnavailable"));
+  return (
+    <li
+      data-slot="decision-row"
+      aria-current={current ? "true" : undefined}
+      className={cn("relative grid min-h-9 shrink-0 items-center rounded-lg bg-card px-3 py-0.5", current && "before:absolute before:inset-y-1 before:start-0 before:w-1 before:rounded-full before:bg-foreground")}
+      style={{ gridTemplateColumns: COLUMNS }}
+    >
+      <span aria-hidden="true" className="flex min-w-0 flex-col">
+        <span className="font-heading text-entry font-bold uppercase leading-4 tracking-wide">{name ?? slotLabel}</span>
+        {name ? <span className="text-caption leading-4 text-muted-foreground">{slotLabel}</span> : null}
+      </span>
+      {result ? (
+        STATS.map((stat) => (
+          <span key={stat} data-stat={stat} className="flex justify-end">
+            <StatValue change={statChangeOf(stat, result.rows)} />
+          </span>
+        ))
+      ) : (
+        <span aria-hidden="true" className="col-span-3 text-end text-caption text-muted-foreground">{t("scrims.phone.changesUnavailable")}</span>
+      )}
+      <span className="sr-only">{`${spoken.join(". ")}.`}</span>
+    </li>
+  );
+}
+
 function RowValue({ row }: { row: ResultRow }) {
   const { t } = useTranslation();
   switch (row.kind) {
@@ -125,9 +176,8 @@ function rowLabel(row: ResultRow, t: (key: string, options?: Record<string, unkn
  * values, the closing sentence and, when the next block's report waits, the button that opens it.
  * The top row says which decision was applied; it is plain text, the layout's polite line speaks.
  */
-export function ScrimResultPane({ title, onBack, result, statusText, you, rival, won, slotLabel, other, nextSlotLabel, onDecideNext }: ScrimResultPaneProps) {
+export function ScrimResultPane({ title, onBack, result, decisions, statusText, you, rival, won, slotLabel, other, nextSlotLabel, onDecideNext }: ScrimResultPaneProps) {
   const { t } = useTranslation();
-  const statWords = useStatWords();
   const labelId = useId();
   // Calidad, Moral and Energía come first and always; then the costs and the other block's row. Gravedad is never listed.
   const costRows = result.rows.filter((row) => (row.kind === "change" && (row.field === "reputation" || row.field === "cancellations")) || row.kind === "block");
@@ -164,23 +214,14 @@ export function ScrimResultPane({ title, onBack, result, statusText, you, rival,
           <p id={labelId} data-slot="result-changes-title" className="m-0 shrink-0 font-heading text-entry font-bold uppercase leading-5 tracking-wide">
             {t("scrims.whatChanged")}
           </p>
-          <dl aria-labelledby={labelId} role="group" className="m-0 flex min-h-0 flex-1 flex-col">
-            {STATS.map((stat) => {
-              const Icon = STAT_ICONS[stat];
-              const change = statChangeOf(stat, result.rows);
-              return (
-                <div key={stat} data-stat={stat} className={ROW}>
-                  <dt className="flex min-w-0 items-center gap-1.5 text-entry text-muted-foreground">
-                    <Icon aria-hidden="true" className="size-4 shrink-0" />
-                    {t(STAT_KEYS[stat])}
-                  </dt>
-                  <dd className="m-0 shrink-0">
-                    <StatValue change={change} />
-                    <span className="sr-only">{statWords(stat, change)}</span>
-                  </dd>
-                </div>
-              );
-            })}
+          <div role="group" aria-labelledby={labelId} className="flex min-h-0 flex-1 flex-col">
+            <EffectsHeader chevron={false} />
+            <ul data-slot="decision-rows" className="m-0 flex list-none flex-col gap-1 p-0">
+              {decisions.map((decision) => (
+                <DecisionRow key={decision.slotLabel} decision={decision} />
+              ))}
+            </ul>
+            <dl className="m-0 flex min-h-0 flex-1 flex-col pt-1">
             {costRows.map((row, index) => (
               <div key={`${row.kind}-${index}`} className={ROW}>
                 <dt className="min-w-0 text-entry text-muted-foreground">{rowLabel(row, t)}</dt>
@@ -189,7 +230,8 @@ export function ScrimResultPane({ title, onBack, result, statusText, you, rival,
                 </dd>
               </div>
             ))}
-          </dl>
+            </dl>
+          </div>
           <p data-slot="result-closing" className="m-0 shrink-0 pt-1.5 text-entry leading-[1.125rem]">
             {t(CLOSING_KEY[result.closing])}
           </p>
