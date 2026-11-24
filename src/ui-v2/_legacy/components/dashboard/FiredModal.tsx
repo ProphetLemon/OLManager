@@ -17,7 +17,7 @@ export default function FiredModal(): JSX.Element | null {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-lg rounded-2xl bg-white shadow-2xl dark:bg-navy-800 dark:border dark:border-navy-700">
+      <div className="mx-4 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-navy-800 dark:border dark:border-navy-700">
         {/* Header */}
         <div className="flex flex-col items-center pt-8 pb-4 px-6">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center mb-4 shadow-lg shadow-red-600/30">
