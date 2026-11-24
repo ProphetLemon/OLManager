@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import type { DecisionResult } from "@/lib/scrims/decisionResult";
 import type { TeamIdentity } from "@/lib/teams/teamIdentity";
-import { ScrimResultPane, type ScrimResultPaneProps } from "./ScrimResultPane";
+import { ScrimResultPane, type ResultDecision, type ScrimResultPaneProps } from "./ScrimResultPane";
 
 afterEach(async () => {
   await i18n.changeLanguage("en");
@@ -36,6 +36,23 @@ const CANCEL: DecisionResult = {
   ],
 };
 
+const PUSH_ROW: ResultDecision = { slotLabel: "Wed A", action: "PushThrough", result: PUSH, current: true };
+const CANCEL_ROW: ResultDecision = { slotLabel: "Wed A", action: "VodReview", result: CANCEL, current: true };
+/** The owner's day: A pushed (Quality 56 to 68, Energy down 6), then B given the rest of the day (Morale +5, Energy +6). */
+const OWNER_A: DecisionResult = {
+  action: "PushThrough",
+  closing: "blockTwoPlayed",
+  rows: [
+    { kind: "change", field: "quality", before: 56, after: 68, cost: false },
+    { kind: "players", morale: 0, condition: -6 },
+  ],
+};
+const OWNER_B: DecisionResult = { action: "DayOff", closing: "dayClosed", rows: [{ kind: "players", morale: 5, condition: 6 }] };
+const OWNER_DAY: ResultDecision[] = [
+  { slotLabel: "Wed A", action: "PushThrough", result: OWNER_A, current: false },
+  { slotLabel: "Wed B", action: "DayOff", result: OWNER_B, current: true },
+];
+
 function setup(props: Partial<ScrimResultPaneProps> = {}) {
   const onDecideNext = vi.fn();
   const onBack = vi.fn();
@@ -44,6 +61,7 @@ function setup(props: Partial<ScrimResultPaneProps> = {}) {
       title="Block review"
       onBack={onBack}
       result={PUSH}
+      decisions={[PUSH_ROW]}
       statusText="Decision applied to scrim block: Push through"
       you={YOU}
       rival={RIVAL}
@@ -171,58 +189,111 @@ describe("ScrimResultPane: the blocks", () => {
 });
 
 describe("ScrimResultPane: what changed", () => {
-  const labels = () => [...changes().querySelectorAll("dt")].map((dt) => dt.textContent);
+  const rows = () => [...changes().querySelectorAll('[data-slot="decision-row"]')] as HTMLElement[];
+  const stat = (row: HTMLElement, id: string) => row.querySelector(`[data-stat="${id}"] [data-slot="stat-value"]`) as HTMLElement;
+  const costLabels = () => [...changes().querySelectorAll("dt")].map((dt) => dt.textContent);
 
-  it("lists Quality, Morale and Energy first, always in that order, then the costs and the other block's row, and the closing sentence", () => {
+  it("says Quality, Morale and Energy once, in a header, always in that order", () => {
     setup();
+    const header = changes().querySelector('[data-slot="effects-header"]') as HTMLElement;
+    expect([...header.querySelectorAll("[data-stat]")].map((cell) => cell.textContent)).toEqual(["Quality", "Morale", "Energy"]);
+    expect(header).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText("What changed")).toBeInTheDocument();
-    expect(labels()).toEqual(["Quality", "Morale", "Energy", "Block B"]);
+  });
+
+  it("gives the owner's day two rows in day order, each with its own decision's values", () => {
+    setup({ result: OWNER_B, decisions: OWNER_DAY, nextSlotLabel: null });
+    const [a, b] = rows();
+    expect(rows()).toHaveLength(2);
+    expect(a).toHaveTextContent("Push through");
+    expect(a).toHaveTextContent("Wed A");
+    expect(stat(a, "quality")).toHaveAttribute("data-change", "up");
+    expect(stat(a, "quality")).toHaveTextContent("+12");
+    expect(stat(a, "quality")).toHaveTextContent("\u2192 68");
+    expect(stat(a, "morale")).toHaveAttribute("data-change", "none");
+    expect(stat(a, "energy")).toHaveAttribute("data-change", "down");
+    expect(stat(a, "energy")).toHaveTextContent("\u22126");
+    expect(stat(a, "energy").className).toContain("text-warning");
+    expect(b).toHaveTextContent("Wed B");
+    expect(stat(b, "quality")).toHaveAttribute("data-change", "none");
+    expect(stat(b, "morale")).toHaveTextContent("+5");
+    expect(stat(b, "energy")).toHaveAttribute("data-change", "up");
+    expect(stat(b, "energy")).toHaveTextContent("+6");
+  });
+
+  it("gives a day with one decided block one row", () => {
+    setup();
+    expect(rows()).toHaveLength(1);
+    expect(rows()[0]).toHaveTextContent("Wed A");
+  });
+
+  it("marks the row of the block the review was opened for, by more than colour", () => {
+    setup({ result: OWNER_B, decisions: OWNER_DAY, nextSlotLabel: null });
+    const [a, b] = rows();
+    expect(b).toHaveAttribute("aria-current", "true");
+    expect(a).not.toHaveAttribute("aria-current");
+    expect(b.className).toContain("before:w-1");
+    expect(a.className).not.toContain("before:w-1");
+  });
+
+  it("rows are read-only: no buttons in the table", () => {
+    setup({ result: OWNER_B, decisions: OWNER_DAY, nextSlotLabel: null });
+    expect(changes().querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("says a block whose changes are unknown by its decision and block with no values and no dash", () => {
+    setup({ result: OWNER_B, decisions: [{ slotLabel: "Wed A", action: "PushThrough", result: null, current: false }, OWNER_DAY[1]], nextSlotLabel: null });
+    const [a, b] = rows();
+    expect(a).toHaveTextContent("Push through");
+    expect(a).toHaveTextContent("Wed A");
+    expect(a.querySelector('[data-slot="stat-value"]')).toBeNull();
+    expect(a).not.toHaveTextContent("\u2014");
+    expect(a).toHaveTextContent("Changes not available");
+    expect(within(a).getByText(/Wed A\. Push through\. Changes not available/)).toBeInTheDocument();
+    expect(b.querySelectorAll('[data-slot="stat-value"]')).toHaveLength(3);
+  });
+
+  it("says each row in words: the block, the decision and each stat; the header is not read", () => {
+    setup({ result: OWNER_B, decisions: OWNER_DAY, nextSlotLabel: null });
+    expect(within(changes()).getByText("Wed A. Push through. Quality goes up 12, ends at 68. Morale: no change. Energy goes down 6.")).toBeInTheDocument();
+    expect(within(changes()).getByText("Wed B. Day off. Quality: no change. Morale goes up 5. Energy goes up 6.")).toBeInTheDocument();
+    expect(changes().querySelector('[data-slot="effects-header"]')).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("lists the costs and the other block's row after the table, and the closing sentence", () => {
+    setup();
+    expect(costLabels()).toEqual(["Block B"]);
     expect(screen.getByText("Block 2 was played. Its report is waiting for your decision.")).toBeInTheDocument();
   });
 
   it("never lists Severity, nor Picked players as one line", () => {
-    setup({ result: CANCEL, nextSlotLabel: null });
-    expect(labels()).not.toContain("Severity");
+    setup({ result: CANCEL, decisions: [CANCEL_ROW], nextSlotLabel: null });
+    expect(costLabels()).not.toContain("Severity");
     expect(pane().textContent).not.toMatch(/Severity|Picked players/);
   });
 
-  it("shows each stat with the table's arrows: up and +n, a DOWN arrow and the minus in amber, a dash when untouched, Quality with where it ends", () => {
-    setup();
-    const quality = changes().querySelector('[data-stat="quality"] [data-slot="stat-value"]') as HTMLElement;
-    expect(quality).toHaveAttribute("data-change", "up");
-    expect(quality).toHaveTextContent("+12");
-    expect(quality).toHaveTextContent("\u2192 73");
-    expect(changes().querySelector('[data-stat="morale"] [data-slot="stat-value"]')).toHaveAttribute("data-change", "none");
-    const energy = changes().querySelector('[data-stat="energy"] [data-slot="stat-value"]') as HTMLElement;
-    expect(energy).toHaveAttribute("data-change", "down");
-    expect(energy).toHaveTextContent("\u22126");
-    expect(energy.className).toContain("text-warning");
-    expect(energy.querySelector(".lucide-arrow-down")).not.toBeNull();
-  });
-
-  it("says each stat in words for assistive technology", () => {
-    setup();
-    expect(within(changes()).getByText("Quality goes up 12, ends at 73")).toBeInTheDocument();
-    expect(within(changes()).getByText("Morale: no change")).toBeInTheDocument();
-    expect(within(changes()).getByText("Energy goes down 6")).toBeInTheDocument();
-  });
-
-  it("marks the costs with the warning icon and the word Cost after the three stats", () => {
-    setup({ result: CANCEL, nextSlotLabel: null, other: { label: "Wed B", identity: HERETICS, state: "cancelled" } });
-    expect(labels()).toEqual(["Quality", "Morale", "Energy", "Scrim rep", "Cancellations", "Block B"]);
-    const costs = pane().querySelectorAll('[data-slot="phone-change"][data-tone="cost"]');
-    expect(costs).toHaveLength(2);
+  it("marks the costs with the warning icon and the word Cost after the table", () => {
+    setup({ result: CANCEL, decisions: [CANCEL_ROW], nextSlotLabel: null, other: { label: "Wed B", identity: HERETICS, state: "cancelled" } });
+    expect(costLabels()).toEqual(["Scrim rep", "Cancellations", "Block B"]);
+    expect(pane().querySelectorAll('[data-slot="phone-change"][data-tone="cost"]')).toHaveLength(2);
     expect(pane().querySelectorAll('[data-slot="cost-mark"]')).toHaveLength(2);
-    expect(within(changes()).getByText("30 → 25")).toBeInTheDocument();
-    expect(within(changes()).getByText("0 → 1")).toBeInTheDocument();
+    expect(within(changes()).getByText("30 \u2192 25")).toBeInTheDocument();
+    expect(within(changes()).getByText("0 \u2192 1")).toBeInTheDocument();
   });
 
   it("says the cancelled block in the rows with the X and the closing sentence", () => {
-    setup({ result: CANCEL, nextSlotLabel: null, other: { label: "Wed B", identity: HERETICS, state: "cancelled" } });
+    setup({ result: CANCEL, decisions: [CANCEL_ROW], nextSlotLabel: null, other: { label: "Wed B", identity: HERETICS, state: "cancelled" } });
     const row = within(changes()).getByText("Block B").closest("div") as HTMLElement;
     expect(row).toHaveTextContent("Cancelled");
     expect(row.querySelector("svg")).not.toBeNull();
     expect(screen.getByText("Block B was cancelled. Continue advances the day.")).toBeInTheDocument();
+  });
+
+  it("still renders two rows, the costs and the closing sentence together", () => {
+    setup({ result: { ...OWNER_B, rows: [...OWNER_B.rows, { kind: "change", field: "reputation", before: 30, after: 25, cost: true }, { kind: "change", field: "cancellations", before: 0, after: 1, cost: true }] }, decisions: OWNER_DAY, nextSlotLabel: null });
+    expect(rows()).toHaveLength(2);
+    expect(costLabels()).toEqual(["Scrim rep", "Cancellations"]);
+    expect(screen.getByText("The day is closed. Continue advances the day.")).toBeInTheDocument();
   });
 
   it("has no tag words and no nested heading", () => {

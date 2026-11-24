@@ -3366,6 +3366,7 @@
       "changeDown": "{{stat}} {{n}} azalır",
       "changeNone": "{{stat}}: değişmez",
       "changeEnds": "{{n}} olur",
+      "changesUnavailable": "Değişiklikler mevcut değil",
       "glossaryTitle": "Her verinin anlamı",
       "glossaryReadTitle": "Değişiklikleri nasıl okursun",
       "glossaryReadBody": "↑ +5 artar. ↓ −3 azalır. — değişmez. «+6 → 65» kalitenin 65'te bittiği anlamına gelir. Maliyet, bir bloğu iptal etmek için ödediğin bedeldir.",

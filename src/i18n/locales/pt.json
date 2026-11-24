@@ -3375,6 +3375,7 @@
       "changeDown": "{{stat}} desce {{n}}",
       "changeNone": "{{stat}}: sem alteração",
       "changeEnds": "termina em {{n}}",
+      "changesUnavailable": "Alterações indisponíveis",
       "glossaryTitle": "O que significa cada dado",
       "glossaryReadTitle": "Como ler as alterações",
       "glossaryReadBody": "↑ +5 sobe. ↓ −3 desce. — não muda. «+6 → 65» quer dizer que a qualidade acaba em 65. Um custo é o que pagas por cancelar um bloco.",

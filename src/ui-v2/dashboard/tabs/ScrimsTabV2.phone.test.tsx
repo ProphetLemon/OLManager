@@ -809,6 +809,65 @@ describe("ScrimsTabV2 on a phone: the day's other block in the result view", () 
   });
 });
 
+describe("ScrimsTabV2 on a phone: the review shows what each decision of the day changed", () => {
+  const rows = () => [...document.querySelectorAll('[data-slot="decision-row"]')] as HTMLElement[];
+  const stat = (row: HTMLElement, id: string) => row.querySelector(`[data-stat="${id}"] [data-slot="stat-value"]`) as HTMLElement | null;
+
+  /** Both blocks decided: A with Push through, B with Day off. */
+  const bothDecided = () => {
+    const c = afterPushThrough();
+    const b = report({ slot_index: 1, opponent_team_id: "bravo", post_decision: "DayOff" });
+    c.week.slots[1] = { ...c.week.slots[1], status: "Reviewed", report: b };
+    return ctx(c.week, today({ state: "Reviewed", slotIndex: 1 }));
+  };
+  const updatedBoth = (): GameStateData => {
+    const base = game();
+    const mine = base.teams.find((t) => t.id === "mine") as TeamData;
+    mine.scrim_reports = [report({ post_decision: "PushThrough", quality: 73, severity: 1 }), report({ slot_index: 1, opponent_team_id: "bravo", post_decision: "DayOff" })];
+    return base;
+  };
+
+  it("A pushed, then B given the day off: the review has two rows, each with its own values", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValueOnce(updatedAfterPush()).mockResolvedValueOnce(updatedBoth());
+    const { swap } = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("decision")).not.toBeNull());
+    swap(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    fireEvent.click(screen.getByRole("button", { name: /^Day off\./ }));
+    await waitFor(() => expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledTimes(2));
+    swap(bothDecided());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    const [a, b] = rows();
+    expect(rows()).toHaveLength(2);
+    expect(a).toHaveTextContent("Wed A");
+    expect(stat(a, "quality")).toHaveTextContent("+12");
+    expect(stat(a, "quality")).toHaveTextContent("\u2192 73");
+    expect(stat(a, "energy")).toHaveTextContent("\u22126");
+    expect(b).toHaveTextContent("Wed B");
+    expect(stat(b, "quality")).toHaveAttribute("data-change", "none");
+    expect(stat(b, "morale")).toHaveTextContent("+5");
+    expect(stat(b, "energy")).toHaveTextContent("+6");
+    expect(b).toHaveAttribute("aria-current", "true");
+  });
+
+  it("when this tab no longer remembers block A's result it names A's stored decision and shows no values and no dash", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValueOnce(updatedBoth());
+    const { swap } = mount(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    fireEvent.click(screen.getByRole("button", { name: /^Day off\./ }));
+    await waitFor(() => expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledTimes(1));
+    swap(bothDecided());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    const [a, b] = rows();
+    expect(a).toHaveTextContent("Push through");
+    expect(a.querySelector('[data-slot="stat-value"]')).toBeNull();
+    expect(a).not.toHaveTextContent("\u2014");
+    expect(a).toHaveTextContent("Changes not available");
+    expect(b.querySelectorAll('[data-slot="stat-value"]')).toHaveLength(3);
+  });
+});
+
 describe("ScrimsTabV2 on a phone: the same actions as desktop", () => {
   it("Autofill saves the dealt plans through the backend call desktop uses", async () => {
     trainingMocks.setWeeklyScrimPlans.mockResolvedValue(game());

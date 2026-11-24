@@ -3174,6 +3174,7 @@
       "changeDown": "{{stat}} scende di {{n}}",
       "changeNone": "{{stat}}: nessun cambio",
       "changeEnds": "finisce a {{n}}",
+      "changesUnavailable": "Modifiche non disponibili",
       "glossaryTitle": "Cosa significa ogni dato",
       "glossaryReadTitle": "Come leggere i cambiamenti",
       "glossaryReadBody": "↑ +5 sale. ↓ −3 scende. — non cambia. «+6 → 65» significa che la qualità finisce a 65. Un costo è quello che paghi per annullare un blocco.",

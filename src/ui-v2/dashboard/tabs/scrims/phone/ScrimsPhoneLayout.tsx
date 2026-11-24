@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useScrimPlans } from "@/hooks/useScrimPlans";
 import type { TeamData, GameStateData, ScrimFocus, ScrimReportData } from "@/store/gameStore";
 import type { TodayScrimContext, WeeklyScrimContext } from "@/lib/scrims/scrimContext";
-import type { DecisionResult } from "@/lib/scrims/decisionResult";
+import { storedDecisionAction, type DecisionResult } from "@/lib/scrims/decisionResult";
 import { buildPhoneHome } from "@/lib/scrims/phoneHome";
 import { isEditable, phoneDoneTarget, slotRowId, type PhoneRowId } from "@/lib/scrims/phoneWeek";
 import { buildRivalRows } from "@/lib/scrims/rivalOdds";
@@ -18,7 +18,7 @@ import { ScrimDecisionPane } from "./ScrimDecisionPane";
 import { ScrimFollowUpPane } from "./ScrimFollowUpPane";
 import { ScrimObjectivePane } from "./ScrimObjectivePane";
 import { ScrimReportPane } from "./ScrimReportPane";
-import { ScrimResultPane } from "./ScrimResultPane";
+import { ScrimResultPane, type ResultDecision } from "./ScrimResultPane";
 import { ScrimPickView } from "./ScrimPickView";
 import { ScrimVolumePane } from "./ScrimVolumePane";
 import { ScrimWeekHome } from "./ScrimWeekHome";
@@ -59,6 +59,8 @@ export interface ScrimsPhoneLayoutProps {
   /** The result of today's last decision and the slot it was taken on; null when there is none. */
   result: DecisionResult | null;
   resultSlotIndex: number | null;
+  /** What each decision of today applied, by slot index, while this tab remembers it (it does not survive a restart). */
+  dayResults: Readonly<Record<number, DecisionResult>>;
   /** The one live line: the decision just applied, or the prompt of the open cancel step. */
   liveText: string;
   /** Bumped by the tab after a decision or a step change: focus goes to the pane's heading. */
@@ -289,11 +291,21 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
       const day = home.days.find((entry) => entry.blocks.some((candidate) => candidate.slotIndex === slotIndex));
       const sibling = day?.blocks.find((candidate) => candidate.slotIndex !== slotIndex);
       const rivalId = slot.resolvedOpponentTeamId ?? slot.report?.opponent_team_id ?? slot.plan[0];
+      // One row per decided block of the day, in day order: what each one changed, as read when it landed, or only
+      // its stored decision when this tab no longer remembers the result (never a guess at the numbers).
+      const decisions = (day?.blocks ?? []).flatMap((candidate, position): ResultDecision[] => {
+        const entry = week.slots.find((cell) => cell.slotIndex === candidate.slotIndex);
+        const isCurrent = candidate.slotIndex === slotIndex;
+        if (!isCurrent && !candidate.decided) return [];
+        const known = isCurrent ? result : props.dayResults[candidate.slotIndex] ?? null;
+        return [{ slotLabel: slotLabelOf(entry), action: known?.action ?? storedDecisionAction(entry?.report?.post_decision, position === 0), result: known, current: isCurrent }];
+      });
       return (
         <ScrimResultPane
           title={t("scrims.reviewBlockTitle")}
           onBack={goHome}
           result={result}
+          decisions={decisions}
           statusText={props.liveText}
           you={teamIdentity(myTeam)}
           rival={identityOf(rivalId)}

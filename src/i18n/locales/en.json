@@ -354,6 +354,7 @@
       "changeDown": "{{stat}} goes down {{n}}",
       "changeNone": "{{stat}}: no change",
       "changeEnds": "ends at {{n}}",
+      "changesUnavailable": "Changes not available",
       "glossaryTitle": "What each number means",
       "glossaryReadTitle": "How to read the changes",
       "glossaryReadBody": "↑ +5 it goes up. ↓ −3 it goes down. — it does not change. «+6 → 65» means quality ends at 65. A cost is what you pay for cancelling a block.",
