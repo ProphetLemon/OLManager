@@ -4,6 +4,35 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1124.2] - 2026-11-24
+
+Three fixes to Scrims on the phone, found by playing 2026.1124.1 on a real phone, and the roster refresh of 23 November now comes inside the game. On Windows and Linux nothing you can see changes in a career that already exists. The Scrims fixes were checked on an Android 14 emulator (x86_64 build). A test build of the same code (arm64) was then installed on one real phone, a OnePlus 11 with Android 16, and its owner reported that it looks right; which screens were opened there was not recorded.
+
+### Changed
+
+- New games come with the roster refresh of 23 November 2026. The previous release shipped the one of 17 November, and a game that was online had already received the newer one from the roster check. The pool of free agents is 3,518 players and 773 staff. New games only.
+- New games: the pool of free agents takes in the players of 14 women's and marginalised-genders events and series, as their organisers describe them, among them Equal Esports Cup, League of Legends Game Changers and Nova Series. Players with enough games in those events are rated from them; the others get the default rating of their tier. New games only.
+- New games: 157 people the wiki lists as coaches or analysts, with fewer than five games in the last year, are offered as staff, not as players. New games only.
+- New games: the ratings taken from match stats were rebuilt for this roster refresh. Against the previous release, 89 players have different values, 12 gain a rating from stats and 10 lose it. New games only.
+
+### Fixed
+
+- Android, Scrims: the review of a block has one row for each block you decided that day, with the decision's name and what it changed in Quality, Morale and Energy; the open block's row is marked. Before, after you decided both blocks of a day it showed only the last decision, so a first decision that raised Quality ("Push through") looked as if it had changed nothing. The decision had been applied; only the review was wrong.
+- Android, Scrims: "Autofill" returns to the week, and a line there says how many blocks it filled. Before, it stayed on the Volume screen and you had to go back to see the result.
+- Android, Scrims: the review keeps these values when you leave Scrims and come back on the same day.
+
+### Known issues
+
+- Android, Scrims: if the app is closed completely and opened again, the review of a block decided earlier that day reads "Changes not available" instead of the values.
+- Android, Scrims: once the day is over and you leave Scrims, that day's review cannot be opened again.
+- Android: only the frame of the game, the main menu, Scrims, the Inbox and the profile header have a phone layout so far. The other screens are the computer layout at a readable size and scroll as one page. The draft and the live match are not adapted yet.
+- On a computer, a Scrims decision still shows the old list of effects, with Severity.
+- Auto-Save does not run during a live match; the match is saved when it ends. That case was covered by automated tests only, not played on a device.
+- Android: while the "Auto-save failed" line shows, the Scrims screens are a little taller than the screen and scroll.
+- Android: Back does nothing inside a player's profile or an open dialog; use the buttons on the screen.
+- Android: Back during the draft, a live match or a result screen returns to the game's main screen. Nothing is lost: the match day can be entered again.
+- The file made by Settings > "Export World Database" holds teams, players and staff only. It is not a save and cannot be imported.
+
 ## [2026.1124.1] - 2026-11-24
 
 A layout made for phones on Android, starting with the frame of the game, the main menu and Scrims. And Auto-Save now really saves. The phone layout was checked on an Android 14 emulator (x86_64 build). On one real phone, a OnePlus 11 with Android 16, a test build of the same code (arm64) was installed over the previous version: the career loaded, and the Scrims week screen and Back were seen there. The decision table, the glossary and Auto-Save were not tried on that phone.
