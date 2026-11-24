@@ -154,7 +154,9 @@ export async function runRefresh(options) {
     const recentRoles = statsRows ? recentRolesFromRows(statsRows, { since: settings.since }) : null;
     const addedRecords = (entries, kind) => entries.filter((entry) => entry.op.op === "add").map((entry) => entry.op[kind]);
     const rosterRecords = { player: addedRecords(ops.players, "player"), staff: addedRecords(ops.staff, "staff") };
-    const selection = selectPool({ people: inputs.people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles });
+    // Owner's decision (2026-11-24): every listed event counts as tier 2, as Game Changers does; a person never gets a worse tier than 2 through one, nobody is lowered.
+    const people = new Map([...inputs.people].map(([page, p]) => [page, p.tier > 2 && (p.tournaments ?? []).some((t) => inputs.classes.get(t)?.listed) ? { ...p, tier: 2 } : p]));
+    const selection = selectPool({ people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles });
     // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;

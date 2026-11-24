@@ -48,10 +48,24 @@ describe("the listed events' own stats", () => {
 
   it("rates the renamed player from all 25 Support games under the three names, anchored to the pool's tier baseline", async () => {
     const result = await run({ inputs: withVicky({ listedRows: [...vickyRows, ...fillers(15)] }) });
-    expect(op(result, "Vicky").pool).toMatchObject({ rating: RATING_STATS, rating_games: 25, rating_competition: LISTED_COMPETITION, tier: 3 });
+    expect(op(result, "Vicky").pool).toMatchObject({ rating: RATING_STATS, rating_games: 25, rating_competition: LISTED_COMPETITION, tier: 2 });
     const plain = await run({ inputs: withVicky({ listedRows: [] }) });
     expect(op(plain, "Vicky").pool.rating).toBe(RATING_TIER_DEFAULT);
     expect(op(result, "Vicky").player.attributes).not.toEqual(op(plain, "Vicky").player.attributes);
+  });
+
+  it("counts every listed event as tier 2: a tier-3 record is raised, tier 1 stays, a person outside the events stays tier 3", async () => {
+    const person = (page: string, extra: Row) => personFromRow(row({
+      player: page, ign: page, name: `${page} Test`, country: "Spain", birth: "1998-11-03", prole: "Support", rmin: "Support", rmax: "Support", n: "5", last: "2026-11-14",
+      lmin: "", tmin: "Secondary", toff: "0", loff: "", ...extra,
+    }));
+    const extra = [
+      ["Listed Three", person("Listed Three", { tours: "Storm Takeover 2024" })],
+      ["Listed One", person("Listed One", { tours: "Storm Takeover 2024", tmin: "Primary" })],
+      ["Plain Three", person("Plain Three", { tours: "Plain Cup 1" })],
+    ] as const;
+    const result = await run({ inputs: { ...inputs, people: new Map([...inputs.people, ...extra]), listedStats: READ } });
+    expect([op(result, "Listed Three").pool.tier, op(result, "Listed One").pool.tier, op(result, "Plain Three").pool.tier]).toEqual([2, 1, 3]);
   });
 
   it("reads the old names only through the alias map: without it the player has too few games under any one name", async () => {
