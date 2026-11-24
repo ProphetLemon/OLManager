@@ -4,6 +4,7 @@ import { ArrowUp, ChartNoAxesColumn, CircleHelp, CircleX, Smile, Star, X, Zap, t
 
 import { Dialog, DialogContent, DialogTitle } from "@/ui-v2/components/ui/dialog";
 import { useBackDismisser } from "@/ui-v2/palette/useBackDismisser";
+import { useFadeMask } from "@/ui-v2/shell/useFadeMask";
 
 const FOCUS_RING = "outline-hidden focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -40,8 +41,8 @@ export function GlossaryButton() {
         <CircleHelp aria-hidden="true" className="size-6" />
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent data-slot="glossary-dialog" className="max-h-[calc(100dvh-1rem)] max-w-[min(42rem,calc(100vw-2rem))] gap-2 overflow-y-auto p-4">
-          <div className="flex items-center justify-between gap-2">
+        <DialogContent data-slot="glossary-dialog" className="flex max-h-[calc(100dvh-1rem)] max-w-[min(42rem,calc(100vw-2rem))] flex-col gap-2 overflow-hidden p-3">
+          <div className="-my-1 flex h-10 shrink-0 items-center justify-between gap-2">
             <DialogTitle className="font-heading text-section uppercase">{t("scrims.phone.glossaryTitle")}</DialogTitle>
             <button
               type="button"
@@ -53,19 +54,34 @@ export function GlossaryButton() {
               <X aria-hidden="true" className="size-6" />
             </button>
           </div>
-          <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-2">
-            {ENTRIES.map(({ id, title, body, Icon }) => (
-              <div key={id} data-slot="glossary-entry" data-entry={id} className="flex min-w-0 gap-3">
-                <Icon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
-                <div className="min-w-0">
-                  <dt className="font-heading text-entry font-bold uppercase tracking-wide">{t(title)}</dt>
-                  <dd className="m-0 text-caption leading-4 text-muted-foreground">{t(body)}</dd>
-                </div>
-              </div>
-            ))}
-          </dl>
+          <GlossaryBody />
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/**
+ * The six entries in two columns, the icon beside the title and the sentence across the column. At 804 x 360 they
+ * fit without scrolling in English and Spanish (three rows of up to 84 px and two gaps of 8 px); a longer locale
+ * scrolls inside this body, and the fade shows the edge that has more.
+ */
+function GlossaryBody() {
+  const { t, i18n } = useTranslation();
+  const fade = useFadeMask<HTMLDivElement>(i18n.language);
+  return (
+    <div data-slot="glossary-scroll" ref={fade.ref} onScroll={fade.onScroll} style={fade.style} data-overflow-bottom={fade["data-overflow-bottom"]} data-overflow-top={fade["data-overflow-top"]} className="scrollbar-v2 min-h-0 flex-1 overflow-y-auto">
+      <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-2">
+        {ENTRIES.map(({ id, title, body, Icon }) => (
+          <div key={id} data-slot="glossary-entry" data-entry={id} className="flex min-w-0 flex-col">
+            <dt className="flex items-center gap-2 font-heading text-entry font-bold uppercase leading-5 tracking-wide">
+              <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+              {t(title)}
+            </dt>
+            <dd className="m-0 text-caption leading-4 text-muted-foreground">{t(body)}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

@@ -277,12 +277,61 @@ describe("ScrimDecisionPane: the effects table", () => {
     expect(rows()[0]).toHaveTextContent("The day closes after this decision.");
   });
 
-  it("holds the heights of one to four rows: rows are at least a target high with a 4 px gap, the header is 22 px", () => {
+  it("holds four rows with room to spare: rows at least a target high with a 4 px gap, a 20 px header attached to the first row (20 + 192 + 12 = 224 of 226)", () => {
     setup(closeDay(false));
-    // 22 + 4 x 48 + 3 x 4 = 226 of the 226 px under the top row.
-    expect((document.querySelector('[data-slot="effects-header"]') as HTMLElement).className).toContain("h-[1.375rem]");
+    expect((document.querySelector('[data-slot="effects-header"]') as HTMLElement).className).toContain("h-5");
     for (const row of rows()) expect(row.className).toContain("min-h-[var(--hit)]");
-    expect(document.querySelector('[data-slot="effects-table"]')!.className).toContain("gap-1");
+    const table = document.querySelector('[data-slot="effects-table"]') as HTMLElement;
+    // No gap between the header and the first row: the only gaps are the three between rows.
+    expect(table.className).toContain("gap-0");
+    expect(table.className).not.toMatch(/\bgap-1\b/);
+    expect(table.querySelector("ul")!.className).toContain("gap-1");
+  });
+
+  it("draws the header as a strip across the full width and the column bands above the rows at about 6%", () => {
+    setup();
+    const header = document.querySelector('[data-slot="effects-header"]') as HTMLElement;
+    expect(header.className).toContain("bg-card");
+    expect(header.className).toContain("rounded-t-lg");
+    const bands = document.querySelector('[data-slot="effects-bands"]') as HTMLElement;
+    expect(bands.className).toContain("z-10");
+    expect([...bands.children].filter((child) => child.className.includes("bg-foreground/[0.06]"))).toHaveLength(3);
+  });
+
+  it("draws the focus ring inside the row, so the scrolling body cannot clip it", () => {
+    setup(closeDay(false));
+    for (const row of rows()) expect(row.querySelector("button")!.className).toContain("ring-inset");
+  });
+
+  it("reads every visible sentence of a row, each once: the description and the extra line, with the cost once in the name", () => {
+    const report = makeReport({ won: true, issue: null });
+    setup({ report, options: makeOptions({ isFirstBlock: true, won: true, report }) });
+    const spokenOf = (name: string) => {
+      const button = rowOf(name).querySelector("button") as HTMLElement;
+      const parts = (button.getAttribute("aria-describedby") ?? "").split(" ").map((id) => document.getElementById(id)?.textContent ?? "");
+      return { button, parts };
+    };
+    const cont = spokenOf("Continue to block 2");
+    expect(cont.parts.join(" ")).toContain("Keep the plan and play the second block.");
+    expect(cont.parts.join(" ")).toContain("Block B plays now. Its report waits for your decision.");
+    const rest = spokenOf("Offer rest");
+    expect(rest.parts.join(" ")).toContain("Cancels block B.");
+    expect(rest.parts.join(" ")).toContain("Offer rest after");
+    expect(new Set(rest.parts).size).toBe(rest.parts.length);
+    expect(rest.button.getAttribute("aria-label")).toContain("Cost: Scrim rep 30");
+    expect(rest.parts.join(" ")).not.toContain("Cost: Scrim rep");
+  });
+
+  it("with three or more options and a cost, the cost is read once (in the name) and the description is kept", () => {
+    const cancel = makeOptions({ isFirstBlock: true, won: false }).find((option) => option.id === "CancelScrims")!;
+    const rest = makeOptions({ isFirstBlock: false, won: false, report: makeReport({ slot_index: 1 }) }).slice(0, 2);
+    setup({ options: [...rest, cancel] });
+    const button = rowOf("Cancel scrims").querySelector("button") as HTMLElement;
+    const text = (button.getAttribute("aria-describedby") ?? "").split(" ").map((id) => document.getElementById(id)?.textContent ?? "").join(" ");
+    expect(text).toContain(cancel.description);
+    expect(text).not.toMatch(/Cost/);
+    expect(button.getAttribute("aria-label")).toContain("Cost: Scrim rep");
+    expect(rowOf("Cancel scrims").querySelector('[data-slot="effects-cost-line"]')).toHaveAttribute("aria-hidden", "true");
   });
 
   it("draws a very faint band behind each of the three stat columns from the header down", () => {

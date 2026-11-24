@@ -268,7 +268,14 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
         />
       );
     }
-    if (result && resultSlotIndex === slotIndex) {
+    // The result says the day's other block was played and will wait for its decision (`closing` is
+    // "blockTwoPlayed", read from the same payload as the result) but the week context has not caught up yet (this
+    // block still reads as undecided): the review of this block is never rendered in between. The decision stays
+    // on screen, applying, until Decidir of the other block can be shown. Once the context shows this block decided
+    // the hold is over, whatever else it says, so the review always comes if nothing else waits.
+    const contextBehind = !(slot.status === "Reviewed" || slot.report?.post_decision != null);
+    const holdForNext = result != null && resultSlotIndex === slotIndex && result.closing === "blockTwoPlayed" && contextBehind && decisionSlot === slotIndex;
+    if (result && resultSlotIndex === slotIndex && !holdForNext) {
       const waiting = decisionSlot != null && decisionSlot !== slotIndex ? decisionSlot : null;
       // The day's other block, from the same model Semana draws: the one beside this block in its day.
       const day = home.days.find((entry) => entry.blocks.some((candidate) => candidate.slotIndex === slotIndex));
@@ -304,7 +311,7 @@ export function ScrimsPhoneLayout(props: ScrimsPhoneLayoutProps) {
           rival={identityOf(props.decisionReport.opponent_team_id)}
           blockLabel={props.blockLabel}
           options={props.decisionOptions}
-          savingId={props.decisionSaving}
+          savingId={holdForNext && result ? result.action : props.decisionSaving}
           onDecide={props.onDecide}
           reputation={week.reputation}
           locked={locked}

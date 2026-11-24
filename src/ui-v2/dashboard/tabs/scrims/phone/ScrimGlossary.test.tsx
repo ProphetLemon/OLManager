@@ -68,10 +68,43 @@ describe("GlossaryButton", () => {
     expect(dialog()).toBeNull();
   });
 
-  it("scrolls inside itself, never the page: it is capped to the viewport", () => {
+  it("fits at 804 x 360 without scrolling in two columns: the icon sits beside the title and the sentence takes the column's width", () => {
     render(<GlossaryButton />);
     open();
+    // 12 + 40 header + 8 + three rows of 84 and two gaps of 8 = 316 of 344 (worst case 340): no scroll in English or Spanish.
     expect(dialog()!.className).toContain("max-h-[calc(100dvh-1rem)]");
-    expect(dialog()!.className).toContain("overflow-y-auto");
+    expect(dialog()!.className).toContain("p-3");
+    const grid = dialog()!.querySelector("dl") as HTMLElement;
+    expect(grid.className).toContain("grid-cols-2");
+    const entry = dialog()!.querySelector('[data-slot="glossary-entry"]') as HTMLElement;
+    const dt = entry.querySelector("dt") as HTMLElement;
+    expect(dt.querySelector("svg")).not.toBeNull();
+    expect(entry.className).toContain("flex-col");
+  });
+
+  it("scrolls inside its own body, with a fade at the edge that has more, for a locale that needs more room", () => {
+    render(<GlossaryButton />);
+    open();
+    const scroller = dialog()!.querySelector('[data-slot="glossary-scroll"]') as HTMLElement;
+    expect(scroller.className).toContain("overflow-y-auto");
+    expect(scroller.className).toContain("min-h-0");
+    expect(scroller.style.maskImage || scroller.getAttribute("style")).toBeTruthy();
+    expect(dialog()!.className).toContain("flex-col");
+  });
+
+  it("says five where the owner's text says five, in every locale", async () => {
+    const five: Record<string, RegExp> = { en: /five starters/, es: /cinco titulares/, de: /fünf Stammspieler/, fr: /cinq titulaires/, it: /cinque titolari/, pt: /cinco titulares/, "pt-BR": /cinco titulares/, tr: /İlk beş/ };
+    for (const [code, pattern] of Object.entries(five)) {
+      await i18n.changeLanguage(code);
+      for (const key of ["scrims.phone.glossaryMoraleBody", "scrims.phone.glossaryEnergyBody"]) expect(i18n.t(key), `${code} ${key}`).toMatch(pattern);
+    }
+    expect(i18n.t("scrims.phone.glossaryMoraleBody", { lng: "tr" })).not.toContain("on bir");
+  });
+
+  it("keeps the French register of the file: vous, votre, vos, never tu, ton, tes", async () => {
+    await i18n.changeLanguage("fr");
+    const text = ["glossaryReadBody", "glossaryQualityBody", "glossaryMoraleBody", "glossaryEnergyBody", "glossaryRepBody", "glossaryCancelBody"].map((key) => i18n.t(`scrims.phone.${key}`)).join(" ");
+    expect(text).toMatch(/\b(vous|votre|vos)\b/);
+    expect(text).not.toMatch(/(?<![\p{L}])(tu|ton|ta|tes|te)(?![\p{L}])/iu);
   });
 });

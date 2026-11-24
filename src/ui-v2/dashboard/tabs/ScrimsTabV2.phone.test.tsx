@@ -203,6 +203,14 @@ const afterPushThrough = () => {
   return ctx(c.week, today({ state: "PlayedNeedsReview", slotIndex: 1, opponentTeamId: "bravo", report: b, canReview: true }));
 };
 
+/** The state after Push through when the day's other block did not get played: no report waits for block B. */
+function updatedPushOnly(): GameStateData {
+  const base = game();
+  const mine = base.teams.find((t) => t.id === "mine") as TeamData;
+  mine.scrim_reports = [report({ post_decision: "PushThrough", quality: 73, severity: 1 })];
+  return base;
+}
+
 function updatedAfterPush(): GameStateData {
   const base = game();
   const mine = base.teams.find((t) => t.id === "mine") as TeamData;
@@ -616,7 +624,7 @@ describe("ScrimsTabV2 on a phone: the cancel step", () => {
 
 describe("ScrimsTabV2 on a phone: after a decision", () => {
   async function decide() {
-    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedPushOnly());
     const utils = mount(afterBlockA());
     fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
     await waitFor(() => expect(pane("result")).not.toBeNull());
@@ -656,6 +664,40 @@ describe("ScrimsTabV2 on a phone: a decision with another block waiting goes str
     expect(viewTitle()).toBe("Decide Wed B");
     expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Decision applied to scrim block: Push through");
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
+  });
+
+  it("never renders the review of A between the result and the context that brings the waiting block, and ends on Decidir B", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    const { swap } = mount(afterBlockA());
+    const reviewSeen = vi.fn();
+    const observer = new MutationObserver(() => {
+      if (viewTitle() === "Block review") reviewSeen();
+    });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    // The result is in (the one live line says so) but the context still shows block A as the decision.
+    await waitFor(() => expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Decision applied to scrim block: Push through"));
+    expect(viewTitle()).toBe("Decide Wed A");
+    expect(pane("result")).toBeNull();
+    expect(screen.getByRole("button", { name: "Saving..." })).toBeInTheDocument();
+    swap(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    observer.disconnect();
+    expect(reviewSeen).not.toHaveBeenCalled();
+  });
+
+  it("still ends on the review when the context catches up and no block waits (never stuck)", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    const { swap } = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Decision applied"));
+    expect(pane("result")).toBeNull();
+    const a = report({ post_decision: "PushThrough", quality: 73, severity: 1 });
+    const c = afterBlockA();
+    c.week.slots[0] = { ...c.week.slots[0], status: "Reviewed", report: a };
+    swap(ctx(c.week, today({ state: "Reviewed", slotIndex: 0 })));
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    expect(viewTitle()).toBe("Block review");
   });
 
   it("does the same when the result and the waiting block arrive in one render", async () => {
@@ -896,7 +938,7 @@ describe("ScrimsTabV2 on a phone: the live line", () => {
   });
 
   it("the same node holds a decision's text once, and the result view's own line is not live", async () => {
-    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
+    trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedPushOnly());
     mount(afterBlockA());
     const before = liveRegions();
     expect(before).toHaveLength(1);
@@ -916,7 +958,7 @@ describe("ScrimsTabV2 on a phone: the live line", () => {
     fireEvent.click(back());
     fireEvent.click(entry("report"));
     expect(pane("report")).not.toBeNull();
-    resolve(updatedAfterPush());
+    resolve(updatedPushOnly());
     await waitFor(() => expect(pane("result")).not.toBeNull());
     expect(viewTitle()).toBe("Block review");
   });
@@ -985,7 +1027,7 @@ describe("ScrimsTabV2 on a phone: moves the game makes while the player is elsew
     fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
     fireEvent.click(back());
     fireEvent.click(entry("report"));
-    resolve(updatedAfterPush());
+    resolve(updatedPushOnly());
     await waitFor(() => expect(pane("result")).not.toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(frameHeading()));
   });
