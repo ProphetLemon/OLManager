@@ -11,7 +11,7 @@ import type { DecisionOption } from "../ScrimDecisionPanel";
 import { STATS, STAT_ICONS, STAT_KEYS, StatValue, useStatWords, type StatChange, type StatId } from "./PhoneStats";
 
 /** The three stat columns: Calidad 88, Moral 68 and Energía 74 px. */
-const COLUMNS = "minmax(0,1fr) 5.5rem 4.25rem 4.625rem";
+export const COLUMNS = "minmax(0,1fr) 5.5rem 4.25rem 4.625rem";
 
 export interface PhoneEffectsTableProps {
   options: readonly DecisionOption[];
@@ -42,7 +42,7 @@ export function statChanges(effects: readonly EffectLine[], report: ScrimReportD
   };
 }
 
-function Header({ chevron }: { chevron: boolean }) {
+export function EffectsHeader({ chevron }: { chevron: boolean }) {
   const { t } = useTranslation();
   return (
     <div data-slot="effects-header" aria-hidden="true" className="grid h-5 shrink-0 items-center rounded-t-lg bg-card px-3" style={{ gridTemplateColumns: chevron ? `${COLUMNS} 1.25rem` : COLUMNS }}>
@@ -98,7 +98,7 @@ export function PhoneEffectsTable({ options, report, reputation = 0, savingId, o
 
   return (
     <div data-slot="effects-table" className="relative flex h-full min-h-0 flex-col gap-0">
-      <Header chevron={chevron} />
+      <EffectsHeader chevron={chevron} />
       <ul className="relative m-0 flex min-h-0 flex-1 list-none flex-col gap-1 p-0">
         {options.map((option) => {
           const changes = statChanges(option.effects, report);
