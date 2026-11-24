@@ -327,6 +327,13 @@ export function listedGroupWarnings(listed) {
 /** The fewest games in the activity window that settle a player's position (step a of the position evidence). */
 export const POSITION_MIN_GAMES = 5;
 
+/** Games per player dated on or after `since` (YYYY-MM-DD), whatever the role. */
+export function gamesSinceFromRows(rows, { since }) {
+  const games = new Map();
+  for (const row of rows) if (row.date >= since) games.set(row.playerKey, (games.get(row.playerKey) ?? 0) + 1);
+  return games;
+}
+
 /**
  * Where each pool player has played lately, from the per-game rows of `scripts/stats/pro-stats.mjs`: the role most of his games
  * in the activity window (`since`, the pool's own) were played in, with how many games and the date of the newest. A player with

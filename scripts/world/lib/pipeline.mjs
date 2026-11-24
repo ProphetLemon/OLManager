@@ -23,7 +23,7 @@ import { explainProbe } from "./pool-report.mjs";
 import { foldPlayerKeys, gameTeamKeys } from "./pool-scope.mjs";
 import { DEFAULT_POOL_SINCE, DEFAULT_QUALIFIER_CAP, POOL_LIMITS, buildPoolOps, dropWorldBuildTwins, selectPool } from "./pool.mjs";
 import { contractedPlayers } from "./same-person.mjs";
-import { listedGroupWarnings, listedSkillFromRows, poolSkillFromRows, recentRolesFromRows, summarizeListed } from "./pool-rating.mjs";
+import { gamesSinceFromRows, listedGroupWarnings, listedSkillFromRows, poolSkillFromRows, recentRolesFromRows, summarizeListed } from "./pool-rating.mjs";
 import { poolOfLevels } from "../../stats/lib/levels.mjs";
 import { loadTeamMap } from "./team-map.mjs";
 import { coveredCompetitionIds, loadWorld } from "./world.mjs";
@@ -152,11 +152,13 @@ export async function runRefresh(options) {
     // The stats rows are keyed by the scoreboard link, which is the name used at the time: read old names as the page they belong to.
     const statsRows = options.pool.statsRows ? foldPlayerKeys(options.pool.statsRows, inputs.aliases?.targets ?? new Map(), (name) => inputs.people.has(name)) : null;
     const recentRoles = statsRows ? recentRolesFromRows(statsRows, { since: settings.since }) : null;
+    const yearBefore = new Date(Date.parse(options.asOf ?? options.client.oldestFetchDate?.() ?? todayUtc()) - 365 * 864e5).toISOString().slice(0, 10);
+    const gamesLastYear = statsRows ? gamesSinceFromRows(statsRows, { since: yearBefore }) : null;
     const addedRecords = (entries, kind) => entries.filter((entry) => entry.op.op === "add").map((entry) => entry.op[kind]);
     const rosterRecords = { player: addedRecords(ops.players, "player"), staff: addedRecords(ops.staff, "staff") };
     // Owner's decision (2026-11-24): every listed event counts as tier 2, as Game Changers does; a person never gets a worse tier than 2 through one, nobody is lowered.
     const people = new Map([...inputs.people].map(([page, p]) => [page, p.tier > 2 && (p.tournaments ?? []).some((t) => inputs.classes.get(t)?.listed) ? { ...p, tier: 2 } : p]));
-    const selection = selectPool({ people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles });
+    const selection = selectPool({ people, context, world, rosterIds, rosterTitles, rosterRecords, recentRoles, gamesLastYear });
     // Per-game stats rate the players who have enough of them; without them everybody takes the tier default.
     const positions = new Map(selection.players.map((e) => [e.page, e.role]));
     const anchors = options.pool.anchors ?? null;

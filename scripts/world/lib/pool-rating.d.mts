@@ -13,6 +13,8 @@ export const STATS_MIN_GAMES: number;
 export const POSITION_MIN_GAMES: number;
 /** The role most of each player's games in the window were played in, with the games and the newest date. */
 export function recentRolesFromRows(rows: Array<{ playerKey: string; role: string; date: string }>, options: { since: string }): Map<string, { position: string; games: number; last: string }>;
+/** Games per player dated on or after the first day, whatever the role. */
+export function gamesSinceFromRows(rows: Array<{ playerKey: string; role: string; date: string }>, options: { since: string }): Map<string, number>;
 export const POOL_LEAGUE_SD: number;
 export const POOL_MAX_CHANGE: number;
 
