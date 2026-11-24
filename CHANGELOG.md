@@ -4,6 +4,45 @@ All notable changes to OLManager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses GPL-3.0 licensing inherited from the OpenFootManager lineage unless otherwise documented.
 
+## [2026.1124.1] - 2026-11-24
+
+A layout made for phones on Android, starting with the frame of the game, the main menu and Scrims. And Auto-Save now really saves. The phone layout was checked on an Android 14 emulator (x86_64 build). On one real phone, a OnePlus 11 with Android 16, a test build of the same code (arm64) was installed over the previous version: the career loaded, and the Scrims week screen and Back were seen there. The decision table, the glossary and Auto-Save were not tried on that phone.
+
+### Added
+
+- Android: the game now has a layout for phones. Text is larger and every button is at least 48 px tall. The navigation is a narrow column of seven stops: Go, Home, Inbox, Schedule, Club, Market and World. Club, Market and World open their sections in a side panel. The top bar is one row: Back, the screen's name, the date, More, Save and Continue. News, Social, Settings, Report bug, Exit and the manager profile are under More.
+- Android: the main menu fits the phone as a grid of large tiles. Load Game, Community and What's New open beside it, and Back closes the open one.
+- Android: a Scrims screen made for the phone. It opens on the week: the objective, the volume and the report at the top, then what the game needs from you now, then the week's blocks day by day with each rival's name and logo. Each of these opens as its own full screen, and Back returns to the week.
+- Android, Scrims: the options of a decision are a table. Quality, Morale and Energy have one column each, with an arrow and the change, and Quality also says where it ends ("+6 → 65"). A "?" button explains what each number means and what it does in the game.
+- Android, Scrims: after you decide one block, if the day's other block is waiting, the game goes straight to that decision.
+- Android: tapping a starter in Squad opens the profile at once, and the profile's header is laid out for the phone.
+- Android: the Inbox shows the list or the open message, one at a time.
+- If Auto-Save cannot write the save, a line under the top bar says so and asks you to press Save.
+
+### Changed
+
+- Auto-Save is real now, and it is on unless you turned it off. A day you played is kept even if you leave without pressing Save. To save only by hand, turn off "Auto-Save" in Settings.
+- The game shows its name as "League Manager LE" in the window title, the main menu and the community text. On Android the name under the app's icon changes too: it was "OLM Limón".
+- Android, Scrims: Severity is no longer shown. The game does not read it after you decide.
+
+### Fixed
+
+- The "Auto-Save" setting did nothing: the game was saved only when you pressed Save. Now it saves after every finished day, after a match, at the season change and, on Android, when the app goes to the background. It does not save in the middle of a live match.
+- A save is now fully written to disk before it replaces the previous one, so a power cut during a save cannot leave an empty file.
+- A change made while a save was being written is no longer counted as saved.
+- Android: player photos and team logos now load. Before, every player showed the default face.
+- Android: the page can no longer be zoomed. Once, on a real phone, the whole interface showed enlarged and cut off at the right edge. The cause was not found; this removes one way it could happen.
+
+### Known issues
+
+- Android: only the frame of the game, the main menu, Scrims, the Inbox and the profile header have a phone layout so far. The other screens are the computer layout at a readable size and scroll as one page. The draft and the live match are not adapted yet.
+- On a computer, a Scrims decision still shows the old list of effects, with Severity.
+- Auto-Save does not run during a live match; the match is saved when it ends. That case was covered by automated tests only, not played on a device.
+- Android: while the "Auto-save failed" line shows, the Scrims screens are a little taller than the screen and scroll.
+- Android: Back does nothing inside a player's profile or an open dialog; use the buttons on the screen.
+- Android: Back during the draft, a live match or a result screen returns to the game's main screen. Nothing is lost: the match day can be entered again.
+- The file made by Settings > "Export World Database" holds teams, players and staff only. It is not a save and cannot be imported.
+
 ## [2026.1123.2] - 2026-11-23
 
 Easier ways to move around the game, and the Android Back button now behaves. It was checked on an Android 14 emulator (x86_64 build); the arm64 build was not run on a real phone before this release.

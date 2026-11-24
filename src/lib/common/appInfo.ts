@@ -2,5 +2,5 @@
 // This file is automatically updated by the release process
 // Do not edit manually
 
-export const APP_VERSION = "2026.1123.2";
+export const APP_VERSION = "2026.1124.1";
 export const APP_NAME = "openleaguemanager";
