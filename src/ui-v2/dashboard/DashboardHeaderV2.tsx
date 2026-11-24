@@ -27,6 +27,8 @@ interface Props {
   endsSplit?: boolean;
   isSaving: boolean;
   saveFlash: boolean;
+  /** The last auto-save failed: the game is not on disk. */
+  saveFailed?: boolean;
   hasMatchToday: boolean;
   dayPhase: string;
   /** Kept for API compatibility; the aggregate "to resolve" chip replaced the alert chip. */
@@ -58,6 +60,7 @@ export function DashboardHeaderV2({
   endsSplit = false,
   isSaving,
   saveFlash,
+  saveFailed = false,
   hasMatchToday,
   dayPhase,
   onBack,
@@ -91,7 +94,9 @@ export function DashboardHeaderV2({
   const canGoBack = backTo !== null;
   const backLabel = backControlLabel(t, backTo);
 
-  const saveLabel = t("onAir.bar.save", { defaultValue: "Save" });
+  const saveLabel = saveFailed
+    ? t("onAir.bar.autoSaveFailed", { defaultValue: "Auto-save failed. Press Save to keep your progress." })
+    : t("onAir.bar.save", { defaultValue: "Save" });
   const continueLabel = seasonComplete
     ? endsSplit
       ? t("endOfSeason.splitComplete", { defaultValue: "Split Complete" })
@@ -212,8 +217,11 @@ export function DashboardHeaderV2({
           disabled={isSaving}
           aria-label={saveLabel}
           title={saveLabel}
-          className="shrink-0"
+          className="relative shrink-0"
         >
+          {saveFailed && !isSaving && (
+            <span aria-hidden="true" className="absolute end-1 top-1 size-2 rounded-full bg-warning" />
+          )}
           {isSaving ? (
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
           ) : (
@@ -221,7 +229,7 @@ export function DashboardHeaderV2({
           )}
         </Button>
         <span role="status" aria-live="polite" className="sr-only">
-          {saveFlash ? t("onAir.bar.saved", { defaultValue: "Saved" }) : ""}
+          {saveFailed ? saveLabel : saveFlash ? t("onAir.bar.saved", { defaultValue: "Saved" }) : ""}
         </span>
 
         <SplitButton

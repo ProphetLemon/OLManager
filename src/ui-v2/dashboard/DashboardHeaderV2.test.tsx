@@ -74,6 +74,15 @@ describe("DashboardHeaderV2", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
   });
 
+  it("says a failed auto-save in the Save button and the status, and keeps Save usable", () => {
+    const { onSave } = setup({ saveFailed: true });
+    const save = screen.getByRole("button", { name: "Auto-save failed. Press Save to keep your progress." });
+    expect(save).not.toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Auto-save failed. Press Save to keep your progress.");
+    fireEvent.click(save);
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
+
   it("calls the closed period a split when later splits remain in the season", () => {
     setup({ seasonComplete: true, endsSplit: true });
     expect(screen.getByRole("button", { name: "Split Complete" })).toBeDisabled();

@@ -3744,6 +3744,7 @@
       },
       "save": "Guardar",
       "saved": "Guardado",
+      "autoSaveFailed": "El autoguardado falló. Pulsa Guardar para no perder tu progreso.",
       "toResolve_one": "{{count}} por resolver",
       "toResolve_other": "{{count}} por resolver",
       "continueMenu": "Más formas de avanzar",

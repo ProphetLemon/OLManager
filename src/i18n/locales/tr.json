@@ -3744,6 +3744,7 @@
       },
       "save": "Kaydet",
       "saved": "Kaydedildi",
+      "autoSaveFailed": "Otomatik kayıt başarısız oldu. İlerlemeni korumak için Kaydet'e bas.",
       "toResolve_one": "{{count}} çözülecek",
       "toResolve_other": "{{count}} çözülecek",
       "continueMenu": "Daha fazla ilerleme seçeneği",

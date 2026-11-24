@@ -3744,6 +3744,7 @@
       },
       "save": "Speichern",
       "saved": "Gespeichert",
+      "autoSaveFailed": "Automatisches Speichern fehlgeschlagen. Drücke Speichern, um deinen Fortschritt zu sichern.",
       "toResolve_one": "{{count}} offen",
       "toResolve_other": "{{count}} offen",
       "continueMenu": "Weitere Optionen zum Fortfahren",

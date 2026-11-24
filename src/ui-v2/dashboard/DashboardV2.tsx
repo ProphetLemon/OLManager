@@ -10,6 +10,7 @@ import { Eye, Gamepad2 } from "lucide-react";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData, PlayerSelectionOptions } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useAutoSaveStore } from "@/services/autoSave";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { useAdvanceTime, type MatchModeType } from "@/hooks/useAdvanceTime";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -174,6 +175,8 @@ export default function DashboardV2() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
+  const autoSaveFailed = useAutoSaveStore((s) => s.failed);
+  const autoSavedCount = useAutoSaveStore((s) => s.savedCount);
   // An alias route wins over the remembered location from the first render, so the
   // remembered tab never paints (and never stays mounted, hidden, behind Suspense).
   // Moving to the location it is already on is a no-op, so a second call is harmless.
@@ -461,19 +464,32 @@ export default function DashboardV2() {
     [],
   );
 
+  const flashSaved = useCallback(() => {
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 2000);
+  }, []);
+
+  // An auto-save that finishes while the bar is on screen shows the same "Saved" as the button.
+  const seenAutoSaves = useRef(autoSavedCount);
+  useEffect(() => {
+    if (autoSavedCount === seenAutoSaves.current) return;
+    seenAutoSaves.current = autoSavedCount;
+    flashSaved();
+  }, [autoSavedCount, flashSaved]);
+
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       await invoke("save_game");
       markClean();
-      setSaveFlash(true);
-      setTimeout(() => setSaveFlash(false), 2000);
+      useAutoSaveStore.setState({ failed: false });
+      flashSaved();
     } catch (err) {
       console.error("Failed to save:", err);
     } finally {
       setIsSaving(false);
     }
-  }, [markClean]);
+  }, [markClean, flashSaved]);
 
   // Leaving a game replaces the dashboard's history entry, so the system Back on the menu
   // (Android) never returns to a game that is no longer loaded.
@@ -934,6 +950,7 @@ export default function DashboardV2() {
           endsSplit={endsSplit}
           isSaving={isSaving}
           saveFlash={saveFlash}
+          saveFailed={autoSaveFailed}
           hasMatchToday={hasMatchToday}
           dayPhase={gameState?.day_phase ?? "Morning"}
           alerts={dashboardAlerts}

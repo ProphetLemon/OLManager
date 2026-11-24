@@ -3778,6 +3778,7 @@
       },
       "save": "Save",
       "saved": "Saved",
+      "autoSaveFailed": "Auto-save failed. Press Save to keep your progress.",
       "toResolve_one": "{{count}} to resolve",
       "toResolve_other": "{{count}} to resolve",
       "continueMenu": "More ways to advance",

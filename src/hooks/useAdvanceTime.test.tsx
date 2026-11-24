@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useGameStore, type GameStateData } from "../store/gameStore";
 import { useAdvanceTime } from "./useAdvanceTime";
 import { delegateScrimDecision } from "../services/trainingService";
+import { autoSave } from "../services/autoSave";
 
 const navigateMock = vi.fn();
 
@@ -21,6 +22,11 @@ vi.mock("../services/trainingService", () => ({
   delegateScrimDecision: vi.fn(),
 }));
 
+vi.mock("../services/autoSave", () => ({
+  autoSave: vi.fn(() => Promise.resolve()),
+}));
+
+const mockedAutoSave = vi.mocked(autoSave);
 const mockedInvoke = vi.mocked(invoke);
 const mockedDelegateScrimDecision = vi.mocked(delegateScrimDecision);
 
@@ -34,6 +40,7 @@ function HookHarness(props: {
 }): JSX.Element {
   const [, setGameState] = useState<GameStateData | null>(null);
   const {
+    isAdvancing,
     blockerModal,
     autoDelegationNotice,
     matchPlayedNotice,
@@ -63,6 +70,7 @@ function HookHarness(props: {
       <button onClick={handleConfirmMatch}>Confirm Match</button>
       <button onClick={() => void handleSkipToMatchDay()}>Skip</button>
       <button onClick={() => void handleSkipToNextDay()}>Skip day</button>
+      <div data-testid="is-advancing">{String(isAdvancing)}</div>
       <div data-testid="show-match-confirm">{String(showMatchConfirm)}</div>
       <div data-testid="blocker-count">
         {blockerModal?.blockers.length ?? 0}
@@ -85,6 +93,8 @@ describe("useAdvanceTime", function (): void {
     mockedInvoke.mockReset();
     mockedDelegateScrimDecision.mockReset();
     navigateMock.mockReset();
+    mockedAutoSave.mockReset();
+    mockedAutoSave.mockResolvedValue(undefined);
   });
 
   it("shows match confirmation before advancing on match day", async function (): Promise<void> {
@@ -739,6 +749,85 @@ describe("useAdvanceTime", function (): void {
       await waitFor(function (): void {
         expect(screen.getByTestId("scrim-result-notice")).toHaveTextContent("Won against Rivals");
       });
+    });
+  });
+  describe("auto-save at the end of a day", function (): void {
+    const day = (date: string) => ({ clock: { current_date: date, start_date: "2026-07-01" } });
+    const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+    const settle = () => waitFor(() => expect(screen.getByTestId("is-advancing")).toHaveTextContent("false"));
+
+    it("saves once when Continue ends a day, without holding Continue", async function (): Promise<void> {
+      mockedAutoSave.mockReturnValue(new Promise(() => undefined));
+      mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({ action: "advanced", game: day("2026-07-02") });
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" />);
+      click("Continue");
+      await waitFor(() => expect(mockedAutoSave).toHaveBeenCalledTimes(1));
+      await settle();
+    });
+
+    it("saves once when the Assistant Coach loop ends a day", async function (): Promise<void> {
+      mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({ action: "advanced", game: day("2026-07-02") });
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" scrimReviewMode="assistant" />);
+      click("Continue");
+      await waitFor(() => expect(mockedAutoSave).toHaveBeenCalledTimes(1));
+      await settle();
+    });
+
+    it("saves when the Assistant Coach resolves a blocker and the day then ends", async function (): Promise<void> {
+      mockedInvoke
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce({ action: "blocked_scrim_decision", game: day("2026-07-01") })
+        .mockResolvedValueOnce({ action: "advanced", game: day("2026-07-02") });
+      mockedDelegateScrimDecision.mockResolvedValue(day("2026-07-01") as unknown as GameStateData);
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" scrimReviewMode="assistant" />);
+      click("Continue");
+      await waitFor(() => expect(mockedAutoSave).toHaveBeenCalledTimes(1));
+      await settle();
+    });
+
+    it("saves once when skipping to the next day ends it", async function (): Promise<void> {
+      mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({ action: "advanced", game: day("2026-07-02") });
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" />);
+      click("Skip day");
+      await waitFor(() => expect(mockedAutoSave).toHaveBeenCalledTimes(1));
+      await settle();
+    });
+
+    it("saves once when skipping to match day processed days", async function (): Promise<void> {
+      mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({ action: "arrived", days_skipped: 3, game: day("2026-07-04") });
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" />);
+      click("Skip");
+      await waitFor(() => expect(mockedAutoSave).toHaveBeenCalledTimes(1));
+      await settle();
+    });
+
+    it("saves when skipping to match day stops on a blocker after processing days", async function (): Promise<void> {
+      mockedInvoke.mockResolvedValueOnce([]).mockResolvedValueOnce({ action: "blocked", days_skipped: 2, blockers: [], game: day("2026-07-03") });
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" />);
+      click("Skip");
+      await waitFor(() => expect(mockedAutoSave).toHaveBeenCalledTimes(1));
+      await settle();
+    });
+
+    it.each([
+      ["a phase change", { action: "phase_advanced", game: day("2026-07-01") }, "Continue"],
+      ["a live match", { action: "live_match", fixture_index: 0 }, "Continue"],
+      ["a scrim blocker", { action: "blocked_scrim_setup", game: day("2026-07-01") }, "Continue"],
+      ["a firing", { action: "fired", game: day("2026-07-01") }, "Continue"],
+      ["the end of the season", { action: "season_complete" }, "Continue"],
+      ["a phase change when skipping a day", { action: "phase_advanced", game: day("2026-07-01") }, "Skip day"],
+      ["a skip to match day blocked before any day", { action: "blocked", days_skipped: 0, blockers: [], game: day("2026-07-01") }, "Skip"],
+      ["a firing when skipping to match day", { action: "fired", days_skipped: 1, game: day("2026-07-02") }, "Skip"],
+    ])("does not save on %s", async function (_label, answer, button): Promise<void> {
+      mockedInvoke.mockImplementation(async (command: string) => {
+        if (command === "advance_time_with_mode" || command === "skip_to_match_day") return answer;
+        return [];
+      });
+      render(<HookHarness hasMatchToday={false} defaultMatchMode="live" />);
+      click(button as string);
+      await waitFor(() => expect(mockedInvoke.mock.calls.some((call) => call[0] === "advance_time_with_mode" || call[0] === "skip_to_match_day")).toBe(true));
+      await settle();
+      expect(mockedAutoSave).not.toHaveBeenCalled();
     });
   });
 });

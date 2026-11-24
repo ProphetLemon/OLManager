@@ -3744,6 +3744,7 @@
       },
       "save": "Guardar",
       "saved": "Guardado",
+      "autoSaveFailed": "A gravação automática falhou. Carrega em Guardar para não perderes o progresso.",
       "toResolve_one": "{{count}} por resolver",
       "toResolve_other": "{{count}} por resolver",
       "continueMenu": "Mais formas de avançar",

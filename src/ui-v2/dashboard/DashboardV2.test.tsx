@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { installBackGuard, resetBackGuardForTests } from "@/lib/backGuard";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useAutoSaveStore } from "@/services/autoSave";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { resetSessionNavigation } from "@/store/sessionReset";
 import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
@@ -312,6 +313,36 @@ describe("DashboardV2 tab sync", () => {
     await waitFor(() =>
       expect(useBugReportStore.getState().currentDashboardTab).toBe("Training"),
     );
+  });
+
+  it("flashes Saved when an auto-save completes while on screen, not for one that finished before", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: false, savedCount: 3 });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    expect(shell.header?.saveFlash).toBe(false);
+
+    act(() => useAutoSaveStore.setState({ savedCount: 4 }));
+    expect(shell.header?.saveFlash).toBe(true);
+  });
+
+  it("tells the bar when the auto-save failed", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: true, savedCount: 0 });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    expect(shell.header?.saveFailed).toBe(true);
+
+    act(() => useAutoSaveStore.setState({ failed: false }));
+    expect(shell.header?.saveFailed).toBe(false);
   });
 
   it("reflects the tab implied by the dashboard route", async () => {

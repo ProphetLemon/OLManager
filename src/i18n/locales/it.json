@@ -3744,6 +3744,7 @@
       },
       "save": "Salva",
       "saved": "Salvato",
+      "autoSaveFailed": "Salvataggio automatico non riuscito. Premi Salva per non perdere i progressi.",
       "toResolve_one": "{{count}} da risolvere",
       "toResolve_other": "{{count}} da risolvere",
       "continueMenu": "Altri modi per avanzare",
