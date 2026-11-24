@@ -26,7 +26,9 @@ interface RailItemProps {
   iconOnly?: boolean;
   tone?: "default" | "danger";
   buttonRef?: Ref<HTMLButtonElement>;
-  "aria-haspopup"?: "menu";
+  "aria-haspopup"?: "menu" | "dialog";
+  /** The phone's stop: exactly `--hit` high, full width of the 64 px rail, a 16 px icon over a 14 px label line. */
+  phone?: boolean;
   "aria-expanded"?: boolean;
   "data-rail-stop"?: string;
   /** Stable row id (`util:settings`) the tree rail keys focus and tests on. */
@@ -47,6 +49,8 @@ export const RAIL_STOP_CLASS =
   "relative mx-1.5 flex w-[calc(100%-0.75rem)] scroll-my-8 flex-col rounded-[0.625rem] items-center justify-center text-center transition-colors";
 /** A labelled stop's size: the touch hit at least, icon over label. */
 export const RAIL_STOP_LABELLED_CLASS = "min-h-[var(--hit)] min-w-[var(--hit)] gap-0.5 px-1 py-1.5";
+/** What the phone changes on a stop (seven of them must fit 336 px); merged over the two classes above. */
+export const RAIL_STOP_PHONE_CLASS = "mx-0 h-[var(--hit)] min-h-0 w-full gap-0.5 px-0.5 py-0";
 /**
  * The inset focus ring every rail control wears. The ring is a box-shadow, which forced
  * colours drops, so the outline is hidden, not removed: forced colours paints it (R88). It is
@@ -67,6 +71,7 @@ export function RailItem({
   onClick,
   compact = false,
   iconOnly = false,
+  phone = false,
   tone = "default",
   buttonRef,
   ...rest
@@ -77,7 +82,7 @@ export function RailItem({
 
   const iconAndBadge = (
     <>
-      <Icon className="size-[var(--nav-icon)] shrink-0" aria-hidden="true" />
+      <Icon className={cn("size-[var(--nav-icon)] shrink-0", phone && "size-4")} aria-hidden="true" />
       {count > 0 && (
         <span
           aria-hidden="true"
@@ -109,6 +114,7 @@ export function RailItem({
       className={cn(
         RAIL_STOP_CLASS,
         iconOnly ? "h-[var(--nav-cell)] min-w-[var(--hit)]" : RAIL_STOP_LABELLED_CLASS,
+        phone && RAIL_STOP_PHONE_CLASS,
         RAIL_FOCUS_CLASS,
         tone === "danger"
           ? "text-negative hover:bg-negative/10"
@@ -117,7 +123,7 @@ export function RailItem({
             : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
-      {active && <RailActiveBar size="stop" />}
+      {active && <RailActiveBar size={phone ? "phone" : "stop"} />}
       {iconOnly ? (
         // The tip's parent must be the button itself, so it follows the button's focus.
         <IconTip label={hint ? `${label}: ${hint}` : label} followFocus className="relative inline-flex">
@@ -132,6 +138,7 @@ export function RailItem({
         data-slot="rail-item-label"
         className={cn(
           RAIL_LABEL_CLASS,
+          phone && "leading-[14px]",
           active ? "font-bold" : "font-medium",
           compact && "sr-only",
         )}

@@ -116,6 +116,8 @@ interface GameStore {
   managerName: string | null;
   gameState: GameStateData | null;
   isDirty: boolean;
+  /** Changes whenever a game is loaded, started or left: a save result belongs to one session. */
+  session: number;
   showFiredModal: boolean;
   /** End-of-season summary kept on screen after the backend already wrapped the season. */
   pendingSeasonSummary: EndOfSeasonSummaryData | null;
@@ -132,17 +134,19 @@ export const useGameStore = create<GameStore>((set) => ({
   managerName: null,
   gameState: null,
   isDirty: false,
+  session: 0,
   showFiredModal: false,
   pendingSeasonSummary: null,
   setGameActive: (active, managerName) => {
     console.log("[store] setGameActive called:", { active, managerName });
     // A new game or a load starts a fresh session: nothing of the previous save's navigation carries over.
     resetSessionNavigation();
-    set({
+    set((prev) => ({
       hasActiveGame: active,
       managerName: managerName || null,
       pendingSeasonSummary: null,
-    });
+      session: prev.session + 1,
+    }));
   },
   setGameState: (state) => set((prev) => ({
     gameState: { ...state, champions: state.champions ?? prev.gameState?.champions },
@@ -153,13 +157,14 @@ export const useGameStore = create<GameStore>((set) => ({
   setPendingSeasonSummary: (summary) => set({ pendingSeasonSummary: summary }),
   clearGame: () => {
     resetSessionNavigation();
-    set({
+    set((prev) => ({
       hasActiveGame: false,
       managerName: null,
       gameState: null,
       isDirty: false,
+      session: prev.session + 1,
       showFiredModal: false,
       pendingSeasonSummary: null,
-    });
+    }));
   },
 }));

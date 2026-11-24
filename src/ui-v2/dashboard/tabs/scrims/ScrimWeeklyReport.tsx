@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { WeeklyScrimContext } from "@/lib/scrims/scrimContext";
+import type { ScrimReportData } from "@/store/gameStore";
 import { SCRIM_FOCUS_OBJECTIVE_KEYS } from "@/lib/scrims/scrimFocusKeys";
 import { ResultLetter } from "@/ui-v2/components/ResultLetter";
 import { cn } from "@/ui-v2/lib/utils";
@@ -9,6 +10,44 @@ import { ScrimDisclosure } from "./ScrimDisclosure";
 interface ScrimWeeklyReportProps {
   week: WeeklyScrimContext;
   teamNameById: ReadonlyMap<string, string>;
+}
+
+interface ScrimRecentReportsProps {
+  /** The newest reports of the week, already cut to the ones to show. */
+  reports: readonly ScrimReportData[];
+  teamNameById: ReadonlyMap<string, string>;
+}
+
+/** The "Recent Reports" list: result letter, rival, focus and quality of each report. */
+export function ScrimRecentReports({ reports, teamNameById }: ScrimRecentReportsProps) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <h3 className="mb-1 font-heading text-lg font-semibold uppercase leading-tight tracking-wide">
+        {t("scrims.recentReports")}
+      </h3>
+      <ul>
+        {reports.map((report) => (
+          <li
+            key={`${report.week_key}-${report.slot_index}`}
+            className="grid grid-cols-[1.75rem_minmax(0,1.6fr)_minmax(0,1fr)_auto] items-center gap-3 border-t border-line py-2 first:border-t-0"
+          >
+            <span
+              className={cn(
+                "inline-flex size-7 items-center justify-center rounded font-heading text-lg font-bold leading-none",
+                report.won ? "bg-positive text-positive-foreground" : "bg-negative text-negative-foreground",
+              )}
+            >
+              <ResultLetter kind={report.won ? "win" : "loss"} />
+            </span>
+            <span className="min-w-0 truncate">{teamNameById.get(report.opponent_team_id) ?? report.opponent_team_id}</span>
+            <span className="min-w-0 truncate text-sm text-muted-foreground">{t(SCRIM_FOCUS_OBJECTIVE_KEYS[report.focus])}</span>
+            <span className="tabular-nums">Q{report.quality}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 /** The week's report, closed by default: the record, the average quality and the latest reports. */
@@ -46,31 +85,7 @@ export function ScrimWeeklyReport({ week, teamNameById }: ScrimWeeklyReportProps
               </div>
             ) : null}
           </dl>
-          <div>
-            <h3 className="mb-1 font-heading text-lg font-semibold uppercase leading-tight tracking-wide">
-              {t("scrims.recentReports")}
-            </h3>
-            <ul>
-              {reports.map((report) => (
-                <li
-                  key={`${report.week_key}-${report.slot_index}`}
-                  className="grid grid-cols-[1.75rem_minmax(0,1.6fr)_minmax(0,1fr)_auto] items-center gap-3 border-t border-line py-2 first:border-t-0"
-                >
-                  <span
-                    className={cn(
-                      "inline-flex size-7 items-center justify-center rounded font-heading text-lg font-bold leading-none",
-                      report.won ? "bg-positive text-positive-foreground" : "bg-negative text-negative-foreground",
-                    )}
-                  >
-                    <ResultLetter kind={report.won ? "win" : "loss"} />
-                  </span>
-                  <span className="min-w-0 truncate">{teamNameById.get(report.opponent_team_id) ?? report.opponent_team_id}</span>
-                  <span className="min-w-0 truncate text-sm text-muted-foreground">{t(SCRIM_FOCUS_OBJECTIVE_KEYS[report.focus])}</span>
-                  <span className="tabular-nums">Q{report.quality}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <ScrimRecentReports reports={reports} teamNameById={teamNameById} />
         </>
       ) : (
         <div>

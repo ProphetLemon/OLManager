@@ -1,4 +1,5 @@
 import type { GameStateData } from "@/store/gameStore";
+import { autoSave, setLiveMatchActive } from "@/services/autoSave";
 
 export interface FinishLiveMatchResponse {
   game: GameStateData;
@@ -34,7 +35,7 @@ export function isAlreadyFinalizedError(error: unknown): boolean {
  * Finishes the live backend session and persists the champion picks.
  * Resolves true when the match is finalized (including "already finalized") so the caller
  * can advance the stage; real finish errors resolve false. A failing picks call is logged
- * and never blocks the stage change.
+ * and never blocks the stage change. A finalized match ends the day, so it auto-saves.
  */
 export async function finalizeLiveMatch({ finish, recordPicks, refetchGame, onGame }: FinalizeLiveMatchParams): Promise<boolean> {
   try {
@@ -60,5 +61,8 @@ export async function finalizeLiveMatch({ finish, recordPicks, refetchGame, onGa
       console.error("Failed to record champion picks:", error);
     }
   }
+  // The day is over and the backend session is gone: the game can be saved now.
+  setLiveMatchActive(false);
+  void autoSave();
   return true;
 }

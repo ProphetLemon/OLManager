@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { IconTip } from "@/ui-v2/components/ui/icon-tip";
 import { cn } from "@/ui-v2/lib/utils";
 
-import { RAIL_FOCUS_CLASS, RAIL_LABEL_CLASS, RAIL_STOP_CLASS, RAIL_STOP_LABELLED_CLASS } from "./RailItem";
+import { RAIL_FOCUS_CLASS, RAIL_LABEL_CLASS, RAIL_STOP_CLASS, RAIL_STOP_PHONE_CLASS } from "./RailItem";
 import { railCellClass } from "./RailUtility";
 import { GO_ROW_MARGIN_PX } from "./railMode";
 
@@ -66,13 +66,14 @@ export function GoButton({ variant, onClick, tabIndex, buttonRef }: GoButtonProp
         {...shared}
         className={cn(
           RAIL_STOP_CLASS,
-          RAIL_STOP_LABELLED_CLASS,
+          RAIL_STOP_PHONE_CLASS,
           RAIL_FOCUS_CLASS,
           "text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
       >
-        {icon}
-        <span data-slot="go-label" className={cn(RAIL_LABEL_CLASS, "font-medium")}>
+        {/* A phone stop is the only place this variant is used: 16 px icon over a 14 px label line. */}
+        <Search className="size-4 shrink-0" aria-hidden="true" />
+        <span data-slot="go-label" className={cn(RAIL_LABEL_CLASS, "font-medium leading-[14px]")}>
           {t("onAir.nav.goShort", { defaultValue: "Go" })}
         </span>
       </button>

@@ -26,6 +26,9 @@ vi.mock("@/services/worldOverlayService", () => ({
   updateWorldOverlay: overlay.updateWorldOverlay,
 }));
 
+const autoSaveMock = vi.hoisted(() => ({ autoSave: vi.fn(() => Promise.resolve()), setLiveMatchActive: vi.fn() }));
+vi.mock("@/services/autoSave", () => autoSaveMock);
+
 vi.mock("@/hooks/useUpdater", () => ({
   useUpdater: () => ({
     updateAvailable: false,
@@ -186,6 +189,7 @@ describe("AppV2 platform", () => {
 
   beforeEach(() => {
     delete document.documentElement.dataset.platform;
+    delete document.documentElement.dataset.form;
     useSettingsStore.setState({ loaded: true });
     userAgent = vi.spyOn(window.navigator, "userAgent", "get");
   });
@@ -193,6 +197,7 @@ describe("AppV2 platform", () => {
   afterEach(() => {
     userAgent.mockRestore();
     delete document.documentElement.dataset.platform;
+    delete document.documentElement.dataset.form;
   });
 
   it("flags the root as android and renders no title bar there", async () => {
@@ -202,11 +207,73 @@ describe("AppV2 platform", () => {
     expect(screen.queryByTestId("title-bar")).toBeNull();
   });
 
+  it("flags the root as a phone beside the platform and runs it at a 16px root", async () => {
+    userAgent.mockReturnValue(ANDROID_UA);
+    render(<AppV2 />);
+    await waitFor(() => expect(document.documentElement.dataset.form).toBe("phone"));
+    expect(document.documentElement.dataset.platform).toBe("android");
+    await waitFor(() => expect(document.documentElement.style.fontSize).toBe("16px"));
+  });
+
+  it("removes both flags when it unmounts", async () => {
+    userAgent.mockReturnValue(ANDROID_UA);
+    const { unmount } = render(<AppV2 />);
+    await waitFor(() => expect(document.documentElement.dataset.form).toBe("phone"));
+    unmount();
+    expect(document.documentElement.dataset.form).toBeUndefined();
+    expect(document.documentElement.dataset.platform).toBeUndefined();
+  });
+
   it("leaves the root unflagged and keeps the title bar on desktop", () => {
     userAgent.mockReturnValue("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
     render(<AppV2 />);
     expect(document.documentElement.dataset.platform).toBeUndefined();
+    expect(document.documentElement.dataset.form).toBeUndefined();
     expect(screen.getByTestId("title-bar")).toBeInTheDocument();
+  });
+});
+
+describe("AppV2 auto-save in the background", () => {
+  const ANDROID_UA =
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36";
+  let userAgent: ReturnType<typeof vi.spyOn>;
+  let visibility: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    autoSaveMock.autoSave.mockClear();
+    useSettingsStore.setState({ loaded: true });
+    userAgent = vi.spyOn(window.navigator, "userAgent", "get");
+    visibility = vi.spyOn(document, "visibilityState", "get");
+  });
+
+  afterEach(() => {
+    userAgent.mockRestore();
+    visibility.mockRestore();
+  });
+
+  function pageBecomes(state: "hidden" | "visible") {
+    visibility.mockReturnValue(state);
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+  }
+
+  it("saves when the page goes to the background on Android, and not when it comes back", async () => {
+    userAgent.mockReturnValue(ANDROID_UA);
+    render(<AppV2 />);
+    await waitFor(() => expect(document.documentElement.dataset.platform).toBe("android"));
+
+    pageBecomes("visible");
+    expect(autoSaveMock.autoSave).not.toHaveBeenCalled();
+    pageBecomes("hidden");
+    expect(autoSaveMock.autoSave).toHaveBeenCalledTimes(1);
+  });
+
+  it("does nothing when the page is hidden on desktop", () => {
+    userAgent.mockReturnValue("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
+    render(<AppV2 />);
+    pageBecomes("hidden");
+    expect(autoSaveMock.autoSave).not.toHaveBeenCalled();
   });
 });
 

@@ -22,10 +22,11 @@ export function assetUrl(path: string | null | undefined): string | null {
     .map(encodeURIComponent)
     .join("/");
 
-  // Windows serves custom schemes over http://<scheme>.localhost/...
-  const isWindows =
-    typeof navigator !== "undefined" && navigator.userAgent.includes("Windows");
-  return isWindows
+  // Windows and Android serve custom schemes over http://<scheme>.localhost/... (Tauri's own
+  // convertFileSrc makes the same split). The scheme form does not load on Android at all.
+  const httpForm =
+    typeof navigator !== "undefined" && /Windows|Android/.test(navigator.userAgent);
+  return httpForm
     ? `http://olm-asset.localhost/${rel}`
     : `olm-asset://localhost/${rel}`;
 }

@@ -25,7 +25,7 @@ export const ACTIVE_ROW_CLASS =
   "bg-[var(--row-wash)] text-foreground [[data-contrast=high]_&]:data-[active=true]:outline-2 [[data-contrast=high]_&]:data-[active=true]:-outline-offset-2 [[data-contrast=high]_&]:data-[active=true]:outline-solid [[data-contrast=high]_&]:data-[active=true]:outline-club-text";
 
 /** The 3 px club bar at a row's start edge: tall for an icon-over-label stop, short for a text row. */
-export function RailActiveBar({ size }: { size: "stop" | "row" }) {
+export function RailActiveBar({ size }: { size: "stop" | "row" | "phone" }) {
   return (
     <span
       aria-hidden="true"
@@ -33,7 +33,9 @@ export function RailActiveBar({ size }: { size: "stop" | "row" }) {
       className={cn(
         // Forced colours drops backgrounds, so the bar keeps its fill in a system colour.
         "absolute inset-y-0 -start-1.5 my-auto rounded-e-sm bg-club-text forced-color-adjust-none forced-colors:bg-[Highlight]",
-        size === "stop" ? "h-8 max-h-full w-1" : "h-4 w-[3px]",
+        size === "row" ? "h-4 w-[3px]" : "h-8 max-h-full w-1",
+        // The phone's stops have no side margin, so the bar sits on the stop's own edge.
+        size === "phone" && "start-0",
       )}
     />
   );

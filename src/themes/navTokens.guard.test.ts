@@ -98,6 +98,13 @@ describe("rail tree tokens", () => {
   });
 });
 
+describe("the phone rail token", () => {
+  it("declares --rail-w-phone as max(4rem, 64px) on Android only: 64 px at the phone's 16 px root, where a side sheet begins", () => {
+    expect(ruleBody(':root[data-platform="android"]')).toContain("--rail-w-phone: max(4rem, 64px);");
+    expect(ruleBody(":root")).not.toContain("--rail-w-phone");
+  });
+});
+
 describe("the active row tint", () => {
   it("is one token, 16% of the club colour", () => {
     expect(ruleBody(":root")).toContain("--row-wash: color-mix(in srgb, var(--club) 16%, transparent);");
@@ -115,7 +122,7 @@ describe("attention lane tokens (NR2.6, R24, R35)", () => {
     expect(ruleBody(':root[data-platform="android"]')).toContain("--lane-pill-h: var(--hit);");
   });
 
-  it("floors --text-entry at 12px, so pill headlines never fall to 7.9 px on Android", () => {
+  it("floors --text-entry at 12px, so pill headlines never fall under it on a small desktop root", () => {
     expect(css).toMatch(/--text-entry:\s*max\(0\.875rem,\s*12px\);/);
   });
 
@@ -146,7 +153,8 @@ describe("Go palette tokens (NR2.8, spec §5.7, R29)", () => {
     expect(root).toContain("--palette-w: min(36rem, calc(100vw - 2rem));");
     expect(root).toContain("--palette-h: min(32rem, calc(100dvh - 6rem));");
     expect(root).toContain("--palette-row: max(2.5rem, 40px);");
-    expect(root).toContain("--palette-sheet-w: max(22rem, 320px);");
+    expect(root).toContain("--sheet-w: max(22rem, 320px);");
+    expect(root).toContain("--palette-sheet-w: var(--sheet-w);");
   });
 
   it("raises the rows to the touch hit on Android", () => {

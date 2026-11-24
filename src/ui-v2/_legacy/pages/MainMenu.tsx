@@ -15,6 +15,9 @@ import CommunityPanel from "@/ui-v2/_legacy/components/menu/CommunityPanel";
 import PatchNotesPanel from "@/ui-v2/_legacy/components/menu/PatchNotesPanel";
 import { useRovingFocus } from "@/hooks/useRovingFocus";
 import { useMenuBackExit } from "@/hooks/useMenuBackExit";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
+import { useBackDismisser } from "@/ui-v2/palette/useBackDismisser";
+import { PHONE_ICON_BUTTON, PHONE_TARGET } from "@/ui-v2/_legacy/components/menu/phoneClasses";
 import { isAndroidUserAgent } from "@/ui-v2/uiScale";
 import {
   FolderOpen,
@@ -124,6 +127,9 @@ const IS_ANDROID = isAndroidUserAgent(navigator.userAgent);
 export default function MainMenu() {
   const navigate = useNavigate();
   useMenuBackExit(IS_ANDROID, exitApp);
+  // The phone lays the menu out as a tile grid beside a left column; every other form keeps
+  // the desktop layout, whose markup below is untouched.
+  const phone = usePhoneForm();
   const setGameActive = useGameStore((state) => state.setGameActive);
   const { t, i18n } = useTranslation();
   const [menuState, setMenuState] = useState<
@@ -403,7 +409,7 @@ export default function MainMenu() {
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const { activeIndex, handleKeyDown, getTabIndex } = useRovingFocus({
+  const { activeIndex, setActiveIndex, handleKeyDown, getTabIndex } = useRovingFocus({
     itemCount: mainMenuItems.length,
     columns: 1,
     onSelect: (i) => mainMenuItems[i]?.onClick(),
@@ -423,6 +429,30 @@ export default function MainMenu() {
 
   const isPanelOpen = menuState !== "main";
 
+  // System Back closes an open panel before it does anything else (it exits the app only on
+  // the main state). It registers only on the phone, the only form that has a Back button, and
+  // after the effect-free `useMenuBackExit` above, which sets the main state's meaning.
+  useBackDismisser(phone && isPanelOpen, () => setMenuState("main"));
+  // The country list is the innermost thing of the New Game form: it registers after the panel,
+  // so Back closes it first and the form stays. The list in SavesList does the same.
+  useBackDismisser(phone && nationalityOpen, () => {
+    setNationalityOpen(false);
+    setNationalitySearch("");
+  });
+
+  // Whatever way a panel closes (Back, Close, Escape), what it held inside is dropped, so it
+  // reopens clean: no country list (its autofocused search would raise the keyboard), no form
+  // errors, no delete confirmation, no staged import waiting for an answer.
+  const { pendingReplace, cancelReplace } = transfer;
+  useEffect(() => {
+    if (!phone || menuState !== "main") return;
+    setFormErrors((prev) => (Object.keys(prev).length ? {} : prev));
+    setNationalityOpen(false);
+    setNationalitySearch("");
+    setConfirmDeleteId(null);
+    if (pendingReplace) void cancelReplace();
+  }, [phone, menuState, pendingReplace, cancelReplace]);
+
   const focusFirstPanelElement = useCallback(() => {
     requestAnimationFrame(() => {
       const panel = panelRef.current;
@@ -430,15 +460,20 @@ export default function MainMenu() {
       const all = panel.querySelectorAll<HTMLElement>(
         "input:not([type=hidden]):not([disabled]), button:not([disabled]), select, textarea, [tabindex]:not([tabindex='-1'])",
       );
+      let close: HTMLElement | null = null;
       for (const el of all) {
         const isCloseBtn = el.tagName === "BUTTON" && el.querySelector("svg.lucide-x");
         if (!isCloseBtn) {
           el.focus();
           return;
         }
+        close = el;
       }
+      // Nothing else to focus (Load Game still loading, or with no saves): on the phone the
+      // Close button is the panel's home, so Escape and the arrow keys still reach the menu.
+      if (phone) close?.focus();
     });
-  }, []);
+  }, [phone]);
 
   useEffect(() => {
     if (isPanelOpen) {
@@ -483,42 +518,101 @@ export default function MainMenu() {
 
 
       {/* Two-column layout: persistent nav on the left, active panel on the right */}
-      <div className="relative z-10 h-full flex">
-        {/* Left column — logo + nav (always visible) */}
-        <div className="flex flex-col justify-start pt-[15vh] pb-8 px-8 sm:px-14 lg:px-20 w-full max-w-md shrink-0">
-          <div className="w-full animate-fade-in-up">
-            <img
-              src="/olmanager-logo.webp"
-              alt="Open League Manager"
-              className="h-24 mb-10 drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]"
-            />
+      <div
+        className={
+          phone
+            ? "relative z-10 grid h-full grid-cols-[232px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] gap-y-2 pe-3"
+            : "relative z-10 h-full flex"
+        }
+      >
+        {phone ? (
+          <>
+            {/* Left column, top: logo and version label */}
+            <div
+              data-menu-column="start"
+              className="col-start-1 row-start-1 flex min-h-0 flex-col justify-between pe-3"
+            >
+              <img
+                src="/olmanager-logo.webp"
+                alt="League Manager LE"
+                className="h-14 w-auto self-start drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]"
+              />
+              <div className="font-heading text-nav uppercase tracking-wide text-gray-300/70 drop-shadow">
+                {t("app.version")} {__APP_VERSION__}
+              </div>
+            </div>
 
-            <nav className="flex flex-col gap-1">
-              {mainMenuItems.map((item, i) => (
-                <MenuItem
-                  key={item.label}
-                  icon={item.icon}
-                  label={item.label}
-                  tone={item.tone}
-                  active={item.active}
-                  title={item.title}
-                  tabIndex={getTabIndex(i)}
-                  ref={(el) => { itemRefs.current[i] = el; }}
-                  onClick={item.onClick}
-                />
-              ))}
-            </nav>
+            {/* Tile grid: the five destinations, in the list's order, where a panel opens */}
+            {menuState === "main" && (
+              <nav className="col-start-2 row-span-2 row-start-1 grid min-h-0 grid-cols-2 grid-rows-3 gap-2">
+                {mainMenuItems.slice(0, -1).map((item, i) => (
+                  <MenuTile
+                    key={item.label}
+                    icon={item.icon}
+                    label={item.label}
+                    tone={item.tone}
+                    title={item.title}
+                    wide={i === 0}
+                    tabIndex={getTabIndex(i)}
+                    ref={(el) => { itemRefs.current[i] = el; }}
+                    onClick={() => {
+                      // Focus returns to the tile that opened a panel, even when a tap did not move focus.
+                      setActiveIndex(i);
+                      item.onClick();
+                    }}
+                  />
+                ))}
+              </nav>
+            )}
+          </>
+        ) : (
+        /* Left column — logo + nav (always visible) */
+          <div className="flex flex-col justify-start pt-[15vh] pb-8 px-8 sm:px-14 lg:px-20 w-full max-w-md shrink-0">
+            <div className="w-full animate-fade-in-up">
+              <img
+                src="/olmanager-logo.webp"
+                alt="League Manager LE"
+                className="h-24 mb-10 drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]"
+              />
+
+              <nav className="flex flex-col gap-1">
+                {mainMenuItems.map((item, i) => (
+                  <MenuItem
+                    key={item.label}
+                    icon={item.icon}
+                    label={item.label}
+                    tone={item.tone}
+                    active={item.active}
+                    title={item.title}
+                    tabIndex={getTabIndex(i)}
+                    ref={(el) => { itemRefs.current[i] = el; }}
+                    onClick={item.onClick}
+                  />
+                ))}
+              </nav>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Right column — active panel opens beside the nav */}
         {menuState !== "main" && (
-          <div ref={panelRef} className="dark flex-1 min-w-0 flex flex-col justify-center overflow-y-auto p-6 lg:p-10">
+          <div
+            ref={panelRef}
+            className={
+              phone
+                ? "dark col-start-2 row-span-2 row-start-1 min-h-0 min-w-0 overflow-y-auto"
+                : "dark flex-1 min-w-0 flex flex-col justify-center overflow-y-auto p-6 lg:p-10"
+            }
+          >
             <div
               key={menuState}
-              className="w-full max-w-2xl mx-auto animate-fade-in-up border-t border-white/10"
+              className={
+                phone
+                  ? "h-full w-full animate-fade-in-up border-t border-white/10"
+                  : "w-full max-w-2xl mx-auto animate-fade-in-up border-t border-white/10"
+              }
             >
-              <div className="pt-6">
+              <div className={phone ? "h-full pt-2" : "pt-6"}>
                 {/* Step 1: Create Manager Form */}
                 {menuState === "create" && (
                   <form onSubmit={handleStartCareer} className="flex flex-col"
@@ -569,7 +663,8 @@ export default function MainMenu() {
                           setMenuState("main");
                           setFormErrors({});
                         }}
-                        className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                        aria-label={phone ? t("common.close") : undefined}
+                        className={`text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10${phone ? ` ${PHONE_ICON_BUTTON}` : ""}`}
                       >
                         <X className="w-5 h-5" />
                       </button>
@@ -953,12 +1048,30 @@ export default function MainMenu() {
           </div>
         )}
 
+        {phone && (
+          <div data-menu-column="start" className="col-start-1 row-start-2 pe-3">
+            <MenuTile
+              icon={mainMenuItems[5].icon}
+              label={mainMenuItems[5].label}
+              tone={mainMenuItems[5].tone}
+              compact
+              tabIndex={getTabIndex(5)}
+              ref={(el) => { itemRefs.current[5] = el; }}
+              onClick={() => {
+                setActiveIndex(5);
+                mainMenuItems[5].onClick();
+              }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Version */}
-      <div className="absolute bottom-4 right-4 text-gray-300/70 text-xs font-heading uppercase tracking-widest drop-shadow z-20">
-        {t("app.version")} {__APP_VERSION__}
-      </div>
+      {/* Version (on the phone it sits in the left column, above) */}
+      {!phone && (
+        <div className="absolute bottom-4 right-4 text-gray-300/70 text-xs font-heading uppercase tracking-widest drop-shadow z-20">
+          {t("app.version")} {__APP_VERSION__}
+        </div>
+      )}
     </div>
   );
 }
@@ -1024,6 +1137,56 @@ const MenuItem = React.forwardRef<HTMLButtonElement, {
           active
             ? "text-white translate-x-1"
             : "text-gray-100 group-hover:text-white group-hover:translate-x-1"
+        }`}
+      >
+        {label}
+      </span>
+    </button>
+  );
+});
+
+/**
+ * The phone's menu item: a tile of at least 48 x 48 (`--target-min`) with an icon over a label.
+ * `wide` spans both columns of the grid (New Game); `compact` is the row-shaped Exit game
+ * button of the left column. It has no active state: tiles render only on the main state, where
+ * no item is active, because a panel replaces them.
+ */
+const MenuTile = React.forwardRef<HTMLButtonElement, {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  tone?: MenuItemTone;
+  title?: string;
+  tabIndex?: 0 | -1;
+  wide?: boolean;
+  compact?: boolean;
+}>(function MenuTile({ icon, label, onClick, tone = "accent", title, tabIndex, wide = false, compact = false }, ref) {
+  const surface = wide
+    ? "bg-accent-400 text-navy-950 hover:bg-accent-300"
+    : tone === "danger"
+      ? "bg-white/5 text-gray-100 hover:bg-red-500/10"
+      : "bg-white/5 text-gray-100 hover:bg-white/10";
+  const iconColor = wide
+    ? ""
+    : tone === "danger"
+      ? "text-red-400"
+      : tone === "muted"
+        ? "text-gray-300"
+        : "text-accent-400";
+  return (
+    <button
+      ref={ref}
+      tabIndex={tabIndex ?? 0}
+      onClick={onClick}
+      title={title}
+      className={`flex items-center rounded-lg text-center transition-colors duration-200 ${PHONE_TARGET} ${surface} ${
+        compact ? "w-full flex-row justify-start gap-3 px-3" : "flex-col justify-center gap-1 px-2"
+      } ${wide ? "col-span-2" : ""}`}
+    >
+      <span className={`${iconColor} [&>svg]:h-7 [&>svg]:w-7`}>{icon}</span>
+      <span
+        className={`font-heading uppercase leading-tight tracking-wide ${
+          compact ? "text-entry font-bold" : "text-section font-bold"
         }`}
       >
         {label}

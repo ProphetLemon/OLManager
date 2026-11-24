@@ -27,8 +27,8 @@ describe("release configuration", () => {
   });
 
   it("shows the edition in the window and page titles but not in asset names", () => {
-    expect(tauriConf.app.windows[0].title).toContain(APP_EDITION);
-    expect(readText("index.html")).toContain(`<title>Open League Manager · ${APP_EDITION}</title>`);
+    expect(tauriConf.app.windows[0].title).toContain(`League Manager ${APP_EDITION}`);
+    expect(readText("index.html")).toContain(`<title>League Manager ${APP_EDITION}</title>`);
     // productName names the installer and AppImage assets the updater downloads; keep it ASCII.
     expect(tauriConf.productName).toBe("Open League Manager");
   });

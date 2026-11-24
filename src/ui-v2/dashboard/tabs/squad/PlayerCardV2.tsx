@@ -32,7 +32,8 @@ export interface SwapCandidate {
 interface PlayerCardV2Props {
   model: PlayerCardModel
   slotRole: LolRole
-  selected: boolean
+  /** Left out where the card opens the profile instead of toggling a selection (the phone). */
+  selected?: boolean
   onSelect: (id: string) => void
   candidates: SwapCandidate[]
   onSwap: (playerId: string) => void

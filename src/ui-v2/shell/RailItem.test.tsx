@@ -79,4 +79,16 @@ describe("RailItem", () => {
     expect(button).toHaveAttribute("aria-description", "Squad, Tactics");
     expect(button).toHaveAttribute("title", "Club: Squad, Tactics");
   });
+
+  it("on the phone is exactly --hit high and the rail's width, with its bar on its own edge", () => {
+    render(<RailItem icon={Mail} label="Inbox" active phone onClick={vi.fn()} />);
+    const stop = screen.getByRole("button", { name: "Inbox" });
+    for (const cls of ["h-[var(--hit)]", "min-h-0", "w-full", "mx-0", "py-0"]) expect(stop).toHaveClass(cls);
+    expect(stop).not.toHaveClass("py-1.5", "min-h-[var(--hit)]", "mx-1.5");
+    const bar = stop.querySelector('[data-slot="rail-item-bar"]')!;
+    expect(bar).toHaveClass("start-0");
+    expect(bar).not.toHaveClass("-start-1.5");
+    expect(stop.querySelector("svg")).toHaveClass("size-4");
+    expect(stop).toHaveAttribute("aria-current", "page");
+  });
 });

@@ -87,7 +87,7 @@ Run these steps on a release branch, never on `develop` or a work branch:
 bump there.
 
 1. Set the version in `package.json`, `package-lock.json`, `src-tauri/Cargo.toml` (then let any cargo command
-   refresh `Cargo.lock`), `src-tauri/tauri.conf.json` (also the window title, which keeps the "Limón Edition 🍋" name), `src/lib/common/appInfo.ts` and
+   refresh `Cargo.lock`), `src-tauri/tauri.conf.json` (also the window title, which keeps the "League Manager LE" name), `src/lib/common/appInfo.ts` and
    the `CHANGELOG.md` heading. `src/lib/release/releaseConfig.test.ts` checks that they match and follow the scheme.
 2. `npm run release:fork -- --dry-run` checks the tools and key and shows the plan without building.
 3. `npm run release:fork` builds the NSIS installer, then the AppImage, both signed with the same key, and writes

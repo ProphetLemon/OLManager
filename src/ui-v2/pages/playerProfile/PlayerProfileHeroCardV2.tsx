@@ -118,13 +118,15 @@ export default function PlayerProfileHeroCardV2({
         {insigniaBackground ? (
           <>
             <div className="absolute inset-0 bg-cover" style={{ backgroundImage: `url(${insigniaBackground})`, backgroundPosition: "center 12%" }} />
-            <div className="absolute inset-0 bg-linear-to-r from-black/88 via-black/28 to-transparent" />
+            {/* Phone: the details and the stats sit over the whole splash, not only its dark left edge. */}
+            <div className="absolute inset-0 bg-linear-to-r from-black/88 via-black/28 to-transparent phone:via-black/75 phone:to-black/60" />
           </>
         ) : (
           <div className="absolute inset-0 bg-linear-to-r from-muted/80 to-muted/40" />
         )}
 
-        <CardContent className="relative z-10 flex flex-col gap-5 p-5 md:flex-row">
+        {/* Phone: photo and details share a row, SoloQ and the quick stats take the next one. The md columns read the window width, not the content area beside the rail, and pile up there. */}
+        <CardContent className="relative z-10 flex flex-col gap-5 p-5 md:flex-row phone:flex-row phone:flex-wrap">
           {/* Left: photo + ovr */}
           <div className="flex shrink-0 flex-col items-center gap-2">
             <div className="relative">
@@ -155,7 +157,7 @@ export default function PlayerProfileHeroCardV2({
                 type="button"
                 onClick={onAcademyAction}
                 disabled={academyActionLoading}
-                className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-2xs font-heading font-bold uppercase tracking-wider text-club-text transition-colors hover:bg-primary/20 disabled:opacity-50"
+                className="rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-2xs phone:min-h-[var(--hit)] font-heading font-bold uppercase tracking-wider text-club-text transition-colors hover:bg-primary/20 disabled:opacity-50"
               >
                 {academyActionLoading ? "..." : academyActionLabel}
               </button>
@@ -180,7 +182,7 @@ export default function PlayerProfileHeroCardV2({
                   type="button"
                   onClick={onRename}
                   aria-label={t("playerProfile.rename.actionAria", { nick: player.match_name })}
-                  className="inline-flex h-6 items-center gap-1 rounded-md border border-line px-2 text-xs font-bold text-foreground/90 transition-colors hover:border-primary/60 hover:text-club-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="inline-flex h-6 items-center gap-1 rounded-md border border-line px-2 phone:h-[var(--hit)] phone:px-3 text-xs font-bold text-foreground/90 transition-colors hover:border-primary/60 hover:text-club-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Pencil className="size-3.5" aria-hidden="true" />
                   {t("playerProfile.rename.action")}
@@ -197,7 +199,7 @@ export default function PlayerProfileHeroCardV2({
                 <button
                   type="button"
                   onClick={() => setEditingRole((prev) => !prev)}
-                  className="inline-flex size-6 items-center justify-center rounded-md border border-white/15 text-foreground/90 transition-colors hover:border-primary/60 hover:text-club-text"
+                  className="inline-flex size-6 items-center justify-center rounded-md border border-white/15 phone:size-[var(--hit)] text-foreground/90 transition-colors hover:border-primary/60 hover:text-club-text"
                   title={t("playerProfile.editPosition")}
                 >
                   <Pencil className="size-3.5" />
@@ -217,7 +219,7 @@ export default function PlayerProfileHeroCardV2({
                       disabled={rerollingRole}
                       onClick={() => { onRerollRole?.(r); setEditingRole(false); }}
                       className={cn(
-                        "rounded-md border px-2.5 py-1 text-xs font-heading font-bold uppercase tracking-wide transition-colors",
+                        "rounded-md border px-2.5 py-1 text-xs phone:min-h-[var(--hit)] phone:px-4 font-heading font-bold uppercase tracking-wide transition-colors",
                         r === role ? "border-primary bg-primary/15 text-club-text" : "border-white/15 text-foreground/90 hover:border-primary/60",
                         rerollingRole && "cursor-not-allowed opacity-60",
                       )}
@@ -236,7 +238,7 @@ export default function PlayerProfileHeroCardV2({
                   return logoUrl ? <img src={logoUrl} alt="" className="size-4 object-contain" /> : <Shield className="size-4" />;
                 })()}
                 {player.team_id ? (
-                  <button onClick={() => onSelectTeam?.(player.team_id!)} className="inline-flex min-h-6 items-center hover:text-club-text transition-colors underline underline-offset-2">{teamName}</button>
+                  <button onClick={() => onSelectTeam?.(player.team_id!)} className="inline-flex min-h-6 items-center phone:min-h-[var(--hit)] hover:text-club-text transition-colors underline underline-offset-2">{teamName}</button>
                 ) : (
                   <span>{teamName}</span>
                 )}
@@ -245,7 +247,7 @@ export default function PlayerProfileHeroCardV2({
               {isOwnClub && (
                 <>
                   <button type="button" onClick={onToggleTransferList} disabled={!onToggleTransferList}
-                    className={cn("rounded px-1.5 py-0.5 text-2xs font-heading font-bold uppercase tracking-wider border transition-colors",
+                    className={cn("rounded px-1.5 py-0.5 text-2xs phone:min-h-[var(--hit)] phone:px-3 font-heading font-bold uppercase tracking-wider border transition-colors",
                       player.transfer_listed
                         ? "border-red-500/30 bg-red-500/10 text-red-400"
                         : "border-border text-muted-foreground/60 hover:border-red-500/30 hover:text-red-400"
@@ -253,7 +255,7 @@ export default function PlayerProfileHeroCardV2({
                     {player.transfer_listed ? t("playerProfile.transferListed") : t("squad.addToTransferList", { defaultValue: "Añadir a transferibles" })}
                   </button>
                   <button type="button" onClick={onToggleLoanList} disabled={!onToggleLoanList}
-                    className={cn("rounded px-1.5 py-0.5 text-2xs font-heading font-bold uppercase tracking-wider border transition-colors",
+                    className={cn("rounded px-1.5 py-0.5 text-2xs phone:min-h-[var(--hit)] phone:px-3 font-heading font-bold uppercase tracking-wider border transition-colors",
                       player.loan_listed
                         ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
                         : "border-border text-muted-foreground/60 hover:border-blue-500/30 hover:text-blue-400"
@@ -272,7 +274,7 @@ export default function PlayerProfileHeroCardV2({
                   <span className="text-xs text-muted-foreground/80">{t("playerProfile.potentialResearchProgress", { current: potentialProgress, total: 7 })}</span>
                 ) : canStartPotentialResearch ? (
                   <button type="button" onClick={onStartPotentialResearch} disabled={potentialResearchSubmitting}
-                    className="rounded-md border border-primary/60 px-2 py-1 text-xs font-heading font-bold uppercase tracking-wide text-club-text/80 hover:bg-primary/20 disabled:opacity-60">
+                    className="rounded-md border border-primary/60 px-2 py-1 text-xs phone:min-h-[var(--hit)] font-heading font-bold uppercase tracking-wide text-club-text/80 hover:bg-primary/20 disabled:opacity-60">
                     {t("playerProfile.startPotentialResearch")}
                   </button>
                 ) : null}
@@ -286,9 +288,9 @@ export default function PlayerProfileHeroCardV2({
           </div>
 
           {/* Right: SoloQ and quick stats */}
-          <div className="flex shrink-0 flex-col gap-3 lg:flex-row">
+          <div className="flex shrink-0 flex-col gap-3 lg:flex-row phone:w-full phone:flex-row">
             {soloqPanel}
-            <div className="hidden md:block">
+            <div className="hidden md:block phone:block phone:flex-1">
               <div className="grid grid-cols-2 gap-2">
                 <QuickStatV2 label={t("common.ovr")} value={String(ovr)} color="text-club-text" />
                 <QuickStatV2 label={t("common.condition")} value={`${player.condition}%`} color={player.condition >= 70 ? "text-positive" : "text-negative"} />

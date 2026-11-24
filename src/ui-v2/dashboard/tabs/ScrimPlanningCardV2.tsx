@@ -1,13 +1,10 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { WandSparkles } from "lucide-react";
 
-import {
-  buildTeamLolOvrMap,
-  type WeeklyScrimContext,
-} from "@/lib/scrims/scrimContext";
+import { useScrimPlans } from "@/hooks/useScrimPlans";
+import type { WeeklyScrimContext } from "@/lib/scrims/scrimContext";
 import { displaySlotStatus, isPlanClearedToday } from "@/lib/scrims/scrimDesk";
-import { setWeeklyScrimPlans } from "@/services/trainingService";
+import { autofillDisabled } from "@/lib/scrims/scrimPlans";
 import type { GameStateData } from "@/store/gameStore";
 import { Button } from "@/ui-v2/components/ui/button";
 import { cn } from "@/ui-v2/lib/utils";
@@ -43,67 +40,16 @@ export default function ScrimPlanningCardV2({
   ];
   const planLabels = [t("training.scrims.planA"), t("training.scrims.planB"), t("training.scrims.planC")];
 
-  const myTeam = gameState.teams.find((team) => team.id === gameState.manager.team_id);
-  const teamOvrById = useMemo(() => buildTeamLolOvrMap(gameState), [gameState]);
-
-  const options = useMemo(
-    () => (myTeam
-      ? gameState.teams
-        .filter((team) => team.id !== myTeam.id)
-        .filter((team) => team.competition_id === myTeam.competition_id)
-        .sort((a, b) => (teamOvrById.get(b.id) ?? 0) - (teamOvrById.get(a.id) ?? 0) || a.name.localeCompare(b.name))
-      : []),
-    [gameState.teams, myTeam, teamOvrById],
-  );
+  const { myTeam, teamOvrById, options, plans, setSlotPlan, autofill } = useScrimPlans({
+    gameState,
+    weeklyContext,
+    onGameUpdate,
+    setIsSaving,
+  });
   if (!myTeam) return null;
 
   const slots = weeklyContext.capacity;
-  const plans = Array.from({ length: slots }, (_, slotIndex) => {
-    const merged = weeklyContext.slots[slotIndex]?.plan ?? [];
-    return Array.from({ length: 3 }, (_, priorityIndex) => merged[priorityIndex] ?? "");
-  });
   const teamNameById = new Map(gameState.teams.map((team) => [team.id, team.name]));
-
-  const saveWeeklyScrimPlans = async (next: string[][]) => {
-    setIsSaving(true);
-    try {
-      const updated = await setWeeklyScrimPlans(next);
-      onGameUpdate?.(updated);
-    } catch (error) {
-      console.error("Failed to save weekly scrim plans:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const setSlotPlan = (slotIndex: number, priorityIndex: number, teamId: string) => {
-    const next = plans.map((plan) => [...plan]);
-    next[slotIndex][priorityIndex] = teamId;
-    void saveWeeklyScrimPlans(next);
-  };
-
-  const autofillPlansFromObjective = () => {
-    const objective = weeklyContext.objective;
-    const byOvrDesc = [...options].sort((a, b) => (teamOvrById.get(b.id) ?? 0) - (teamOvrById.get(a.id) ?? 0));
-    const byOvrAsc = [...byOvrDesc].reverse();
-
-    const pool = objective === "Mental"
-      ? byOvrAsc
-      : objective === "ChampionPool" || objective === "EarlyGame"
-        ? [...byOvrDesc.slice(Math.floor(byOvrDesc.length / 3)), ...byOvrDesc.slice(0, Math.floor(byOvrDesc.length / 3))]
-        : byOvrDesc;
-
-    if (pool.length === 0) return;
-
-    const next = Array.from({ length: slots }, (_, slotIndex) => {
-      const a = pool[slotIndex % pool.length]?.id ?? "";
-      const b = pool[(slotIndex + 1) % pool.length]?.id ?? "";
-      const c = pool[(slotIndex + 2) % pool.length]?.id ?? "";
-      return [a, b, c].filter((value, index, arr) => Boolean(value) && arr.indexOf(value) === index).slice(0, 3);
-    });
-
-    void saveWeeklyScrimPlans(next);
-  };
 
   return (
     <section aria-labelledby="scrim-plans-heading" className="flex flex-col gap-2.5">
@@ -116,8 +62,8 @@ export default function ScrimPlanningCardV2({
             type="button"
             variant="outline"
             size="touch"
-            disabled={isSaving || readOnly || !weeklyContext.slots.every((slot) => slot.canEdit)}
-            onClick={autofillPlansFromObjective}
+            disabled={autofillDisabled(weeklyContext, { isSaving, readOnly })}
+            onClick={autofill}
           >
             <WandSparkles aria-hidden="true" />
             {t("training.scrims.autofill")}

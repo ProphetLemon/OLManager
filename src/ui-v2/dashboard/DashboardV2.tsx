@@ -10,6 +10,8 @@ import { Eye, Gamepad2 } from "lucide-react";
 import { useGameStore } from "@/store/gameStore";
 import type { GameStateData, PlayerSelectionOptions } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
+import { saveNow, useAutoSaveStore } from "@/services/autoSave";
+import { AutoSaveFailedNotice } from "./AutoSaveFailedNotice";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { useAdvanceTime, type MatchModeType } from "@/hooks/useAdvanceTime";
 import { resolveTeamLogo } from "@/lib/teams/teamLogos";
@@ -61,6 +63,8 @@ import { useNavMemoryStore } from "@/store/navMemoryStore";
 import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
 import { DashboardSidebarV2 } from "./DashboardSidebarV2";
 import { DashboardHeaderV2 } from "./DashboardHeaderV2";
+import { PhoneMoreMenu } from "@/ui-v2/shell/PhoneMoreMenu";
+import { usePhoneForm } from "@/hooks/usePhoneForm";
 import { goReserve } from "@/ui-v2/shell/railMode";
 import { useRailMode } from "@/ui-v2/shell/useRailMode";
 import { buildAttentionMap } from "@/ui-v2/shell/attention";
@@ -150,6 +154,9 @@ const BLOCKER_REFRESH_DEBOUNCE_MS = 400;
 const FOCUS_CALLS_ATTEMPTS = 40;
 const FOCUS_CALLS_INTERVAL_MS = 50;
 
+/** Tabs that are fixed panes on a phone: their wrapper opts out of the page scroll of the content area (see App.css). */
+const PHONE_FIXED_PANE_TABS: ReadonlySet<string> = new Set(["Scrims"]);
+
 export default function DashboardV2() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -169,6 +176,9 @@ export default function DashboardV2() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
+  const autoSaveFailed = useAutoSaveStore((s) => s.failed);
+  const autoSaveFailCount = useAutoSaveStore((s) => s.failCount);
+  const autoSavedCount = useAutoSaveStore((s) => s.savedCount);
   // An alias route wins over the remembered location from the first render, so the
   // remembered tab never paints (and never stays mounted, hidden, behind Suspense).
   // Moving to the location it is already on is a no-op, so a second call is harmless.
@@ -207,6 +217,7 @@ export default function DashboardV2() {
   const [railBody, setRailBody] = useState<HTMLDivElement | null>(null);
   // The Tree's Go row is pinned above the tree, so the rail reserves its height (R30).
   const rail = useRailMode(railBody, { reservedTop: goReserve });
+  const phone = usePhoneForm();
   const focusCallsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -455,19 +466,28 @@ export default function DashboardV2() {
     [],
   );
 
+  const flashSaved = useCallback(() => {
+    setSaveFlash(true);
+    setTimeout(() => setSaveFlash(false), 2000);
+  }, []);
+
+  // An auto-save that finishes while the bar is on screen shows the same "Saved" as the button.
+  const seenAutoSaves = useRef(autoSavedCount);
+  useEffect(() => {
+    if (autoSavedCount === seenAutoSaves.current) return;
+    seenAutoSaves.current = autoSavedCount;
+    flashSaved();
+  }, [autoSavedCount, flashSaved]);
+
+  // The flash and the failure notice come from the shared save, so a manual and an auto-save look alike.
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
-      await invoke("save_game");
-      markClean();
-      setSaveFlash(true);
-      setTimeout(() => setSaveFlash(false), 2000);
-    } catch (err) {
-      console.error("Failed to save:", err);
+      await saveNow();
     } finally {
       setIsSaving(false);
     }
-  }, [markClean]);
+  }, []);
 
   // Leaving a game replaces the dashboard's history entry, so the system Back on the menu
   // (Android) never returns to a game that is no longer loaded.
@@ -675,11 +695,27 @@ export default function DashboardV2() {
   const backTarget = backDestination(profileNavigation, isValidLocation);
   const backTo = backTitle(backTarget, describeDeps, t);
 
+  // A tab's own content shows only while no profile or champion page is open over it.
+  const profileOpen = Boolean(
+    profileNavigation.selectedPlayerId ||
+      profileNavigation.selectedTeamId ||
+      profileNavigation.selectedStaffId ||
+      viewingChampionKey,
+  );
+
+  // On a phone the Scrims tab shows the result itself and has no height to spare: the banner is
+  // not drawn there, what the player saw is dismissed, and the assistant's note goes to the alerts.
+  const scrimsOnPhone = phone && profileNavigation.activeTab === "Scrims" && !profileOpen;
+  const shownScrimNotice = scrimsOnPhone ? null : scrimResultNotice;
+  useEffect(() => {
+    if (scrimsOnPhone && scrimResultNotice) dismissScrimResultNotice();
+  }, [scrimsOnPhone, scrimResultNotice, dismissScrimResultNotice]);
+
   const dashboardAlerts = useMemo<DashboardAlert[]>(() => {
     if (!gameState) return [];
     const alerts = getDashboardAlerts(gameState, hasMatchToday, t, { assistantResolvesScrims });
     // The scrim result notice carries the Assistant Coach note itself.
-    if (autoDelegationNotice && !scrimResultNotice) {
+    if (autoDelegationNotice && !shownScrimNotice) {
       alerts.unshift({
         id: "scrim_auto_delegate_notice",
         text: autoDelegationNotice,
@@ -702,7 +738,7 @@ export default function DashboardV2() {
     t,
     assistantResolvesScrims,
     autoDelegationNotice,
-    scrimResultNotice,
+    shownScrimNotice,
     matchPlayedNotice,
   ]);
 
@@ -756,13 +792,6 @@ export default function DashboardV2() {
         : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- lang: labels change with the language
     [paletteOpen, decisionItems, recent, profileNavigation, isUnemployed, scheduleCalendar, selectedCompetitionId, gameState, lang, t],
-  );
-  // A tab's own content shows only while no profile or champion page is open over it.
-  const profileOpen = Boolean(
-    profileNavigation.selectedPlayerId ||
-      profileNavigation.selectedTeamId ||
-      profileNavigation.selectedStaffId ||
-      viewingChampionKey,
   );
 
   // "Before you continue" (R24): the decisions while Home's panel is not on screen, a
@@ -883,6 +912,7 @@ export default function DashboardV2() {
         railSlot={{ slotW: rail.slotW, slotH: rail.slotH, need: rail.need, rootPx: rail.rootPx }}
         attention={attention}
         platform={rail.platform}
+        onSheetNavigate={(tab) => handleLaneCall({ kind: "tab", tab })}
       />
 
       <DashboardOverlays
@@ -918,6 +948,7 @@ export default function DashboardV2() {
           endsSplit={endsSplit}
           isSaving={isSaving}
           saveFlash={saveFlash}
+          saveFailed={autoSaveFailed}
           hasMatchToday={hasMatchToday}
           dayPhase={gameState?.day_phase ?? "Morning"}
           alerts={dashboardAlerts}
@@ -933,6 +964,16 @@ export default function DashboardV2() {
           callCount={callState.count}
           onShowCalls={handleShowCalls}
           compact={showSeasonSummary}
+          more={
+            phone ? (
+              <PhoneMoreMenu
+                activeTab={profileNavigation.activeTab}
+                onNavClick={handleNavClick}
+                onNavigateSettings={() => navigate("/settings", { state: { from: "/dashboard" } })}
+                onExitClick={() => !isExitingToMenu && setShowExitConfirm(true)}
+              />
+            ) : undefined
+          }
         />
 
         {lane.visible && (
@@ -944,8 +985,10 @@ export default function DashboardV2() {
           />
         )}
 
+        <AutoSaveFailedNotice failed={autoSaveFailed} failCount={autoSaveFailCount} />
+
         <ScrimResultNoticeV2
-          lines={scrimResultNotice}
+          lines={shownScrimNotice}
           assistantNote={autoDelegationNotice}
           onOpenScrims={() => {
             dismissScrimResultNotice();
@@ -1052,7 +1095,10 @@ export default function DashboardV2() {
             />
           </div>
         ) : profileNavigation.activeTab === "Scrims" && !profileOpen ? (
-          <div className="flex-1 overflow-y-auto scrollbar-v2">
+          <div
+            data-phone-fixed={phone && PHONE_FIXED_PANE_TABS.has(profileNavigation.activeTab) ? "" : undefined}
+            className="flex-1 overflow-y-auto scrollbar-v2"
+          >
             <ScrimsTabV2
               gameState={gameState}
               onGameUpdate={setGameState}

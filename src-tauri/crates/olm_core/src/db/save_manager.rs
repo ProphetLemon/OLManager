@@ -320,6 +320,10 @@ impl SaveManager {
 
         file.flush()
             .map_err(|e| format!("Failed to flush: {}", e))?;
+        // Auto-save writes far more often than a manual save: the bytes must be on disk before the
+        // rename, or a power loss right after it could leave a renamed but empty save.
+        file.sync_all()
+            .map_err(|e| format!("Failed to sync save to disk: {}", e))?;
 
         // Atomic rename: tmp → target
         fs::rename(&tmp_path, path).map_err(|e| format!("Failed to rename temp file: {}", e))?;

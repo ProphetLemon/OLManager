@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { installBackGuard, resetBackGuardForTests } from "@/lib/backGuard";
 import { useGameStore } from "@/store/gameStore";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useAutoSaveStore } from "@/services/autoSave";
 import { useBugReportStore } from "@/store/bugReportStore";
 import { resetSessionNavigation } from "@/store/sessionReset";
 import { useDashboardLocationStore } from "@/store/dashboardLocationStore";
@@ -314,6 +315,88 @@ describe("DashboardV2 tab sync", () => {
     );
   });
 
+  it("flashes Saved when an auto-save completes while on screen, not for one that finished before", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: false, failCount: 0, savedCount: 3 });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    expect(shell.header?.saveFlash).toBe(false);
+
+    act(() => useAutoSaveStore.setState({ savedCount: 4 }));
+    expect(shell.header?.saveFlash).toBe(true);
+  });
+
+  it("tells the bar when the auto-save failed", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: true, failCount: 1, savedCount: 0 });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    expect(shell.header?.saveFailed).toBe(true);
+
+    act(() => useAutoSaveStore.setState({ failed: false }));
+    expect(shell.header?.saveFailed).toBe(false);
+  });
+
+  it("shows the failed auto-save as a notice under the bar until a save succeeds", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: true, failCount: 1, savedCount: 0 });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("onAir.bar.autoSaveFailed")).toBeVisible();
+
+    act(() => useAutoSaveStore.setState({ failed: false }));
+    expect(screen.queryByText("onAir.bar.autoSaveFailed")).toBeNull();
+  });
+
+  it("the Save button writes, marks the game clean and clears a failed auto-save", async () => {
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: true, failCount: 1, savedCount: 0 });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    await act(async () => undefined);
+    act(() => useGameStore.setState({ isDirty: true }));
+    await act(async () => (shell.header?.onSave as () => Promise<void>)());
+
+    expect(useGameStore.getState().isDirty).toBe(false);
+    expect(useAutoSaveStore.getState().failed).toBe(false);
+    expect(shell.header?.saveFlash).toBe(true);
+  });
+
+  it("a failed Save shows the notice instead of only logging", async () => {
+    const { invoke } = await import("@tauri-apps/api/core");
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const DashboardV2 = (await import("./DashboardV2")).default;
+    useAutoSaveStore.setState({ failed: false, failCount: 0, savedCount: 0 });
+    useGameStore.setState({ isDirty: true });
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard"]}>
+        <DashboardV2 />
+      </MemoryRouter>,
+    );
+    vi.mocked(invoke).mockImplementationOnce(() => Promise.reject("disk full"));
+    await act(async () => (shell.header?.onSave as () => Promise<void>)());
+
+    expect(useGameStore.getState().isDirty).toBe(true);
+    expect(screen.getByText("onAir.bar.autoSaveFailed")).toBeVisible();
+  });
+
   it("reflects the tab implied by the dashboard route", async () => {
     const DashboardV2 = (await import("./DashboardV2")).default;
 
@@ -527,6 +610,17 @@ describe("DashboardV2 shell wiring", () => {
 
     expect(shell.dismissScrimResultNotice).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(shell.header?.activeTab).toBe("Scrims"));
+  });
+
+  it("keeps the scrim result notice on the Scrims tab itself on desktop", async () => {
+    shell.scrimResultNotice = ["Won against Rivals"];
+    await renderDashboard();
+    await screen.findByRole("button", { name: "Training" });
+    act(() => useDashboardLocationStore.getState().go({ kind: "tab", tab: "Scrims" }));
+    await waitFor(() => expect(shell.header?.activeTab).toBe("Scrims"));
+
+    expect(screen.getByRole("region", { name: "dashboard.scrimResultTitle" })).toHaveTextContent("Won against Rivals");
+    expect(shell.dismissScrimResultNotice).not.toHaveBeenCalled();
   });
 
   it("keeps the header and rail active tab in sync with navigation", async () => {

@@ -622,9 +622,9 @@ describe("The panel is its own Tab stop (R15)", () => {
     expect(tabbables()).toHaveLength(1);
   });
 
-  it("is the same on Android", () => {
+  it("is one stop on Android, which docks no panel", () => {
     setup({ activeTab: "Tactics", platform: "android" });
-    expect(tabbables().map((b) => b.dataset.navId)).toEqual(["group:club", "tab:Tactics"]);
+    expect(tabbables().map((b) => b.dataset.navId)).toEqual(["group:club"]);
   });
 });
 

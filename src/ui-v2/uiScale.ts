@@ -14,16 +14,23 @@ export const SCALE_MAP: Record<string, string> = {
   xlarge: "20px",
 };
 
-/// Android runs the whole interface at a 9px root (the settings store forces
-/// `xsmall` there): the layout was designed for a wider window and must shrink
-/// to fit a phone. It is not an offered scale and ignores `SCALE_MAP`.
-export const ANDROID_ROOT_FONT = "9px";
+/// The smallest root a phone may run. At 16px a 0.75rem caption is 12px, the
+/// text floor on a phone, so no phone setting may go under it.
+export const MIN_PHONE_ROOT_FONT_PX = 16;
+
+/// The phone's root font size in px, in one place. Android is a phone form
+/// (`data-form="phone"` on <html>) and ignores `SCALE_MAP`: its layouts are built
+/// for a 16px root. A later "phone text scale" setting (16 / 18 / 20, never
+/// smaller) plugs in here and reads its stored value.
+export function phoneRootFontPx(): number {
+  return MIN_PHONE_ROOT_FONT_PX;
+}
 
 export function isAndroidUserAgent(userAgent: string): boolean {
   return /Android/i.test(userAgent);
 }
 
 export function rootFontSizeFor(scale: string, userAgent: string): string {
-  if (isAndroidUserAgent(userAgent)) return ANDROID_ROOT_FONT;
+  if (isAndroidUserAgent(userAgent)) return `${phoneRootFontPx()}px`;
   return SCALE_MAP[scale] || "16px";
 }
