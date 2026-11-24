@@ -602,6 +602,7 @@
   "schedule.playoffs",
   "scouting.pos",
   "scrims.effect.morale",
+  "scrims.phone.statMorale",
   "scrims.tags.volumeMinus",
   "scrims.tags.volumePlus",
   "settings.gameplay",

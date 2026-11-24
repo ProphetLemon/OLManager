@@ -52,34 +52,3 @@ export function PlayersChange({ morale, condition, label = true }: { morale: num
     </span>
   );
 }
-
-/**
- * Rep scrims as a bar at its current value, with a dashed mark where it will stand after cancelling.
- * The tick at 50 is the same one Informe draws. The numbers sit beside it, so the marks never tell alone.
- */
-export function ReputationBar({ value, after, label, className }: { value: number; after: number; label: string; className?: string }) {
-  const clamp = (n: number) => Math.max(0, Math.min(100, n));
-  return (
-    <div
-      role="meter"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={clamp(value)}
-      aria-valuetext={`${value} → ${after}`}
-      data-slot="rep-bar"
-      className={cn("relative h-2.5", className)}
-    >
-      <div className="relative h-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-club" style={{ width: `${clamp(value)}%` }} />
-        <span aria-hidden="true" className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-background" style={{ left: "50%" }} />
-      </div>
-      <span
-        aria-hidden="true"
-        data-slot="rep-bar-ghost"
-        className="absolute -top-[3px] h-4 -translate-x-1/2 border-s-2 border-dashed border-foreground"
-        style={{ left: `${clamp(after)}%` }}
-      />
-    </div>
-  );
-}

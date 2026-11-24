@@ -5,6 +5,7 @@ import i18n from "@/i18n";
 import type { TeamIdentity } from "@/lib/teams/teamIdentity";
 import { ScrimDecisionPane, type ScrimDecisionPaneProps } from "./ScrimDecisionPane";
 import { makeOptions, makeReport } from "./scrimDayFixtures";
+import { STATS } from "./PhoneStats";
 
 afterEach(async () => {
   await i18n.changeLanguage("en");
@@ -35,9 +36,10 @@ function setup(props: Partial<ScrimDecisionPaneProps> = {}) {
   return { onDecide, onBack, ...utils };
 }
 
-const cards = () => [...document.querySelectorAll<HTMLElement>('[data-slot="decision-card"]')];
-const cardOf = (name: string) => screen.getByRole("button", { name }).closest("li") as HTMLElement;
-const titles = () => cards().map((card) => card.querySelector("button")?.textContent);
+const rows = () => [...document.querySelectorAll<HTMLElement>('[data-slot="effects-row"]')];
+const rowOf = (name: string) => screen.getByRole("button", { name: new RegExp(`^${name}\\.`) }).closest("li") as HTMLElement;
+const titles = () => rows().map((row) => row.querySelector("button span")?.textContent);
+const cellKinds = (row: HTMLElement) => STATS.map((stat) => row.querySelector(`[data-stat="${stat}"] [data-slot="stat-value"]`)?.getAttribute("data-change"));
 const pane = () => document.querySelector('[data-slot="scrim-decision-pane"]') as HTMLElement;
 
 function closeDay(won: boolean) {
@@ -63,10 +65,10 @@ describe("ScrimDecisionPane: the frame", () => {
     expect(container.querySelector('[data-slot="scrim-decision-pane"]')!.querySelector('[class*="overflow-y-auto"], [class*="overflow-auto"], [class*="overflow-y-scroll"]')).toBeNull();
   });
 
-  it("keeps the body inside the 286 px area: 8 px under the top row and 12 px free at the bottom", () => {
+  it("keeps the body inside the 286 px area: 8 px under the top row and the table down to the bottom edge (22 + 4 x 48 + 3 x 4 = 226)", () => {
     setup();
     expect(pane().className).toContain("pt-2");
-    expect(pane().className).toContain("pb-3");
+    expect(pane().className).not.toContain("pb-");
     expect(pane().className).toContain("h-full");
   });
 
@@ -132,7 +134,18 @@ describe("ScrimDecisionPane: the block", () => {
   });
 });
 
-describe("ScrimDecisionPane: one card per option the game gives", () => {
+describe("ScrimDecisionPane: the glossary", () => {
+  it("puts the ? at the right end of the top row, after the closing sentence, as a target", () => {
+    setup(closeDay(false));
+    const top = document.querySelector('[data-slot="scrim-view-top"]') as HTMLElement;
+    const help = within(top).getByRole("button", { name: "What each number means" });
+    expect(help.className).toContain("size-[var(--hit)]");
+    const controls = [...top.querySelectorAll("button")];
+    expect(controls[controls.length - 1]).toBe(help);
+  });
+});
+
+describe("ScrimDecisionPane: the effects table", () => {
   it("offers Push through and Cancel scrims after a loss, Continue and Offer rest after a win, in the game's order", () => {
     const { unmount } = setup();
     expect(titles()).toEqual(["Push through", "Cancel scrims"]);
@@ -142,7 +155,7 @@ describe("ScrimDecisionPane: one card per option the game gives", () => {
     expect(titles()).toEqual(["Continue to block 2", "Offer rest"]);
   });
 
-  it("closes the day with one card after a win and four after a loss", () => {
+  it("closes the day with one row after a win and four after a loss", () => {
     const { unmount } = setup(closeDay(true));
     expect(titles()).toEqual(["Day off"]);
     unmount();
@@ -151,109 +164,74 @@ describe("ScrimDecisionPane: one card per option the game gives", () => {
     expect(screen.getByText("B of 2")).toBeInTheDocument();
   });
 
-  it("draws any number of options as cards, from one to four, none of them left out", () => {
+  it("draws any number of options as rows, from one to four, none of them left out", () => {
     const options = makeOptions({ isFirstBlock: false, won: false, report: makeReport({ slot_index: 1 }) });
     for (const count of [1, 2, 3, 4]) {
       const { unmount } = setup({ options: options.slice(0, count) });
-      expect(cards()).toHaveLength(count);
+      expect(rows()).toHaveLength(count);
       unmount();
     }
   });
 
-  it("gives each card its title, its description and its effects as before-and-after pairs", () => {
-    setup();
-    const push = cardOf("Push through");
-    expect(push).toHaveTextContent("Quality");
-    expect(push).toHaveTextContent("61 → 73");
-    expect(push).toHaveTextContent("Picked players: Condition -6");
-    expect(push).toHaveTextContent("Block B plays now. Its report waits for your decision.");
-    expect(push.querySelector("p")?.textContent).not.toBe("");
+  it("says the stat names once, in a header, in the fixed order Quality, Morale, Energy, hidden from assistive technology", () => {
+    setup(closeDay(false));
+    const header = document.querySelector('[data-slot="effects-header"]') as HTMLElement;
+    expect(header).toHaveAttribute("aria-hidden", "true");
+    expect([...header.querySelectorAll("[data-stat]")].map((cell) => cell.getAttribute("data-stat"))).toEqual(["quality", "morale", "energy"]);
+    expect([...header.querySelectorAll("[data-stat]")].map((cell) => cell.textContent)).toEqual(["Quality", "Morale", "Energy"]);
+    expect(document.querySelectorAll('[data-slot="effects-header"]')).toHaveLength(1);
+    // The names are not repeated in the rows, which hold values only.
+    for (const row of rows()) expect(row.querySelector('[data-stat="quality"]')?.textContent).not.toContain("Quality");
   });
 
-  it("leaves the tag words out of the phone's cards", () => {
-    setup();
+  it("gives each stat its own fixed column, in order, with a dash where an option leaves it alone", () => {
+    setup(closeDay(false));
+    expect(cellKinds(rowOf("Day off"))).toEqual(["none", "up", "up"]);
+    expect(cellKinds(rowOf("VOD Review"))).toEqual(["up", "up", "down"]);
+    expect(cellKinds(rowOf("Mental Reset"))).toEqual(["none", "up", "up"]);
+    expect(cellKinds(rowOf("Targeted Drills"))).toEqual(["up", "none", "down"]);
+    const dash = rowOf("Day off").querySelector('[data-stat="quality"] [data-slot="stat-value"]') as HTMLElement;
+    expect(dash.className).toContain("text-dim");
+    expect(dash).toHaveTextContent("\u2014");
+  });
+
+  it("draws a rise with the up arrow and +n, a drop with the DOWN arrow, the minus and the amber, and Calidad with where it ends", () => {
+    setup(closeDay(false));
+    const vod = rowOf("VOD Review");
+    const quality = vod.querySelector('[data-stat="quality"] [data-slot="stat-value"]') as HTMLElement;
+    expect(quality).toHaveTextContent("+6");
+    expect(quality).toHaveTextContent("\u2192 67");
+    expect(quality.className).toContain("text-positive");
+    expect(quality.querySelector(".lucide-arrow-up")).not.toBeNull();
+    const energy = vod.querySelector('[data-stat="energy"] [data-slot="stat-value"]') as HTMLElement;
+    expect(energy).toHaveTextContent("\u22121");
+    expect(energy.className).toContain("text-warning");
+    expect(energy.querySelector(".lucide-arrow-down")).not.toBeNull();
+    expect(energy.querySelector(".lucide-arrow-up")).toBeNull();
+  });
+
+  it("never shows Severity, nor the label Picked players, on any option", () => {
+    setup(closeDay(false));
     const text = pane().textContent ?? "";
-    for (const word of ["+Volume", "+Learning", "+Fatigue", "+Impulse"]) expect(text).not.toContain(word);
+    expect(text).not.toMatch(/Severity/i);
+    expect(text).not.toContain("Picked players");
+    for (const row of rows()) expect(row.querySelector("button")?.getAttribute("aria-label")).not.toMatch(/Severity/i);
   });
 
-  it("marks a gain with the up arrow and a cost with the warning icon and the word, never by colour alone", () => {
+  it("names each row for assistive technology: the option, then each stat in words in the same order, then the cost", () => {
     setup();
-    const push = cardOf("Push through");
-    const gain = push.querySelector('[data-slot="phone-change"][data-tone="gain"]') as HTMLElement;
-    expect(gain.querySelector("svg")).not.toBeNull();
-    expect(gain).toHaveTextContent("61 → 73");
-    const cost = push.querySelector('[data-slot="phone-change"][data-tone="cost"]') as HTMLElement;
-    expect(cost.querySelector("svg")?.getAttribute("class")).toContain("text-warning");
-    expect(cost).toHaveTextContent(/cost/i);
+    expect(screen.getByRole("button", { name: "Push through. Quality goes up 12, ends at 73. Morale: no change. Energy goes down 6." })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel scrims. Quality: no change. Morale: no change. Energy: no change. Cost: Scrim rep 30 \u2192 25." })).toBeInTheDocument();
   });
 
-  it("shows Rep scrims as a bar at the current value with a dashed mark at the value after cancelling", () => {
-    setup();
-    const cancel = cardOf("Cancel scrims");
-    const bar = within(cancel).getByRole("meter", { name: "Scrim rep" });
-    expect(bar).toHaveAttribute("aria-valuenow", "30");
-    const ghost = cancel.querySelector('[data-slot="rep-bar-ghost"]') as HTMLElement;
-    expect(ghost.style.left).toBe("25%");
-    expect(ghost.className).toContain("border-dashed");
-    expect(cancel).toHaveTextContent("30 → 25");
-    expect(cancel.querySelector('[data-slot="cost-mark"]')).not.toBeNull();
-    expect(cancel).toHaveTextContent("Applies nothing yet. Any follow-up cancels block B: scrim rep -5, cancellations +1.");
-  });
-
-  it("shows the bar on any option that cancels, such as Offer rest after a win, and on no other", () => {
-    const report = makeReport({ won: true, issue: null });
-    setup({ report, options: makeOptions({ isFirstBlock: true, won: true, report }) });
-    expect(within(cardOf("Offer rest")).getByRole("meter")).toBeInTheDocument();
-    expect(within(cardOf("Continue to block 2")).queryByRole("meter")).toBeNull();
-    expect(within(cardOf("Continue to block 2")).queryByText("Cost")).toBeNull();
-  });
-
-  it("leaves the closing sentence out of an option that cancels, which already says the block is not played", () => {
-    const report = makeReport({ won: true, issue: null });
-    setup({ report, options: makeOptions({ isFirstBlock: true, won: true, report }) });
-    expect(cardOf("Offer rest")).toHaveTextContent("Cancels block B.");
-    expect(cardOf("Offer rest")).not.toHaveTextContent("The day closes");
-  });
-
-  it("draws no bar on Push through", () => {
-    setup();
-    expect(within(cardOf("Push through")).queryByRole("meter")).toBeNull();
-  });
-
-  it("never lets the dashed mark go below zero", () => {
-    setup({ reputation: 3 });
-    expect((document.querySelector('[data-slot="rep-bar-ghost"]') as HTMLElement).style.left).toBe("0%");
-    expect(cardOf("Cancel scrims")).toHaveTextContent("3 → 0");
-  });
-});
-
-describe("ScrimDecisionPane: a day-closing decision with several cards", () => {
-  it("draws the four cards as dense rows and says once, in the top row, that the day closes", () => {
-    setup(closeDay(false));
-    expect(cards().map((card) => card.getAttribute("data-layout"))).toEqual(["dense", "dense", "dense", "dense"]);
-    const closing = document.querySelector('[data-slot="decision-closing"]') as HTMLElement;
-    expect(document.querySelector('[data-slot="scrim-view-top"]')).toContainElement(closing);
-    expect(closing).toHaveTextContent("The day closes after this decision.");
-    expect(screen.getAllByText("The day closes after this decision.")).toHaveLength(1);
-  });
-
-  it("keeps every card at least one target high, with its description and effects", () => {
-    setup(closeDay(false));
-    for (const card of cards()) expect(card.className).toContain("min-h-[var(--hit)]");
-    const vod = cardOf("VOD Review");
-    expect(vod).toHaveTextContent("Quality");
-    expect(vod).toHaveTextContent("61 → 67");
-    expect(vod).toHaveTextContent("Picked players: Morale +1, Condition -1");
-  });
-
-  it("gives the description of a dense row the whole width under its title, whole, in Spanish too", async () => {
+  it("gives each description to a screen reader through aria-describedby, and keeps the description whole under the name, in Spanish too", async () => {
     await i18n.changeLanguage("es");
     setup(closeDay(false));
-    for (const card of cards()) {
-      const title = card.querySelector("button") as HTMLElement;
-      const description = card.querySelector('[id$="-desc"]') as HTMLElement;
+    for (const row of rows()) {
+      const button = row.querySelector("button") as HTMLElement;
+      const description = document.getElementById(button.getAttribute("aria-describedby") ?? "") as HTMLElement;
       expect(description.className).not.toContain("line-clamp");
-      expect(description.parentElement).toBe(title.parentElement);
+      expect(description.className).toContain("col-span-full");
     }
     for (const text of [
       "Da el resto del día libre y recupera.",
@@ -263,68 +241,92 @@ describe("ScrimDecisionPane: a day-closing decision with several cards", () => {
     ]) {
       expect(screen.getByText(text)).toBeInTheDocument();
     }
-    expect(cardOf("Revisión de VOD")).toHaveTextContent("Jugadores elegidos: Moral +1, Energía -1");
   });
 
-  it("gives each card the height its content needs, not an equal half, and keeps the text off its edges", () => {
-    setup({ options: makeOptions({ isFirstBlock: true, won: true }) });
-    for (const card of cards()) {
-      expect(card.className).toContain("basis-auto");
-      expect(card.className).not.toContain("basis-0");
-      expect(card.className).toContain("shrink-0");
-      expect(card.className).toContain("py-1.5");
-    }
+  it("with two options carries the extra line: the neutral sentence, or the amber cost box with where Rep scrims ends", () => {
+    const report = makeReport({ won: true, issue: null });
+    setup({ report, options: makeOptions({ isFirstBlock: true, won: true, report }) });
+    expect(within(rowOf("Continue to block 2")).getByText("Block B plays now. Its report waits for your decision.")).toBeInTheDocument();
+    const box = rowOf("Offer rest").querySelector('[data-slot="effects-cost"]') as HTMLElement;
+    expect(box).toHaveTextContent("Cost");
+    expect(box).toHaveTextContent("Scrim rep 30 \u2192 25");
+    expect(box).toHaveTextContent("Cancels block B.");
+    expect(box.className).toContain("border-warning");
+    expect(rowOf("Offer rest")).not.toHaveTextContent("The day closes");
   });
 
-  it("keeps the single card of a won day in the card layout with its sentence", () => {
+  it("with three or more options and a cost, the cost takes the description's place as one amber line", () => {
+    const cancel = makeOptions({ isFirstBlock: true, won: false }).find((option) => option.id === "CancelScrims")!;
+    const rest = makeOptions({ isFirstBlock: false, won: false, report: makeReport({ slot_index: 1 }) }).slice(0, 2);
+    setup({ options: [...rest, cancel] });
+    const line = rowOf("Cancel scrims").querySelector('[data-slot="effects-cost-line"]') as HTMLElement;
+    expect(line.className).toContain("text-warning");
+    expect(line).toHaveTextContent("Cost");
+    expect(rowOf("Cancel scrims")).not.toHaveTextContent("Applies nothing yet and moves on");
+  });
+
+  it("says once, in the top row, that the day closes when several options close it", () => {
+    setup(closeDay(false));
+    const closing = document.querySelector('[data-slot="decision-closing"]') as HTMLElement;
+    expect(document.querySelector('[data-slot="scrim-view-top"]')).toContainElement(closing);
+    expect(screen.getAllByText("The day closes after this decision.")).toHaveLength(1);
+  });
+
+  it("keeps the single option of a won day with its sentence in the row", () => {
     setup(closeDay(true));
-    const [card] = cards();
-    expect(card).toHaveAttribute("data-layout", "card");
-    expect(card).toHaveTextContent("The day closes after this decision.");
+    expect(rows()[0]).toHaveTextContent("The day closes after this decision.");
+  });
+
+  it("holds the heights of one to four rows: rows are at least a target high with a 4 px gap, the header is 22 px", () => {
+    setup(closeDay(false));
+    // 22 + 4 x 48 + 3 x 4 = 226 of the 226 px under the top row.
+    expect((document.querySelector('[data-slot="effects-header"]') as HTMLElement).className).toContain("h-[1.375rem]");
+    for (const row of rows()) expect(row.className).toContain("min-h-[var(--hit)]");
+    expect(document.querySelector('[data-slot="effects-table"]')!.className).toContain("gap-1");
+  });
+
+  it("draws a very faint band behind each of the three stat columns from the header down", () => {
+    setup();
+    const bands = document.querySelector('[data-slot="effects-bands"]') as HTMLElement;
+    expect(bands).toHaveAttribute("aria-hidden", "true");
+    expect(bands.className).toContain("inset-0");
+    expect([...bands.children].filter((child) => child.className.includes("bg-foreground/"))).toHaveLength(3);
   });
 });
 
 describe("ScrimDecisionPane: pressing", () => {
-  it("decides with one press and no confirmation", () => {
+  it("decides with one press and no confirmation, the whole row being the button", () => {
     const { onDecide } = setup();
-    fireEvent.click(screen.getByRole("button", { name: "Push through" }));
+    const row = rowOf("Push through");
+    expect(row.querySelectorAll("button")).toHaveLength(1);
+    fireEvent.click(row.querySelector("button") as HTMLElement);
     expect(onDecide).toHaveBeenCalledTimes(1);
     expect(onDecide).toHaveBeenCalledWith("PushThrough");
   });
 
-  it("makes each card one real button of at least a target, covering the card", () => {
+  it("has a pressed and a focus-visible state", () => {
     setup();
-    for (const card of cards()) {
-      expect(card.className).toContain("min-h-[var(--hit)]");
-      const button = card.querySelector("button") as HTMLElement;
-      expect(button.className).toContain("after:inset-0");
-    }
+    const button = rowOf("Push through").querySelector("button") as HTMLElement;
+    expect(button.className).toContain("active:bg-muted");
+    expect(button.className).toContain("focus-visible:ring-2");
   });
 
-  it("says Saving on the card that saves and makes every card aria-disabled but focusable and unpressable", () => {
+  it("says Saving on the row that saves and makes every row aria-disabled but focusable and unpressable", () => {
     const { onDecide } = setup({ savingId: "PushThrough" });
     expect(screen.getByRole("button", { name: "Saving..." })).toBeInTheDocument();
-    const buttons = cards().map((card) => card.querySelector("button") as HTMLElement);
+    const buttons = rows().map((row) => row.querySelector("button") as HTMLElement);
     for (const button of buttons) {
       expect(button).toHaveAttribute("aria-disabled", "true");
       expect(button).not.toBeDisabled();
     }
-    fireEvent.click(screen.getByRole("button", { name: "Cancel scrims" }));
+    fireEvent.click(buttons[1]);
     expect(onDecide).not.toHaveBeenCalled();
     buttons[1].focus();
     expect(buttons[1]).toHaveFocus();
   });
 
-  it("does not show a saving card by lower opacity", () => {
+  it("does not show a saving row by lower opacity", () => {
     setup({ savingId: "PushThrough" });
-    for (const card of cards()) expect(card.className).not.toMatch(/opacity/);
-  });
-
-  it("describes a card's choice to a screen reader through its description and effects", () => {
-    setup();
-    const button = screen.getByRole("button", { name: "Push through" });
-    const described = (button.getAttribute("aria-describedby") ?? "").split(" ").map((id) => document.getElementById(id)?.textContent ?? "");
-    expect(described.join(" ")).toContain("Quality");
-    expect(described.join(" ")).toContain("61 → 73");
+    for (const row of rows()) expect(row.querySelector("button")!.className).not.toMatch(/opacity/);
   });
 });

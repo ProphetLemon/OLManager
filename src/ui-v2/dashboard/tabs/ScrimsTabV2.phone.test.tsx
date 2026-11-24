@@ -308,7 +308,7 @@ describe("ScrimsTabV2 on a phone: what opens on arrival", () => {
     expect(screen.getAllByRole("heading")).toHaveLength(1);
     expect(frameHeading()).toHaveTextContent("Decide Wed A");
     expect(pane("decision")?.textContent).not.toMatch(/\+Volume|\+Learning|\+Fatigue|\+Impulse/);
-    expect(pane("decision")?.querySelectorAll('[data-slot="decision-card"]')).toHaveLength(2);
+    expect(pane("decision")?.querySelectorAll('[data-slot="effects-row"]')).toHaveLength(2);
     expect(frame()?.querySelector('[data-slot="decision-lock"]')).toHaveTextContent("Locked");
   });
 
@@ -580,7 +580,7 @@ describe("ScrimsTabV2 on a phone: the cancel step", () => {
     mount(afterBlockA());
     fireEvent.click(screen.getByRole("button", { name: /Cancel scrims/ }));
     expect(screen.getAllByRole("heading")).toHaveLength(1);
-    const rows = [...document.querySelectorAll('[data-slot="decision-card"]')].map((row) => row.querySelector("button")?.textContent);
+    const rows = [...document.querySelectorAll('[data-slot="effects-row"]')].map((row) => row.querySelector("button span")?.textContent);
     expect(rows).toEqual(["VOD Review", "Mental Reset", "Targeted Drills"]);
     expect(frame()?.querySelector('[data-slot="scrim-view-top"]')).toHaveTextContent("Cancels block B. Scrim rep -5, cancellations +1.");
     expect(screen.queryByRole("button", { name: /Back to block decision/ })).toBeNull();
@@ -606,7 +606,7 @@ describe("ScrimsTabV2 on a phone: the cancel step", () => {
     trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedAfterPush());
     mount(afterBlockA());
     fireEvent.click(screen.getByRole("button", { name: /Cancel scrims/ }));
-    fireEvent.click(screen.getByRole("button", { name: "VOD Review" }));
+    fireEvent.click(screen.getByRole("button", { name: /^VOD Review\./ }));
     await waitFor(() => expect(pane("result")).not.toBeNull());
     expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledWith(0, "VodReview");
     expect(viewTitle()).toBe("Block review");
@@ -724,7 +724,7 @@ describe("ScrimsTabV2 on a phone: the day's other block in the result view", () 
   it("the review of the second block shows the first one's result word once its own decision was taken", async () => {
     trainingMocks.chooseDailyScrimAction.mockResolvedValue(updatedBoth());
     const { swap } = mount(bPending());
-    fireEvent.click(screen.getByRole("button", { name: "VOD Review" }));
+    fireEvent.click(screen.getByRole("button", { name: /^VOD Review\./ }));
     await waitFor(() => expect(pane("result")).not.toBeNull());
     swap(bDecided());
     expect(viewTitle()).toBe("Block review");

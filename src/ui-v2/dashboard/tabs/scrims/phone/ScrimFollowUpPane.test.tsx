@@ -26,8 +26,8 @@ function setup(props: Partial<ScrimFollowUpPaneProps> = {}) {
   return { onDecide, onBack, ...utils };
 }
 
-const rows = () => [...document.querySelectorAll<HTMLElement>('[data-slot="decision-card"]')];
-const names = () => rows().map((row) => row.querySelector("button")?.textContent);
+const rows = () => [...document.querySelectorAll<HTMLElement>('[data-slot="effects-row"]')];
+const names = () => rows().map((row) => row.querySelector("button span")?.textContent);
 
 describe("ScrimFollowUpPane", () => {
   it("draws the shared frame titled Cancel scrims, with one heading", () => {
@@ -62,45 +62,46 @@ describe("ScrimFollowUpPane", () => {
     }
   });
 
-  it("separates the rows by hairlines and boxes none of them", () => {
+  it("puts the ? glossary at the right end of the top row", () => {
     setup();
-    for (const row of rows()) {
-      expect(row).toHaveAttribute("data-layout", "hairline");
-      expect(row.className).toContain("border-t");
-      expect(row.className).not.toMatch(/bg-card|bg-muted|rounded/);
-    }
+    const top = document.querySelector('[data-slot="scrim-view-top"]') as HTMLElement;
+    const controls = [...top.querySelectorAll("button")];
+    expect(controls[controls.length - 1]).toBe(within(top).getByRole("button", { name: "What each number means" }));
   });
 
-  it("gives each row its title, description, effect pairs and a chevron, without tag words or the repeated sentences", () => {
+  it("uses the same table as the decision: header once, rows as buttons, a fixed column per stat, no Severity", () => {
     setup();
+    expect(document.querySelectorAll('[data-slot="effects-header"]')).toHaveLength(1);
+    // Body 234 - 8 = 226: the prompt (about 30) + 22 + 3 x 48 + 2 x 4 = 204, so the table fits and its rows grow into the rest.
     const vod = rows()[0];
     expect(vod).toHaveTextContent("Review VOD to extract concrete learning");
-    expect(vod).toHaveTextContent("Quality");
-    expect(vod).toHaveTextContent("61 → 67");
-    expect(vod).toHaveTextContent("Severity");
-    expect(vod).toHaveTextContent("2 → 1");
-    expect(vod).toHaveTextContent("Picked players: Morale +1, Condition -1");
-    expect(vod).not.toHaveTextContent("+Analysis");
+    const quality = vod.querySelector('[data-stat="quality"] [data-slot="stat-value"]') as HTMLElement;
+    expect(quality).toHaveTextContent("+6");
+    expect(quality).toHaveTextContent("\u2192 67");
+    expect(vod.querySelector('[data-stat="energy"] [data-slot="stat-value"]')).toHaveAttribute("data-change", "down");
+    expect(vod).not.toHaveTextContent(/Severity/i);
+    expect(vod).not.toHaveTextContent("Picked players");
     expect(vod).not.toHaveTextContent("Cancels block B");
     expect(vod).not.toHaveTextContent("The day closes");
     expect(vod.querySelector('[data-slot="followup-chevron"]')).not.toBeNull();
   });
 
-  it("marks the cost of a row with the warning icon and the word", () => {
+  it("marks a drop with the down arrow and the amber, and names the row in words", () => {
     setup();
     const drills = rows()[2];
-    const cost = drills.querySelector('[data-slot="phone-change"][data-tone="cost"]') as HTMLElement;
-    expect(cost.querySelector("svg")?.getAttribute("class")).toContain("text-warning");
-    expect(cost).toHaveTextContent(/cost/i);
+    const energy = drills.querySelector('[data-stat="energy"] [data-slot="stat-value"]') as HTMLElement;
+    expect(energy.className).toContain("text-warning");
+    expect(energy.querySelector(".lucide-arrow-down")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Targeted Drills. Quality goes up 10, ends at 71. Morale: no change. Energy goes down 3." })).toBeInTheDocument();
   });
 
   it("makes each row one real button of at least a target that chooses on one press", () => {
     const { onDecide } = setup();
     for (const row of rows()) {
       expect(row.className).toContain("min-h-[var(--hit)]");
-      expect(row.querySelector("button")?.className).toContain("after:inset-0");
+      expect(row.querySelectorAll("button")).toHaveLength(1);
     }
-    fireEvent.click(screen.getByRole("button", { name: "Targeted Drills" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Targeted Drills\./ }));
     expect(onDecide).toHaveBeenCalledWith("TargetedDrills");
   });
 
@@ -114,14 +115,14 @@ describe("ScrimFollowUpPane", () => {
   it("says Saving on the row that saves and makes the rows aria-disabled but focusable and unpressable", () => {
     const { onDecide } = setup({ savingId: "MentalReset" });
     expect(screen.getByRole("button", { name: "Saving..." })).toBeInTheDocument();
-    for (const name of ["VOD Review", "Targeted Drills"]) {
+    for (const name of [/^VOD Review\./, /^Targeted Drills\./]) {
       const row = screen.getByRole("button", { name });
       expect(row).toHaveAttribute("aria-disabled", "true");
       expect(row).not.toBeDisabled();
       fireEvent.click(row);
     }
     expect(onDecide).not.toHaveBeenCalled();
-    for (const row of rows()) expect(row.className).not.toMatch(/opacity/);
+    for (const row of rows()) expect(row.querySelector("button")!.className).not.toMatch(/opacity/);
   });
 
   it("has no live region and nothing that scrolls", () => {

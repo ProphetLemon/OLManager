@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { DailyScrimAction } from "@/services/trainingService";
 import type { ScrimReportData } from "@/store/gameStore";
 import type { DecisionOption } from "../ScrimDecisionPanel";
-import { CancelNote, PhoneDecisionCard } from "./PhoneDecisionCard";
+import { CancelNote, PhoneEffectsTable } from "./PhoneEffectsTable";
+import { GlossaryButton } from "./ScrimGlossary";
 import { ScrimViewFrame } from "./ScrimViewFrame";
 
 export interface ScrimFollowUpPaneProps {
@@ -29,25 +30,20 @@ export function ScrimFollowUpPane({ title, onBack, report, options, savingId, on
   const cancel = options.flatMap((option) => option.effects).find((line) => line.kind === "cancelsNext");
 
   return (
-    <ScrimViewFrame title={title} onBack={onBack} actions={cancel?.kind === "cancelsNext" ? <CancelNote line={cancel} /> : null}>
-      <section data-slot="scrim-followup-pane" role="group" aria-label={title} className="flex h-full min-h-0 flex-col pb-3 pt-2">
+    <ScrimViewFrame title={title} onBack={onBack} actions={
+        <>
+          {cancel?.kind === "cancelsNext" ? <CancelNote line={cancel} /> : null}
+          <GlossaryButton />
+        </>
+      }
+    >
+      <section data-slot="scrim-followup-pane" role="group" aria-label={title} className="flex h-full min-h-0 flex-col pt-2">
         <p data-slot="followup-prompt" className="m-0 shrink-0 px-2 pb-1 font-heading text-section font-semibold leading-tight">
           {t("scrims.cancelFollowupPrompt")}
         </p>
-        <ul className="m-0 flex min-h-0 flex-1 list-none flex-col p-0">
-          {options.map((option) => (
-            <PhoneDecisionCard
-              key={option.id}
-              option={option}
-              layout="hairline"
-              report={report}
-              reputation={0}
-              saving={savingId === option.id}
-              locked={savingId !== null}
-              onDecide={() => onDecide(option.id)}
-            />
-          ))}
-        </ul>
+        <div className="min-h-0 flex-1">
+          <PhoneEffectsTable options={options} report={report} savingId={savingId} onDecide={onDecide} chevron costInTitle />
+        </div>
       </section>
     </ScrimViewFrame>
   );
