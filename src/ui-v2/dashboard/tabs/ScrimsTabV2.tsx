@@ -29,6 +29,7 @@ import { dayStateKey, deskPanel, riskLevel, todayBarOpponentId, type RiskLevel }
 import { nextPlanningMonday, scrimSetupBlockedKey } from "@/lib/scrims/setupLock";
 import { formatDate } from "@/lib/formatting/dateFormatting";
 import { useScrimContextWithFallback } from "@/hooks/useScrimContextWithFallback";
+import { useTabUiField } from "@/store/tabUiStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { usePhoneForm } from "@/hooks/usePhoneForm";
 import { Button } from "@/ui-v2/components/ui/button";
@@ -60,7 +61,8 @@ export function ScrimsTabV2({ gameState, onGameUpdate }: ScrimsTabV2Props) {
   const [statusText, setStatusText] = useState("");
   const [lastResult, setLastResult] = useState<{ date: string; value: DecisionResult; slotIndex: number } | null>(null);
   // Every decision of the day keeps its own result, by slot: the review shows what each block changed.
-  const [dayResults, setDayResults] = useState<{ date: string; bySlot: Record<number, DecisionResult> } | null>(null);
+  // It lives in the tab store, so it survives leaving the tab (the squad check between two decisions).
+  const [dayResults, setDayResults] = useTabUiField("scrims", "dayResults");
   const [focusTick, setFocusTick] = useState(0);
   const [showCancelFollowups, setShowCancelFollowups] = useState(false);
   const remoteScrimContext = useScrimContextWithFallback(gameState);

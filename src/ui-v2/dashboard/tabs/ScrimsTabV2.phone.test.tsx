@@ -7,6 +7,7 @@ import { autofillPlans } from "@/lib/scrims/scrimPlans";
 import { dismissOverlayWithBack } from "@/ui-v2/palette/paletteHistory";
 import type { ScrimContextResponse, TodayScrimContext, WeeklyScrimContext, WeeklyScrimSlotContext } from "@/lib/scrims/scrimContext";
 import type { GameStateData, ScrimReportData, TeamData } from "@/store/gameStore";
+import { useTabUiStore } from "@/store/tabUiStore";
 import { useSettingsStore } from "@/store/settingsStore";
 
 const appCss = readFileSync("src/App.css", "utf8");
@@ -257,6 +258,7 @@ function mount(context: ScrimContextResponse | null, state = game()) {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  useTabUiStore.getState().resetTabUi();
   await i18n.changeLanguage("en");
   useSettingsStore.setState({ settings: { ...useSettingsStore.getState().settings, scrim_review_mode: "manual" } });
 });
@@ -849,6 +851,28 @@ describe("ScrimsTabV2 on a phone: the review shows what each decision of the day
     expect(stat(b, "morale")).toHaveTextContent("+5");
     expect(stat(b, "energy")).toHaveTextContent("+6");
     expect(b).toHaveAttribute("aria-current", "true");
+  });
+
+  it("keeps block A's values when the tab is left and reopened between the two decisions", async () => {
+    trainingMocks.chooseDailyScrimAction.mockResolvedValueOnce(updatedAfterPush()).mockResolvedValueOnce(updatedBoth());
+    const first = mount(afterBlockA());
+    fireEvent.click(screen.getByRole("button", { name: /Push through/ }));
+    await waitFor(() => expect(pane("decision")).not.toBeNull());
+    first.swap(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    first.unmount();
+    const { swap } = mount(afterPushThrough());
+    await waitFor(() => expect(viewTitle()).toBe("Decide Wed B"));
+    fireEvent.click(screen.getByRole("button", { name: /^Day off\./ }));
+    await waitFor(() => expect(trainingMocks.chooseDailyScrimAction).toHaveBeenCalledTimes(2));
+    swap(bothDecided());
+    await waitFor(() => expect(pane("result")).not.toBeNull());
+    const [a, b] = rows();
+    expect(rows()).toHaveLength(2);
+    expect(stat(a, "quality")).toHaveTextContent("+12");
+    expect(stat(a, "energy")).toHaveTextContent("\u22126");
+    expect(a).not.toHaveTextContent("Changes not available");
+    expect(stat(b, "morale")).toHaveTextContent("+5");
   });
 
   it("when this tab no longer remembers block A's result it names A's stored decision and shows no values and no dash", async () => {

@@ -15,6 +15,7 @@ const dirtyTabUi = () =>
       ...s.tabs,
       transfers: { ...s.tabs.transfers, view: "market", search: "faker", page: 3 },
       scouting: { ...s.tabs.scouting, searchQuery: "caps" },
+      scrims: { dayResults: { date: "2025-06-19", bySlot: {} } },
     },
   }));
 
@@ -35,6 +36,7 @@ function dirtySession() {
 function expectFreshSession() {
   expect(useTabUiStore.getState().tabs.transfers.view).toBe("my_list");
   expect(useTabUiStore.getState().tabs.scouting.searchQuery).toBe("");
+  expect(useTabUiStore.getState().tabs.scrims.dayResults).toBeNull();
   expect(useNavMemoryStore.getState().lastByGroup).toEqual({});
   expect(usePaletteStore.getState()).toMatchObject({ open: false, openerId: null });
   expect(useNavMemoryStore.getState().openGroups).toEqual({});

@@ -53,7 +53,7 @@ src/
 │       ├── DashboardHeaderV2.tsx   # barra: Back, miga (equipo · grupo) sobre el h1, reloj, Continuar
 │       ├── RouteAnnouncer.tsx      # la única región viva de cambios de ruta ("Now on {título}, {grupo}")
 │       └── tabs/              # tabs nativos v2 (home/, squad/ = On Air panels); vista, filtros, orden, página y
-│                              # selección de cada pestaña en store/tabUiStore (R23: sobreviven a un perfil; ids
+│                              # selección de cada pestaña (y los resultados de las decisiones del día de Scrims) en store/tabUiStore (R23: sobreviven a un perfil; ids
 │                              # por useValidTabUiField; initialMessageId/initialCompetitionId ganan una vez por useOneShotOverride;
 │                              # la página vuelve a 1 con hooks/useResetOnChange, nunca al montar)
 │       └── scrims/phone/     # Scrims en el teléfono: ScrimsPhoneLayout (la única selección: "home" es Semana, el resto una vista), ScrimWeekHome (Semana)
